@@ -112,3 +112,117 @@ them, so there is always a working sender.
 | VCarve readers | then |
 | Electron shell with the machine service in the main process | then |
 | Design, CAM and Control as plugins | then |
+
+
+## The job builder, the simulated controller and the safety suite
+
+**`@454/job`** turns a G-code file into the lines 454 sends, adding what files leave out: spin-up
+waits after M3, lifts before the spindle stops, tool-change handling (lift, stop, and restart a
+spindle the file thinks is still running), and every job's ending. It was moved verbatim from
+Control; the three objects it reads (machine profile, controller state, loaded file) are passed in.
+Its **golden tests** pin it to Control line for line: six machine setups (homed, not homed, park
+captured, no waits, a machine counting up, no park) across five job files, recorded by running
+Control itself.
+
+**`@454/grbl`** is a **simulated GRBL 1.1 controller**, faithful where 454 depends on it: 128-byte
+receive buffer and 15-block planner with `ok` on acceptance; status reports; feed hold decelerating
+to Hold:0; soft reset raising ALARM:3 and losing position if moving; power-up alarm and homing;
+probing against a simulated switch (ALARM:5 on a miss); soft limits; M6 rejected with error:20;
+spindle changes in order with the moves. Time is virtual. Its own tests check each behaviour against
+GRBL. Plus the **character-counting streamer** 454 uses.
+
+**The safety suite** (`packages/job/test/safety.test.ts`) streams every job through the simulator
+and checks the rules on the timeline:
+
+1. no controller errors, no overfilled receive buffer
+2. the spindle is running and up to speed for every cut below Z0
+3. the spindle never stops with the tool in the material
+4. at every tool change the spindle is off and Z at the top
+5. moves 454 adds never go into the material; its lifts end at a safe height
+6. every job ends with the spindle off, parked (or lifted when not homed)
+
+**It is proven to catch failures**: six deliberate breaks of the job builder (no spin-up wait, no
+lift before a stop, tool change without lifting, tool change with the spindle on, no restart after
+a change, no park) are each caught. One fixture, `awkward.nc`, is deliberately badly behaved (M5 in
+the cut, M6 with the spindle running, no restart, ending in the material); the well-behaved files
+can't exercise those protections. Building the suite found two real problems in Control, fixed in
+v0.31.1 and v0.31.2.
+
+**Keeping them in step**: Control is still the source of truth until it becomes a plugin. After
+changing Control's job builder, re-sync `packages/job/src/build.js` and re-record the fixture (the
+scripts are in the session notes); the golden tests then show exactly what changed.
+
+
+## The desktop app: 454 Workshop (apps/desktop)
+
+**The name**: 454 Workshop, the umbrella for 454 Design and 454 Control (which keep their names). The
+data folder stays "454" whatever the app is called (`app.setPath('userData', …/454)` in `main.js`):
+renaming the app must never move where saved data lives. The same goes for the pages' address,
+`app://454`, which is part of where the browser storage lives.
+
+**Electron**, chosen over Tauri because it gives Windows and Linux the same Chromium engine Control
+and Design are built and tested in, and runs the tested JavaScript packages unchanged; Tauri would put
+Linux (the first platform) on WebKitGTK and the machine side in Rust. The shell is replaceable: the
+packages and plugin API don't depend on it.
+
+**Three parts:**
+- **Main process** (`src/main.js`): the window, and a dialog when Control's own guard blocks closing
+  while the machine is busy. Context isolation and the sandbox are on; the page gets no Node access.
+- **Machine process** (`src/machine/`): an Electron utility process that owns the serial port
+  (`serialport`), so nothing the window does can delay the machine. It watches for plugging in and
+  out, and turns OS errors into instructions (Linux `dialout` permission, a port in use). It talks to
+  the window over a direct MessageChannel handed over by the main process.
+- **Web Serial stand-in** (`src/renderer/desktop-serial.js`): loaded before Control's own code, so
+  Control runs **unchanged**: `navigator.serial` goes to the machine process, with a port picker in
+  place of Chrome's.
+
+**Both apps, each in its own window**: 454 Control (opens first) and 454 Design (menu, Ctrl+2, or any
+link to it), plus the docs in their own window; web links open in the browser. Pages are served through
+a private `app://` scheme rather than as files, so they can fetch their bundled files (fetch doesn't
+work on plain files) and share one home for saved data: Design sees Control's work area, both share the
+tool library. A View menu has the developer tools, for seeing the console when something goes wrong.
+
+**Built from pinned copies**: `scripts/build-app.js` builds each page from `control/` and `design/`
+(Design with its CAM engine). Each runs unchanged except: a Content Security Policy (only the app's own
+files run; Design may also run WebAssembly, for the tool-database reader); everything it would fetch
+from the internet comes bundled (three.js r128; opentype.js 1.3.4; sql.js 1.14.2 with its WebAssembly;
+the Text tool's 20 fonts, at the versions Design names), so the app works offline; and Control loads the
+Web Serial stand-in first. Every substitution is checked: if a page changes an address, the build stops.
+
+**Tested three ways:**
+1. `npm test`: the serial code over a real (virtual, socat) serial link to the simulated GRBL.
+2. `npm run test:e2e`: the whole app under a virtual screen. Control, through its own code: connect,
+   settings, home, zero, a real job against the simulator in real time, checked from both ends. Design,
+   at the same time: the CAM engine, a Text font, the tool-database reader (WebAssembly), a toolpath
+   saved as G-code, and a note left by Control read back (shared storage). Nothing blocked or failing
+   to load in either window.
+3. `npm run test:e2e:packaged`: the same, through the built AppImage.
+
+**The icon** (`build/icon.svg`, rendered by `build/`): 454 drawn as a single-stroke toolpath in the
+apps' amber on their dark slate. Numerals spaced so they read down to 16 px; at 32 px and below a
+bolder version without the grid. `icon.ico` carries seven sizes for Windows; `icon.png` (512 px) for
+Linux and the window.
+
+**Windows builds on Linux** need Wine (64-bit is enough for the app and its icon; the NSIS installer
+also needs 32-bit Wine). The release pipeline builds Windows on a real Windows runner instead, so
+none of that is needed there. Until then, a ready-to-run zip (`electron-builder --win zip`) is the
+Windows build.
+
+**Step 1 of 5 done.** The streaming loop still runs in Control's page; only the port has moved. Next:
+the release pipeline (tests gate every build; AppImage and Windows installer to GitHub Releases), then
+the updater, then moving settings over from the browser, then Design as a plugin, then the streamer
+into the machine process using `@454/grbl` and `@454/job`.
+
+**For release builds (do with the release pipeline):**
+- **Developer tools off** in release builds: `webPreferences.devTools: false` on every window, and the
+  View menu's developer-tools item removed. Decided automatically from whether the build is a release
+  (`app.isPackaged` together with the release channel), not a separate setting to remember. Test builds
+  keep them, since they're how problems get diagnosed.
+- **A hidden way back for support**: starting the app with `--debug` turns them back on, so a user can
+  be walked through it when needed without it being in everyone's menu.
+- **Help → Save diagnostic report**: saves the console log, app and Electron versions, operating
+  system, and the machine's controller settings to one file a user can email. More useful than
+  developer tools for most problem reports.
+- **Not code protection**: the app's files are in `app.asar`, which anyone can unpack. That's fine for
+  the open-source parts. If CAM becomes paid (see `LICENSING.md`), protect it with a license-key check,
+  not by trying to hide the code; minifying makes it harder to read, not impossible.

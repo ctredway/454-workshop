@@ -1,0 +1,52 @@
+{
+ "segments": 861,
+ "segmentsHash": "9b3daa962b3ac245f4fc410e2a21452c94d51a1d4228b7703348c4f87e081386",
+ "totalTime": 41.435876,
+ "cutDist": 308.145511,
+ "rapidDist": 130.343583,
+ "extents": {
+  "x": [
+   0,
+   41.836
+  ],
+  "y": [
+   0,
+   17.516
+  ],
+  "z": [
+   -3.1,
+   5.09
+  ]
+ },
+ "tools": [
+  {
+   "line": 7,
+   "tool": 3
+  },
+  {
+   "line": 42,
+   "tool": 2
+  }
+ ],
+ "issues": [
+  "info@7: M6 tool change to T3 — Carbide Motion pauses here (BitSetter / tool-length routine).",
+  "info@42: M6 tool change to T2 — Carbide Motion pauses here (BitSetter / tool-length routine)."
+ ],
+ "sections": [
+  {
+   "line": 8,
+   "name": "Holes",
+   "tool": "End Mill (3 mm)"
+  },
+  {
+   "line": 44,
+   "name": "Slot",
+   "tool": "End Mill (2 mm)"
+  },
+  {
+   "line": 237,
+   "name": "Outsides",
+   "tool": "End Mill (2 mm)"
+  }
+ ]
+}

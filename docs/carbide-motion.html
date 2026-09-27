@@ -46,9 +46,9 @@ offers to unlock, rather than leaving you with an alarm code.</div>
 As in Carbide Motion, the tool that sets Z zero is measured on the BitSetter right then and becomes
 the reference.</div>
 
-<div class="cm same"><b>Every job starts with a measurement</b>
-With a BitSetter set up, the tool is measured at the start of each job, whether or not the file
-changes tools.</div>
+<div class="cm same"><b>Every job measures its tool</b>
+With a BitSetter set up, the first tool is measured when you confirm it&rsquo;s loaded, or at Start
+if the file has no tool change. Once, as in Carbide Motion.</div>
 
 <div class="cm diff"><b>A bit swapped before Start is caught</b>
 At Start, 454 Control measures the loaded tool against that reference. Same bit: no change. A
@@ -82,9 +82,9 @@ work the bit waits while the spindle spins up.</div>
 <div class="cm diff"><b>Homing is required</b>
 A job will not start without it.</div>
 
-<div class="cm diff"><b>Every job ends the same way</b>
-Lift clear, stop the spindle, then move off the part: to your park position, or back to the
-job&rsquo;s XY zero. This happens whatever the file does or forgets to do.</div>
+<div class="cm same"><b>Every job ends the Carbide Motion way</b>
+Lift, back to the job&rsquo;s XY zero, then park at the back centre (or a position you capture).
+454 Control does this whatever the file does or forgets to do, stopping the spindle first.</div>
 
 <div class="cm diff"><b>Travel stays high</b>
 With start &amp; stop high on, the machine travels at the top of Z before plunging, at the start and

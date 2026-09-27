@@ -1,0 +1,2964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kerf · G-code inspector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14181d; --panel:#1d232b; --panel-deep:#171c22; --line:#2a323c;
+    --ink:#dce3ea; --muted:#8794a1; --faint:#5a6673;
+    --cut:#b87f2e; --cut-done:#ffc96b; --rapid:#46586b; --rapid-done:#7fa3c4;
+    --amber:#e8a33d; --err:#e06c5a; --warn:#d98e3f; --info:#6fa8dc; --ok:#7fb069;
+    --mono:'JetBrains Mono',monospace; --sans:'Archivo',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px}
+  button{font-family:var(--sans);cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:6px 12px;font-size:13px}
+  button:hover{border-color:var(--faint)}
+  button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  button.primary{background:var(--amber);border-color:var(--amber);color:#1a1407;font-weight:600}
+  button.primary:hover{background:#f2b04a}
+  input,select{background:var(--panel-deep);border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:5px 8px;font-size:13px;font-family:var(--sans)}
+  input[type=number]{width:70px;font-family:var(--mono)}
+  input[type=checkbox]{accent-color:var(--amber);width:auto}
+
+  #app{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:1fr 400px;height:100vh;gap:0}
+  header{grid-column:1/3;display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  header .brand{font-weight:700;font-size:17px;letter-spacing:.2px}
+  header .brand span{color:var(--amber)}
+  header .sub{color:var(--muted);font-size:12.5px}
+  header .spacer{flex:1}
+  #fileName{font-family:var(--mono);font-size:12.5px;color:var(--muted);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  #viewportWrap{position:relative;grid-row:2;grid-column:1;min-width:0;min-height:0}
+  #viewport{position:absolute;inset:0}
+  #dropHint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;color:var(--muted);text-align:center}
+  #dropHint .big{font-size:20px;font-weight:600;color:var(--ink)}
+  #dropHint kbd{font-family:var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:2px 7px;font-size:12px}
+  #dropOverlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,24,29,.85);border:2px dashed var(--amber);z-index:20;font-size:18px;font-weight:600;color:var(--amber);pointer-events:none}
+  body.dragging #dropOverlay{display:flex}
+  #viewHud{position:absolute;top:10px;left:10px;display:flex;gap:6px;z-index:5}
+  #viewHud button{padding:4px 10px;font-size:12px;background:rgba(29,35,43,.9)}
+  #legend{position:absolute;bottom:10px;left:10px;z-index:5;background:rgba(23,28,34,.85);border:1px solid var(--line);border-radius:5px;padding:8px 12px;font-size:12px;color:var(--muted);display:flex;gap:14px}
+  .lg{display:flex;align-items:center;gap:6px}
+  .swatch{width:18px;height:0;border-top:2.5px solid}
+  .swatch.dash{border-top-style:dashed}
+
+  aside{grid-row:2;grid-column:2;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--line);min-height:0}
+  #statsBar{padding:10px 14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12.5px}
+  #statsBar .stat{display:flex;justify-content:space-between;gap:8px}
+  #statsBar .stat b{font-family:var(--mono);font-weight:500;color:var(--ink);white-space:nowrap}
+  #statsBar .stat span{color:var(--muted)}
+  #tabs{display:flex;border-bottom:1px solid var(--line)}
+  #tabs button{flex:1;border:0;border-radius:0;background:var(--panel-deep);color:var(--muted);padding:9px;font-size:13px;border-bottom:2px solid transparent}
+  #tabs button.active{color:var(--ink);background:var(--panel);border-bottom-color:var(--amber);font-weight:600}
+  #tabs button .badge{display:inline-block;min-width:18px;padding:1px 5px;border-radius:9px;font-size:11px;font-family:var(--mono);margin-left:6px;background:var(--line);color:var(--ink)}
+  #tabs button .badge.err{background:var(--err);color:#fff}
+  #tabs button .badge.warn{background:var(--warn);color:#1a1407}
+
+  .tabPane{flex:1;min-height:0;display:none;flex-direction:column}
+  .tabPane.active{display:flex}
+
+  #codeScroller{flex:1;overflow-y:auto;position:relative;background:var(--panel-deep);font-family:var(--mono);font-size:12px;line-height:20px}
+  #codeSpacer{position:relative;width:100%}
+  .cl{position:absolute;left:0;right:0;height:20px;display:flex;white-space:pre;cursor:pointer}
+  .cl:hover{background:#232b35}
+  .cl .ln{width:52px;flex:none;text-align:right;padding-right:10px;color:var(--faint);user-select:none}
+  .cl .tx{color:#b9c3ce;overflow:hidden;text-overflow:ellipsis}
+  .cl.cur{background:#2c2417}
+  .cl.cur .ln{color:var(--amber)}
+  .cl.cur::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--amber)}
+  .cl.issueSel{background:#33222070;box-shadow:inset 0 0 0 1px var(--err)}
+  #codeFollowRow{padding:7px 12px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+
+  #checksList{flex:1;overflow-y:auto;padding:8px}
+  .issue{display:flex;gap:9px;padding:8px 9px;border-radius:5px;cursor:pointer;align-items:flex-start;font-size:12.5px}
+  .issue:hover{background:var(--panel-deep)}
+  .issue .dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:4px}
+  .issue.err .dot{background:var(--err)} .issue.warn .dot{background:var(--warn)} .issue.info .dot{background:var(--info)}
+  .issue .msg{color:var(--ink)}
+  .issue .lnref{font-family:var(--mono);color:var(--muted);font-size:11.5px}
+  #checksEmpty{padding:26px 18px;color:var(--muted);text-align:center}
+  #checksEmpty .okmark{font-size:26px;color:var(--ok)}
+
+  #setupPane{padding:14px;overflow-y:auto;font-size:13px}
+  #setupPane .row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  #setupPane label{color:var(--muted)}
+  #setupPane h3{font-size:13px;font-weight:600;margin:14px 0 8px;color:var(--ink)}
+  #setupPane h3:first-child{margin-top:0}
+  #setupPane .note{color:var(--faint);font-size:12px;line-height:1.5;margin-top:4px}
+
+  footer{grid-column:1/3;display:flex;align-items:center;gap:16px;padding:9px 16px;background:var(--panel);border-top:1px solid var(--line)}
+  #dro{display:flex;gap:14px;font-family:var(--mono);font-size:13px}
+  #dro .ax{display:flex;gap:6px;align-items:baseline}
+  #dro .ax i{font-style:normal;color:var(--muted);font-size:11px}
+  #dro .ax b{font-weight:500;min-width:86px;text-align:right;display:inline-block}
+  #transport{display:flex;align-items:center;gap:8px}
+  #transport button{width:34px;padding:5px 0;font-family:var(--mono);font-size:13px}
+  #timeSlider{flex:1;min-width:120px;accent-color:var(--amber)}
+  #timeReadout{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:130px;text-align:right}
+  #speedSel{width:74px}
+  footer .lineNoBox{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  footer .lineNoBox b{color:var(--amber);font-weight:500}
+
+  /* machine control */
+  #machinePane{padding:12px 14px;overflow-y:auto;font-size:13px;flex:1;min-height:0}
+  .mSection{margin-bottom:16px}
+  .mSection h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--ink)}
+  .mRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .mRow label{color:var(--muted);font-size:12.5px}
+  .chip{font-family:var(--mono);font-size:12px;padding:3px 10px;border-radius:10px;background:var(--line);color:var(--muted)}
+  .stateChip{font-family:var(--mono);font-size:12px;padding:3px 10px;border-radius:10px;background:var(--line);color:var(--ink)}
+  .stateChip[data-s="Idle"]{background:#2b4029;color:#a9d29c}
+  .stateChip[data-s="Run"],.stateChip[data-s="Jog"],.stateChip[data-s="Home"]{background:#443415;color:#f2c46a}
+  .stateChip[data-s="Hold"],.stateChip[data-s="Door"]{background:#4a3416;color:#eeb066}
+  .stateChip[data-s="Alarm"]{background:#4d2620;color:#ff9d8d}
+  .stateChip[data-s="Check"],.stateChip[data-s="Sleep"]{background:#243447;color:#9cc1e8}
+  #hdrSpindle.on{background:#4d2620;color:#ff9d8d;cursor:pointer}
+  #hdrSpindle.on:hover{background:#5c2e26}
+  #jogGrid{display:grid;grid-template-columns:repeat(3,46px) 18px 46px;grid-auto-rows:40px;gap:5px}
+  #jogGrid button{padding:0;font-family:var(--mono);font-size:13px;touch-action:none;user-select:none}
+  #jogIncRow button{font-family:var(--mono);padding:5px 9px}
+  #jogIncRow button.incOn{background:var(--amber);border-color:var(--amber);color:#1a1407;font-weight:600}
+  #jogModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:60}
+  #jogModal[hidden]{display:none}
+  #jogPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;width:440px;box-shadow:0 14px 44px rgba(0,0,0,.55)}
+  #jogHead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  #jogClose{padding:4px 10px}
+  #jmDro{display:flex;gap:22px;font-family:var(--mono);font-size:21px;margin:8px 0 14px}
+  #jmDro .ax i{color:var(--muted);font-size:12px;margin-right:7px;font-style:normal}
+  #jogGrid button.kbdOn{background:var(--amber);border-color:var(--amber);color:#1a1407}
+  .kbdHint{color:var(--faint);font-size:12px;margin-top:12px;line-height:1.6}
+  #setModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:70}
+  #setModal[hidden]{display:none}
+  #setPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;width:560px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 14px 44px rgba(0,0,0,.55)}
+  #setHead{display:flex;align-items:center;gap:10px;padding:14px 18px 10px}
+  #smTabs{display:flex;border-bottom:1px solid var(--line);padding:0 12px;gap:2px}
+  #smTabs button{border:0;border-radius:0;background:transparent;color:var(--muted);padding:8px 12px;font-size:13px;border-bottom:2px solid transparent}
+  #smTabs button.active{color:var(--ink);border-bottom-color:var(--amber);font-weight:600}
+  .smPane{display:none;padding:16px 18px;overflow-y:auto}
+  .smPane.active{display:block}
+  .iconBtn{padding:6px 8px;line-height:0}
+  .iconBtn svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .iconBtn.primary svg{stroke:#1a1407}
+  @media (max-width: 1180px){ header .sub{display:none} }
+  #consoleLog{background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;height:150px;overflow-y:auto;font-family:var(--mono);font-size:11.5px;line-height:17px;padding:6px 8px;margin-bottom:6px;overflow-wrap:anywhere}
+  #consoleLog .tx{color:#9a8a6a}
+  #consoleLog .rx{color:#93a4b5}
+  #consoleLog .ok{color:var(--ok)}
+  #consoleLog .err{color:var(--err)}
+  #consoleLog .sys{color:var(--info)}
+  #consoleIn{width:100%;font-family:var(--mono)}
+  #toolBanner{display:none;background:#443415;border:1px solid var(--amber);border-radius:5px;padding:10px;margin-bottom:8px;font-size:12.5px;line-height:1.5}
+  #jobBar{height:6px;background:var(--panel-deep);border-radius:3px;overflow:hidden;margin:6px 0}
+  #jobBarFill{height:100%;width:0%;background:var(--amber);transition:width .2s}
+  .disabledArea{opacity:.45;pointer-events:none}
+  #hdrMachine{display:none;align-items:center;gap:6px}
+  #hdrMachine.on{display:flex}
+  #hdrMachine button{padding:4px 9px}
+  button.danger{border-color:#7a3a30;color:#ff9d8d}
+  button.danger:hover{background:#3a201c;border-color:#a04a3c}
+  button.estop{background:#b03024;border-color:#d84b3c;color:#fff;font-weight:700;letter-spacing:.4px;padding:6px 16px}
+  button.estop:hover{background:#d0392a;border-color:#f0604e}
+  #serialNote{color:var(--faint);font-size:12px;line-height:1.5;margin:2px 0 14px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">Kerf<span>.</span></div>
+    <div class="sub">G-code inspector for Shapeoko &amp; Nomad (GRBL / Carbide Motion dialect)</div>
+    <div class="spacer"></div>
+    <div id="fileName">no file loaded</div>
+    <div id="hdrMachine">
+      <button id="estopBtn" class="estop" title="EMERGENCY STOP — immediate halt, spindle off, position lost until re-homed">STOP</button>
+      <span class="stateChip" id="hdrState">offline</span>
+      <span class="stateChip" id="hdrSpindle" title="Spindle state — click to stop while running">spindle off</span>
+      <button id="hdrHold" class="danger iconBtn" title="Feed hold — decelerate and pause motion now"><svg viewBox="0 0 16 16"><line x1="6" y1="3.5" x2="6" y2="12.5"/><line x1="10" y1="3.5" x2="10" y2="12.5"/></svg></button>
+      <button id="hdrResume" class="iconBtn" title="Cycle start / resume"><svg viewBox="0 0 16 16"><path d="M5.5 3.5 L12 8 L5.5 12.5 Z"/></svg></button>
+    </div>
+    <button id="settingsBtn" class="iconBtn" title="Settings"><svg viewBox="0 0 16 16"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="10.5" cy="4" r="1.6" fill="var(--panel)"/><circle cx="5.5" cy="8" r="1.6" fill="var(--panel)"/><circle cx="11.5" cy="12" r="1.6" fill="var(--panel)"/></svg></button>
+    <button id="sampleBtn" class="iconBtn" title="Load the sample file"><svg viewBox="0 0 16 16"><path d="M6 2 h4 M7 2 v4.2 l-3.4 5.8 a1.1 1.1 0 0 0 .95 1.7 h6.9 a1.1 1.1 0 0 0 .95 -1.7 L9 6.2 V2"/><line x1="5.2" y1="10.5" x2="10.8" y2="10.5"/></svg></button>
+    <button id="openBtn" class="iconBtn primary" title="Open a G-code file (.nc, .gcode, .tap, .ngc)"><svg viewBox="0 0 16 16"><path d="M2 4.5 h4 l1.3 1.8 H14 v6.5 a1 1 0 0 1 -1 1 H3 a1 1 0 0 1 -1 -1 z"/></svg></button>
+    <input type="file" id="fileInput" accept=".nc,.gcode,.gc,.tap,.ngc,.txt,.cnc" hidden>
+  </header>
+
+  <div id="viewportWrap">
+    <div id="viewport"></div>
+    <div id="viewHud">
+      <button id="fitBtn">Fit</button>
+    </div>
+    <div id="legend">
+      <div class="lg"><div class="swatch" style="border-color:var(--cut-done)"></div>cut</div>
+      <div class="lg"><div class="swatch dash" style="border-color:var(--rapid-done)"></div>rapid</div>
+      <div class="lg"><div class="swatch" style="border-color:#e05656"></div>X</div>
+      <div class="lg"><div class="swatch" style="border-color:#5fae5f"></div>Y</div>
+      <div class="lg"><div class="swatch" style="border-color:#5f7fd8"></div>Z</div>
+    </div>
+    <div id="dropHint">
+      <div class="big">Drop a G-code file anywhere</div>
+      <div>.nc · .gcode · .tap · .ngc — parsed locally, nothing is uploaded</div>
+      <div>Left-drag to orbit · right-drag to pan · scroll to zoom</div>
+    </div>
+    <div id="dropOverlay">Release to load</div>
+  </div>
+
+  <aside>
+    <div id="statsBar">
+      <div class="stat"><span>X extent</span><b id="stX">—</b></div>
+      <div class="stat"><span>Y extent</span><b id="stY">—</b></div>
+      <div class="stat"><span>Z min / max</span><b id="stZ">—</b></div>
+      <div class="stat"><span>Est. run time</span><b id="stT">—</b></div>
+      <div class="stat"><span>Cut / rapid dist.</span><b id="stD">—</b></div>
+      <div class="stat"><span>Tools</span><b id="stTools">—</b></div>
+    </div>
+    <div id="tabs">
+      <button id="tabCode" class="active">Code</button>
+      <button id="tabChecks">Checks<span class="badge" id="checksBadge">0</span></button>
+      <button id="tabMachine">Machine</button>
+    </div>
+
+    <div class="tabPane active" id="paneCode">
+      <div id="codeScroller"><div id="codeSpacer"></div></div>
+      <div id="codeFollowRow">
+        <input type="checkbox" id="followChk" checked><label for="followChk">Follow playback</label>
+        <select id="sectionSel" style="max-width:170px;display:none"></select>
+        <div class="spacer" style="flex:1"></div>
+        <span id="codeCount"></span>
+      </div>
+    </div>
+
+    <div class="tabPane" id="paneChecks">
+      <div id="checksList"></div>
+    </div>
+
+    <div class="tabPane" id="paneMachine">
+      <div id="machinePane">
+        <div class="mRow">
+          <button id="connectBtn" class="primary">Connect to machine</button>
+          <span class="chip" id="connChip">not connected</span>
+        </div>
+        <p id="serialNote">Talks GRBL 1.1 over USB at 115200 baud (Shapeoko / Nomad controller). Needs Chrome or Edge on desktop — Web Serial. This moves a real machine: keep a hand near the e-stop, and air-cut new files first.</p>
+
+        <div id="alarmBanner" style="display:none;background:#4d2620;border:1px solid var(--err);border-radius:5px;padding:10px;margin-bottom:12px;font-size:12.5px;line-height:1.5">
+          <b id="alarmBannerTxt">Machine is locked</b><br>
+          The controller boots in a locked state until it knows where it is. Make sure the gantry is clear, then home.
+          <div style="margin-top:8px"><button id="alarmHome" class="primary">Home now ($H)</button></div>
+        </div>
+
+        <div id="mControls" class="disabledArea">
+          <div class="mSection">
+            <h3>Machine</h3>
+            <div class="mRow">
+              <button id="homeBtn">Home ($H)</button>
+              <button id="unlockBtn">Unlock ($X)</button>
+              <button id="resetBtn" class="danger" title="Soft reset (Ctrl-X) — clears GRBL's buffer">Reset</button>
+            </div>
+            <div class="mRow"><span class="chip" id="mposChip">machine —</span><span class="chip" id="pinChip" style="display:none"></span></div>
+          </div>
+
+          <div class="mSection">
+            <h3>Controller config</h3>
+            <div class="mRow"><button id="refreshCfg">Re-read ($$, $#)</button><span class="chip" id="cfgChip">read on connect</span></div>
+            <div id="cfgTable" style="display:none;font-family:var(--mono);font-size:11.5px;line-height:18px;background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;padding:6px 8px;max-height:190px;overflow-y:auto"></div>
+          </div>
+
+          <div class="mSection">
+            <h3>Jog &amp; zero</h3>
+            <div class="mRow">
+              <button id="jogOpen" class="primary">Open jog panel</button>
+              <span style="color:var(--faint);font-size:12px">arrow keys &amp; PgUp/PgDn work while it's open</span>
+            </div>
+          </div>
+
+          <div class="mSection">
+            <h3>Spindle</h3>
+            <div class="mRow">
+              <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
+              <button id="spinOn">Start (M3)</button>
+              <button id="spinOff" class="danger">Stop (M5)</button>
+              <span class="chip" id="spinState">stopped</span>
+            </div>
+            <p class="note">Shows the commanded S value from the controller — with a VFD this is the target, not a tachometer reading. Manual starts don't wait: give it a few seconds before cutting. Streamed jobs get the spin-up dwell automatically.</p>
+          </div>
+
+          <div class="mSection">
+            <h3>Run job</h3>
+            <div id="toolBanner"><b id="toolBannerTxt">Tool change</b><br>Make sure the spindle has stopped, change the tool, re-check stickout, then continue. Without a BitSetter routine the new tool must match the old length, or re-zero Z before continuing.<div style="margin-top:8px"><button id="toolContinue" class="primary">Tool changed — continue</button></div></div>
+            <div class="mRow">
+              <button id="jobRun" class="primary">Run loaded file</button>
+              <button id="jobHold">Hold</button>
+              <button id="jobResume">Resume</button>
+              <button id="jobStop" class="danger">Stop</button>
+            </div>
+            <div id="jobBar"><div id="jobBarFill"></div></div>
+            <div class="mRow" style="color:var(--muted);font-size:12px" id="jobStatus">no job running</div>
+          </div>
+
+          <div class="mSection" style="margin-bottom:4px">
+            <h3>Console</h3>
+            <div id="consoleLog"></div>
+            <input id="consoleIn" placeholder="type a command — Enter to send ($$, G0 X10, ?, !, ~)" autocomplete="off">
+            <div class="mRow" style="margin-top:6px"><input type="checkbox" id="verboseChk"><label for="verboseChk">Show status reports and job acks</label></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <footer>
+    <div id="dro">
+      <div class="ax"><i>X</i><b id="droX">0.000</b></div>
+      <div class="ax"><i>Y</i><b id="droY">0.000</b></div>
+      <div class="ax"><i>Z</i><b id="droZ">0.000</b></div>
+      <div class="ax"><i>F</i><b id="droF">—</b></div>
+    </div>
+    <div class="lineNoBox">line <b id="droLine">—</b> · tool <b id="droTool">—</b></div>
+    <div id="transport">
+      <button id="btnStart" title="Go to start">|&lt;</button>
+      <button id="btnStepB" title="Step back one line">&lt;</button>
+      <button id="btnPlay" title="Play / pause">▶</button>
+      <button id="btnStepF" title="Step forward one line">&gt;</button>
+      <button id="btnEnd" title="Go to end">&gt;|</button>
+      <select id="speedSel">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="5">5×</option>
+        <option value="20">20×</option>
+        <option value="100">100×</option>
+      </select>
+    </div>
+    <input type="range" id="timeSlider" min="0" max="10000" value="0" step="1">
+    <div id="timeReadout">0:00 / 0:00</div>
+  </footer>
+</div>
+
+<div id="jogModal" hidden>
+  <div id="jogPanel">
+    <div id="jogHead">
+      <button id="jogEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
+      <b style="font-size:15px">Jog &amp; zero</b>
+      <span class="stateChip" id="jmState">—</span>
+      <div style="flex:1"></div>
+      <button id="jogClose" title="Close (Esc)">✕</button>
+    </div>
+    <div id="jmDro">
+      <div class="ax"><i>X</i><b id="jmX">0.000</b></div>
+      <div class="ax"><i>Y</i><b id="jmY">0.000</b></div>
+      <div class="ax"><i>Z</i><b id="jmZ">0.000</b></div>
+    </div>
+    <div class="mRow" id="jogIncRow">
+      <label>Move</label>
+      <button data-inc="0.025">0.025</button>
+      <button data-inc="0.1">0.1</button>
+      <button data-inc="1" class="incOn">1</button>
+      <button data-inc="10">10</button>
+      <button data-inc="fast">Fast</button>
+      <span style="color:var(--faint)">mm</span>
+    </div>
+    <div class="mRow">
+      <label>Fast XY</label><input type="number" id="jogFeedXY" value="3000" step="100">
+      <label>Fast Z</label><input type="number" id="jogFeedZ" value="600" step="50">
+      <span style="color:var(--faint)">mm/min</span>
+    </div>
+    <div id="jogGrid">
+      <button data-jog="-1,1,0">↖</button><button data-jog="0,1,0">Y+</button><button data-jog="1,1,0">↗</button><span></span><button data-jog="0,0,1">Z+</button>
+      <button data-jog="-1,0,0">X−</button><span></span><button data-jog="1,0,0">X+</button><span></span><span></span>
+      <button data-jog="-1,-1,0">↙</button><button data-jog="0,-1,0">Y−</button><button data-jog="1,-1,0">↘</button><span></span><button data-jog="0,0,-1">Z−</button>
+    </div>
+    <div class="mSection" style="margin:14px 0 0">
+      <h3>Work zero</h3>
+      <div class="mRow">
+        <button id="zeroX">Zero X</button><button id="zeroY">Zero Y</button><button id="zeroZ">Zero Z</button><button id="zeroAll">Zero all</button>
+      </div>
+      <div class="mRow">
+        <button id="gotoZero" title="Raises Z to 5 mm below the top of travel first (machine must be homed)">Go to XY zero</button>
+      </div>
+    </div>
+    <p class="kbdHint">Keyboard: ← → = X &nbsp;·&nbsp; ↑ ↓ = Y &nbsp;·&nbsp; PgUp PgDn = Z. In Fast, hold to jog — release stops instantly. Esc closes.</p>
+  </div>
+</div>
+
+<div id="setModal" hidden>
+  <div id="setPanel">
+    <div id="setHead">
+      <b style="font-size:15px">Settings</b>
+      <div style="flex:1"></div>
+      <button id="setClose" title="Close (Esc)">✕</button>
+    </div>
+    <div id="smTabs">
+      <button data-sm="smDisplay" class="active">Display</button>
+      <button data-sm="smMachine">Machine</button>
+      <button data-sm="smAcc">Accessories</button>
+      <button data-sm="smJob">Job</button>
+      <button data-sm="smProfile">Profile</button>
+    </div>
+
+    <div class="smPane active" id="smDisplay">
+      <div class="row mRow"><input type="checkbox" id="showRapids" checked><label for="showRapids">Show rapid moves</label></div>
+      <div class="row mRow"><input type="checkbox" id="showEnvelope"><label for="showEnvelope">Show work area outline</label></div>
+    </div>
+
+    <div class="smPane" id="smMachine">
+      <div class="mRow"><span class="chip" id="modelChip">model: connect to detect</span></div>
+      <h3 style="font-size:13px;font-weight:600;margin:6px 0 8px">Work area</h3>
+      <div class="mRow">
+        <select id="machinePreset">
+          <option value="">Custom…</option>
+          <option value="425,425">Shapeoko 3 (425 × 425)</option>
+          <option value="838,438">Shapeoko XL (838 × 438)</option>
+          <option value="838,838">Shapeoko XXL (838 × 838)</option>
+          <option value="203,203">Nomad 3 (203 × 203)</option>
+        </select>
+      </div>
+      <div class="mRow">
+        <label>Width X</label><input type="number" id="envW" value="425"> <span style="color:var(--faint)">mm</span>
+        <label style="margin-left:8px">Depth Y</label><input type="number" id="envD" value="425"> <span style="color:var(--faint)">mm</span>
+      </div>
+      <div class="mRow">
+        <label>Job zero at</label>
+        <select id="originSel">
+          <option value="corner">front-left corner of stock</option>
+          <option value="center">center of stock</option>
+        </select>
+      </div>
+      <div class="mRow"><input type="checkbox" id="checkEnvelope"><label for="checkEnvelope">Flag moves outside work area</label></div>
+      <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5">Auto-synced from the controller's $130/$131 on connect. The outside-work-area check assumes the job zero sits where selected above.</p>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Stock</h3>
+      <div class="mRow">
+        <label>Thickness</label><input type="number" id="stockThk" value="0" step="0.5"> <span style="color:var(--faint)">mm</span>
+      </div>
+      <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5">If Z0 is the top of your stock, cuts deeper than this get flagged (i.e. into your wasteboard). 0 disables.</p>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Time estimate</h3>
+      <div class="mRow">
+        <label>Rapid rate</label><input type="number" id="rapidRate" value="5000" step="100"> <span style="color:var(--faint)">mm/min — auto-set from the controller</span>
+      </div>
+    </div>
+
+    <div class="smPane" id="smAcc">
+      <div class="mRow">
+        <input type="checkbox" id="bsEnable"><label for="bsEnable">BitSetter</label>
+        <label style="margin-left:6px">machine X</label><input type="number" id="bsX" step="0.1" style="width:84px">
+        <label>Y</label><input type="number" id="bsY" step="0.1" style="width:84px">
+        <button id="bsCapture" title="Jog the tool over the BitSetter button, then store the current machine position">Capture position</button>
+      </div>
+      <div class="mRow">
+        <input type="checkbox" id="bzEnable"><label for="bzEnable">BitZero</label>
+        <select id="bzVersion"><option value="v1">v1</option><option value="v2">v2</option></select>
+      </div>
+      <div class="mRow">
+        <label>Spindle</label>
+        <select id="spinType"><option value="router">Trim router</option><option value="vfd">VFD spindle</option></select>
+        <label>spin-up</label><input type="number" id="spinupSec" value="3" step="0.5" min="0" style="width:64px"><span style="color:var(--faint)">s dwell after M3</span>
+      </div>
+      <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5">BitSetter probing runs automatically on jobs with tool changes when enabled with a captured position. BitZero corner probing is the next build.</p>
+    </div>
+
+    <div class="smPane" id="smJob">
+      <div class="mRow">
+        <input type="checkbox" id="highStart" checked><label for="highStart">Start &amp; stop high — rapid to the next XY at top of travel before plunging; climb before every spindle stop (needs homing)</label>
+      </div>
+      <div class="mRow">
+        <label>Traverse height</label>
+        <input type="number" id="travelZIn" value="5" step="1" min="1" max="30" style="width:64px">
+        <span style="color:var(--faint)">mm below Z top — used by start/stop-high, go-to-zero, and BitSetter parking</span>
+      </div>
+    </div>
+
+    <div class="smPane" id="smProfile">
+      <div class="mRow">
+        <button id="profExport">Export profile</button>
+        <button id="profImport">Import profile / shapeoko.json</button>
+        <input type="file" id="profFile" accept=".json,application/json" hidden>
+      </div>
+      <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5">All settings save automatically in this browser. Export a copy as backup — importing Carbide Motion's shapeoko.json pulls in your BitSetter position and accessory setup.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+/* ============================================================
+   PARSER — GRBL / Carbide Motion dialect
+   Produces: segments (tessellated micro-moves), issues, tools
+   All internal units are mm. seg.units records display units.
+   ============================================================ */
+var SUPPORTED_G = {0:1,1:1,2:1,3:1,4:1,17:1,18:1,19:1,20:1,21:1,28:1,28.2:1,90:1,91:1,91.1:1,90.1:1,53:1};
+var IGNORED_G   = {40:'G40 cutter compensation off — accepted but ignored by Carbide Motion',
+                   43:'G43 tool length offset — accepted but ignored by Carbide Motion',
+                   49:'G49 cancel tool length offset — accepted but ignored',
+                   54:'work coordinate system — accepted but ignored; Carbide Motion manages WCS internally',
+                   55:'work coordinate system — accepted but ignored',56:'work coordinate system — accepted but ignored',
+                   57:'work coordinate system — accepted but ignored',58:'work coordinate system — accepted but ignored',
+                   59:'work coordinate system — accepted but ignored'};
+var SUPPORTED_M = {0:1,1:1,2:1,3:1,5:1,6:1,30:1};
+var IGNORED_M   = {7:'M7 mist coolant — accepted but ignored',9:'M9 coolant off — accepted but ignored'};
+
+function parseGcode(text, opts){
+  opts = opts || {};
+  var rapidRate = opts.rapidRate || 5000; // mm/min
+  var lines = text.split(/\r\n|\r|\n/);
+  var issues = [];
+  var segs = [];        // micro segments {x0,y0,z0,x1,y1,z1,rapid,line,feed,t0,t1,units,tool}
+  var lineFirstSeg = {}; // source line -> first seg index
+  var tools = [];        // {line, tool}
+  var toolInfo = {};     // tool number -> {desc, dia (mm|null)}
+  var sections = [];     // {line, name} from CAM toolpath comments
+  var hctx = {inToolList:false, lastComment:null};
+  var maxIssues = 800;
+
+  function addToolInfo(n, desc){
+    desc = desc.replace(/\s+/g, ' ').trim();
+    if (!desc) return;
+    var dia = null;
+    var dm = /\{\s*([\d.]+)\s*(mm|in|inch)?\s*\}/i.exec(desc) || /D\s*=\s*([\d.]+)/.exec(desc);
+    if (dm){
+      dia = parseFloat(dm[1]);
+      if (dm[2] && /in/i.test(dm[2])) dia *= 25.4;
+    }
+    if (toolInfo[n] === undefined) toolInfo[n] = {desc: desc, dia: dia};
+  }
+  // recognizes Vectric (VCarve/Aspire), Fusion 360, and generic comment styles
+  function harvestComment(txt, lineNo){
+    var t = txt.trim();
+    if (!t) return;
+    if (/tools?\s+used\s+in\s+this\s+file/i.test(t)){ hctx.inToolList = true; return; }
+    if (hctx.inToolList){
+      var lm = /^(\d+)\s*=\s*(.+)$/.exec(t);
+      if (lm){ addToolInfo(lm[1], lm[2]); return; }
+      hctx.inToolList = false; // any other comment ends the list
+    }
+    if (/toolpaths?\s+used\s+in\s+this\s+file/i.test(t)) return; // header line, not a section
+    var tp = /^toolpath\s*:\s*-?\s*(.+)$/i.exec(t);
+    if (tp){ sections.push({line: lineNo, name: tp[1].trim()}); return; }
+    var fu = /^T(\d+)\s+D\s*=\s*([\d.]+)(.*)$/i.exec(t); // Fusion 360 style
+    if (fu){
+      var parts = fu[3].split('-');
+      var fdesc = parts[parts.length - 1].trim();
+      addToolInfo(fu[1], (fdesc || 'tool') + ' D=' + fu[2]);
+      return;
+    }
+    hctx.lastComment = {text: t, line: lineNo};
+  }
+
+  function issue(sev, line, msg, key){
+    if (issues.length >= maxIssues) return;
+    if (key){ if (issue._seen[key]) { issue._seen[key]++; return; } issue._seen[key] = 1; }
+    issues.push({sev:sev, line:line, msg:msg, key:key});
+  }
+  issue._seen = {};
+
+  var st = {
+    units: 'mm', unitsSeen:false,
+    abs: true, arcAbs:false,
+    plane: 17,
+    motion: null,
+    feed: null,
+    spindle: false,
+    tool: null,
+    x:0, y:0, z:0,
+    time: 0
+  };
+  var cutDist = 0, rapidDist = 0, sMax = 0;
+
+  function toMM(v){ return st.units === 'in' ? v * 25.4 : v; }
+
+  function pushSeg(x1,y1,z1, rapid, lineNo){
+    var dx=x1-st.x, dy=y1-st.y, dz=z1-st.z;
+    var len = Math.sqrt(dx*dx+dy*dy+dz*dz);
+    if (len < 1e-9) { st.x=x1; st.y=y1; st.z=z1; return; }
+    var rate = rapid ? rapidRate : (st.feed || rapidRate);
+    var dt = len / rate * 60; // seconds
+    var s = {x0:st.x,y0:st.y,z0:st.z,x1:x1,y1:y1,z1:z1,rapid:rapid,line:lineNo,
+             feed: rapid?null:st.feed, t0:st.time, t1:st.time+dt, units:st.units, tool:st.tool};
+    segs.push(s);
+    if (lineFirstSeg[lineNo] === undefined) lineFirstSeg[lineNo] = segs.length-1;
+    if (rapid) rapidDist += len; else cutDist += len;
+    st.time += dt;
+    st.x=x1; st.y=y1; st.z=z1;
+  }
+
+  // arc: motion 2 = CW, 3 = CCW. Coordinates in mm (already converted).
+  function pushArc(tx,ty,tz, params, motion, lineNo){
+    // plane axis mapping: [u, v, w] where arc is in u-v plane
+    var map;
+    if (st.plane === 17) map = {u:'x', v:'y', w:'z', iu:'i', iv:'j'};
+    else if (st.plane === 18) map = {u:'z', v:'x', w:'y', iu:'k', iv:'i'}; // G18: XZ plane, but GRBL treats as Z-X
+    else map = {u:'y', v:'z', w:'x', iu:'j', iv:'k'};
+
+    var s = {x:st.x, y:st.y, z:st.z};
+    var e = {x:tx, y:ty, z:tz};
+    var su = s[map.u], sv = s[map.v], eu = e[map.u], ev = e[map.v];
+    var cu, cv, r;
+
+    if (params.r !== undefined){
+      r = Math.abs(params.r);
+      var du = eu - su, dv = ev - sv;
+      var d2 = du*du + dv*dv;
+      if (d2 < 1e-12){ issue('err', lineNo, 'Arc with R has identical start and end point — invalid (GRBL error 33).'); return; }
+      var disc = 4*r*r - d2;
+      if (disc < 0){
+        issue('err', lineNo, 'Arc radius too small to reach the end point (GRBL error 33).');
+        disc = 0;
+      }
+      var h = -Math.sqrt(disc / d2);
+      if (motion === 3) h = -h;
+      if (params.r < 0) h = -h;
+      cu = su + 0.5*(du - dv*h);
+      cv = sv + 0.5*(dv + du*h);
+    } else if (params.i !== undefined || params.j !== undefined || params.k !== undefined){
+      var oi = params[map.iu] || 0, oj = params[map.iv] || 0;
+      if (st.arcAbs){ cu = oi; cv = oj; } else { cu = su + oi; cv = sv + oj; }
+      r = Math.sqrt((su-cu)*(su-cu) + (sv-cv)*(sv-cv));
+      var r2 = Math.sqrt((eu-cu)*(eu-cu) + (ev-cv)*(ev-cv));
+      if (r > 0.001 && Math.abs(r - r2) > Math.max(0.3, r*0.005)){
+        issue('warn', lineNo, 'Arc start and end radii differ by ' + (Math.abs(r-r2)).toFixed(3) + ' mm — GRBL may reject this arc (error 33).');
+      }
+    } else {
+      issue('err', lineNo, 'G' + motion + ' arc has no I/J/K offsets and no R — move skipped.');
+      return;
+    }
+
+    var a0 = Math.atan2(sv - cv, su - cu);
+    var a1 = Math.atan2(ev - cv, eu - cu);
+    var da = a1 - a0;
+    if (motion === 2){ // CW: angle decreases
+      if (da >= -1e-9) da -= 2*Math.PI;
+    } else {           // CCW: angle increases
+      if (da <= 1e-9) da += 2*Math.PI;
+    }
+    // full circle: identical start/end with IJK form
+    if (Math.abs(su-eu) < 1e-9 && Math.abs(sv-ev) < 1e-9 && params.r === undefined){
+      da = (motion === 2) ? -2*Math.PI : 2*Math.PI;
+    }
+    var steps = Math.max(8, Math.min(240, Math.ceil(Math.abs(da) * Math.max(r,0.5) / 0.6)));
+    var sw = s[map.w], ew = e[map.w];
+    for (var k=1;k<=steps;k++){
+      var t = k/steps;
+      var a = a0 + da*t;
+      var p = {};
+      p[map.u] = cu + r*Math.cos(a);
+      p[map.v] = cv + r*Math.sin(a);
+      p[map.w] = sw + (ew - sw)*t;
+      pushSeg(p.x, p.y, p.z, false, lineNo);
+    }
+    // snap exact endpoint
+    st.x = tx; st.y = ty; st.z = tz;
+  }
+
+  var KNOWN_LETTERS = {G:1,M:1,X:1,Y:1,Z:1,I:1,J:1,K:1,R:1,F:1,S:1,T:1,N:1,P:1,L:1,H:1,D:1};
+
+  for (var li = 0; li < lines.length; li++){
+    var raw = lines[li];
+    var lineNo = li + 1;
+    // harvest CAM metadata from comments before stripping them
+    var cm, cre = /\(([^)]*)\)/g;
+    while ((cm = cre.exec(raw)) !== null) harvestComment(cm[1], lineNo);
+    var semi = raw.indexOf(';');
+    if (semi >= 0) harvestComment(raw.slice(semi + 1), lineNo);
+    // strip comments
+    var code = raw.replace(/\(.*?\)/g, ' ').replace(/;.*$/, '').trim();
+    if (!code || code === '%') continue;
+
+    var words = [];
+    var re = /([A-Za-z])\s*([+-]?(?:\d+\.?\d*|\.\d+))/g, m;
+    var consumed = code.replace(re, ' ');
+    if (/[A-Za-z0-9]/.test(consumed.replace(/\s/g,''))){
+      issue('warn', lineNo, 'Unrecognised text on line: "' + code.slice(0,60) + '"', 'garbage');
+    }
+    while ((m = re.exec(code)) !== null){
+      words.push([m[1].toUpperCase(), parseFloat(m[2])]);
+    }
+    if (!words.length) continue;
+
+    var params = {}, gcodes = [], mcodes = [], hasAxis = false, sawT;
+    for (var w = 0; w < words.length; w++){
+      var L = words[w][0], V = words[w][1];
+      if (!KNOWN_LETTERS[L]){
+        issue('warn', lineNo, 'Word "' + L + V + '" is not part of the GRBL dialect — GRBL will reject this line.', 'letter'+L);
+        continue;
+      }
+      if (L === 'G') gcodes.push(V);
+      else if (L === 'M') mcodes.push(V);
+      else if (L === 'F'){ st.feed = toMM(V); }
+      else if (L === 'S'){ params.s = V; if (V > sMax) sMax = V; }
+      else if (L === 'T'){ sawT = V; }
+      else if (L === 'N'){ /* line number, ignore */ }
+      else {
+        params[L.toLowerCase()] = V;
+        if (L==='X'||L==='Y'||L==='Z') hasAxis = true;
+      }
+    }
+    if (sawT !== undefined) st.pendingTool = sawT;
+
+    var g53line = false, skipMotion = false;
+
+    for (var gi = 0; gi < gcodes.length; gi++){
+      var g = gcodes[gi];
+      if (g === 0 || g === 1 || g === 2 || g === 3) st.motion = g;
+      else if (g === 4){
+        var dwell = params.p !== undefined ? params.p : 0;
+        st.time += dwell; // GRBL: P is seconds
+        skipMotion = skipMotion || !hasAxis;
+      }
+      else if (g === 17 || g === 18 || g === 19) st.plane = g;
+      else if (g === 20){ st.units = 'in'; st.unitsSeen = true; }
+      else if (g === 21){ st.units = 'mm'; st.unitsSeen = true; }
+      else if (g === 90) st.abs = true;
+      else if (g === 91) st.abs = false;
+      else if (g === 90.1) st.arcAbs = true;
+      else if (g === 91.1) st.arcAbs = false;
+      else if (g === 28 || g === 28.2){
+        issue('info', lineNo, 'G28 moves to a machine-defined position — Kerf cannot know where that is, so this move is not drawn.', 'g28');
+        skipMotion = true;
+      }
+      else if (g === 53){
+        g53line = true;
+        issue('info', lineNo, 'G53 uses machine coordinates — the work offset is unknown here, so this move is not drawn.', 'g53');
+      }
+      else if (IGNORED_G[g] !== undefined){
+        issue('info', lineNo, 'G' + g + ': ' + IGNORED_G[g], 'gI'+g);
+      }
+      else if (g === 81 || g === 82 || g === 83 || g === 73 || g === 76 || g === 80 || g === 85 || g === 86 || g === 89){
+        issue('err', lineNo, 'G' + g + ' canned cycle — not supported by GRBL or Carbide Motion. Re-post with canned cycles off / "single moves".', 'canned'+g);
+        skipMotion = true;
+      }
+      else if (g === 41 || g === 42){
+        issue('err', lineNo, 'G' + g + ' cutter compensation — not supported by GRBL. Apply compensation in CAM instead.', 'comp'+g);
+      }
+      else if (g === 38 || Math.abs(g - 38.2) < 0.001 || Math.abs(g-38.3)<0.001 || Math.abs(g-38.4)<0.001 || Math.abs(g-38.5)<0.001){
+        issue('warn', lineNo, 'G38.x probe move — supported by GRBL but not something Carbide Motion expects inside a job file.', 'probe');
+        skipMotion = true;
+      }
+      else if (!SUPPORTED_G[g]){
+        issue('err', lineNo, 'G' + g + ' is not in the GRBL / Carbide Motion supported set — the job will fault on this line.', 'gU'+g);
+        skipMotion = true;
+      }
+    }
+
+    for (var mi = 0; mi < mcodes.length; mi++){
+      var mc = mcodes[mi];
+      if (mc === 3) st.spindle = true;
+      else if (mc === 4){ st.spindle = true; issue('warn', lineNo, 'M4 (reverse / laser-mode spindle) — Carbide Motion lists only M3/M5. Trim routers ignore direction, but expect a warning.', 'm4'); }
+      else if (mc === 5) st.spindle = false;
+      else if (mc === 6){
+        var t = st.pendingTool !== undefined ? st.pendingTool : st.tool;
+        st.tool = t;
+        tools.push({line: lineNo, tool: t});
+        if (t !== null && t !== undefined && toolInfo[t] === undefined &&
+            hctx.lastComment && lineNo - hctx.lastComment.line <= 2){
+          addToolInfo(t, hctx.lastComment.text);
+        }
+        var tdesc = (t !== null && t !== undefined && toolInfo[t]) ? ' (' + toolInfo[t].desc + ')' : '';
+        issue('info', lineNo, 'M6 tool change to T' + (t === null || t === undefined ? '?' : t) + tdesc + ' — Carbide Motion pauses here (BitSetter / tool-length routine).', undefined);
+      }
+      else if (mc === 0 || mc === 1 || mc === 2 || mc === 30){ /* stops — fine */ }
+      else if (IGNORED_M[mc] !== undefined) issue('info', lineNo, 'M' + mc + ': ' + IGNORED_M[mc], 'mI'+mc);
+      else if (mc === 8) issue('warn', lineNo, 'M8 flood coolant — GRBL accepts it, but it is not in the Carbide Motion supported list.', 'm8');
+      else issue('err', lineNo, 'M' + mc + ' is not supported by GRBL / Carbide Motion.', 'mU'+mc);
+    }
+
+    // motion execution
+    if (!skipMotion && !g53line && (hasAxis || ((st.motion===2||st.motion===3) && (params.i!==undefined||params.j!==undefined||params.k!==undefined||params.r!==undefined)))){
+      if (st.motion === null){
+        issue('err', lineNo, 'Axis words with no motion mode active (no G0/G1/G2/G3 seen yet) — GRBL error 22/25.', 'nomode');
+        continue;
+      }
+      var tx = st.x, ty = st.y, tz = st.z;
+      if (st.abs){
+        if (params.x !== undefined) tx = toMM(params.x);
+        if (params.y !== undefined) ty = toMM(params.y);
+        if (params.z !== undefined) tz = toMM(params.z);
+      } else {
+        if (params.x !== undefined) tx += toMM(params.x);
+        if (params.y !== undefined) ty += toMM(params.y);
+        if (params.z !== undefined) tz += toMM(params.z);
+      }
+      if (st.motion === 0){
+        pushSeg(tx,ty,tz, true, lineNo);
+      } else {
+        if (!st.feed){
+          issue('err', lineNo, 'Feed move with no feed rate set (no F word yet) — GRBL error 22.', 'nofeed');
+        }
+        if (!st.spindle){
+          issue('warn', lineNo, 'Cutting move before the spindle is started (no M3 yet).', 'nospindle');
+        }
+        if (st.motion === 1){
+          pushSeg(tx,ty,tz, false, lineNo);
+        } else {
+          // convert I/J/K to mm
+          var ap = {};
+          if (params.i !== undefined) ap.i = toMM(params.i);
+          if (params.j !== undefined) ap.j = toMM(params.j);
+          if (params.k !== undefined) ap.k = toMM(params.k);
+          if (params.r !== undefined) ap.r = toMM(params.r);
+          pushArc(tx,ty,tz, ap, st.motion, lineNo);
+        }
+      }
+    }
+  }
+
+  if (!st.unitsSeen && segs.length)
+    issues.unshift({sev:'warn', line:1, msg:'No G20/G21 units command found — GRBL will use whatever mode it was last in. VCarve posts normally emit one; add it to be safe.'});
+
+  // duplicate-suppression summary
+  for (var key in issue._seen){
+    if (issue._seen[key] > 1){
+      for (var q=0;q<issues.length;q++){
+        if (issues[q].key === key){ issues[q].msg += ' (×' + issue._seen[key] + ' occurrences — first shown)'; break; }
+      }
+    }
+  }
+
+  return {segs:segs, issues:issues, tools:tools, toolInfo:toolInfo, sections:sections,
+          lineFirstSeg:lineFirstSeg,
+          cutDist:cutDist, rapidDist:rapidDist, totalTime:st.time, lines:lines, sMax:sMax};
+}
+
+/* ============================================================
+   Dynamic checks (envelope / stock) — re-run when settings change
+   ============================================================ */
+function dynamicChecks(model, cfg){
+  var out = [];
+  if (!model) return out;
+  var segs = model.segs;
+  if (cfg.checkEnvelope){
+    var x0 = cfg.origin === 'center' ? -cfg.w/2 : 0;
+    var y0 = cfg.origin === 'center' ? -cfg.d/2 : 0;
+    var x1 = x0 + cfg.w, y1 = y0 + cfg.d;
+    var firstLine = null, count = 0;
+    for (var i=0;i<segs.length;i++){
+      var s = segs[i];
+      if (s.x1 < x0-0.01 || s.x1 > x1+0.01 || s.y1 < y0-0.01 || s.y1 > y1+0.01){
+        count++;
+        if (firstLine === null) firstLine = s.line;
+      }
+    }
+    if (count) out.push({sev:'warn', line:firstLine, msg:'Toolpath leaves the ' + cfg.w + ' × ' + cfg.d + ' mm work area (' + count + ' segments) — first at line ' + firstLine + '. Check machine size and where your job zero is.'});
+  }
+  if (cfg.stock > 0){
+    var deep = null, minZ = 0, dCount = 0;
+    for (var j=0;j<segs.length;j++){
+      var g = segs[j];
+      if (!g.rapid && g.z1 < -cfg.stock - 0.01){
+        dCount++; if (deep === null) deep = g.line;
+        if (g.z1 < minZ) minZ = g.z1;
+      }
+    }
+    if (dCount) out.push({sev:'warn', line:deep, msg:'Cuts go ' + (Math.abs(minZ) - cfg.stock).toFixed(2) + ' mm below the bottom of ' + cfg.stock + ' mm stock (assuming Z0 = stock top) — first at line ' + deep + '. Intentional for through-cuts into a spoilboard; otherwise check your Z zero.'});
+  }
+  // rapid plunge check: any rapid ending below Z0 while XY also moves
+  var rp = null, rpc = 0;
+  for (var k2=0;k2<segs.length;k2++){
+    var r = segs[k2];
+    if (r.rapid && r.z1 < -0.01 && (Math.abs(r.x1-r.x0)>0.01 || Math.abs(r.y1-r.y0)>0.01)){
+      rpc++; if (rp === null) rp = r.line;
+    }
+  }
+  if (rpc) out.push({sev:'warn', line:rp, msg:'Rapid (G0) moves travel laterally below Z0 (' + rpc + ' segments, first at line ' + rp + ') — fine if Z0 is your wasteboard, risky if Z0 is stock top.'});
+  return out;
+}
+
+/* ============================================================
+   THREE.js viewer
+   ============================================================ */
+var scene, camera, renderer3, viewportEl;
+var cutLine=null, rapidLine=null, marker=null, gridObj=null, axesObj=null, envObj=null, originObj=null;
+var cutColors=null, rapidColors=null;
+var C_CUT=[0.722,0.498,0.180], C_CUT_D=[1.0,0.788,0.42], C_RAP=[0.275,0.345,0.42], C_RAP_D=[0.498,0.639,0.769];
+var orbit = {theta: -Math.PI/4, phi: Math.PI/3.2, radius: 400, target: new THREE.Vector3(0,0,0)};
+
+function w3(x,y,z){ return new THREE.Vector3(x, z, -y); } // CNC -> three
+
+function initThree(){
+  viewportEl = document.getElementById('viewport');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x14181d);
+  camera = new THREE.PerspectiveCamera(45, 1, 0.1, 50000);
+  renderer3 = new THREE.WebGLRenderer({antialias:true});
+  renderer3.setPixelRatio(window.devicePixelRatio || 1);
+  viewportEl.appendChild(renderer3.domElement);
+
+  buildStage();
+  buildViewCube();
+
+  var el = renderer3.domElement;
+  var drag = null;
+  el.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  el.addEventListener('pointerdown', function(e){
+    drag = {btn: e.button, x: e.clientX, y: e.clientY, shift: e.shiftKey,
+            cube: !!inCube(e), moved: false};
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', function(e){
+    if (!drag){
+      // hover highlight on the view cube
+      var nd = inCube(e);
+      var hit = nd ? cubePick(nd) : null;
+      setCubeHover(hit ? hit.face.materialIndex : -1);
+      el.style.cursor = hit ? 'pointer' : '';
+      return;
+    }
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
+    drag.x = e.clientX; drag.y = e.clientY;
+    VIEWANIM = null; // manual input cancels an animated transition
+    if (drag.btn === 0 && !drag.shift){
+      orbit.theta -= dx * 0.006;
+      orbit.phi = Math.min(Math.PI - 0.05, Math.max(0.05, orbit.phi - dy * 0.006));
+    } else {
+      var k = orbit.radius * 0.0016;
+      var right = new THREE.Vector3(); camera.getWorldDirection(right);
+      var dir = right.clone();
+      right.cross(camera.up).normalize();
+      var up = right.clone().cross(dir).normalize().negate();
+      orbit.target.addScaledVector(right, -dx * k);
+      orbit.target.addScaledVector(up, -dy * k);
+    }
+    applyCamera();
+  });
+  el.addEventListener('pointerup', function(e){
+    if (drag && drag.cube && !drag.moved){
+      var nd = inCube(e);
+      var hit = nd ? cubePick(nd) : null;
+      if (hit) cubeGoto(hit);
+    }
+    drag = null;
+  });
+  el.addEventListener('pointerleave', function(){ setCubeHover(-1); });
+  el.addEventListener('wheel', function(e){
+    e.preventDefault();
+    orbit.radius *= (e.deltaY > 0 ? 1.12 : 0.89);
+    orbit.radius = Math.max(5, Math.min(30000, orbit.radius));
+    applyCamera();
+  }, {passive:false});
+
+  function resize(){
+    var w = viewportEl.clientWidth, h = viewportEl.clientHeight;
+    if (!w || !h) return;
+    renderer3.setSize(w, h);
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(viewportEl);
+  resize();
+  applyCamera();
+  (function loop(){
+    requestAnimationFrame(loop);
+    tick();
+    var w = viewportEl.clientWidth, h = viewportEl.clientHeight;
+    renderer3.setViewport(0, 0, w, h);
+    renderer3.setScissorTest(false);
+    renderer3.render(scene, camera);
+    renderViewCube(w, h);
+  })();
+}
+
+function applyCamera(){
+  var t = orbit.target;
+  camera.position.set(
+    t.x + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta),
+    t.y + orbit.radius * Math.cos(orbit.phi),
+    t.z + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta)
+  );
+  camera.lookAt(t);
+}
+
+/* ---------------- view cube ---------------- */
+var CUBE = {px:96, pad:10, scene:null, camera:null, mesh:null, mats:[], hover:-1,
+            labels:['Right','Left','Top','Bottom','Front','Back'], // three.js box material order: +x,-x,+y,-y,+z,-z
+            ray:null};
+var VIEWANIM = null;
+
+function makeFaceTex(label, hot){
+  var c = document.createElement('canvas'); c.width = c.height = 128;
+  var g = c.getContext('2d');
+  g.fillStyle = hot ? '#3a2f18' : '#1f262f'; g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = hot ? '#e8a33d' : '#39434f'; g.lineWidth = 5; g.strokeRect(3, 3, 122, 122);
+  g.fillStyle = hot ? '#ffc96b' : '#93a0ad';
+  g.font = '600 25px Archivo, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(label, 64, 66);
+  var t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  return t;
+}
+function buildViewCube(){
+  CUBE.scene = new THREE.Scene();
+  CUBE.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+  CUBE.ray = new THREE.Raycaster();
+  for (var i = 0; i < 6; i++){
+    CUBE.mats.push(new THREE.MeshBasicMaterial({map: makeFaceTex(CUBE.labels[i], false)}));
+  }
+  CUBE.mesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), CUBE.mats);
+  CUBE.scene.add(CUBE.mesh);
+  CUBE.scene.add(new THREE.LineSegments(
+    new THREE.EdgesGeometry(CUBE.mesh.geometry),
+    new THREE.LineBasicMaterial({color: 0x5a6673})
+  ));
+  // redraw labels once the webfont is in
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ for (var i = 0; i < 6; i++) refreshFace(i); });
+  }
+}
+function refreshFace(i){
+  var old = CUBE.mats[i].map;
+  CUBE.mats[i].map = makeFaceTex(CUBE.labels[i], i === CUBE.hover);
+  CUBE.mats[i].needsUpdate = true;
+  if (old) old.dispose();
+}
+function setCubeHover(idx){
+  if (idx === CUBE.hover) return;
+  var prev = CUBE.hover;
+  CUBE.hover = idx;
+  if (prev >= 0) refreshFace(prev);
+  if (idx >= 0) refreshFace(idx);
+}
+function cubeRect(){
+  var w = viewportEl.clientWidth;
+  return {x: w - CUBE.px - CUBE.pad, y: CUBE.pad, s: CUBE.px};
+}
+function inCube(e){
+  var r = renderer3.domElement.getBoundingClientRect();
+  var cr = cubeRect();
+  var x = e.clientX - r.left, y = e.clientY - r.top;
+  if (x < cr.x || x > cr.x + cr.s || y < cr.y || y > cr.y + cr.s) return null;
+  return {x: ((x - cr.x) / cr.s) * 2 - 1, y: -(((y - cr.y) / cr.s) * 2 - 1)};
+}
+function cubePick(nd){
+  CUBE.ray.setFromCamera(nd, CUBE.camera);
+  var hits = CUBE.ray.intersectObject(CUBE.mesh);
+  return hits.length ? hits[0] : null;
+}
+function cubeGoto(hit){
+  // snap the hit point to a face / edge / corner direction
+  var p = hit.point, h = 0.8, t = 0.45;
+  var d = new THREE.Vector3(
+    Math.abs(p.x) > h * t ? Math.sign(p.x) : 0,
+    Math.abs(p.y) > h * t ? Math.sign(p.y) : 0,
+    Math.abs(p.z) > h * t ? Math.sign(p.z) : 0
+  );
+  if (d.lengthSq() === 0){
+    var n = hit.face.normal;
+    d.set(Math.round(n.x), Math.round(n.y), Math.round(n.z));
+  }
+  d.normalize();
+  var theta = Math.atan2(d.x, d.z);
+  var phi = Math.acos(Math.max(-1, Math.min(1, d.y)));
+  phi = Math.min(Math.PI - 0.02, Math.max(0.02, phi));
+  animateView(theta, phi);
+}
+function animateView(theta, phi){
+  // take the short way around
+  var d = theta - orbit.theta;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  VIEWANIM = {t0: performance.now(), dur: 260,
+              fromT: orbit.theta, fromP: orbit.phi,
+              toT: orbit.theta + d, toP: phi};
+}
+function renderViewCube(w, h){
+  var cr = cubeRect();
+  // camera mirrors the main orbit at a fixed radius
+  var r = 4.4;
+  CUBE.camera.position.set(
+    r * Math.sin(orbit.phi) * Math.sin(orbit.theta),
+    r * Math.cos(orbit.phi),
+    r * Math.sin(orbit.phi) * Math.cos(orbit.theta)
+  );
+  CUBE.camera.lookAt(0, 0, 0);
+  var gy = h - cr.y - cr.s; // CSS top-left -> GL bottom-left
+  renderer3.setViewport(cr.x, gy, cr.s, cr.s);
+  renderer3.setScissor(cr.x, gy, cr.s, cr.s);
+  renderer3.setScissorTest(true);
+  var prevAuto = renderer3.autoClear;
+  renderer3.autoClear = false;   // keep the scene's pixels — the cube floats over them
+  renderer3.clearDepth();        // but never z-fights with the toolpath
+  renderer3.render(CUBE.scene, CUBE.camera);
+  renderer3.autoClear = prevAuto;
+  renderer3.setScissorTest(false);
+  renderer3.setViewport(0, 0, w, h);
+}
+
+function buildStage(){
+  if (gridObj){
+    scene.remove(gridObj);
+    gridObj.children.forEach(function(ch){ if (ch.geometry) ch.geometry.dispose(); });
+  }
+  if (axesObj){ scene.remove(axesObj); }
+  // the grid IS the machine work area, placed per the job-zero setting
+  var c = cfg();
+  var x0 = c.origin === 'center' ? -c.w/2 : 0;
+  var y0 = c.origin === 'center' ? -c.d/2 : 0;
+  var x1 = x0 + c.w, y1 = y0 + c.d;
+
+  gridObj = new THREE.Group();
+  var minor = [], major = [];
+  function gridLine(arr, ax, ay, bx, by){
+    var a = w3(ax, ay, 0), b = w3(bx, by, 0);
+    arr.push(a.x, -0.02, a.z, b.x, -0.02, b.z);
+  }
+  // cells measured from the table edge (x0,y0), so the grid always sits
+  // flush with the work-area boundary regardless of where job zero is
+  var nx = Math.floor(c.w / 10), ny = Math.floor(c.d / 10);
+  for (var ix = 0; ix <= nx; ix++){
+    gridLine(ix % 5 === 0 ? major : minor, x0 + ix*10, y0, x0 + ix*10, y1);
+  }
+  for (var iy = 0; iy <= ny; iy++){
+    gridLine(iy % 5 === 0 ? major : minor, x0, y0 + iy*10, x1, y0 + iy*10);
+  }
+  // always include the four edges so the table boundary is unmistakable
+  gridLine(major, x0, y0, x1, y0); gridLine(major, x1, y0, x1, y1);
+  gridLine(major, x1, y1, x0, y1); gridLine(major, x0, y1, x0, y0);
+  function addLines(arr, col){
+    if (!arr.length) return;
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+    gridObj.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({color: col})));
+  }
+  addLines(minor, 0x20262e);
+  addLines(major, 0x2e3742);
+  scene.add(gridObj);
+
+  axesObj = new THREE.Group();
+  var al = Math.max(30, Math.min(c.w, c.d) * 0.12);
+  function axis(v, col){
+    var g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), v]);
+    axesObj.add(new THREE.Line(g, new THREE.LineBasicMaterial({color:col})));
+  }
+  axis(w3(al,0,0), 0xe05656);
+  axis(w3(0,al,0), 0x5fae5f);
+  axis(w3(0,0,al), 0x5f7fd8);
+  var oGeom = new THREE.SphereGeometry(Math.max(1, Math.min(c.w, c.d) * 0.006), 12, 12);
+  axesObj.add(new THREE.Mesh(oGeom, new THREE.MeshBasicMaterial({color:0xe8a33d})));
+  scene.add(axesObj);
+}
+
+function buildEnvelope(){
+  if (envObj){ scene.remove(envObj); envObj = null; }
+  if (!cfg().showEnvelope) return;
+  var c = cfg();
+  var x0 = c.origin === 'center' ? -c.w/2 : 0;
+  var y0 = c.origin === 'center' ? -c.d/2 : 0;
+  var pts = [
+    w3(x0, y0, 0), w3(x0+c.w, y0, 0),
+    w3(x0+c.w, y0, 0), w3(x0+c.w, y0+c.d, 0),
+    w3(x0+c.w, y0+c.d, 0), w3(x0, y0+c.d, 0),
+    w3(x0, y0+c.d, 0), w3(x0, y0, 0)
+  ];
+  var g = new THREE.BufferGeometry().setFromPoints(pts);
+  envObj = new THREE.LineSegments(g, new THREE.LineBasicMaterial({color:0x51617a}));
+  scene.add(envObj);
+}
+
+function buildToolpath(model){
+  if (cutLine){ scene.remove(cutLine); cutLine.geometry.dispose(); cutLine = null; }
+  if (rapidLine){ scene.remove(rapidLine); rapidLine.geometry.dispose(); rapidLine = null; }
+  if (marker){ scene.remove(marker); marker = null; }
+  if (!model || !model.segs.length) return;
+
+  var cutPos = [], rapPos = [];
+  for (var i=0;i<model.segs.length;i++){
+    var s = model.segs[i];
+    var a = w3(s.x0,s.y0,s.z0), b = w3(s.x1,s.y1,s.z1);
+    if (s.rapid){ s.g = 1; s.v = rapPos.length/3; rapPos.push(a.x,a.y,a.z,b.x,b.y,b.z); }
+    else        { s.g = 0; s.v = cutPos.length/3; cutPos.push(a.x,a.y,a.z,b.x,b.y,b.z); }
+  }
+  cutColors = new Float32Array(cutPos.length);
+  rapidColors = new Float32Array(rapPos.length);
+  for (var c=0;c<cutColors.length;c+=3){ cutColors[c]=C_CUT[0]; cutColors[c+1]=C_CUT[1]; cutColors[c+2]=C_CUT[2]; }
+  for (var r=0;r<rapidColors.length;r+=3){ rapidColors[r]=C_RAP[0]; rapidColors[r+1]=C_RAP[1]; rapidColors[r+2]=C_RAP[2]; }
+
+  var cg = new THREE.BufferGeometry();
+  cg.setAttribute('position', new THREE.Float32BufferAttribute(cutPos, 3));
+  cg.setAttribute('color', new THREE.BufferAttribute(cutColors, 3));
+  cutLine = new THREE.LineSegments(cg, new THREE.LineBasicMaterial({vertexColors:true}));
+  scene.add(cutLine);
+
+  var rg = new THREE.BufferGeometry();
+  rg.setAttribute('position', new THREE.Float32BufferAttribute(rapPos, 3));
+  rg.setAttribute('color', new THREE.BufferAttribute(rapidColors, 3));
+  rapidLine = new THREE.LineSegments(rg, new THREE.LineDashedMaterial({vertexColors:true, dashSize:2.4, gapSize:1.8}));
+  rapidLine.computeLineDistances();
+  rapidLine.visible = document.getElementById('showRapids').checked;
+  scene.add(rapidLine);
+
+  // marker: cone, tip down, plus ring
+  var bb = modelBBox(model);
+  var scale = Math.max(bb.dim/70, 0.8);
+  var mk = new THREE.Group();
+  var cone = new THREE.Mesh(new THREE.ConeGeometry(1.4*scale, 4.5*scale, 20),
+                            new THREE.MeshBasicMaterial({color:0xff5544}));
+  cone.rotation.x = Math.PI;
+  cone.position.y = 2.25*scale;
+  mk.add(cone);
+  var ring = new THREE.Mesh(new THREE.RingGeometry(1.8*scale, 2.2*scale, 24),
+                            new THREE.MeshBasicMaterial({color:0xff5544, side:THREE.DoubleSide, transparent:true, opacity:0.6}));
+  ring.rotation.x = -Math.PI/2;
+  mk.add(ring);
+  marker = mk;
+  scene.add(marker);
+  marker.position.copy(w3(model.segs[0].x0, model.segs[0].y0, model.segs[0].z0));
+}
+
+function modelBBox(model){
+  var min={x:1e9,y:1e9,z:1e9}, max={x:-1e9,y:-1e9,z:-1e9};
+  var cmin={x:1e9,y:1e9,z:1e9}, cmax={x:-1e9,y:-1e9,z:-1e9};
+  for (var i=0;i<model.segs.length;i++){
+    var s = model.segs[i];
+    var pts = [[s.x0,s.y0,s.z0],[s.x1,s.y1,s.z1]];
+    for (var p=0;p<2;p++){
+      var v = pts[p];
+      if (v[0]<min.x)min.x=v[0]; if (v[0]>max.x)max.x=v[0];
+      if (v[1]<min.y)min.y=v[1]; if (v[1]>max.y)max.y=v[1];
+      if (v[2]<min.z)min.z=v[2]; if (v[2]>max.z)max.z=v[2];
+      if (!s.rapid){
+        if (v[0]<cmin.x)cmin.x=v[0]; if (v[0]>cmax.x)cmax.x=v[0];
+        if (v[1]<cmin.y)cmin.y=v[1]; if (v[1]>cmax.y)cmax.y=v[1];
+        if (v[2]<cmin.z)cmin.z=v[2]; if (v[2]>cmax.z)cmax.z=v[2];
+      }
+    }
+  }
+  if (min.x > max.x){ min={x:0,y:0,z:0}; max={x:0,y:0,z:0}; }
+  if (cmin.x > cmax.x){ cmin=min; cmax=max; }
+  var dim = Math.max(max.x-min.x, max.y-min.y, max.z-min.z, 10);
+  return {min:min, max:max, cmin:cmin, cmax:cmax, dim:dim,
+          cx:(min.x+max.x)/2, cy:(min.y+max.y)/2, cz:(min.z+max.z)/2};
+}
+
+function fitView(){
+  if (!MODEL || !MODEL.segs.length) return;
+  var bb = modelBBox(MODEL);
+  orbit.target.copy(w3(bb.cx, bb.cy, bb.cz));
+  orbit.radius = bb.dim * 1.7 + 20;
+  applyCamera();
+}
+
+/* ============================================================
+   Playback + progress coloring
+   ============================================================ */
+var MODEL = null;
+var playT = 0, playing = false, lastFrame = null, doneCount = 0;
+
+function setProgressColors(newDone){
+  if (!MODEL) return;
+  var a = Math.min(doneCount, newDone), b = Math.max(doneCount, newDone);
+  var toDone = newDone > doneCount;
+  for (var i=a; i<b; i++){
+    var s = MODEL.segs[i];
+    var col = s.g === 0 ? (toDone ? C_CUT_D : C_CUT) : (toDone ? C_RAP_D : C_RAP);
+    var arr = s.g === 0 ? cutColors : rapidColors;
+    var o = s.v * 3;
+    arr[o]=col[0];arr[o+1]=col[1];arr[o+2]=col[2];
+    arr[o+3]=col[0];arr[o+4]=col[1];arr[o+5]=col[2];
+  }
+  if (b > a){
+    if (cutLine) cutLine.geometry.attributes.color.needsUpdate = true;
+    if (rapidLine) rapidLine.geometry.attributes.color.needsUpdate = true;
+  }
+  doneCount = newDone;
+}
+
+function segAtTime(t){
+  var segs = MODEL.segs;
+  var lo = 0, hi = segs.length - 1, ans = segs.length;
+  while (lo <= hi){
+    var mid = (lo + hi) >> 1;
+    if (segs[mid].t1 >= t){ ans = mid; hi = mid - 1; } else lo = mid + 1;
+  }
+  return ans; // first seg whose end >= t (may be segs.length)
+}
+
+function setTime(t, fromSlider){
+  if (!MODEL || !MODEL.segs.length) return;
+  playT = Math.max(0, Math.min(MODEL.totalTime, t));
+  var idx = segAtTime(playT);
+  var segs = MODEL.segs;
+  var cur = idx < segs.length ? segs[idx] : segs[segs.length-1];
+  var frac = 1;
+  if (idx < segs.length){
+    var span = cur.t1 - cur.t0;
+    frac = span > 1e-9 ? Math.max(0, Math.min(1, (playT - cur.t0)/span)) : 1;
+  }
+  setProgressColors(idx < segs.length ? idx + (frac >= 1 ? 1 : 1) : segs.length);
+  // (current segment shown as done for visibility)
+  var px = cur.x0 + (cur.x1-cur.x0)*frac;
+  var py = cur.y0 + (cur.y1-cur.y0)*frac;
+  var pz = cur.z0 + (cur.z1-cur.z0)*frac;
+  if (marker && !(typeof JOB !== 'undefined' && JOB.active)) marker.position.copy(w3(px,py,pz));
+  updateDRO(cur, px, py, pz);
+  highlightLine(cur.line);
+  if (!fromSlider){
+    var sl = document.getElementById('timeSlider');
+    sl.value = Math.round(playT / Math.max(MODEL.totalTime,1e-9) * 10000);
+  }
+  document.getElementById('timeReadout').textContent = fmtTime(playT) + ' / ' + fmtTime(MODEL.totalTime);
+}
+
+function tick(){
+  var now = performance.now();
+  if (lastFrame === null) lastFrame = now;
+  var dt = Math.min(0.1, (now - lastFrame)/1000);
+  lastFrame = now;
+  if (VIEWANIM){
+    var k = Math.min(1, (now - VIEWANIM.t0) / VIEWANIM.dur);
+    var e = 1 - Math.pow(1 - k, 3); // ease-out
+    orbit.theta = VIEWANIM.fromT + (VIEWANIM.toT - VIEWANIM.fromT) * e;
+    orbit.phi   = VIEWANIM.fromP + (VIEWANIM.toP - VIEWANIM.fromP) * e;
+    applyCamera();
+    if (k >= 1) VIEWANIM = null;
+  }
+  if (playing && MODEL){
+    var speed = parseFloat(document.getElementById('speedSel').value);
+    setTime(playT + dt * speed);
+    if (playT >= MODEL.totalTime){ playing = false; updatePlayBtn(); }
+  }
+}
+
+function updatePlayBtn(){
+  document.getElementById('btnPlay').textContent = playing ? '❚❚' : '▶';
+}
+
+function fmtTime(s){
+  s = Math.round(s);
+  var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
+  return (h? h+':' + String(m).padStart(2,'0') : m) + ':' + String(ss).padStart(2,'0');
+}
+
+function fmtCoord(mm, units){
+  if (units === 'in') return (mm/25.4).toFixed(4) + '″';
+  return mm.toFixed(3);
+}
+
+function updateDRO(seg, x, y, z){
+  if (typeof SERIAL !== 'undefined' && SERIAL.connected) return; // live machine DRO wins
+  var u = seg ? seg.units : 'mm';
+  document.getElementById('droX').textContent = fmtCoord(x, u);
+  document.getElementById('droY').textContent = fmtCoord(y, u);
+  document.getElementById('droZ').textContent = fmtCoord(z, u);
+  document.getElementById('droF').textContent = seg && !seg.rapid && seg.feed ? Math.round(u==='in'?seg.feed/25.4:seg.feed) + (u==='in'?' ipm':' mm/min') : (seg && seg.rapid ? 'rapid' : '—');
+  document.getElementById('droLine').textContent = seg ? seg.line : '—';
+  document.getElementById('droTool').textContent = seg && seg.tool !== null && seg.tool !== undefined ? 'T'+seg.tool : '—';
+}
+
+/* step by source gcode line */
+function stepLine(dir){
+  if (!MODEL || !MODEL.segs.length) return;
+  playing = false; updatePlayBtn();
+  var idx = Math.min(segAtTime(playT), MODEL.segs.length-1);
+  var curLine = MODEL.segs[idx].line;
+  var i = idx;
+  if (dir > 0){
+    while (i < MODEL.segs.length && MODEL.segs[i].line === curLine) i++;
+    if (i >= MODEL.segs.length){ setTime(MODEL.totalTime); return; }
+    setTime(MODEL.segs[i].t1 - 1e-6);
+    // land at end of that whole line:
+    var ln = MODEL.segs[i].line, j = i;
+    while (j+1 < MODEL.segs.length && MODEL.segs[j+1].line === ln) j++;
+    setTime(MODEL.segs[j].t1);
+  } else {
+    // go to end of previous line (or start)
+    while (i >= 0 && MODEL.segs[i].line === curLine) i--;
+    if (i < 0){ setTime(0); return; }
+    var ln2 = MODEL.segs[i].line, j2 = i;
+    while (j2-1 >= 0 && MODEL.segs[j2-1].line === ln2) j2--;
+    setTime(MODEL.segs[i].t1);
+  }
+}
+
+/* ============================================================
+   Code panel (virtualized)
+   ============================================================ */
+var LINE_H = 20, curHiLine = -1, issueSelLine = -1;
+function renderCode(){
+  var scroller = document.getElementById('codeScroller');
+  var spacer = document.getElementById('codeSpacer');
+  if (!MODEL){ spacer.innerHTML=''; spacer.style.height='0px'; return; }
+  var n = MODEL.lines.length;
+  spacer.style.height = (n * LINE_H) + 'px';
+  var top = scroller.scrollTop;
+  var first = Math.max(0, Math.floor(top / LINE_H) - 6);
+  var last = Math.min(n, first + Math.ceil(scroller.clientHeight / LINE_H) + 12);
+  var html = '';
+  for (var i = first; i < last; i++){
+    var ln = i + 1;
+    var cls = 'cl' + (ln === curHiLine ? ' cur' : '') + (ln === issueSelLine ? ' issueSel' : '');
+    html += '<div class="' + cls + '" style="top:' + (i*LINE_H) + 'px" data-ln="' + ln + '">' +
+            '<span class="ln">' + ln + '</span><span class="tx">' + escapeHtml(MODEL.lines[i]) + '</span></div>';
+  }
+  spacer.innerHTML = html;
+}
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function highlightLine(ln){
+  if (ln === curHiLine) return;
+  curHiLine = ln;
+  var scroller = document.getElementById('codeScroller');
+  if (document.getElementById('followChk').checked){
+    var want = (ln-1)*LINE_H - scroller.clientHeight/2 + LINE_H;
+    scroller.scrollTop = Math.max(0, want);
+  }
+  renderCode();
+}
+
+function jumpToLine(ln){
+  if (!MODEL) return;
+  playing = false; updatePlayBtn();
+  var si = MODEL.lineFirstSeg[ln];
+  if (si !== undefined){
+    // end of that line's motion
+    var j = si; while (j+1 < MODEL.segs.length && MODEL.segs[j+1].line === ln) j++;
+    setTime(MODEL.segs[j].t1);
+  } else {
+    issueSelLine = ln;
+    var scroller = document.getElementById('codeScroller');
+    scroller.scrollTop = Math.max(0, (ln-1)*LINE_H - scroller.clientHeight/2);
+    renderCode();
+  }
+}
+
+/* ============================================================
+   Checks panel / stats
+   ============================================================ */
+function renderChecks(){
+  var list = document.getElementById('checksList');
+  var badge = document.getElementById('checksBadge');
+  if (!MODEL){ list.innerHTML=''; badge.textContent='0'; badge.className='badge'; return; }
+  var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
+  var errs = 0, warns = 0;
+  for (var i=0;i<all.length;i++){ if (all[i].sev==='err') errs++; else if (all[i].sev==='warn') warns++; }
+  badge.textContent = String(all.length);
+  badge.className = 'badge' + (errs ? ' err' : (warns ? ' warn' : ''));
+  if (!all.length){
+    list.innerHTML = '<div id="checksEmpty"><div class="okmark">✓</div><div style="margin-top:8px">No issues found. Every command is in the GRBL / Carbide Motion dialect.</div></div>';
+    return;
+  }
+  var order = {err:0, warn:1, info:2};
+  all.sort(function(a,b){ return (order[a.sev]-order[b.sev]) || (a.line-b.line); });
+  var html = '';
+  for (var j=0;j<all.length;j++){
+    var it = all[j];
+    html += '<div class="issue ' + it.sev + '" data-ln="' + it.line + '" tabindex="0">' +
+            '<div class="dot"></div><div><div class="msg">' + escapeHtml(it.msg) + '</div>' +
+            '<div class="lnref">line ' + it.line + '</div></div></div>';
+  }
+  list.innerHTML = html;
+}
+
+function renderStats(){
+  function set(id, v){ document.getElementById(id).textContent = v; }
+  if (!MODEL || !MODEL.segs.length){
+    set('stX','—');set('stY','—');set('stZ','—');set('stT','—');set('stD','—');set('stTools','—');
+    document.getElementById('codeCount').textContent = MODEL ? MODEL.lines.length + ' lines' : '';
+    return;
+  }
+  var bb = modelBBox(MODEL);
+  set('stX', bb.cmin.x.toFixed(1) + ' … ' + bb.cmax.x.toFixed(1) + ' mm');
+  set('stY', bb.cmin.y.toFixed(1) + ' … ' + bb.cmax.y.toFixed(1) + ' mm');
+  set('stZ', bb.cmin.z.toFixed(2) + ' / ' + bb.cmax.z.toFixed(2) + ' mm');
+  set('stT', '~' + fmtTime(MODEL.totalTime));
+  set('stD', (MODEL.cutDist/1000).toFixed(1) + ' m / ' + (MODEL.rapidDist/1000).toFixed(1) + ' m');
+  var tl = MODEL.tools.map(function(t){ return 'T' + (t.tool===null||t.tool===undefined?'?':t.tool); });
+  var el = document.getElementById('stTools');
+  el.textContent = tl.length ? tl.join(' → ') : 'none (no M6)';
+  el.title = MODEL.tools.map(function(t){
+    var ti = MODEL.toolInfo[t.tool];
+    return 'T' + t.tool + (ti ? ' — ' + ti.desc : '');
+  }).join('\n');
+  document.getElementById('codeCount').textContent = MODEL.lines.length + ' lines · ' + MODEL.segs.length + ' segments';
+}
+
+/* ============================================================
+   Config + wiring
+   ============================================================ */
+function cfg(){
+  return {
+    w: parseFloat(document.getElementById('envW').value) || 425,
+    d: parseFloat(document.getElementById('envD').value) || 425,
+    origin: document.getElementById('originSel').value,
+    checkEnvelope: document.getElementById('checkEnvelope').checked,
+    showEnvelope: document.getElementById('showEnvelope').checked,
+    stock: parseFloat(document.getElementById('stockThk').value) || 0,
+    rapidRate: parseFloat(document.getElementById('rapidRate').value) || 5000
+  };
+}
+
+function loadText(text, name){
+  if (typeof JOB !== 'undefined' && JOB.active){
+    alert('A job is running on the machine — stop it before loading a new file.');
+    return;
+  }
+  document.getElementById('fileName').textContent = name;
+  document.getElementById('dropHint').style.display = 'none';
+  MODEL = parseGcode(text, {rapidRate: cfg().rapidRate});
+  doneCount = 0; playT = 0; playing = false; updatePlayBtn();
+  curHiLine = -1; issueSelLine = -1;
+  buildToolpath(MODEL);
+  var bb = modelBBox(MODEL);
+  buildStage();
+  buildEnvelope();
+  fitView();
+  renderCode();
+  renderChecks();
+  renderStats();
+  var ss = document.getElementById('sectionSel');
+  if (MODEL.sections && MODEL.sections.length){
+    var opts = '<option value="">jump to toolpath…</option>';
+    MODEL.sections.forEach(function(sec){
+      opts += '<option value="' + sec.line + '">' + escapeHtml(sec.name) + '</option>';
+    });
+    ss.innerHTML = opts;
+    ss.style.display = '';
+  } else {
+    ss.style.display = 'none';
+  }
+  if (MODEL.segs.length) setTime(0);
+  else document.getElementById('timeReadout').textContent = '0:00 / 0:00';
+}
+
+var SAMPLE = [
+'(Kerf sample — 60mm pocket + tabbed profile, 2 tools)',
+'(Posted in the style of VCarve GRBL mm output)',
+'(Toolpaths used in this file:)',
+'(Circle Pocket)',
+'(Outside Profile)',
+'(Tools used in this file: )',
+'(1 = End Mill {6 mm})',
+'(2 = End Mill {3 mm})',
+'G21',
+'G90',
+'G17',
+'(Toolpath:- Circle Pocket)',
+'T1 M6',
+'M3 S18000',
+'G0 Z6.000',
+'G0 X45.000 Y40.000',
+'G1 Z-1.500 F250',
+'G3 X45.000 Y40.000 I-12.000 J0.000 F900',
+'G3 X45.000 Y40.000 I-12.000 J0.000',
+'G1 Z-3.000 F250',
+'G3 X45.000 Y40.000 I-12.000 J0.000 F900',
+'G3 X45.000 Y40.000 I-12.000 J0.000',
+'G0 Z6.000',
+'M5',
+'(Toolpath:- Outside Profile)',
+'T2 M6',
+'M3 S16000',
+'G0 X-5.000 Y10.000',
+'G1 Z-2.000 F200',
+'G1 Y70.000 F700',
+'G2 X5.000 Y80.000 I10.000 J0.000',
+'G1 X85.000',
+'G2 X95.000 Y70.000 I0.000 J-10.000',
+'G1 Y10.000',
+'G2 X85.000 Y0.000 I-10.000 J0.000',
+'G1 X5.000',
+'G2 X-5.000 Y10.000 I0.000 J10.000',
+'G1 Z-4.000 F200',
+'G1 Y70.000 F700',
+'G2 X5.000 Y80.000 I10.000 J0.000',
+'G1 X85.000',
+'G2 X95.000 Y70.000 I0.000 J-10.000',
+'G1 Y10.000',
+'G2 X85.000 Y0.000 I-10.000 J0.000',
+'G1 X5.000',
+'G2 X-5.000 Y10.000 I0.000 J10.000',
+'G0 Z6.000',
+'G0 X0.000 Y0.000',
+'M5',
+'M30'
+].join('\n');
+
+function wire(){
+  initThree();
+
+  document.getElementById('openBtn').addEventListener('click', function(){
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', function(e){
+    var f = e.target.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){ loadText(rd.result, f.name); };
+    rd.readAsText(f);
+    e.target.value = '';
+  });
+  document.getElementById('sampleBtn').addEventListener('click', function(){
+    loadText(SAMPLE, 'kerf-sample.nc');
+  });
+
+  var dragDepth = 0;
+  window.addEventListener('dragenter', function(e){ e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); });
+  window.addEventListener('dragleave', function(e){ dragDepth--; if (dragDepth<=0){ dragDepth=0; document.body.classList.remove('dragging'); } });
+  window.addEventListener('dragover', function(e){ e.preventDefault(); });
+  window.addEventListener('drop', function(e){
+    e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+    var f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){ loadText(rd.result, f.name); };
+    rd.readAsText(f);
+  });
+
+  // tabs
+  var tabs = [['tabCode','paneCode'],['tabChecks','paneChecks'],['tabMachine','paneMachine']];
+  tabs.forEach(function(t){
+    document.getElementById(t[0]).addEventListener('click', function(){
+      tabs.forEach(function(u){
+        document.getElementById(u[0]).classList.toggle('active', u[0]===t[0]);
+        document.getElementById(u[1]).classList.toggle('active', u[1]===t[1]);
+      });
+      if (t[1]==='paneCode') renderCode();
+    });
+  });
+
+  // code interactions
+  document.getElementById('sectionSel').addEventListener('change', function(e){
+    if (!e.target.value) return;
+    document.getElementById('followChk').checked = false;
+    jumpToLine(parseInt(e.target.value, 10));
+    e.target.value = '';
+  });
+  document.getElementById('codeScroller').addEventListener('scroll', renderCode);
+  document.getElementById('codeSpacer').addEventListener('click', function(e){
+    var el = e.target.closest('.cl');
+    if (!el) return;
+    document.getElementById('followChk').checked = false;
+    jumpToLine(parseInt(el.dataset.ln, 10));
+  });
+  new ResizeObserver(renderCode).observe(document.getElementById('codeScroller'));
+
+  // checks interactions
+  document.getElementById('checksList').addEventListener('click', function(e){
+    var el = e.target.closest('.issue');
+    if (!el) return;
+    issueSelLine = parseInt(el.dataset.ln, 10);
+    tabs.forEach(function(u){
+      document.getElementById(u[0]).classList.toggle('active', u[0]==='tabCode');
+      document.getElementById(u[1]).classList.toggle('active', u[1]==='paneCode');
+    });
+    document.getElementById('followChk').checked = false;
+    jumpToLine(issueSelLine);
+    renderCode();
+  });
+
+  // transport
+  document.getElementById('btnPlay').addEventListener('click', function(){
+    if (!MODEL || !MODEL.segs.length) return;
+    if (!playing && playT >= MODEL.totalTime) setTime(0);
+    playing = !playing; updatePlayBtn();
+  });
+  document.getElementById('btnStart').addEventListener('click', function(){ playing=false; updatePlayBtn(); setTime(0); });
+  document.getElementById('btnEnd').addEventListener('click', function(){ if(MODEL){ playing=false; updatePlayBtn(); setTime(MODEL.totalTime);} });
+  document.getElementById('btnStepF').addEventListener('click', function(){ stepLine(1); });
+  document.getElementById('btnStepB').addEventListener('click', function(){ stepLine(-1); });
+  document.getElementById('timeSlider').addEventListener('input', function(e){
+    if (!MODEL || JOB.active) return;
+    playing = false; updatePlayBtn();
+    setTime(parseInt(e.target.value,10)/10000 * MODEL.totalTime, true);
+  });
+  window.addEventListener('keydown', function(e){
+    if (!document.getElementById('jogModal').hidden) return; // jog modal owns the keyboard
+    if (!document.getElementById('setModal').hidden) return;  // settings modal open
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.code === 'Space'){ e.preventDefault(); document.getElementById('btnPlay').click(); }
+    else if (e.code === 'ArrowRight'){ stepLine(1); }
+    else if (e.code === 'ArrowLeft'){ stepLine(-1); }
+  });
+
+  // hud
+  document.getElementById('fitBtn').addEventListener('click', fitView);
+
+  // settings
+  document.getElementById('showRapids').addEventListener('change', function(e){
+    if (rapidLine) rapidLine.visible = e.target.checked;
+  });
+  ['showEnvelope','envW','envD','originSel'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', function(){ buildStage(); buildEnvelope(); renderChecks(); });
+  });
+  ['checkEnvelope','stockThk'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', renderChecks);
+  });
+  document.getElementById('machinePreset').addEventListener('change', function(e){
+    if (!e.target.value) return;
+    var p = e.target.value.split(',');
+    document.getElementById('envW').value = p[0];
+    document.getElementById('envD').value = p[1];
+    buildStage(); buildEnvelope(); renderChecks();
+  });
+  document.getElementById('rapidRate').addEventListener('change', function(){
+    if (MODEL){
+      // re-parse to rebuild timing
+      var name = document.getElementById('fileName').textContent;
+      loadText(MODEL.lines.join('\n'), name);
+    }
+  });
+}
+
+/* ============================================================
+   WEB SERIAL — GRBL 1.1 machine layer
+   Streams with the character-counting protocol (RX buffer kept
+   ≤ RX_CAP bytes in flight). M6 lines are intercepted, never sent.
+   ============================================================ */
+var RX_CAP = 100; // GRBL RX buffer is 128; leave headroom
+
+var SERIAL = {
+  supported: (typeof navigator !== 'undefined' && 'serial' in navigator),
+  port:null, reader:null, writer:null, connected:false,
+  lineBuf:'', state:'offline',
+  wco:{x:0,y:0,z:0}, mpos:{x:0,y:0,z:0}, wpos:{x:0,y:0,z:0},
+  feed:0, speed:0, pins:'',
+  settings:{}, offsets:{}, buildInfo:'', queried:false, rateApplied:false,
+  homedSeen:false, prevState:'',
+  pollTimer:null, writeChain:null, verbose:false
+};
+
+var JOB = {active:false, held:false, list:null, total:0, idx:0,
+           inflight:[], acked:0, lastLn:0, toolWait:null, startedAt:0};
+var JOGC = {active:false, timer:null, limitHit:false, inflight:0, p:null, dist:0, feed:0, pred:{x:0,y:0,z:0}};
+var KEYJOG = {code:null};
+var JOG_KEYS = {ArrowLeft:[-1,0,0], ArrowRight:[1,0,0], ArrowUp:[0,1,0], ArrowDown:[0,-1,0], PageUp:[0,0,1], PageDown:[0,0,-1]};
+
+function requireIdle(what){
+  if (SERIAL.state === 'Alarm'){
+    logC('err', what + ' blocked — machine is locked. Home ($H) first.');
+    return false;
+  }
+  return true;
+}
+
+/* ---------------- jogging ---------------- */
+var STEP_FEEDS = {'0.025':150, '0.1':300, '1':1000, '10':2500};
+function jogCmd(p, dist, feed){
+  var cmd = '$J=G21G91';
+  if (p[0]) cmd += 'X' + (p[0] * dist).toFixed(3);
+  if (p[1]) cmd += 'Y' + (p[1] * dist).toFixed(3);
+  if (p[2]) cmd += 'Z' + (p[2] * dist).toFixed(3);
+  return cmd + 'F' + Math.round(feed);
+}
+function jogStepOnce(p){
+  var inc = PROFILE.jog.inc, dist = parseFloat(inc);
+  var feed = STEP_FEEDS[inc] || 1000;
+  if (p[2]) feed = Math.min(feed, PROFILE.jog.fastZ);
+  sendLine(jogCmd(p, dist, feed));
+}
+/* Clamp a fast-jog segment to the machine's remaining travel (0.5 mm margin).
+   Only active once this session has homed AND the controller travel is known —
+   an unhomed machine has untrusted coordinates, so no clamp is possible. */
+function clampJogDist(p, dist){
+  var s = SERIAL.settings;
+  if (!SERIAL.homedSeen || s[130] === undefined) return dist;
+  var trav = [s[130], s[131], s[132]];
+  var axes = ['x', 'y', 'z'];
+  var scale = 1;
+  for (var i = 0; i < 3; i++){
+    if (!p[i] || trav[i] === undefined) continue;
+    // clamp against the COMMANDED position, not the reported one — status
+    // reports lag, and several segments can be issued between them
+    var m = JOGC.pred[axes[i]];
+    // machine coords run [-travel, 0]; keep 0.5 mm off each end
+    var room = p[i] > 0 ? (-0.5 - m) : (m - (-trav[i] + 0.5));
+    if (room < 0) room = 0;
+    var axScale = Math.min(1, room / dist);
+    if (axScale < scale) scale = axScale;
+  }
+  return dist * scale;
+}
+function sendJogSeg(){
+  var d = clampJogDist(JOGC.p, JOGC.dist);
+  if (d < 0.05){
+    if (!JOGC.limitHit){ JOGC.limitHit = true; logC('err', 'jog stopped — machine travel limit'); }
+    jogFastStop(false);
+    return;
+  }
+  JOGC.inflight++;
+  JOGC.pred.x += JOGC.p[0] * d;
+  JOGC.pred.y += JOGC.p[1] * d;
+  JOGC.pred.z += JOGC.p[2] * d;
+  sendLine(jogCmd(JOGC.p, d, JOGC.feed), true);
+}
+/* Ack-clocked: at most 3 segments in flight; each 'ok' releases the next.
+   Send rate therefore locks to the machine's consumption — the RX buffer
+   can never overflow the way a blind timer pump could. */
+function jogTopUp(){
+  while (JOGC.active && !JOGC.limitHit && JOGC.inflight < 3){
+    var before = JOGC.inflight;
+    sendJogSeg();
+    if (JOGC.inflight === before) break; // clamp ended the jog
+  }
+}
+function jogFastStart(p){
+  jogFastStop(false);
+  var feed = p[2] ? PROFILE.jog.fastZ : PROFILE.jog.fastXY;
+  JOGC.p = p; JOGC.feed = feed;
+  JOGC.dist = Math.max(0.5, feed / 60 * 0.18); // ~180 ms of motion per segment
+  JOGC.pred = {x:SERIAL.mpos.x, y:SERIAL.mpos.y, z:SERIAL.mpos.z};
+  JOGC.active = true; JOGC.limitHit = false; JOGC.inflight = 0;
+  jogTopUp();
+  JOGC.timer = setInterval(function(){
+    if (!SERIAL.connected || SERIAL.state === 'Alarm'){ jogFastStop(true); return; }
+    sendRT(0x3f); // ~10 Hz status while jogging fast: pins + fresh mpos for the clamp
+    jogTopUp();   // watchdog top-up in case an ok was missed
+  }, 100);
+}
+function jogFastStop(cancel){
+  if (JOGC.timer){ clearInterval(JOGC.timer); JOGC.timer = null; }
+  if (JOGC.active && cancel !== false && SERIAL.connected) sendRT(0x85, 'jog cancel');
+  JOGC.active = false;
+  JOGC.inflight = 0;
+}
+
+/* ---------------- emergency stop ----------------
+   Immediate soft reset (real-time 0x18: bypasses all buffers). Motion halts
+   mid-step, spindle PWM drops now. Position is untrusted afterward — GRBL
+   alarms if it was moving — so homedSeen clears and re-homing is required.
+   Deliberately NO confirmation dialog. */
+function emergencyStop(){
+  if (!SERIAL.connected) return;
+  sendRT(0x18, 'ctrl-x (EMERGENCY STOP)');
+  PROBE.active = false; PROBE.onDone = null;
+  JOB.active = false; JOB.held = false; JOB.toolWait = null; JOB.inflight = [];
+  maybeToolPrompt();
+  jogFastStop(false);
+  KEYJOG.code = null;
+  jogModalClose();
+  SERIAL.homedSeen = false;
+  updateJobUI('EMERGENCY STOP — machine reset. Re-home before any further motion.');
+  logC('err', 'EMERGENCY STOP — soft reset sent. Spindle off, motion halted. Home the machine before continuing; work zero survives, machine position does not.');
+}
+
+/* ---------------- BitSetter tool-length probing ----------------
+   Two-touch probe (fast seek, back off, slow re-probe) at the stored button
+   position. Reference tool probed at job start; each tool change re-probes
+   and applies the length delta via G43.1 — volatile, so a reset can never
+   permanently alter the work offset. */
+var PROBE = {active:false, steps:null, i:0, kind:null, onDone:null,
+             lastPRB:null, refZ:null, previewDone:false};
+
+function bitSetterReady(){ // null = ready, else the reason it isn't
+  if (!PROFILE.bitSetter.enabled) return 'disabled in Machine profile';
+  if (PROFILE.bitSetter.x === null || PROFILE.bitSetter.y === null)
+    return 'position not set — jog over the button and use Capture';
+  if (!SERIAL.homedSeen) return 'machine has not homed this session';
+  var s = SERIAL.settings;
+  if (s[130] === undefined || s[131] === undefined) return 'controller travel not read yet';
+  var x = PROFILE.bitSetter.x, y = PROFILE.bitSetter.y;
+  if (x > 0.5 || x < -s[130] - 1 || y > 0.5 || y < -s[131] - 1)
+    return 'stored position (' + x + ', ' + y + ') is outside controller travel ' +
+           s[130] + ' \u00d7 ' + s[131] + ' — re-capture it, or fix $130/$131';
+  return null;
+}
+function probeSteps(){
+  var down = Math.max(10, (SERIAL.settings[132] || 80) - travelZ() - 1);
+  return [
+    'G53 G0 Z-' + travelZ().toFixed(1),
+    'G53 G0 X' + PROFILE.bitSetter.x.toFixed(3) + ' Y' + PROFILE.bitSetter.y.toFixed(3),
+    'G21 G91',
+    'G38.2 Z-' + down.toFixed(1) + ' F200',
+    'G0 Z2',
+    'G38.2 Z-5 F40',
+    'G90',
+    'G53 G0 Z-' + travelZ().toFixed(1)
+  ];
+}
+function probeStart(kind, onDone){
+  if (SERIAL.pins.indexOf('P') >= 0){
+    probeFail('probe input already triggered before starting — check the BitSetter button and wiring');
+    return;
+  }
+  PROBE.active = true; PROBE.kind = kind; PROBE.onDone = onDone;
+  PROBE.steps = probeSteps(); PROBE.i = 0; PROBE.lastPRB = null;
+  updateJobUI(kind === 'ref' ? 'BitSetter: probing reference tool\u2026' : 'BitSetter: probing new tool\u2026');
+  logC('sys', 'BitSetter: ' + (kind === 'ref' ? 'reference' : 'new tool') + ' probe starting');
+  probeNext();
+}
+function probeNext(){
+  if (!PROBE.active) return;
+  if (PROBE.i >= PROBE.steps.length){ probeFinish(); return; }
+  sendLine(PROBE.steps[PROBE.i++]);
+}
+function probeOnPRB(z, success){
+  if (!PROBE.active) return;
+  if (!success){
+    probeFail('probe travelled full distance without contact — tool loaded? BitSetter plugged in?');
+    return;
+  }
+  PROBE.lastPRB = z;
+}
+function probeFail(msg){
+  var wasActive = PROBE.active;
+  PROBE.active = false; PROBE.onDone = null;
+  logC('err', 'BitSetter probe FAILED: ' + msg);
+  if (SERIAL.connected) sendLine('G90');
+  if (JOB.active){
+    JOB.active = false; JOB.inflight = []; JOB.toolWait = null;
+    maybeToolPrompt();
+    updateJobUI('probe failed — job aborted. ' + msg);
+  } else if (wasActive){
+    updateJobUI('probe failed. ' + msg);
+  }
+}
+function probeFinish(){
+  PROBE.active = false;
+  if (PROBE.lastPRB === null){ probeFail('sequence completed but no probe result was received'); return; }
+  if (PROBE.kind === 'ref'){
+    PROBE.refZ = PROBE.lastPRB;
+    logC('sys', 'BitSetter: reference tool triggers at machine Z ' + PROBE.refZ.toFixed(3));
+  } else {
+    var delta = PROBE.lastPRB - PROBE.refZ;
+    sendLine('G43.1 Z' + delta.toFixed(3));
+    logC('sys', 'BitSetter: new tool triggers at Z ' + PROBE.lastPRB.toFixed(3) +
+         ' — length offset ' + (delta >= 0 ? '+' : '') + delta.toFixed(3) + ' mm applied (G43.1)');
+  }
+  var cb = PROBE.onDone; PROBE.onDone = null;
+  if (cb) cb();
+}
+
+/* ---------------- jog modal + keyboard ---------------- */
+function jogModalOpen(){
+  if (!SERIAL.connected){ logC('err', 'connect to the machine first'); return; }
+  if (JOB.active) return;
+  document.getElementById('jogModal').hidden = false;
+}
+function jogModalClose(){
+  document.getElementById('jogModal').hidden = true;
+  KEYJOG.code = null;
+  jogFastStop(true);
+  document.querySelectorAll('#jogGrid button.kbdOn').forEach(function(b){ b.classList.remove('kbdOn'); });
+}
+function kbdBtn(p){ return document.querySelector('#jogGrid button[data-jog="' + p.join(',') + '"]'); }
+function jogKeyDown(e){
+  if (document.getElementById('jogModal').hidden) return;
+  if (e.code === 'Escape'){ e.preventDefault(); jogModalClose(); return; }
+  var p = JOG_KEYS[e.code];
+  if (!p) return;
+  e.preventDefault();
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) e.target.blur();
+  if (PROFILE.jog.inc === 'fast'){
+    if (e.repeat || KEYJOG.code) return;          // one direction at a time
+    if (!requireIdle('jog')) return;
+    KEYJOG.code = e.code;
+    var b = kbdBtn(p); if (b) b.classList.add('kbdOn');
+    jogFastStart(p);
+  } else {
+    if (e.repeat) return;                          // one step per physical press
+    if (!requireIdle('jog')) return;
+    var fb = kbdBtn(p);
+    if (fb){ fb.classList.add('kbdOn'); setTimeout(function(){ fb.classList.remove('kbdOn'); }, 140); }
+    jogStepOnce(p);
+  }
+}
+function jogKeyUp(e){
+  if (KEYJOG.code && e.code === KEYJOG.code){
+    var p = JOG_KEYS[e.code];
+    var b = p && kbdBtn(p); if (b) b.classList.remove('kbdOn');
+    KEYJOG.code = null;
+    jogFastStop(true);
+  }
+}
+
+var GRBL_ERRORS = {
+  1:'G-code word must be a letter followed by a value.',2:'Bad number format.',
+  3:'$ system command not recognized.',4:'Negative value where a positive one is required.',
+  5:'Homing is not enabled in settings ($22).',
+  8:'Command refused — machine is not Idle. After connecting, the controller boots locked: run Home ($H) first.',
+  9:'G-code locked out — machine is in the boot-up Alarm state. Home ($H) to initialize (or $X to unlock without homing).',
+  10:'Soft limits require homing to be enabled.',
+  11:'Line is longer than GRBL accepts.',15:'Jog target exceeds machine travel.',
+  16:'Jog command is malformed.',17:'Laser mode requires PWM output.',
+  20:'Unsupported or invalid g-code command.',21:'More than one command from the same modal group on a line.',
+  22:'Feed rate has not been set (missing F).',23:'Command needs an integer value.',
+  24:'Two commands both using axis words on one line.',25:'Repeated g-code word on a line.',
+  26:'No axis words found where required.',28:'Command is missing a required value word.',
+  29:'This work coordinate system is not supported.',30:'G53 only valid with G0/G1.',
+  31:'Unused axis words on the line.',32:'G2/G3 arc needs at least one in-plane axis word.',
+  33:'Arc geometry invalid — radius mismatch or impossible arc.',34:'Arc radius calculation failed.',
+  35:'G2/G3 arc is missing its I/J/K offset.',36:'Unused value words on the line.',
+  37:'Tool length offset only assignable to Z.',38:'Tool number too large.'
+};
+var GRBL_ALARMS = {
+  1:'Hard limit hit — position lost. Re-home before cutting.',
+  2:'Soft limit — a move exceeded travel. Position was kept; unlock ($X) and check your job zero and file extents.',
+  3:'Reset while moving — position lost. Re-home.',
+  4:'Probe fail: probe already triggered at start.',
+  5:'Probe fail: no contact within travel.',
+  6:'Homing fail: reset during cycle.',7:'Homing fail: safety door opened.',
+  8:'Homing fail: could not clear the switch.',9:'Homing fail: switch not found within travel.'
+};
+
+function logC(cls, text){
+  var log = document.getElementById('consoleLog');
+  var d = document.createElement('div');
+  d.className = cls;
+  d.textContent = (cls === 'tx' ? '→ ' : '') + text;
+  log.appendChild(d);
+  while (log.childNodes.length > 600) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+
+function rawWrite(u8){
+  if (!SERIAL.writer) return;
+  SERIAL.writeChain = SERIAL.writeChain.then(function(){
+    return SERIAL.writer.write(u8);
+  }).catch(function(e){ logC('err', 'write failed: ' + e.message); });
+}
+function sendLine(s, quiet){
+  if (!SERIAL.connected) return;
+  if (!quiet) logC('tx', s);
+  rawWrite(new TextEncoder().encode(s + '\n'));
+}
+function sendRT(byte, label){
+  if (!SERIAL.connected) return;
+  if (label) logC('tx', label);
+  rawWrite(new Uint8Array([byte]));
+}
+
+async function serialConnect(){
+  if (SERIAL.connected){ serialDisconnect(); return; }
+  if (!SERIAL.supported){
+    alert('Web Serial is not available in this browser. Use Chrome or Edge on desktop (opening the file locally is fine).');
+    return;
+  }
+  try{
+    var port = await navigator.serial.requestPort();
+    await port.open({baudRate: 115200});
+    SERIAL.port = port;
+    SERIAL.writer = port.writable.getWriter();
+    SERIAL.reader = port.readable.getReader();
+    SERIAL.writeChain = Promise.resolve();
+    SERIAL.connected = true;
+    SERIAL.lineBuf = '';
+    SERIAL.settings = {}; SERIAL.offsets = {}; SERIAL.buildInfo = '';
+    SERIAL.queried = false; SERIAL.rateApplied = false; SERIAL.jogRateApplied = false;
+    SERIAL.homedSeen = false; SERIAL.prevState = '';
+    PROBE.active = false; PROBE.onDone = null; PROBE.refZ = null; PROBE.previewDone = false;
+    uiConn(true);
+    logC('sys', 'port open @ 115200 — waiting for GRBL');
+    readLoop();
+    setTimeout(function(){ rawWrite(new Uint8Array([10, 10])); }, 150); // wake
+    SERIAL.pollTimer = setInterval(function(){
+      if (SERIAL.connected) sendRT(0x3f); // '?' status query
+    }, 250);
+    setTimeout(function(){ if (SERIAL.connected) doQuery(); }, 1500); // boards already awake send no banner
+  }catch(e){
+    logC('err', 'connect failed: ' + e.message);
+  }
+}
+
+async function serialDisconnect(){
+  logC('sys', 'disconnecting');
+  SERIAL.connected = false;
+  if (SERIAL.pollTimer){ clearInterval(SERIAL.pollTimer); SERIAL.pollTimer = null; }
+  try{ if (SERIAL.reader) await SERIAL.reader.cancel(); }catch(e){}
+}
+
+function serialCleanup(){
+  if (SERIAL.pollTimer){ clearInterval(SERIAL.pollTimer); SERIAL.pollTimer = null; }
+  try{ if (SERIAL.reader) SERIAL.reader.releaseLock(); }catch(e){}
+  try{ if (SERIAL.writer) SERIAL.writer.releaseLock(); }catch(e){}
+  try{ if (SERIAL.port) SERIAL.port.close(); }catch(e){}
+  SERIAL.port = null; SERIAL.reader = null; SERIAL.writer = null;
+  SERIAL.connected = false; SERIAL.state = 'offline';
+  if (JOB.active){
+    JOB.active = false;
+    logC('err', 'job aborted — connection lost');
+    updateJobUI('connection lost');
+  }
+  uiConn(false);
+}
+
+async function readLoop(){
+  var dec = new TextDecoder();
+  try{
+    while (SERIAL.reader){
+      var r = await SERIAL.reader.read();
+      if (r.done) break;
+      SERIAL.lineBuf += dec.decode(r.value, {stream:true});
+      var parts = SERIAL.lineBuf.split(/\r?\n/);
+      SERIAL.lineBuf = parts.pop();
+      for (var i = 0; i < parts.length; i++){
+        var ln = parts[i].trim();
+        if (ln) handleRx(ln);
+      }
+    }
+  }catch(e){
+    if (SERIAL.connected) logC('err', 'serial read error: ' + e.message);
+  }
+  serialCleanup();
+}
+
+function handleRx(line){
+  if (line[0] === '<'){ parseStatus(line); if (SERIAL.verbose) logC('rx', line); return; }
+  if (line === 'ok'){
+    if (PROBE.active){ probeNext(); return; }
+    if (JOGC.active || JOGC.inflight > 0){
+      if (JOGC.inflight > 0) JOGC.inflight--;
+      jogTopUp();
+      if (SERIAL.verbose) logC('ok', 'ok');
+      return;
+    }
+    if (SERIAL.verbose || !JOB.active) logC('ok', 'ok');
+    onAck(true, 0);
+    return;
+  }
+  if (line.indexOf('error:') === 0){
+    var c = parseInt(line.slice(6), 10);
+    if (PROBE.active){ probeFail('error:' + c + ' — ' + (GRBL_ERRORS[c] || '')); return; }
+    if (JOGC.active || JOGC.inflight > 0){
+      if (JOGC.inflight > 0) JOGC.inflight--;
+      if (c === 15){
+        if (JOGC.timer){ clearInterval(JOGC.timer); JOGC.timer = null; }
+        if (!JOGC.limitHit){ JOGC.limitHit = true; logC('err', 'jog stopped — travel limit reached'); }
+        return;
+      }
+    }
+    logC('err', line + ' — ' + (GRBL_ERRORS[c] || 'see GRBL error list'));
+    onAck(false, c);
+    return;
+  }
+  if (line.indexOf('ALARM:') === 0){
+    var a = parseInt(line.slice(6), 10);
+    SERIAL.homedSeen = false; // position no longer trusted until re-homed
+    logC('err', line + ' — ' + (GRBL_ALARMS[a] || 'alarm'));
+    if (PROBE.active){ probeFail('ALARM:' + a + ' during probe'); return; }
+    if (JOB.active){ JOB.active = false; updateJobUI('ALARM — job aborted'); }
+    return;
+  }
+  if (line.indexOf('Grbl') === 0){ logC('sys', line); doQuery(); return; }
+  var sm = /^\$(\d+)\s*=\s*(-?[\d.]+)/.exec(line);
+  if (sm){
+    SERIAL.settings[parseInt(sm[1], 10)] = parseFloat(sm[2]);
+    logC('rx', line);
+    scheduleCfgApply();
+    return;
+  }
+  var bm = /^\[(G54|G55|G56|G57|G58|G59|G28|G30|G92|TLO|PRB|VER|OPT):([^\]]*)\]/.exec(line);
+  if (bm){
+    if (bm[1] === 'VER' || bm[1] === 'OPT') SERIAL.buildInfo += (SERIAL.buildInfo ? ' ' : '') + bm[1] + ':' + bm[2];
+    else {
+      var parts2 = bm[2].split(':');
+      var coords = parts2[0].split(',').map(parseFloat);
+      SERIAL.offsets[bm[1]] = coords;
+      if (bm[1] === 'PRB') probeOnPRB(coords[2], parts2[1] === '1');
+    }
+    logC('rx', line);
+    return;
+  }
+  logC('rx', line); // [MSG:...], help text, etc.
+}
+
+function parseStatus(s){
+  var body = s.replace(/[<>]/g, '');
+  var f = body.split('|');
+  SERIAL.state = f[0].split(':')[0];
+  if (SERIAL.prevState === 'Home' && SERIAL.state === 'Idle') SERIAL.homedSeen = true;
+  SERIAL.prevState = SERIAL.state;
+  var pinsNow = '';
+  for (var i = 1; i < f.length; i++){
+    var ci = f[i].indexOf(':');
+    if (ci < 0) continue;
+    var k = f[i].slice(0, ci), raw = f[i].slice(ci + 1);
+    if (k === 'Pn'){ pinsNow = raw; continue; }
+    var v = raw.split(',').map(parseFloat);
+    if (k === 'MPos'){
+      SERIAL.mpos = {x:v[0], y:v[1], z:v[2]};
+      SERIAL.wpos = {x:v[0]-SERIAL.wco.x, y:v[1]-SERIAL.wco.y, z:v[2]-SERIAL.wco.z};
+    } else if (k === 'WPos'){
+      SERIAL.wpos = {x:v[0], y:v[1], z:v[2]};
+      SERIAL.mpos = {x:v[0]+SERIAL.wco.x, y:v[1]+SERIAL.wco.y, z:v[2]+SERIAL.wco.z};
+    } else if (k === 'WCO'){
+      SERIAL.wco = {x:v[0], y:v[1], z:v[2]};
+    } else if (k === 'FS'){ SERIAL.feed = v[0]; SERIAL.speed = v[1]; }
+    else if (k === 'F'){ SERIAL.feed = v[0]; }
+  }
+  var pinsPrev = SERIAL.pins;
+  SERIAL.pins = pinsNow; // Pn only appears while a pin is active, so absence = all clear
+  if (pinsNow !== pinsPrev) pinTripJogGuard(pinsPrev, pinsNow);
+  uiStatus();
+}
+
+/* stop any jog the moment a watched sensor becomes newly active.
+   Edge-triggered on purpose: a held/stuck switch never blocks jogging
+   AWAY from it. Applies only to jog motion — probing cycles (state Run)
+   are untouched, since driving into the probe is their whole job. */
+var PIN_NAMES = {X:'X limit switch', Y:'Y limit switch', Z:'Z limit switch', P:'probe (BitSetter/BitZero)', D:'door'};
+function pinTripJogGuard(prev, cur){
+  var newly = '';
+  for (var i = 0; i < cur.length; i++){
+    var ch = cur[i];
+    if (PIN_NAMES[ch] && prev.indexOf(ch) < 0) newly += ch;
+  }
+  if (!newly) return;
+  if (SERIAL.state === 'Jog' || JOGC.active || KEYJOG.code){
+    if (JOGC.timer){ clearInterval(JOGC.timer); JOGC.timer = null; }
+    JOGC.active = false;
+    KEYJOG.code = null;
+    document.querySelectorAll('#jogGrid button.kbdOn').forEach(function(b){ b.classList.remove('kbdOn'); });
+    sendRT(0x85, 'jog cancel — sensor');
+    var names = newly.split('').map(function(c){ return PIN_NAMES[c]; }).join(', ');
+    logC('err', 'jog stopped — ' + names + ' triggered. Release the key/button, then jog away.');
+  }
+}
+
+function uiStatus(){
+  var st = SERIAL.state;
+  var chipTop = document.getElementById('hdrState');
+  chipTop.textContent = st === 'Alarm' ? 'Alarm — home to unlock' : (st === 'Home' ? 'homing…' : st);
+  chipTop.dataset.s = st;
+  var ab = document.getElementById('alarmBanner');
+  ab.style.display = (st === 'Alarm') ? 'block' : 'none';
+  document.getElementById('droX').textContent = SERIAL.wpos.x.toFixed(3);
+  document.getElementById('droY').textContent = SERIAL.wpos.y.toFixed(3);
+  document.getElementById('droZ').textContent = SERIAL.wpos.z.toFixed(3);
+  document.getElementById('droF').textContent =
+    (SERIAL.feed ? Math.round(SERIAL.feed) + ' mm/min' : '—') +
+    (SERIAL.speed ? ' · S' + Math.round(SERIAL.speed) : '');
+  document.getElementById('mposChip').textContent =
+    'machine ' + SERIAL.mpos.x.toFixed(1) + ', ' + SERIAL.mpos.y.toFixed(1) + ', ' + SERIAL.mpos.z.toFixed(1);
+  var pc = document.getElementById('pinChip');
+  if (SERIAL.pins){ pc.style.display = ''; pc.textContent = 'pins: ' + SERIAL.pins; }
+  else pc.style.display = 'none';
+  // spindle state (commanded S from the FS status field)
+  var spinning = SERIAL.speed > 0;
+  var hs = document.getElementById('hdrSpindle');
+  hs.textContent = spinning ? 'S' + Math.round(SERIAL.speed) + ' — stop' : 'spindle off';
+  hs.classList.toggle('on', spinning);
+  document.getElementById('spinState').textContent = spinning ? 'running · S' + Math.round(SERIAL.speed) : 'stopped';
+  // jog modal mirrors
+  document.getElementById('jmX').textContent = SERIAL.wpos.x.toFixed(3);
+  document.getElementById('jmY').textContent = SERIAL.wpos.y.toFixed(3);
+  document.getElementById('jmZ').textContent = SERIAL.wpos.z.toFixed(3);
+  var jm = document.getElementById('jmState');
+  jm.textContent = st; jm.dataset.s = st;
+  document.getElementById('jogOpen').disabled = JOB.active;
+  if (JOB.active && !document.getElementById('jogModal').hidden) jogModalClose();
+  // live marker while a job (or manual motion during one) is happening
+  if (JOB.active && marker){
+    marker.position.copy(w3(SERIAL.wpos.x, SERIAL.wpos.y, SERIAL.wpos.z));
+  }
+  if (JOB.active && (st === 'Hold' || st === 'Door')){
+    document.getElementById('jobStatus').textContent =
+      'held (' + st + ') at line ' + JOB.lastLn + ' — Resume to continue';
+  }
+}
+
+function uiConn(on){
+  document.getElementById('connectBtn').textContent = on ? 'Disconnect' : 'Connect to machine';
+  document.getElementById('connChip').textContent = on ? 'connected' : 'not connected';
+  document.getElementById('mControls').classList.toggle('disabledArea', !on);
+  document.getElementById('hdrMachine').classList.toggle('on', on);
+  if (!on){
+    var chipTop = document.getElementById('hdrState');
+    chipTop.textContent = 'offline'; chipTop.dataset.s = '';
+  }
+}
+
+/* ---------------- machine profile (persisted) ---------------- */
+var PROFILE = {
+  bitSetter:{enabled:false, x:null, y:null},
+  bitZero:{enabled:false, version:'v2'},
+  spindle:{type:'router', spinup:3},
+  jog:{inc:'1', fastXY:3000, fastZ:600},
+  run:{highStart:true, travelZ:5},
+  view:{envW:425, envD:425, origin:'corner', stock:0, rapidRate:5000, checkEnvelope:false, showEnvelope:false}
+};
+
+function profileSave(){
+  try{ localStorage.setItem('kerf-profile', JSON.stringify(PROFILE)); }catch(e){}
+}
+function profileLoad(){
+  try{
+    var s = localStorage.getItem('kerf-profile');
+    if (!s) return;
+    var p = JSON.parse(s);
+    if (p.bitSetter) PROFILE.bitSetter = Object.assign(PROFILE.bitSetter, p.bitSetter);
+    if (p.bitZero)   PROFILE.bitZero   = Object.assign(PROFILE.bitZero, p.bitZero);
+    if (p.spindle)   PROFILE.spindle   = Object.assign(PROFILE.spindle, p.spindle);
+    if (p.jog)       PROFILE.jog       = Object.assign(PROFILE.jog, p.jog);
+    if (p.run)       PROFILE.run       = Object.assign(PROFILE.run, p.run);
+    if (p.view)      PROFILE.view      = Object.assign(PROFILE.view, p.view);
+  }catch(e){}
+}
+/* retract standoff below Z top-of-travel (machine coords), used by
+   start-high, go-to-XY-zero, and (soon) BitSetter parking */
+function travelZ(){
+  var v = PROFILE.run.travelZ;
+  if (!isFinite(v)) v = 5;
+  return Math.min(30, Math.max(1, v));
+}
+function setIncUI(inc){
+  document.querySelectorAll('#jogIncRow button[data-inc]').forEach(function(b){
+    b.classList.toggle('incOn', b.dataset.inc === inc);
+  });
+}
+function applyProfileToUI(){
+  var v = function(id){ return document.getElementById(id); };
+  v('bsEnable').checked = PROFILE.bitSetter.enabled;
+  if (PROFILE.bitSetter.x !== null) v('bsX').value = PROFILE.bitSetter.x;
+  if (PROFILE.bitSetter.y !== null) v('bsY').value = PROFILE.bitSetter.y;
+  v('bzEnable').checked = PROFILE.bitZero.enabled;
+  v('bzVersion').value = PROFILE.bitZero.version;
+  v('spinType').value = PROFILE.spindle.type;
+  v('spinupSec').value = PROFILE.spindle.spinup;
+  v('jogFeedXY').value = PROFILE.jog.fastXY;
+  v('jogFeedZ').value = PROFILE.jog.fastZ;
+  v('highStart').checked = PROFILE.run.highStart;
+  v('travelZIn').value = PROFILE.run.travelZ;
+  setIncUI(PROFILE.jog.inc);
+  v('envW').value = PROFILE.view.envW;
+  v('envD').value = PROFILE.view.envD;
+  v('originSel').value = PROFILE.view.origin;
+  v('stockThk').value = PROFILE.view.stock;
+  v('rapidRate').value = PROFILE.view.rapidRate;
+  v('checkEnvelope').checked = PROFILE.view.checkEnvelope;
+  v('showEnvelope').checked = PROFILE.view.showEnvelope;
+  buildStage(); buildEnvelope(); renderChecks();
+}
+function readUIToProfile(){
+  var v = function(id){ return document.getElementById(id); };
+  PROFILE.bitSetter.enabled = v('bsEnable').checked;
+  PROFILE.bitSetter.x = v('bsX').value === '' ? null : parseFloat(v('bsX').value);
+  PROFILE.bitSetter.y = v('bsY').value === '' ? null : parseFloat(v('bsY').value);
+  PROFILE.bitZero.enabled = v('bzEnable').checked;
+  PROFILE.bitZero.version = v('bzVersion').value;
+  PROFILE.spindle.type = v('spinType').value;
+  PROFILE.spindle.spinup = parseFloat(v('spinupSec').value) || 0;
+  PROFILE.jog.fastXY = parseFloat(v('jogFeedXY').value) || 3000;
+  PROFILE.jog.fastZ = parseFloat(v('jogFeedZ').value) || 600;
+  PROFILE.run.highStart = v('highStart').checked;
+  PROFILE.run.travelZ = parseFloat(v('travelZIn').value) || 5;
+  PROFILE.view = cfg();
+  PROFILE.view.envW = parseFloat(v('envW').value) || 425;
+  PROFILE.view.envD = parseFloat(v('envD').value) || 425;
+  profileSave();
+}
+function importProfileJSON(j){
+  if (j && ('bitSetterX' in j || 'bitSetterEnabled' in j)){
+    // Carbide Motion shapeoko.json
+    PROFILE.bitSetter.enabled = !!j.bitSetterEnabled;
+    if (typeof j.bitSetterX === 'number') PROFILE.bitSetter.x = j.bitSetterX;
+    if (typeof j.bitSetterY === 'number') PROFILE.bitSetter.y = j.bitSetterY;
+    if (typeof j.bitZeroType === 'number'){
+      PROFILE.bitZero.enabled = j.bitZeroType > 0;
+      PROFILE.bitZero.version = j.bitZeroType >= 2 ? 'v2' : 'v1';
+    }
+    if (typeof j.spindleType === 'number' && j.spindleType > 0) PROFILE.spindle.type = 'vfd';
+    logC('sys', 'imported Carbide Motion shapeoko.json — BitSetter at ' +
+      PROFILE.bitSetter.x + ', ' + PROFILE.bitSetter.y);
+  } else if (j && (j.bitSetter || j.spindle || j.view)){
+    if (j.bitSetter) PROFILE.bitSetter = Object.assign(PROFILE.bitSetter, j.bitSetter);
+    if (j.bitZero)   PROFILE.bitZero   = Object.assign(PROFILE.bitZero, j.bitZero);
+    if (j.spindle)   PROFILE.spindle   = Object.assign(PROFILE.spindle, j.spindle);
+    if (j.view)      PROFILE.view      = Object.assign(PROFILE.view, j.view);
+    logC('sys', 'Kerf profile imported');
+  } else {
+    logC('err', 'unrecognized profile file — expected a Kerf profile or Carbide Motion shapeoko.json');
+    return;
+  }
+  profileSave();
+  applyProfileToUI();
+}
+
+/* ---------------- controller config ---------------- */
+var GRBL_SETTING_NAMES = {
+  0:'step pulse, µs',1:'step idle delay, ms',2:'step invert mask',3:'direction invert mask',
+  4:'step enable invert',5:'limit pins invert',6:'probe pin invert',10:'status report mask',
+  11:'junction deviation, mm',12:'arc tolerance, mm',13:'report in inches',
+  20:'soft limits enabled',21:'hard limits enabled',22:'homing enabled',
+  23:'homing direction mask',24:'homing feed, mm/min',25:'homing seek, mm/min',
+  26:'homing debounce, ms',27:'homing pull-off, mm',30:'max spindle rpm',31:'min spindle rpm',
+  32:'laser mode',100:'X steps/mm',101:'Y steps/mm',102:'Z steps/mm',
+  110:'X max rate, mm/min',111:'Y max rate, mm/min',112:'Z max rate, mm/min',
+  120:'X accel, mm/s²',121:'Y accel, mm/s²',122:'Z accel, mm/s²',
+  130:'X max travel, mm',131:'Y max travel, mm',132:'Z max travel, mm'
+};
+
+function doQuery(){
+  if (SERIAL.queried || !SERIAL.connected) return;
+  SERIAL.queried = true;
+  logC('sys', 'reading controller: $I, $$, $#');
+  setTimeout(function(){ sendLine('$I', true); }, 100);
+  setTimeout(function(){ sendLine('$$', true); }, 300);
+  setTimeout(function(){ sendLine('$#', true); }, 700);
+}
+
+function detectModel(){
+  var s = SERIAL.settings, x = s[130], y = s[131];
+  if (x === undefined || y === undefined) return null;
+  var models = [
+    [420,430,'Shapeoko 3'],[830,430,'Shapeoko XL'],[830,850,'Shapeoko XXL'],
+    [845,850,'Shapeoko XXL'],[870,440,'Shapeoko Pro XL'],[870,850,'Shapeoko Pro XXL'],
+    [445,445,'Shapeoko 4 Standard'],[203,203,'Nomad'],[205,205,'Nomad']
+  ];
+  var best = null, bd = 1e9;
+  for (var i = 0; i < models.length; i++){
+    var d = Math.abs(models[i][0]-x) + Math.abs(models[i][1]-y);
+    if (d < bd){ bd = d; best = models[i]; }
+  }
+  var name = bd <= 30 ? best[2] : 'custom machine';
+  var z = s[102];
+  var zt = z === 40 ? 'belt Z' : z === 200 ? 'Z-Plus' : z === 320 ? 'HDZ' : '';
+  return {name:name, zt:zt, x:x, y:y, z:s[132]};
+}
+
+var cfgApplyTimer = null;
+function scheduleCfgApply(){
+  if (cfgApplyTimer) clearTimeout(cfgApplyTimer);
+  cfgApplyTimer = setTimeout(applyCfg, 300); // after the $$ burst settles
+}
+function applyCfg(){
+  cfgApplyTimer = null;
+  var s = SERIAL.settings;
+  var m = detectModel();
+  if (m){
+    document.getElementById('modelChip').textContent =
+      m.name + (m.zt ? ' · ' + m.zt : '') + ' · travel ' + m.x + ' × ' + m.y + (m.z ? ' × ' + m.z : '') + ' mm';
+    // sync the work-area envelope to the board's real travel
+    var w = document.getElementById('envW'), d = document.getElementById('envD');
+    var cw = parseFloat(w.value), cd = parseFloat(d.value);
+    if (!isFinite(cw) || !isFinite(cd) || Math.abs(cw - m.x) > 1 || Math.abs(cd - m.y) > 1){
+      w.value = m.x; d.value = m.y;
+      buildStage(); buildEnvelope(); renderChecks(); readUIToProfile();
+      logC('sys', 'work area set from controller: ' + m.x + ' × ' + m.y + ' mm');
+    }
+  }
+  // fast-jog rates from the controller's max rates (once per connect)
+  if (!SERIAL.jogRateApplied && s[110] !== undefined){
+    SERIAL.jogRateApplied = true;
+    document.getElementById('jogFeedXY').value = Math.round(s[110]);
+    if (s[112] !== undefined) document.getElementById('jogFeedZ').value = Math.round(s[112]);
+    readUIToProfile();
+    logC('sys', 'fast jog rates set from controller: XY ' + Math.round(s[110]) +
+         (s[112] !== undefined ? ', Z ' + Math.round(s[112]) : '') + ' mm/min');
+  }
+  // real rapid rate for time estimates
+  if (!SERIAL.rateApplied && s[110] !== undefined && MODEL){
+    var rr = Math.min(s[110], s[111] !== undefined ? s[111] : s[110]);
+    var cur = parseFloat(document.getElementById('rapidRate').value);
+    if (Math.abs(cur - rr) > cur * 0.02){
+      SERIAL.rateApplied = true;
+      document.getElementById('rapidRate').value = rr;
+      readUIToProfile();
+      loadText(MODEL.lines.join('\n'), document.getElementById('fileName').textContent);
+      logC('sys', 'time estimate now uses the controller rapid rate: ' + rr + ' mm/min');
+    }
+  }
+  renderCfgTable();
+}
+function renderCfgTable(){
+  var t = document.getElementById('cfgTable');
+  var keys = Object.keys(SERIAL.settings).map(Number).sort(function(a,b){ return a-b; });
+  if (!keys.length){ t.style.display = 'none'; return; }
+  var html = SERIAL.buildInfo ? '<div style="color:var(--info)">' + escapeHtml(SERIAL.buildInfo) + '</div>' : '';
+  for (var i = 0; i < keys.length; i++){
+    var k = keys[i];
+    html += '<div>$' + k + ' = ' + SERIAL.settings[k] +
+            (GRBL_SETTING_NAMES[k] ? '  <span style="color:var(--faint)">— ' + GRBL_SETTING_NAMES[k] + '</span>' : '') + '</div>';
+  }
+  if (SERIAL.offsets.G28) html += '<div style="color:var(--info)">G28 position: ' + SERIAL.offsets.G28.join(', ') + '</div>';
+  if (SERIAL.offsets.TLO) html += '<div style="color:var(--info)">tool length offset: ' + SERIAL.offsets.TLO.join(', ') + '</div>';
+  t.innerHTML = html;
+  t.style.display = 'block';
+  document.getElementById('cfgChip').textContent = keys.length + ' settings read';
+}
+
+/* fits-from-current-zero check against the board's real travel */
+function travelPreflight(){
+  var s = SERIAL.settings;
+  if (!SERIAL.connected || s[130] === undefined || s[131] === undefined || !MODEL) return null;
+  var bb = modelBBox(MODEL), tol = 0.5, msgs = [];
+  function chk(axis, lo, hi, travel, label){
+    var mLo = lo + SERIAL.wco[axis], mHi = hi + SERIAL.wco[axis];
+    if (mHi > tol) msgs.push(label + '+ side by ' + mHi.toFixed(1) + ' mm');
+    if (mLo < -travel - tol) msgs.push(label + '− side by ' + (-travel - mLo).toFixed(1) + ' mm');
+  }
+  chk('x', bb.min.x, bb.max.x, s[130], 'X overruns the ');
+  chk('y', bb.min.y, bb.max.y, s[131], 'Y overruns the ');
+  if (s[132] !== undefined) chk('z', bb.min.z, bb.max.z, s[132], 'Z overruns the ');
+  return {ok: !msgs.length, msgs: msgs};
+}
+
+/* ---------------- job streaming ---------------- */
+function cleanForSend(raw){
+  return raw.replace(/\(.*?\)/g, '').replace(/;.*$/, '').trim();
+}
+function inflightBytes(){
+  var n = 0;
+  for (var i = 0; i < JOB.inflight.length; i++) n += JOB.inflight[i].len;
+  return n;
+}
+
+/* Pre-build the send list: cleaned lines, M6 markers, injected spin-up dwells */
+function buildJobList(lines){
+  var list = [], injected = 0, retracts = 0;
+  // "stop high": climb to traverse height before any spindle stop, so the bit
+  // never spins down in (or just above) the material. Same gate as start-high.
+  var stopHigh = PROFILE.run.highStart && (typeof SERIAL !== 'undefined') && SERIAL.homedSeen;
+  function retractBeforeStop(ln){
+    if (!stopHigh) return;
+    var pv = list.length ? list[list.length - 1] : null;
+    if (pv && pv.text && pv.text.indexOf('G53 G0 Z-') === 0) return; // already climbing
+    list.push({text:'G53 G0 Z-' + travelZ().toFixed(1), ln:ln, syn:true});
+    retracts++;
+  }
+  for (var i = 0; i < lines.length; i++){
+    var ln = i + 1;
+    var c = cleanForSend(lines[i]);
+    if (!c || c === '%') continue;
+    if (/\bM0*6\b/i.test(c)){
+      var tm = /T\s*(\d+)/i.exec(c);
+      // safety: the spindle must be stopped before we invite a tool change
+      var prev = list.length ? list[list.length - 1] : null;
+      if (!(prev && prev.text && /\bM0*5\b/i.test(prev.text))){
+        retractBeforeStop(ln);
+        list.push({text:'M5', ln:ln, syn:true});
+      }
+      var m6e = {m6:true, ln:ln, tool: tm ? tm[1] : '?', next:null};
+      // where does the file go after this change? (first XY move beyond the M6)
+      if (typeof MODEL !== 'undefined' && MODEL && MODEL.segs){
+        for (var ni = 0; ni < MODEL.segs.length; ni++){
+          var sg = MODEL.segs[ni];
+          if (sg.line > ln && (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001)){
+            m6e.next = {x: sg.x1, y: sg.y1};
+            break;
+          }
+        }
+      }
+      list.push(m6e);
+      continue;
+    }
+    if (/\bM0*5\b/i.test(c)) retractBeforeStop(ln);
+    list.push({text:c, ln:ln});
+    if (/\bM0*3\b/i.test(c) && PROFILE.spindle.spinup > 0){
+      var nxt = '';
+      for (var k = i + 1; k < lines.length; k++){
+        var cc = cleanForSend(lines[k]);
+        if (cc){ nxt = cc; break; }
+      }
+      // the file's own dwell only counts if it's at least as long as ours —
+      // a token G4 P1 from the post must not suppress real spin-up time
+      var nd = /\bG0*4\b.*?P\s*([\d.]+)/i.exec(nxt);
+      var fileDwell = nd ? parseFloat(nd[1]) : 0;
+      if (fileDwell < PROFILE.spindle.spinup){
+        list.push({text:'G4 P' + PROFILE.spindle.spinup, ln:ln, syn:true});
+        injected++;
+      }
+    }
+  }
+  list.injected = injected;
+  list.retracts = retracts;
+  return list;
+}
+
+function jobFill(){
+  if (PROBE.active) return; // probe sequence owns the wire
+  while (JOB.active && !JOB.held && !JOB.toolWait && JOB.idx < JOB.total){
+    var it = JOB.list[JOB.idx];
+    if (it.m6){
+      JOB.toolWait = {line: it.ln, tool: it.tool, next: it.next};
+      JOB.idx++; JOB.acked++;
+      logC('sys', 'tool change at line ' + it.ln + ' (T' + it.tool + ') — waiting for buffer to drain');
+      break;
+    }
+    var bytes = it.text.length + 1;
+    if (inflightBytes() + bytes > RX_CAP) break;
+    JOB.inflight.push({len: bytes, ln: it.ln, syn: it.syn});
+    sendLine(it.text, !SERIAL.verbose);
+    JOB.idx++;
+  }
+  maybeToolPrompt();
+  updateJobUI();
+  if (JOB.active && JOB.idx >= JOB.total && !JOB.inflight.length && !JOB.toolWait) jobDone();
+}
+
+function maybeToolPrompt(){
+  var b = document.getElementById('toolBanner');
+  if (JOB.active && JOB.toolWait && !JOB.inflight.length){
+    var ti = MODEL && MODEL.toolInfo ? MODEL.toolInfo[JOB.toolWait.tool] : null;
+    document.getElementById('toolBannerTxt').textContent =
+      'Tool change — T' + JOB.toolWait.tool + (ti ? ': ' + ti.desc : '') +
+      ' (line ' + JOB.toolWait.line + ')';
+    b.style.display = 'block';
+  } else {
+    b.style.display = 'none';
+  }
+}
+
+function onAck(ok, code){
+  if (!JOB.active || !JOB.inflight.length) return;
+  var e = JOB.inflight.shift();
+  JOB.acked++;
+  if (e.ln > 0){
+    JOB.lastLn = e.ln;
+    document.getElementById('droLine').textContent = e.ln;
+  }
+  // paint progress in the 3D view up to this source line
+  if (!e.syn && MODEL && MODEL.lineFirstSeg[e.ln] !== undefined){
+    var si = MODEL.lineFirstSeg[e.ln], j = si;
+    while (j + 1 < MODEL.segs.length && MODEL.segs[j + 1].line === e.ln) j++;
+    setTime(MODEL.segs[j].t1);
+  }
+  if (!ok){
+    JOB.held = true;
+    sendRT(0x21, '! (feed hold — error at line ' + e.ln + ')');
+    updateJobUI('error:' + code + ' at line ' + e.ln + ' — held. Fix and Resume, or Stop.');
+    return;
+  }
+  jobFill();
+}
+
+function jobStart(){
+  if (!MODEL || !MODEL.segs.length){ alert('Load a G-code file first.'); return; }
+  if (!SERIAL.connected){ alert('Connect to the machine first (Machine tab).'); return; }
+  if (JOB.active) return;
+  if (SERIAL.state !== 'Idle'){
+    alert('Machine must be Idle to start a job (current state: ' + SERIAL.state + '). Home or unlock first.');
+    return;
+  }
+  var bb = modelBBox(MODEL);
+  var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
+  var errs = all.filter(function(i){ return i.sev === 'err'; }).length;
+  var list = buildJobList(MODEL.lines);
+
+  // "start high": traverse to the file's first XY point at top of travel first
+  var highStartNote = '';
+  if (PROFILE.run.highStart){
+    if (!SERIAL.homedSeen){
+      highStartNote = 'Start high: SKIPPED — machine has not homed this session.\n';
+    } else {
+      var p0 = null;
+      for (var si = 0; si < MODEL.segs.length; si++){
+        var sg = MODEL.segs[si];
+        if (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001){
+          p0 = {x: sg.x1, y: sg.y1};
+          break;
+        }
+      }
+      if (p0){
+        list.unshift({text: 'G0 X' + p0.x.toFixed(3) + ' Y' + p0.y.toFixed(3), ln: 0, syn: true});
+        list.unshift({text: 'G21 G90', ln: 0, syn: true});
+        list.unshift({text: 'G53 G0 Z-' + travelZ().toFixed(1), ln: 0, syn: true});
+        highStartNote = 'Start high: traverse ' + travelZ().toFixed(0) + ' mm below Z top to X' + p0.x.toFixed(1) +
+                        ' Y' + p0.y.toFixed(1) + ', then the file plunges there. Also applies after each tool change.\n';
+      }
+    }
+  }
+
+  var msg = 'Run "' + document.getElementById('fileName').textContent + '" on the machine?\n\n' +
+    'Cut extents  X: ' + bb.cmin.x.toFixed(1) + ' … ' + bb.cmax.x.toFixed(1) + ' mm\n' +
+    '             Y: ' + bb.cmin.y.toFixed(1) + ' … ' + bb.cmax.y.toFixed(1) + ' mm\n' +
+    '             Z: ' + bb.cmin.z.toFixed(2) + ' … ' + bb.cmax.z.toFixed(2) + ' mm\n' +
+    'Checks tab: ' + (errs ? errs + ' error(s) — review before running!' : 'no errors') + '\n';
+
+  var tp = travelPreflight();
+  if (tp){
+    if (tp.ok) msg += 'Machine travel: fits from the current zero (per controller config; assumes homed).\n';
+    else msg += '*** TRAVEL WARNING: ' + tp.msgs.join('; ') + ' — expect a soft-limit alarm or a rail hit! ***\n';
+  } else {
+    msg += 'Machine travel: not checked (controller config not read yet).\n';
+  }
+  if (MODEL.sMax && SERIAL.settings[30] !== undefined && MODEL.sMax > SERIAL.settings[30]){
+    msg += '*** SPINDLE: file commands S' + MODEL.sMax + ' but the controller max ($30) is ' +
+           SERIAL.settings[30] + ' — RPM will be capped. ***\n';
+  }
+  var bsErr = bitSetterReady();
+  var useBS = (bsErr === null && MODEL.tools.length > 0);
+  if (MODEL.tools.length > 1){
+    var names = MODEL.tools.map(function(t){
+      var ti = MODEL.toolInfo[t.tool];
+      return 'T' + t.tool + (ti ? ' ' + ti.desc : '');
+    }).join(' → ');
+    msg += 'Multi-tool file: ' + names + '\n';
+  }
+  if (MODEL.tools.length > 0){
+    if (useBS){
+      msg += 'BitSetter: reference probe at start, automatic re-probe + length offset (G43.1) at each tool change.\n';
+      msg += '  Assumes Z was zeroed with the tool currently loaded.\n';
+      if (!PROBE.previewDone){
+        PROBE.previewDone = true;
+        msg += '  First probe this session — exact sequence:\n    ' + probeSteps().join('\n    ') + '\n';
+      }
+    } else {
+      msg += 'BitSetter INACTIVE (' + bsErr + ') — tool lengths must match, or re-zero Z at each change.\n';
+    }
+  }
+  var hasM3 = list.some(function(it){ return it.text && /\bM0*3\b/i.test(it.text); });
+  if (list.injected){
+    msg += 'Spin-up: a G4 P' + PROFILE.spindle.spinup + ' s dwell will be inserted after each M3 (' +
+           list.injected + '\u00d7).\n';
+  } else if (hasM3 && PROFILE.spindle.spinup > 0){
+    msg += 'Spin-up: the file already dwells \u2265 ' + PROFILE.spindle.spinup + ' s after M3 — nothing added.\n';
+  } else if (hasM3){
+    msg += '*** SPIN-UP DWELL IS 0 — motion begins immediately after M3. Set it in Machine profile. ***\n';
+  }
+  if (list.retracts){
+    msg += 'Stop high: Z climbs to traverse height before each spindle stop (' + list.retracts + '\u00d7).\n';
+  }
+  msg += highStartNote;
+  msg += '\nWork zero set? Right tool loaded? Hand near the e-stop?\n' +
+    'For a new file, consider an air cut first (zero Z above the stock).';
+  if (!confirm(msg)) return;
+
+  jogModalClose();
+  JOB.active = true; JOB.held = false; JOB.toolWait = null;
+  JOB.list = list; JOB.total = list.length;
+  JOB.idx = 0; JOB.acked = 0; JOB.lastLn = 0; JOB.inflight = [];
+  JOB.startedAt = performance.now();
+  JOB.useBS = useBS;
+  playing = false; updatePlayBtn(); setTime(0);
+  logC('sys', 'job started — ' + JOB.total + ' blocks' + (list.injected ? ' (incl. ' + list.injected + ' spin-up dwells)' : ''));
+  if (JOB.useBS) probeStart('ref', jobFill);
+  else jobFill();
+}
+
+function jobHold(){
+  if (!SERIAL.connected) return;
+  JOB.held = true;
+  sendRT(0x21, '! (feed hold)');
+  updateJobUI('held — Resume to continue');
+}
+function jobResume(){
+  if (!SERIAL.connected) return;
+  sendRT(0x7e, '~ (resume)');
+  if (JOB.active){ JOB.held = false; jobFill(); }
+}
+function jobStop(){
+  if (!SERIAL.connected) return;
+  PROBE.active = false; PROBE.onDone = null;
+  sendRT(0x21, '! (feed hold)');
+  setTimeout(function(){
+    sendRT(0x18, 'ctrl-x (soft reset)');
+    JOB.active = false; JOB.held = false; JOB.toolWait = null; JOB.inflight = [];
+    maybeToolPrompt();
+    updateJobUI('stopped — buffer cleared. Verify position/zero before running again.');
+    logC('sys', 'job stopped');
+  }, 500);
+}
+function jobDone(){
+  JOB.active = false;
+  var mins = ((performance.now() - JOB.startedAt) / 60000).toFixed(1);
+  updateJobUI('done — ' + JOB.acked + ' lines in ' + mins + ' min');
+  logC('sys', 'job complete (' + mins + ' min)');
+}
+function updateJobUI(statusText){
+  var pct = JOB.total ? Math.round(JOB.acked / JOB.total * 100) : 0;
+  document.getElementById('jobBarFill').style.width = pct + '%';
+  var el = document.getElementById('jobStatus');
+  if (statusText) el.textContent = statusText;
+  else if (JOB.active) el.textContent = 'line ' + JOB.acked + ' / ' + JOB.total + ' (' + pct + '%)';
+  else if (!JOB.acked) el.textContent = 'no job running';
+}
+
+/* ---------------- machine tab wiring ---------------- */
+function wireMachine(){
+  document.getElementById('connectBtn').addEventListener('click', serialConnect);
+  if (SERIAL.supported && navigator.serial.addEventListener){
+    navigator.serial.addEventListener('disconnect', function(){
+      if (SERIAL.connected){ logC('err', 'USB device disconnected'); serialDisconnect(); }
+    });
+  }
+  if (!SERIAL.supported){
+    document.getElementById('serialNote').textContent =
+      'Web Serial is not available in this browser — open this file in Chrome or Edge on desktop to connect to the machine. Everything else works here.';
+  }
+
+  document.getElementById('homeBtn').addEventListener('click', function(){ sendLine('$H'); });
+  document.getElementById('unlockBtn').addEventListener('click', function(){ sendLine('$X'); });
+  document.getElementById('resetBtn').addEventListener('click', function(){ sendRT(0x18, 'ctrl-x (soft reset)'); });
+
+  document.getElementById('hdrHold').addEventListener('click', jobHold);
+  document.getElementById('hdrResume').addEventListener('click', jobResume);
+  document.getElementById('estopBtn').addEventListener('click', emergencyStop);
+  document.getElementById('jogEstop').addEventListener('click', emergencyStop);
+
+  document.getElementById('alarmHome').addEventListener('click', function(){ sendLine('$H'); });
+
+  // ----- settings modal -----
+  function settingsClose(){ document.getElementById('setModal').hidden = true; }
+  document.getElementById('settingsBtn').addEventListener('click', function(){
+    document.getElementById('setModal').hidden = false;
+  });
+  document.getElementById('setClose').addEventListener('click', settingsClose);
+  document.getElementById('setModal').addEventListener('pointerdown', function(e){
+    if (e.target === e.currentTarget) settingsClose();
+  });
+  document.querySelectorAll('#smTabs button[data-sm]').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#smTabs button').forEach(function(u){ u.classList.toggle('active', u === b); });
+      document.querySelectorAll('.smPane').forEach(function(pn){ pn.classList.toggle('active', pn.id === b.dataset.sm); });
+    });
+  });
+  window.addEventListener('keydown', function(e){
+    if (e.code === 'Escape' && !document.getElementById('setModal').hidden){
+      e.stopImmediatePropagation();
+      settingsClose();
+    }
+  }, true);
+
+  // ----- jog modal -----
+  document.getElementById('jogOpen').addEventListener('click', jogModalOpen);
+  document.getElementById('jogClose').addEventListener('click', jogModalClose);
+  document.getElementById('jogModal').addEventListener('pointerdown', function(e){
+    if (e.target === e.currentTarget) jogModalClose();
+  });
+  window.addEventListener('keydown', jogKeyDown, true);
+  window.addEventListener('keyup', jogKeyUp, true);
+  window.addEventListener('blur', function(){
+    if (KEYJOG.code || JOGC.active){ KEYJOG.code = null; jogFastStop(true); }
+  });
+
+  document.querySelectorAll('#jogIncRow button[data-inc]').forEach(function(b){
+    b.addEventListener('click', function(){
+      PROFILE.jog.inc = b.dataset.inc;
+      setIncUI(b.dataset.inc);
+      profileSave();
+    });
+  });
+  document.querySelectorAll('#jogGrid button[data-jog]').forEach(function(b){
+    var p = b.dataset.jog.split(',').map(Number);
+    b.addEventListener('pointerdown', function(e){
+      if (PROFILE.jog.inc !== 'fast') return;
+      e.preventDefault();
+      if (!requireIdle('jog')) return;
+      b.setPointerCapture(e.pointerId);
+      jogFastStart(p);
+    });
+    ['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){
+      b.addEventListener(ev, function(){ if (PROFILE.jog.inc === 'fast') jogFastStop(true); });
+    });
+    b.addEventListener('click', function(){
+      if (PROFILE.jog.inc === 'fast') return; // handled by hold
+      if (!requireIdle('jog')) return;
+      jogStepOnce(p);
+    });
+  });
+
+  document.getElementById('zeroX').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 X0'); });
+  document.getElementById('zeroY').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 Y0'); });
+  document.getElementById('zeroZ').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 Z0'); });
+  document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 X0 Y0 Z0'); });
+  document.getElementById('gotoZero').addEventListener('click', function(){
+    if (!requireIdle('go to zero')) return;
+    sendLine('G53 G0 Z-' + travelZ().toFixed(1)); // retract near top of travel (requires homing)
+    sendLine('G90 G0 X0 Y0');
+  });
+
+  document.getElementById('spinOn').addEventListener('click', function(){
+    if (!requireIdle('spindle start')) return;
+    if (SERIAL.state !== 'Idle'){ logC('err', 'spindle start blocked — machine is ' + SERIAL.state); return; }
+    var rpm = parseInt(document.getElementById('rpmIn').value, 10) || 10000;
+    sendLine('M3 S' + rpm);
+  });
+  document.getElementById('spinOff').addEventListener('click', function(){ sendLine('M5'); });
+  document.getElementById('hdrSpindle').addEventListener('click', function(){
+    if (SERIAL.connected && SERIAL.speed > 0) sendLine('M5'); // stop only — starting stays a deliberate act
+  });
+
+  document.getElementById('jobRun').addEventListener('click', jobStart);
+  document.getElementById('jobHold').addEventListener('click', jobHold);
+  document.getElementById('jobResume').addEventListener('click', jobResume);
+  document.getElementById('jobStop').addEventListener('click', jobStop);
+  document.getElementById('toolContinue').addEventListener('click', function(){
+    if (!JOB.toolWait) return;
+    var tw = JOB.toolWait;
+    // when probing, the machine ends parked over the BitSetter — returning to
+    // the work at height is mandatory, not just the highStart preference
+    var wantHigh = (PROFILE.run.highStart || JOB.useBS) && SERIAL.homedSeen && tw.next;
+    var resume = function(){
+      if (wantHigh){
+        JOB.list.splice(JOB.idx, 0,
+          {text: 'G53 G0 Z-' + travelZ().toFixed(1), ln: 0, syn: true},
+          {text: 'G21 G90', ln: 0, syn: true},
+          {text: 'G0 X' + tw.next.x.toFixed(3) + ' Y' + tw.next.y.toFixed(3), ln: 0, syn: true});
+        JOB.total = JOB.list.length;
+        logC('sys', 'traversing at top of travel to X' + tw.next.x.toFixed(1) +
+             ' Y' + tw.next.y.toFixed(1) + ' before resuming');
+      }
+      logC('sys', 'continuing after tool change (T' + tw.tool + ')');
+      jobFill();
+    };
+    JOB.toolWait = null;
+    maybeToolPrompt();
+    if (JOB.useBS) probeStart('tool', resume);
+    else resume();
+  });
+
+  document.getElementById('consoleIn').addEventListener('keydown', function(e){
+    if (e.key !== 'Enter') return;
+    var v = e.target.value.trim();
+    if (!v) return;
+    e.target.value = '';
+    if (v === '?') sendRT(0x3f, '?');
+    else if (v === '!') jobHold();
+    else if (v === '~') jobResume();
+    else sendLine(v);
+  });
+  document.getElementById('verboseChk').addEventListener('change', function(e){
+    SERIAL.verbose = e.target.checked;
+  });
+
+  // ----- profile wiring -----
+  profileLoad();
+  applyProfileToUI();
+  ['bsEnable','bsX','bsY','bzEnable','bzVersion','spinType','spinupSec','jogFeedXY','jogFeedZ','highStart','travelZIn',
+   'envW','envD','originSel','stockThk','rapidRate','checkEnvelope','showEnvelope'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', readUIToProfile);
+  });
+  document.getElementById('machinePreset').addEventListener('change', readUIToProfile);
+
+  document.getElementById('bsCapture').addEventListener('click', function(){
+    if (!SERIAL.connected){ logC('err', 'connect first, jog over the BitSetter button, then capture'); return; }
+    document.getElementById('bsX').value = SERIAL.mpos.x.toFixed(1);
+    document.getElementById('bsY').value = SERIAL.mpos.y.toFixed(1);
+    document.getElementById('bsEnable').checked = true;
+    readUIToProfile();
+    logC('sys', 'BitSetter position captured: ' + SERIAL.mpos.x.toFixed(1) + ', ' + SERIAL.mpos.y.toFixed(1) + ' (machine coords)');
+  });
+
+  document.getElementById('profExport').addEventListener('click', function(){
+    readUIToProfile();
+    var blob = new Blob([JSON.stringify(PROFILE, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'kerf-profile.json';
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+  });
+  document.getElementById('profImport').addEventListener('click', function(){
+    document.getElementById('profFile').click();
+  });
+  document.getElementById('profFile').addEventListener('change', function(e){
+    var f = e.target.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      try{ importProfileJSON(JSON.parse(rd.result)); }
+      catch(err){ logC('err', 'could not parse ' + f.name + ': ' + err.message); }
+    };
+    rd.readAsText(f);
+    e.target.value = '';
+  });
+
+  document.getElementById('spinType').addEventListener('change', function(e){
+    if (e.target.value === 'vfd' && (parseFloat(document.getElementById('spinupSec').value) || 0) < 5){
+      document.getElementById('spinupSec').value = 6;
+      readUIToProfile();
+      logC('sys', 'spin-up dwell raised to 6 s for the VFD spindle — adjust in Machine profile if yours settles faster');
+    }
+  });
+
+  document.getElementById('refreshCfg').addEventListener('click', function(){
+    SERIAL.queried = false;
+    SERIAL.settings = {}; SERIAL.offsets = {}; SERIAL.buildInfo = '';
+    doQuery();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function(){ wire(); wireMachine(); });
+</script>
+</body>
+</html>

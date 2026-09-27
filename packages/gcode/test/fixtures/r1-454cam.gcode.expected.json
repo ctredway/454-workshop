@@ -1,0 +1,57 @@
+{
+ "segments": 843,
+ "segmentsHash": "f9394457efc65d617efb14eff0ef7fd6bc8c2fdd87d45f4bdf2fd55b843693bd",
+ "totalTime": 34.940626,
+ "cutDist": 459.87729,
+ "rapidDist": 108.411618,
+ "extents": {
+  "x": [
+   -1.593,
+   40.594
+  ],
+  "y": [
+   -1.595,
+   15.595
+  ],
+  "z": [
+   -3,
+   6
+  ]
+ },
+ "tools": [
+  {
+   "line": 9,
+   "tool": 1
+  },
+  {
+   "line": 24,
+   "tool": 2
+  },
+  {
+   "line": 91,
+   "tool": 3
+  }
+ ],
+ "issues": [
+  "info@9: M6 tool change to T1 — Carbide Motion pauses here (BitSetter / tool-length routine).",
+  "info@24: M6 tool change to T2 — Carbide Motion pauses here (BitSetter / tool-length routine).",
+  "info@91: M6 tool change to T3 — Carbide Motion pauses here (BitSetter / tool-length routine)."
+ ],
+ "sections": [
+  {
+   "line": 7,
+   "name": "Drilling",
+   "tool": "3.17 mm drill"
+  },
+  {
+   "line": 22,
+   "name": "Inside profile",
+   "tool": "End Mill (2 mm)"
+  },
+  {
+   "line": 89,
+   "name": "Outside profile",
+   "tool": "End Mill (1/8\")"
+  }
+ ]
+}

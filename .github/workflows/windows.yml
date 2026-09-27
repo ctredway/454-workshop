@@ -1,0 +1,58 @@
+# Builds 454 Workshop for Windows on GitHub's own Windows machines.
+#   - Run it by hand: Actions tab > "windows build" > Run workflow. The installer and zip are attached
+#     to the run as an artifact to download.
+#   - Push a version tag (e.g. v0.5.0): the same build, plus a draft release on the Releases page with
+#     the installer and zip attached, for you to review and publish.
+# Built from the repository's own index.html, design.html and docs/. CAM is included only if cam.js and
+# geom.js are in the repository, which they aren't until CAM is released.
+name: windows build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write          # to create the draft release on a tag
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Assemble the app's pages
+        run: npm run build:app
+
+      - name: Build the installer and zip
+        run: npx electron-builder --win nsis zip --x64 --publish never
+
+      - name: Attach to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: 454-Workshop-windows
+          path: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.zip
+          if-no-files-found: error
+
+      - name: Draft a release (version tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.zip

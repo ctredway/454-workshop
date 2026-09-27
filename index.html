@@ -351,13 +351,13 @@
       <div class="stat"><span>Tools</span><b id="stTools">—</b></div>
     </div>
     <div id="tabs">
-      <button id="tabCode" class="active">Code</button>
+      <button id="tabMachine" class="active">Machine</button>
+      <button id="tabCode">Code</button>
       <button id="tabTp">Toolpaths<span class="badge" id="tpBadge">0</span></button>
       <button id="tabChecks">Checks<span class="badge" id="checksBadge">0</span></button>
-      <button id="tabMachine">Machine</button>
     </div>
 
-    <div class="tabPane active" id="paneCode">
+    <div class="tabPane" id="paneCode">
       <div id="codeScroller"><div id="codeSpacer"></div></div>
       <div id="codeFollowRow">
         <input type="checkbox" id="followChk" checked><label for="followChk">Follow playback</label>
@@ -375,7 +375,7 @@
       <div id="checksList"></div>
     </div>
 
-    <div class="tabPane" id="paneMachine">
+    <div class="tabPane active" id="paneMachine">
       <div id="machinePane">
         <div class="mRow">
           <button id="connectBtn" class="primary">Connect to machine</button>
@@ -399,13 +399,6 @@
               <button id="resetBtn" class="danger" title="Reset the controller: stops the spindle and throws away anything queued. Use it to recover from an alarm.">Reset</button>
             </div>
             <div class="mRow"><span class="chip" id="mposChip">machine —</span><span class="chip" id="pinChip" style="display:none"></span></div>
-          </div>
-
-          <div class="mSection">
-            <h3>Controller config <button class="hlp" data-h="controllercfg" title="What is this?" aria-label="Help">ⓘ</button></h3>
-            <div class="mRow"><button id="refreshCfg">Re-read ($$, $#)</button><span class="chip" id="cfgChip">read on connect</span></div>
-            <div class="mRow"><button id="cfgCheck">Check controller settings</button></div>
-            <div id="cfgTable" style="display:none;font-family:var(--mono);font-size:11.5px;line-height:18px;background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;padding:6px 8px;max-height:190px;overflow-y:auto"></div>
           </div>
 
           <div class="mSection">
@@ -547,6 +540,7 @@
       </div>
       <div class="mRow">
         <button id="gotoZero" title="Raises Z to 5 mm below the top of travel first (machine must be homed)">Go to XY zero</button>
+        <button id="jogZ6" title="Lift Z 6 mm from where it is now, as in Carbide Motion. Stops short at the top of travel.">Z +6 mm</button>
         <button id="jogProbe" title="Jog over the plate, then probe — opens the BitZero panel">Probe…</button>
       </div>
     </div>
@@ -576,6 +570,7 @@
       <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Work area <button class="hlp" data-h="workarea" title="What is this?" aria-label="Help">ⓘ</button></h3>
       <div class="mRow">
         <select id="machinePreset">
+          <option value="ctl">From the controller (automatic)</option>
           <option value="">Custom…</option>
           <option value="425,425">Shapeoko 3 (425 × 425)</option>
           <option value="838,438">Shapeoko XL (838 × 438)</option>
@@ -603,6 +598,10 @@
       <div class="mRow">
         <label>Rapid rate</label><input type="number" id="rapidRate" value="5000" step="100"> <span style="color:var(--faint)">mm/min — auto-set from the controller</span>
       </div>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Controller config <button class="hlp" data-h="controllercfg" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <div class="mRow"><button id="refreshCfg">Re-read ($$, $#)</button><span class="chip" id="cfgChip">read on connect</span></div>
+      <div class="mRow"><button id="cfgCheck">Check controller settings</button></div>
+      <div id="cfgTable" style="display:none;font-family:var(--mono);font-size:11.5px;line-height:18px;background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;padding:6px 8px;max-height:190px;overflow-y:auto"></div>
     </div>
 
     <div class="smPane" id="smAcc">
@@ -611,6 +610,7 @@
         <label style="margin-left:6px">machine X</label><input type="number" id="bsX" step="0.1" style="width:84px">
         <label>Y</label><input type="number" id="bsY" step="0.1" style="width:84px">
         <button id="bsCapture" title="Jog the tool over the BitSetter button, then store the current machine position">Capture position</button>
+        <button id="bsTest" title="Touch off once to check the position and the switch. Changes nothing: no reference is taken and no offset applied.">Test</button>
       </div>
       <div class="mRow">
         <input type="checkbox" id="bzEnable"><label for="bzEnable">BitZero</label><button class="hlp" data-h="bitzero" title="What is this?" aria-label="Help">ⓘ</button>
@@ -651,8 +651,8 @@
       <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5" id="tcAutoNote"></p>
       <div class="mRow">
         <input type="checkbox" id="tcEndPark" checked><label for="tcEndPark">Park at the end of a job</label>
-        <label style="margin-left:6px">machine X</label><input type="number" id="pkX" step="0.1" style="width:84px" placeholder="XY zero">
-        <label>Y</label><input type="number" id="pkY" step="0.1" style="width:84px" placeholder="XY zero">
+        <label style="margin-left:6px">machine X</label><input type="number" id="pkX" step="0.1" style="width:84px" placeholder="back centre">
+        <label>Y</label><input type="number" id="pkY" step="0.1" style="width:84px" placeholder="back centre">
         <button id="pkCapture" title="Jog to where the machine should sit at the end of a job, then store it">Capture</button>
       </div>
     </div>
@@ -682,8 +682,8 @@
       <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5">All settings save automatically in this browser. Export a copy as backup — importing Carbide Motion's shapeoko.json pulls in your BitSetter position and accessory setup.</p>
       <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:12.5px;color:var(--muted);line-height:1.7">
         <div>454 Control <span id="verChip" style="font-family:var(--mono)"></span> — free &amp; open source, MIT.</div>
-        <div><a id="repoLink" href="https://github.com/ctredway/kerf-repo" target="_blank" rel="noopener" style="color:var(--info)">Source &amp; issues on GitHub</a>
-        &nbsp;·&nbsp; <a id="supportLink" href="https://github.com/ctredway/kerf-repo?sponsor=1" target="_blank" rel="noopener" style="color:var(--amber)">Support 454 Control ♥</a></div>
+        <div><a id="repoLink" href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener" style="color:var(--info)">Source &amp; issues on GitHub</a>
+        &nbsp;·&nbsp; <a id="supportLink" href="https://github.com/ctredway/454-workshop?sponsor=1" target="_blank" rel="noopener" style="color:var(--amber)">Support 454 Control ♥</a></div>
       </div>
     </div>
   </div>
@@ -806,7 +806,7 @@
    Produces: segments (tessellated micro-moves), issues, tools
    All internal units are mm. seg.units records display units.
    ============================================================ */
-var CONTROL_VERSION = '0.26.2';
+var CONTROL_VERSION = '0.31.4';
 
 var SUPPORTED_G = {0:1,1:1,2:1,3:1,4:1,17:1,18:1,19:1,20:1,21:1,28:1,28.2:1,90:1,91:1,91.1:1,90.1:1,53:1};
 var IGNORED_G   = {40:'G40 cutter compensation off — accepted but ignored by Carbide Motion',
@@ -819,6 +819,75 @@ var IGNORED_G   = {40:'G40 cutter compensation off — accepted but ignored by C
 var SUPPORTED_M = {0:1,1:1,2:1,3:1,5:1,6:1,30:1};
 var IGNORED_M   = {7:'M7 mist coolant — accepted but ignored',9:'M9 coolant off — accepted but ignored'};
 
+// Re-time the moves the way GRBL's planner runs them, from the controller's own limits:
+// per-axis maximum rates ($110-112) and accelerations ($120-122), and junction deviation ($11),
+// which sets how fast a corner can be taken. Two passes, backward then forward, fix the speed at
+// each junction; each move then accelerates, cruises and decelerates within its length.
+// Only t0/t1 change. Dwells between moves are kept, and the machine is at rest wherever GRBL
+// stops the planner: the start, dwells, and spindle, coolant, tool-change and program stops.
+function retimeWithPlanner(segs, opts){
+  var A = opts.accel, V = opts.maxRate || {}, jd = opts.junctionDev > 0 ? opts.junctionDev : 0.01;
+  var n = segs.length;
+  if (!n || !(A.x > 0 && A.y > 0 && A.z > 0)) return;
+  var L = new Float64Array(n), vn = new Float64Array(n), ac = new Float64Array(n), vj = new Float64Array(n), gap = new Float64Array(n);
+  var ux = new Float64Array(n), uy = new Float64Array(n), uz = new Float64Array(n);
+  var prevT1 = 0;
+  for (var i = 0; i < n; i++){
+    var sg = segs[i], dx = sg.x1 - sg.x0, dy = sg.y1 - sg.y0, dz = sg.z1 - sg.z0;
+    var len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    L[i] = len; ux[i] = dx / len; uy[i] = dy / len; uz[i] = dz / len;
+    gap[i] = sg.t0 - prevT1; prevT1 = sg.t1;
+    // the slowest axis along this direction limits both speed and acceleration
+    var cap = Infinity, acc = Infinity;
+    [['x', ux[i]], ['y', uy[i]], ['z', uz[i]]].forEach(function (q) {
+      var u = Math.abs(q[1]);
+      if (u < 1e-9) return;
+      if (V[q[0]] > 0) cap = Math.min(cap, V[q[0]] / u);
+      acc = Math.min(acc, A[q[0]] / u);
+    });
+    var want = sg.rapid ? (isFinite(cap) ? cap : opts.rapidRate) : (sg.feed || opts.rapidRate);
+    vn[i] = Math.min(want, cap) / 60;                   // mm/s
+    ac[i] = acc;                                        // mm/s^2
+    // how fast the junction INTO this move can be taken
+    if (i === 0 || sg.stop || gap[i] > 1e-6) vj[i] = 0;
+    else {
+      var cosT = -(ux[i-1]*ux[i] + uy[i-1]*uy[i] + uz[i-1]*uz[i]);
+      if (cosT > 0.999999) vj[i] = 0;                      // straight back on itself
+      else if (cosT < -0.999999) vj[i] = Infinity;         // straight on
+      else {
+        var sinH = Math.sqrt(0.5 * (1 - cosT));
+        vj[i] = Math.sqrt(Math.min(ac[i-1], ac[i]) * jd * sinH / (1 - sinH));
+      }
+      vj[i] = Math.min(vj[i], vn[i-1], vn[i]);
+    }
+  }
+  // backward: every move must be able to slow to the next junction (and to rest at the end)
+  var entry = new Float64Array(n + 1);
+  entry[n] = 0;
+  for (var b = n - 1; b >= 0; b--){
+    var next = (b + 1 < n && vj[b + 1] === 0) ? 0 : entry[b + 1];
+    entry[b] = Math.min(vj[b], Math.sqrt(next*next + 2 * ac[b] * L[b]));
+  }
+  // forward: and must be able to reach it from the previous one
+  for (var f = 1; f < n; f++){
+    if (vj[f] === 0){ entry[f] = 0; continue; }
+    entry[f] = Math.min(entry[f], Math.sqrt(entry[f-1]*entry[f-1] + 2 * ac[f-1] * L[f-1]));
+  }
+  // each move: accelerate from its entry speed, cruise, decelerate to the next entry speed
+  var t = 0;
+  for (var k = 0; k < n; k++){
+    var v0 = entry[k], v1 = (k + 1 < n && vj[k + 1] !== 0) ? entry[k + 1] : 0, v = vn[k], a = ac[k], d = L[k];
+    var da = Math.max(0, (v*v - v0*v0) / (2*a)), dd = Math.max(0, (v*v - v1*v1) / (2*a)), dt;
+    if (da + dd <= d) dt = (v - v0) / a + (v - v1) / a + (d - da - dd) / v;
+    else {                                                // never reaches full speed
+      var vp = Math.sqrt(Math.max(v0*v0, v1*v1, (2*a*d + v0*v0 + v1*v1) / 2));
+      dt = Math.max(0, (vp - v0) / a) + Math.max(0, (vp - v1) / a);
+      if (!(dt > 0)) dt = d / Math.max(v, 1e-6);
+    }
+    t += gap[k];
+    segs[k].t0 = t; t += dt; segs[k].t1 = t;
+  }
+}
 function parseGcode(text, opts){
   opts = opts || {};
   var rapidRate = opts.rapidRate || 5000; // mm/min
@@ -893,7 +962,7 @@ function parseGcode(text, opts){
     x:0, y:0, z:0,
     time: 0
   };
-  var cutDist = 0, rapidDist = 0, sMax = 0;
+  var cutDist = 0, rapidDist = 0, sMax = 0, sMin = 0;
 
   function toMM(v){ return st.units === 'in' ? v * 25.4 : v; }
 
@@ -905,6 +974,7 @@ function parseGcode(text, opts){
     var dt = len / rate * 60; // seconds
     var s = {x0:st.x,y0:st.y,z0:st.z,x1:x1,y1:y1,z1:z1,rapid:rapid,line:lineNo,
              feed: rapid?null:st.feed, t0:st.time, t1:st.time+dt, units:st.units, tool:st.tool};
+    if (st.stopBefore){ s.stop = true; st.stopBefore = false; }   // the machine is at rest before this move
     segs.push(s);
     if (lineFirstSeg[lineNo] === undefined) lineFirstSeg[lineNo] = segs.length-1;
     if (rapid) rapidDist += len; else cutDist += len;
@@ -1013,7 +1083,7 @@ function parseGcode(text, opts){
       if (L === 'G') gcodes.push(V);
       else if (L === 'M') mcodes.push(V);
       else if (L === 'F'){ st.feed = toMM(V); }
-      else if (L === 'S'){ params.s = V; if (V > sMax) sMax = V; }
+      else if (L === 'S'){ params.s = V; if (V > sMax) sMax = V; if (V > 0 && (!sMin || V < sMin)) sMin = V; }
       else if (L === 'T'){ sawT = V; }
       else if (L === 'N'){ /* line number, ignore */ }
       else {
@@ -1031,6 +1101,7 @@ function parseGcode(text, opts){
       else if (g === 4){
         var dwell = params.p !== undefined ? params.p : 0;
         st.time += dwell; // GRBL: P is seconds
+        st.stopBefore = true;
         skipMotion = skipMotion || !hasAxis;
       }
       else if (g === 17 || g === 18 || g === 19) st.plane = g;
@@ -1068,6 +1139,8 @@ function parseGcode(text, opts){
       }
     }
 
+    // spindle, coolant, tool change and program stops all wait for motion to finish in GRBL
+    if (mcodes.length) st.stopBefore = true;
     for (var mi = 0; mi < mcodes.length; mi++){
       var mc = mcodes[mi];
       if (mc === 3) st.spindle = true;
@@ -1153,9 +1226,12 @@ function parseGcode(text, opts){
     if (!cut && !prev.tool && sec.tool) prev.tool = sec.tool;
     return cut;
   });
+  st.trailGap = segs.length ? st.time - segs[segs.length - 1].t1 : 0;
+  if (opts.accel) retimeWithPlanner(segs, opts);
+  var totalTime = segs.length ? Math.max(st.time, segs[segs.length - 1].t1 + st.trailGap) : st.time;
   return {segs:segs, issues:issues, tools:tools, toolInfo:toolInfo, sections:sections,
           lineFirstSeg:lineFirstSeg,
-          cutDist:cutDist, rapidDist:rapidDist, totalTime:st.time, lines:lines, sMax:sMax};
+          cutDist:cutDist, rapidDist:rapidDist, totalTime:totalTime, lines:lines, sMax:sMax, sMin:sMin};
 }
 
 /* ============================================================
@@ -1209,11 +1285,25 @@ var scene, camera, renderer3, viewportEl;
 var cutLine=null, rapidLine=null, marker=null, gridObj=null, axesObj=null, envObj=null, originObj=null;
 var cutColors=null, rapidColors=null;
 var C_CUT=[0.722,0.498,0.180], C_CUT_D=[1.0,0.788,0.42], C_RAP=[0.275,0.345,0.42], C_RAP_D=[0.498,0.639,0.769];
+// Colours for the 3D view, per theme. On dark, what's been cut turns brighter; on light it turns
+// darker and stronger instead, so it stands out against the background either way.
+function viewPal(){
+  return UITHEME && UITHEME.theme === 'light'
+    ? {gridMinor: 0xdde3e9, gridMajor: 0xc6cfd8, cut: [0.851,0.600,0.310], cutDone: [0.620,0.310,0.000],
+       rap: [0.690,0.745,0.800], rapDone: [0.255,0.420,0.600]}
+    : {gridMinor: 0x20262e, gridMajor: 0x2e3742, cut: [0.722,0.498,0.180], cutDone: [1.0,0.788,0.42],
+       rap: [0.275,0.345,0.42], rapDone: [0.498,0.639,0.769]};
+}
+function applyViewPal(){
+  var v = viewPal();
+  C_CUT = v.cut; C_CUT_D = v.cutDone; C_RAP = v.rap; C_RAP_D = v.rapDone;
+}
 var orbit = {theta: -Math.PI/4, phi: Math.PI/3.2, radius: 400, target: new THREE.Vector3(0,0,0)};
 
 function w3(x,y,z){ return new THREE.Vector3(x, z, -y); } // CNC -> three
 
 function initThree(){
+  applyViewPal();                                      // start in the saved theme's colours
   viewportEl = document.getElementById('viewport');
   scene = new THREE.Scene();
   scene.background = new THREE.Color(cssNum('--bg', 0x14181d));
@@ -1421,6 +1511,15 @@ function renderViewCube(w, h){
   renderer3.setViewport(0, 0, w, h);
 }
 
+// Show which list entry the current work area is: automatic, a named machine, or custom.
+function syncPresetList(){
+  var sel = document.getElementById('machinePreset');
+  if (!sel) return;
+  if (!PROFILE.view.envUser){ sel.value = 'ctl'; return; }
+  var key = (+document.getElementById('envW').value) + ',' + (+document.getElementById('envD').value);
+  var match = Array.prototype.some.call(sel.options || [], function (o) { return o.value === key; });
+  sel.value = match ? key : '';
+}
 function buildStage(){
   if (gridObj){
     scene.remove(gridObj);
@@ -1457,8 +1556,9 @@ function buildStage(){
     g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
     gridObj.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({color: col})));
   }
-  addLines(minor, 0x20262e);
-  addLines(major, 0x2e3742);
+  var vp = viewPal();
+  addLines(minor, vp.gridMinor);
+  addLines(major, vp.gridMajor);
   scene.add(gridObj);
 
   axesObj = new THREE.Group();
@@ -1582,6 +1682,18 @@ function fitView(){
 var MODEL = null;
 var playT = 0, playing = false, lastFrame = null, doneCount = 0;
 
+function repaintToolpath(){
+  if (typeof MODEL === 'undefined' || !MODEL || !cutColors || !rapidColors) return;
+  for (var i = 0; i < MODEL.segs.length; i++){
+    var sg = MODEL.segs[i], done = i < doneCount;
+    var col = sg.g === 0 ? (done ? C_CUT_D : C_CUT) : (done ? C_RAP_D : C_RAP);
+    var arr = sg.g === 0 ? cutColors : rapidColors, o = sg.v * 3;
+    if (o === undefined || isNaN(o)) continue;
+    arr[o] = col[0]; arr[o+1] = col[1]; arr[o+2] = col[2]; arr[o+3] = col[0]; arr[o+4] = col[1]; arr[o+5] = col[2];
+  }
+  if (cutLine) cutLine.geometry.attributes.color.needsUpdate = true;
+  if (rapidLine) rapidLine.geometry.attributes.color.needsUpdate = true;
+}
 function setProgressColors(newDone){
   if (!MODEL) return;
   var a = Math.min(doneCount, newDone), b = Math.max(doneCount, newDone);
@@ -1989,6 +2101,16 @@ function cfg(){
   };
 }
 
+// The time estimate uses the controller's own limits once they've been read.
+function plannerOpts(){
+  var s = SERIAL.settings || {}, o = {rapidRate: cfg().rapidRate};
+  if (s[120] > 0 && s[121] > 0 && s[122] > 0){
+    o.accel = {x: s[120], y: s[121], z: s[122]};
+    o.maxRate = {x: s[110], y: s[111], z: s[112]};
+    o.junctionDev = s[11];
+  }
+  return o;
+}
 function loadText(text, name){
   if (typeof JOB !== 'undefined' && JOB.active){
     uiNote('A job is running', 'Stop the job on the machine before loading a new file.');
@@ -1996,7 +2118,7 @@ function loadText(text, name){
   }
   document.getElementById('fileName').textContent = name;
   document.getElementById('dropHint').style.display = 'none';
-  MODEL = parseGcode(text, {rapidRate: cfg().rapidRate});
+  MODEL = parseGcode(text, plannerOpts());
   doneCount = 0; playT = 0; playing = false; updatePlayBtn();
   curHiLine = -1; issueSelLine = -1;
   buildToolpath(MODEL);
@@ -2091,7 +2213,7 @@ function wire(){
     e.target.value = '';
   });
   document.getElementById('sampleBtn').addEventListener('click', function(){
-    loadText(SAMPLE, 'kerf-sample.nc');
+    loadText(SAMPLE, '454-sample.nc');
   });
 
   var dragDepth = 0;
@@ -2108,7 +2230,7 @@ function wire(){
   });
 
   // tabs
-  var tabs = [['tabCode','paneCode'],['tabTp','paneTp'],['tabChecks','paneChecks'],['tabMachine','paneMachine']];
+  var tabs = [['tabMachine','paneMachine'],['tabCode','paneCode'],['tabTp','paneTp'],['tabChecks','paneChecks']];   // Machine first, and open
   tabs.forEach(function(t){
     document.getElementById(t[0]).addEventListener('click', function(){
       tabs.forEach(function(u){
@@ -2193,11 +2315,21 @@ function wire(){
     document.getElementById(id).addEventListener('change', renderChecks);
   });
   document.getElementById('machinePreset').addEventListener('change', function(e){
-    if (!e.target.value) return;
-    var p = e.target.value.split(',');
-    document.getElementById('envW').value = p[0];
-    document.getElementById('envD').value = p[1];
+    var val = e.target.value;
+    if (val === 'ctl'){                                  // back to automatic
+      PROFILE.view.envUser = false;
+      var m = detectModel();
+      if (m){ document.getElementById('envW').value = m.x; document.getElementById('envD').value = m.y; }
+      else logC('sys', 'the work area will be filled in from the controller when you connect');
+    } else {
+      PROFILE.view.envUser = true;
+      if (val){ var p = val.split(','); document.getElementById('envW').value = p[0]; document.getElementById('envD').value = p[1]; }
+    }
     buildStage(); buildEnvelope(); renderChecks();
+  });
+  // typing a size is a choice too
+  ['envW','envD'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){ PROFILE.view.envUser = true; syncPresetList(); });
   });
   document.getElementById('rapidRate').addEventListener('change', function(){
     if (MODEL){
@@ -2232,9 +2364,20 @@ var JOGC = {active:false, timer:null, limitHit:false, inflight:0, p:null, dist:0
 var KEYJOG = {code:null};
 var JOG_KEYS = {ArrowLeft:[-1,0,0], ArrowRight:[1,0,0], ArrowUp:[0,1,0], ArrowDown:[0,-1,0], PageUp:[0,0,1], PageDown:[0,0,-1]};
 
+// Commands that must not be sent while the machine is busy. Zeroing, rapid moves, going to zero
+// and starting the spindle need it stopped; jogs may also follow a jog already under way, which
+// GRBL allows. During a job, only the moment it waits at a tool change counts as stopped.
 function requireIdle(what){
   if (SERIAL.state === 'Alarm'){
-    logC('err', what + ' blocked — machine is locked. Home ($H) first.');
+    logC('err', what + ' blocked \u2014 machine is locked. Home ($H) first.');
+    return false;
+  }
+  var jogLike = what === 'jog' || what === 'lift';
+  var ok = SERIAL.state === 'Idle' || (jogLike && SERIAL.state === 'Jog');
+  if (JOB.active && !atToolChange()) ok = false;
+  if (!ok){
+    var said = {Run: 'moving', Hold: 'on hold', Jog: 'jogging', Home: 'homing', Door: 'stopped by the door switch', Check: 'in check mode', Sleep: 'asleep'}[SERIAL.state];
+    logC('err', what + ' blocked \u2014 the machine is ' + (JOB.active ? 'running a job' : (said || 'busy')) + '. Wait until it stops.');
     return false;
   }
   return true;
@@ -2248,6 +2391,15 @@ function jogCmd(p, dist, feed){
   if (p[1]) cmd += 'Y' + (p[1] * dist).toFixed(3);
   if (p[2]) cmd += 'Z' + (p[2] * dist).toFixed(3);
   return cmd + 'F' + Math.round(feed);
+}
+// Lift 6 mm from wherever Z is, as a jog: cancellable like any other, and cut short if the top of
+// travel is closer than that, so it can't run into the limit switch.
+function jogLiftZ6(){
+  if (!requireIdle('lift')) return;
+  var d = clampJogDist([0, 0, 1], 6);
+  if (!(d > 0.05)){ logC('sys', 'Z is already at the top of its travel'); return; }
+  sendLine(jogCmd([0, 0, 1], d, PROFILE.jog.fastZ));
+  if (d < 5.95) logC('sys', 'Z lifted ' + d.toFixed(1) + ' mm: that\u2019s as far as the top of travel allows');
 }
 function jogStepOnce(p){
   var inc = PROFILE.jog.inc, dist = parseFloat(inc);
@@ -2422,11 +2574,57 @@ function bitSetterReady(){ // null = ready, else the reason it isn't
   if (!SERIAL.homedSeen) return 'machine has not homed this session';
   var s = SERIAL.settings;
   if (s[130] === undefined || s[131] === undefined) return 'controller travel not read yet';
-  var x = PROFILE.bitSetter.x, y = PROFILE.bitSetter.y, rx = axisRange('x'), ry = axisRange('y');
-  if (x < rx.min - 1 || x > rx.max + 1 || y < ry.min - 1 || y > ry.max + 1)
-    return 'stored position (' + x + ', ' + y + ') is outside the machine\u2019s travel (X ' + rx.min + ' to ' + rx.max +
-           ', Y ' + ry.min + ' to ' + ry.max + ') \u2014 re-capture it, or check $130/$131';
+  // A captured position is where the machine actually went, so it's honoured. It's only refused
+  // if it can't exist on this machine whichever way its coordinates count: beyond the full travel
+  // in both directions, which means a typing slip or a profile from another machine.
+  var x = PROFILE.bitSetter.x, y = PROFILE.bitSetter.y;
+  if (Math.abs(x) > s[130] + 25 || Math.abs(y) > s[131] + 25)
+    return 'stored position (' + x + ', ' + y + ') can\u2019t be on this machine, which travels ' + s[130] + ' \u00d7 ' + s[131] +
+           ' mm \u2014 jog over the button and capture it again';
+  var rx = axisRange('x'), ry = axisRange('y');
+  if ((x < rx.min - 1 || x > rx.max + 1 || y < ry.min - 1 || y > ry.max + 1) && !bitSetterReady.noted){
+    bitSetterReady.noted = true;                        // worth knowing, not worth refusing
+    logC('sys', 'note: the BitSetter position (' + x + ', ' + y + ') lies outside the range worked out for this machine (' +
+         describeRanges() + '). It is used as captured. If jogging near the ends seems limited, run Check controller settings (Settings \u2192 Machine).');
+  }
   return null;
+}
+// How each axis's range was worked out, for the controller check and for diagnosing a machine.
+function describeRanges(){
+  return ['x', 'y', 'z'].map(function (ax) {
+    var r = axisRange(ax);
+    if (!r) return ax.toUpperCase() + ' unknown';
+    var seen = SERIAL.axisSeen && SERIAL.axisSeen[ax];
+    var how = seen ? 'from positions the machine reported' : (SERIAL.forceOrigin ? 'origin set at home' : 'standard GRBL');
+    return ax.toUpperCase() + ' ' + r.min + ' to ' + r.max + ' (' + how + ')';
+  }).join('; ');
+}
+// Test the BitSetter: the same moves as a real measurement, but it only reports. It never takes
+// a reference or applies an offset, so it's safe at any time the machine is idle.
+function bsTest(){
+  if (!SERIAL.connected){ logC('err', 'connect to the machine first'); return; }
+  if (JOB.active || PROBE.active) return;
+  var why = bitSetterReady();
+  if (why !== null){ uiNote('The BitSetter can\u2019t be tested yet', 'It\u2019s ' + (PROFILE.bitSetter.enabled ? 'switched on, but ' + why : 'switched off') + '.'); return; }
+  if (!requireIdle('BitSetter test')) return;
+  uiDialog({title: 'Test the BitSetter?',
+            body: 'The machine will lift, move over the BitSetter, touch off with the tool in the spindle, and lift again.\n\nNothing is changed: no reference is taken and no offset applied.',
+            ok: 'Run the test', cancel: 'Cancel'}).then(function (go) {
+    if (!go) return;
+    updateJobUI('BitSetter test\u2026');
+    probeRun('BitSetter test', probeSteps(), function (cap) {
+      if (cap.z === undefined){ probeFail('the test finished but no probe result was received'); return; }
+      var msg = 'The BitSetter works: the tool triggered it at machine Z ' + cap.z.toFixed(3) + '.';
+      if (PROBE.refZ !== null){
+        var d = cap.z - PROBE.refZ;
+        msg += Math.abs(d) < 0.02 ? '\n\nThis is the same length as the reference tool, within ' + Math.abs(d).toFixed(3) + ' mm.'
+             : '\n\nThis tool is ' + Math.abs(d).toFixed(3) + ' mm ' + (d > 0 ? 'longer' : 'shorter') + ' than the reference tool.';
+      } else msg += '\n\nNo reference has been taken yet: setting Z zero offers to take one.';
+      logC('sys', 'BitSetter test: triggered at machine Z ' + cap.z.toFixed(3) + (PROBE.refZ !== null ? ' (reference ' + PROBE.refZ.toFixed(3) + ')' : ''));
+      updateJobUI('BitSetter test done.');
+      uiNote('BitSetter test', msg);
+    });
+  });
 }
 function probeSteps(){ // BitSetter sequence (name kept: the preflight preview prints it)
   var down = Math.max(10, (SERIAL.settings[132] || 80) - travelZ() - 1);
@@ -2607,6 +2805,23 @@ function tcAutoNote(){
     : 'Tool changes go to ' + sp.name + ': X' + sp.x.toFixed(1) + ' Y' + sp.y.toFixed(1) +
       (sp.auto ? ', worked out from the machine travel.' : '.');
 }
+// How every job ends, finished or ended early, in Carbide Motion's order: (lifted and spindle off
+// already) back to the job's XY zero, then park, by default at the back centre of the machine.
+// A captured end position overrides the back centre. Parking needs a homed machine.
+function endParkSpot(){
+  if (PROFILE.run.parkEnd === false) return null;
+  var pk = PROFILE.run.park;
+  if (pk.enabled && pk.x !== null && pk.y !== null) return {x: +pk.x, y: +pk.y, name: 'your captured end position'};
+  var bc = presetSpot('bc');
+  return bc ? {x: bc.x, y: bc.y, name: 'the back centre'} : null;
+}
+function endingMoves(atXY){
+  var out = [], zeroed = 'already', parked = null;
+  if (!atXY || Math.hypot(atXY.x, atXY.y) > 0.02){ out.push('G90 G0 X0 Y0'); zeroed = true; }
+  var sp = SERIAL.homedSeen ? endParkSpot() : null;
+  if (sp){ out.push('G53 G0 X' + sp.x.toFixed(3) + ' Y' + sp.y.toFixed(3)); parked = sp; }
+  return {cmds: out, zeroed: zeroed, parked: parked};
+}
 function parkReady(){                                        // can we move for a tool change?
   return !!toolChangeSpot() && SERIAL.homedSeen;
 }
@@ -2628,9 +2843,10 @@ function rapidTo(fx, fy){
     logC('err', 'rapid position needs a homed machine and controller config \u2014 home first');
     return;
   }
-  var m = 10;
-  var x = -(t[130] - m) + (t[130] - 2 * m) * fx;
-  var y = -(t[131] - m) + (t[131] - 2 * m) * fy;
+  var m = 10;                                          // stay this far inside the travel
+  var rx = axisRange('x'), ry = axisRange('y');
+  var x = rx.min + m + (rx.max - rx.min - 2 * m) * fx;
+  var y = ry.min + m + (ry.max - ry.min - 2 * m) * fy;
   sendLine(zHighCmd(travelZ()));
   sendLine('G53 G0 X' + x.toFixed(1) + ' Y' + y.toFixed(1));
 }
@@ -2815,7 +3031,7 @@ async function serialConnect(pick){
     SERIAL.connected = true;
     SERIAL.lineBuf = '';
     SERIAL.settings = {}; SERIAL.offsets = {}; SERIAL.buildInfo = '';
-    SERIAL.queried = false; SERIAL.rateApplied = false; SERIAL.jogRateApplied = false;
+    SERIAL.queried = false; SERIAL.rateApplied = false; SERIAL.jogRateApplied = false; SERIAL.accelApplied = false;
     SERIAL.homedSeen = false; SERIAL.prevState = ''; HOME_ASKED = false;
     PROBE.active = false; PROBE.onDone = null; PROBE.refZ = null; PROBE.previewDone = false;
     if (typeof bsRefNote === 'function') bsRefNote();
@@ -2959,6 +3175,7 @@ function handleRx(line){
     else {
       var parts2 = bm[2].split(':');
       var coords = parts2[0].split(',').map(parseFloat);
+      if (SERIAL.settings[13] === 1) coords = coords.map(function (q) { return q * 25.4; });   // $# in inches too
       SERIAL.offsets[bm[1]] = coords;
       if (bm[1] === 'PRB') probeOnPRB(coords[2], parts2[1] === '1');
     }
@@ -2973,6 +3190,7 @@ function parseStatus(s){
   var f = body.split('|');
   SERIAL.state = f[0].split(':')[0];
   SERIAL.subState = f[0].indexOf(':') > 0 ? f[0].split(':')[1] : '';
+  jobClockTick();
   if (SERIAL.state !== parseStatus.lastState){ parseStatus.lastState = SERIAL.state; if (typeof bsRefNote === 'function') bsRefNote(); }
   if (SERIAL.prevState === 'Home' && SERIAL.state === 'Idle') SERIAL.homedSeen = true;
   if (typeof ENDING !== 'undefined' && ENDING) endingTick();
@@ -2986,6 +3204,8 @@ function parseStatus(s){
     var k = f[i].slice(0, ci), raw = f[i].slice(ci + 1);
     if (k === 'Pn'){ pinsNow = raw; continue; }
     var v = raw.split(',').map(parseFloat);
+    // $13=1 makes the controller report positions in inches; everything here works in mm
+    if (SERIAL.settings[13] === 1 && (k === 'MPos' || k === 'WPos' || k === 'WCO')) v = v.map(function (q) { return q * 25.4; });
     if (k === 'MPos'){
       SERIAL.mpos = {x:v[0], y:v[1], z:v[2]};
       SERIAL.wpos = {x:v[0]-SERIAL.wco.x, y:v[1]-SERIAL.wco.y, z:v[2]-SERIAL.wco.z};
@@ -3111,7 +3331,7 @@ var PROFILE = {
   run:{highStart:true, travelZ:5, topZ:2, parkEnd:true,
        park:{enabled:false, x:null, y:null},                 // end of job
        tc:{enabled:true, preset:'fc', x:null, y:null}},      // tool changes; preset unless 'custom'
-  view:{envW:425, envD:425, origin:'corner', stock:0, rapidRate:5000, checkEnvelope:false, showEnvelope:false},
+  view:{envW:425, envD:425, envUser:false, origin:'corner', stock:0, rapidRate:5000, checkEnvelope:false, showEnvelope:false},
   // saved G-code snippets for things done often; edit or delete these starters freely
   quick:[
     {name:'Raise Z to top', code:'G53 G0 Z-5'},
@@ -3172,16 +3392,16 @@ var HELP_TEXT = {
   'quick': {t:'Quick actions', b:"Saved G-code for things you do often: raising Z, warming the spindle, moving somewhere to change a bit.\n\nLines are sent one at a time, each waiting for the controller to confirm the one before, so an action can't overflow the controller's buffer. Any error, alarm or reset stops it at once.\n\nUse the pencil to edit an action; they're stored with your machine profile."},
   'runjob': {t:'Run job', b:'Streams the loaded file to the machine, with everything Settings adds: spin-up dwells, start and stop high, tool-change handling and the ending.\n\nStart shows a summary of exactly what will happen before anything moves. Hold pauses, Resume continues, End job stops the job.\n\nRecover restarts a stopped job from a line: it rebuilds the modal state, moves to the spot carefully, and lets you bail out at any point.'},
   'console': {t:'Console', b:"The raw conversation with the controller: everything 454 Control sends, and everything the controller says back.\n\nYou can type commands here for anything the app doesn't cover. Commands typed here are sent as-is, with no checks and no lift or spindle handling, so treat them as if you were typing at the controller directly."},
-  'workarea': {t:'Work area', b:"The cutting area of your machine, used to draw the outline in the preview and to flag toolpaths that run outside it.\n\nThis is 454 Control's own idea of your machine, not the controller's. The controller has its own travel limits in $130/$131/$132, and the controller check compares the two."},
+  'workarea': {t:'Work area', b:'The size of the machine\u2019s cutting area, used to draw the table in the 3D view and to check a job fits.\n\n\u201cFrom the controller\u201d fills it in from the controller\u2019s own travel ($130 and $131) each time you connect.\n\nPick a machine from the list or type a size, and 454 Control keeps that instead, even if the controller reports something different; the console notes the difference when you connect. Choose \u201cFrom the controller\u201d again to go back.'},
   'jobzero': {t:'Job zero', b:"Where the drawing's 0,0 sits on the stock: the front-left corner, or the middle.\n\nThis only affects the preview and the outside-work-area check. It does not move your machine's work zero, which you set with the BitZero or by zeroing the axes."},
-  'stock': {t:'Stock thickness', b:'Cuts deeper than the thickness get flagged, which usually means into the wasteboard.\n\nThe controller\u2019s own $130/$131 are read on connect and fill this in.\n\nThe thickness of the material, used to flag cuts that go deeper than the stock.\n\nLeave it at 0 to turn the check off. Set it when Z0 is the top of your material and you want warning of cuts that reach your wasteboard.'},
-  'rapid': {t:'Rapid rate (time estimate only)', b:"The speed 454 Control assumes for G0 moves when estimating how long a job takes. It changes the estimate only; the machine's real rapid speed comes from $110/$111/$112 in the controller.\n\nReal jobs run a little longer than the estimate because acceleration isn't modelled."},
+  'stock': {t:'Stock thickness', b:'The thickness of the material, used to flag cuts that go deeper than it, which usually means into the spoilboard.\n\nSet it when Z zero is the top of your material. Leave it at 0 to turn the check off.'},
+  'rapid': {t:'Time estimate', b:"How long a job will take, worked out the way GRBL moves the machine.\n\nOnce the controller\u2019s settings are read, the estimate uses its own limits: maximum speed and acceleration for each axis ($110\u2013$112, $120\u2013$122), and junction deviation ($11), which sets how fast corners can be taken. Short moves and sharp corners take longer than their feed rate suggests, and the estimate allows for that.\n\nBefore the settings are read, it assumes every move runs at its feed rate and rapids at the rapid rate below, which underestimates jobs with lots of short moves.\n\nThe rapid rate here changes the estimate only; the machine\u2019s real rapid speed comes from the controller."},
   'bitsetter': {t:'BitSetter', b:'The fixed button the tool touches so the machine can measure tool length.\n\nJog the tool over the button and press Capture position; the machine coordinates are stored.\n\nWhen you set Z zero, 454 Control offers to measure that tool straight away. That makes it the reference: at Start the loaded tool is measured against it, and every new tool at each change, so the zero holds through tool changes, and swapping bits before pressing Start is caught rather than silently shifting Z.\n\nIt needs a homed machine, because the position is in machine coordinates.'},
   'bitzero': {t:'BitZero', b:"The touch plate used to set your work zero. 454 Control uses it for Z.\n\nSet the plate thickness by measuring it with calipers; the probe sets Z0 at the top of the stock, which is the plate's trigger height minus the thickness. Verify the circuit (touch the pin to the plate) before probing, and paper-test the zero before cutting."},
   'spindle': {t:'Spindle type and spin-up', b:"Trim router or VFD spindle, and how long to wait after M3 before any cutting move.\n\nMost CAM files don't include that wait, so 454 Control inserts a dwell after each spindle start. Carbide Motion does the same thing, at about 2.5 s, which suits a router. A VFD spindle takes longer to reach speed: 10 s is the default here.\n\nToo short means the bit enters the material before it is up to speed."},
   'highstart': {t:'Start & stop high', b:'Keeps the tool high whenever it is travelling rather than cutting.\n\nAt the start and after every tool change, the machine traverses to the next XY at the top of travel before plunging. Before every spindle stop, and at the end of the job, it lifts clear first.\n\nThis is what stops a bit dragging across clamps and stock. A lift is skipped when the tool is already higher than traverse height, so it never moves down.'},
   'travelz': {t:'Traverse height', b:'How far below the top of Z travel the machine sits when it is moving rather than cutting, in machine coordinates.\n\nUsed by start/stop-high, go-to-zero, the BitSetter moves and the end of the job. 5 mm below the top is a good default; increase it if you have tall workholding.'},
-  'park': {t:'Tool-change and end-of-job positions', b:'Two separate places the machine goes when you need to reach it.\n\nTool change: it lifts to near the top of Z travel and moves here before asking for the new tool. With nothing captured it uses the front centre of the machine, worked out from the controller\u2019s travel limits, which is the easiest place to reach. Capture a position to override that.\n\nEnd of a job: it lifts, stops the spindle, then moves here. With nothing captured it returns to the job\u2019s XY zero instead.\n\nBoth use machine coordinates, so they need a homed machine.'},
+  'park': {t:'Tool-change and end-of-job positions', b:'Two separate places the machine goes when you need to reach it.\n\nTool change: it lifts to near the top of Z travel and moves here before asking for the new tool. With nothing captured it uses the front centre of the machine, worked out from the controller\u2019s travel, which is the easiest place to reach. Pick another preset or capture a position to override that.\n\nEnd of a job: as in Carbide Motion, it lifts, stops the spindle, returns to the job\u2019s XY zero, then parks. With nothing captured it parks at the back centre of the machine, out of your way; capture a position to park somewhere else.\n\nBoth use machine coordinates, so they need a homed machine.'},
   'jog': {t:'Jog speeds', b:'The feed rates used by the jog buttons and arrow keys, for XY and for Z separately.\n\nThese apply to jogging only; they have no effect on a running job. Keep Z slower than XY: it is the axis that finds clamps.'}
 };
 function showHelp(key){
@@ -3203,20 +3423,23 @@ function controllerCheck(quiet){
     if (!has(n2) || !(want > 0)) return;
     var have = g[n2];
     if (Math.abs(have - want) > Math.max(5, want * 0.05))
-      out.push({sev:'warn', t:axis + ' travel differs: the controller says ' + have.toFixed(1) + ' mm ($' + n2 + '), your work area setting says ' + want + ' mm. One of them is wrong.'});
+      out.push(PROFILE.view.envUser
+        ? {sev:'info', t:axis + ' travel: the controller says ' + have.toFixed(1) + ' mm ($' + n2 + '); you\u2019ve set the work area to ' + want + ' mm, so that\u2019s used.'}
+        : {sev:'warn', t:axis + ' travel differs: the controller says ' + have.toFixed(1) + ' mm ($' + n2 + '), your work area setting says ' + want + ' mm. One of them is wrong.'});
   }
   travelOff('X', 130, envW); travelOff('Y', 131, envD);
   if (has(30)){
     // $30 = 1000 is normal for a trim router on a Carbide board; a VFD needs its real maximum
     if (PROFILE.spindle.type === 'vfd' && g[30] < 10000)
       out.push({sev:'warn', t:'Maximum spindle speed is ' + g[30] + ' ($30), but your spindle is set to VFD. A VFD is usually 24000 \u2014 a low value caps every S word in your files.'});
-    if (typeof MODEL !== 'undefined' && MODEL && MODEL.sMax && MODEL.sMax > g[30])
+    if (typeof MODEL !== 'undefined' && MODEL && MODEL.sMax && MODEL.sMax > g[30] && PROFILE.spindle.type === 'vfd')
       out.push({sev:'err', t:'The loaded file asks for S' + MODEL.sMax + ', above the controller\u2019s maximum of ' + g[30] + ' ($30). The spindle will be capped.'});
   }
   if (has(27) && g[27] <= 0) out.push({sev:'warn', t:'Homing pull-off is 0 ($27). The switches stay pressed after homing, which can trip alarms.'});
   if (has(110) && PROFILE.view.rapidRate > g[110] * 1.2)
     out.push({sev:'info', t:'Time estimates assume ' + PROFILE.view.rapidRate + ' mm/min rapids, but the machine\u2019s maximum X rate is ' + g[110] + ' ($110). Estimates will read short.'});
-  if (!out.length && !quiet) out.push({sev:'ok', t:'Controller settings look right: homing on, travel matches your work area, spindle maximum ' + (has(30) ? g[30] : '?') + '.'});
+  if (has(130) && has(131)) out.push({sev:'info', t:'Machine coordinates: ' + describeRanges() + '. Jog limits, tool-change positions and lifts use these.'});
+  if (!out.filter(function (f) { return f.sev !== 'info'; }).length && !quiet) out.push({sev:'ok', t:'Controller settings look right: homing on, travel matches your work area, spindle maximum ' + (has(30) ? g[30] : '?') + '.'});
   return out;
 }
 function controllerCheckShow(auto){
@@ -3286,8 +3509,11 @@ function themeScene(){
   if (typeof scene === 'undefined' || !scene) return;
   var light = UITHEME.theme === 'light';
   if (scene.background && scene.background.setHex) scene.background.setHex(cssNum('--bg', light ? 0xeef1f4 : 0x14181d));
-  if (typeof gridObj !== 'undefined' && gridObj && gridObj.material && gridObj.material.color)
-    gridObj.material.color.setHex(light ? 0xc9d2da : 0x20262e);
+  // The grid is a group of line sets, so it's rebuilt in the new colours rather than recoloured
+  // (recolouring looked for a single material and silently missed it, leaving a black grid).
+  if (typeof buildStage === 'function' && typeof gridObj !== 'undefined' && gridObj) buildStage();
+  applyViewPal();
+  repaintToolpath();
   if (typeof envObj !== 'undefined' && envObj && envObj.material && envObj.material.color)
     envObj.material.color.setHex(light ? 0x8fa2b5 : 0x51617a);
   if (typeof originDot !== 'undefined' && originDot && originDot.material && originDot.material.color)
@@ -3604,6 +3830,7 @@ function applyProfileToUI(){
   setIncUI(PROFILE.jog.inc);
   v('envW').value = PROFILE.view.envW;
   v('envD').value = PROFILE.view.envD;
+  syncPresetList();
   v('originSel').value = PROFILE.view.origin;
   v('stockThk').value = PROFILE.view.stock;
   v('rapidRate').value = PROFILE.view.rapidRate;
@@ -3637,7 +3864,9 @@ function readUIToProfile(){
   PROFILE.run.park.x = v('pkX').value === '' ? null : parseFloat(v('pkX').value);
   PROFILE.run.park.y = v('pkY').value === '' ? null : parseFloat(v('pkY').value);
   PROFILE.run.topZ = parseFloat(v('topZIn').value) || 2;
+  var envUser = !!(PROFILE.view && PROFILE.view.envUser);   // not on the form, so carried across
   PROFILE.view = cfg();
+  PROFILE.view.envUser = envUser;
   PROFILE.view.envW = parseFloat(v('envW').value) || 425;
   PROFILE.view.envD = parseFloat(v('envD').value) || 425;
   profileSave();
@@ -3724,7 +3953,32 @@ function scheduleCfgApply(){
   if (cfgApplyTimer) clearTimeout(cfgApplyTimer);
   cfgApplyTimer = setTimeout(applyCfg, 300); // after the $$ burst settles
 }
+// $30 tells the spindle type on a Carbide board: 1000 for a trim router (its speed is on its dial),
+// the real maximum, usually 24000, for a VFD.
+function spindleFromController(){
+  var s = SERIAL.settings;
+  if (s[30] === undefined || PROFILE.spindle.typeUser) return;
+  var t = s[30] <= 1000 ? 'router' : (s[30] >= 10000 ? 'vfd' : null);
+  if (!t || t === PROFILE.spindle.type) return;
+  PROFILE.spindle.type = t;
+  var el = document.getElementById('spinType'); if (el) el.value = t;
+  if (t === 'vfd' && (PROFILE.spindle.spinup || 0) < 10){ PROFILE.spindle.spinup = 10; var su = document.getElementById('spinupSec'); if (su) su.value = 10; }
+  profileSave();
+  logC('sys', 'spindle set to ' + (t === 'vfd' ? 'VFD' : 'trim router') + ' from the controller ($30 = ' + s[30] + ')');
+}
+// The spindle speed box only offers what the controller can do, for a VFD.
+function applySpindleRange(){
+  var el = document.getElementById('rpmIn'), s = SERIAL.settings;
+  if (!el) return;
+  if (PROFILE.spindle.type === 'vfd' && s[30] > 0){
+    el.max = s[30]; el.min = s[31] > 0 ? s[31] : 0;
+    var v = parseFloat(el.value) || 0;
+    if (v > s[30]) el.value = s[30]; else if (s[31] > 0 && v < s[31]) el.value = s[31];
+  } else { el.removeAttribute && el.removeAttribute('max'); el.removeAttribute && el.removeAttribute('min'); }
+}
 function applyCfg(){
+  spindleFromController();
+  applySpindleRange();
   cfgApplyTimer = null;
   var s = SERIAL.settings;
   var m = detectModel();
@@ -3734,10 +3988,15 @@ function applyCfg(){
     // sync the work-area envelope to the board's real travel
     var w = document.getElementById('envW'), d = document.getElementById('envD');
     var cw = parseFloat(w.value), cd = parseFloat(d.value);
-    if (!isFinite(cw) || !isFinite(cd) || Math.abs(cw - m.x) > 1 || Math.abs(cd - m.y) > 1){
+    var differs = !isFinite(cw) || !isFinite(cd) || Math.abs(cw - m.x) > 1 || Math.abs(cd - m.y) > 1;
+    if (PROFILE.view.envUser){
+      // you chose this work area, so it stays; just say if the controller disagrees
+      if (differs) logC('sys', 'keeping your work area of ' + cw + ' \u00d7 ' + cd + ' mm; the controller\u2019s travel is ' + m.x + ' \u00d7 ' + m.y +
+                        ' mm (choose \u201cFrom the controller\u201d in Settings \u2192 Machine to use that)');
+    } else if (differs){
       w.value = m.x; d.value = m.y;
       buildStage(); buildEnvelope(); renderChecks(); readUIToProfile();
-      logC('sys', 'work area set from controller: ' + m.x + ' × ' + m.y + ' mm');
+      logC('sys', 'work area set from controller: ' + m.x + ' \u00d7 ' + m.y + ' mm');
     }
   }
   // fast-jog rates from the controller's max rates (once per connect)
@@ -3748,6 +4007,13 @@ function applyCfg(){
     readUIToProfile();
     logC('sys', 'fast jog rates set from controller: XY ' + Math.round(s[110]) +
          (s[112] !== undefined ? ', Z ' + Math.round(s[112]) : '') + ' mm/min');
+  }
+  // re-time a loaded file with the controller's acceleration, once per connect
+  if (!SERIAL.accelApplied && s[120] > 0 && s[121] > 0 && s[122] > 0 && MODEL){
+    SERIAL.accelApplied = true;
+    var before = MODEL.totalTime;
+    loadText(MODEL.lines.join('\n'), document.getElementById('fileName').textContent);
+    logC('sys', 'time estimate now uses the controller\u2019s acceleration: ~' + fmtTime(before) + ' \u2192 ~' + fmtTime(MODEL.totalTime));
   }
   // real rapid rate for time estimates
   if (!SERIAL.rateApplied && s[110] !== undefined && MODEL){
@@ -3952,7 +4218,10 @@ function buildJobList(lines){
     retracts++;
   }
   function retractBeforeStop(ln){
-    if (!stopHigh) return;
+    // "Start & stop high" off: no lift when the tool is already clear of the material. But a spindle
+    // is never stopped with the tool in the material, whatever the setting: the bit can snap or burn
+    // as it spins down, and would restart buried.
+    if (!stopHigh){ var wzs = workZAt(ln); if (wzs === null || wzs >= -0.001) return; }
     if (atTraverse) return;                // already up there: nothing to do
     var wz = workZAt(ln);
     if (wz === null) return;               // nothing has moved yet: position unknown, and nothing to lift away from
@@ -3977,6 +4246,7 @@ function buildJobList(lines){
     }
     retracts++;
   }
+  var fileSpin = {on: false, s: null, ccw: false};
   for (var i = 0; i < lines.length; i++){
     var ln = i + 1;
     var c = cleanForSend(lines[i]);
@@ -3999,8 +4269,30 @@ function buildJobList(lines){
         }
       }
       list.push(m6e);
+      // 454 stopped the spindle for the change. If the file had it running and doesn't start it again
+      // before its next move (it thinks it never stopped), start it again here, at the file's speed,
+      // with the usual spin-up wait, while the tool is still up at the top. Otherwise the rest of the
+      // job would plunge a stationary bit into the material.
+      if (fileSpin.on){
+        var restartByFile = false;
+        for (var ka = i + 1; ka < lines.length; ka++){
+          var ca = cleanForSend(lines[ka]);
+          if (!ca) continue;
+          if (/M0*[345](?![\d.])/i.test(ca)){ restartByFile = true; break; }
+          if (/[XYZ]\s*[-+.\d]/i.test(ca)) break;
+        }
+        if (!restartByFile){
+          list.push({text:(fileSpin.ccw ? 'M4' : 'M3') + (fileSpin.s !== null ? ' S' + fileSpin.s : ''), ln:ln, syn:true});
+          if (PROFILE.spindle.spinup > 0){ list.push({text:'G4 P' + PROFILE.spindle.spinup, ln:ln, syn:true}); injected++; }
+        }
+      }
       continue;
     }
+    // the file's own idea of the spindle: running or not, and at what speed
+    var sw = /S\s*([\d.]+)/i.exec(c);
+    if (sw) fileSpin.s = parseFloat(sw[1]);
+    if (/M0*[34](?![\d.])/i.test(c)){ fileSpin.on = true; fileSpin.ccw = /M0*4(?![\d.])/i.test(c); }
+    else if (/M0*5(?![\d.])/i.test(c)) fileSpin.on = false;
     if (/M0*5(?![\d.])/i.test(c)) retractBeforeStop(ln);
     list.push({text:c, ln:ln});
     if (/Z/i.test(c)) atTraverse = false;   // the file moved Z, so the tool may be anywhere again
@@ -4040,22 +4332,15 @@ function buildJobList(lines){
     if (/M0*[34](?![\d.])/i.test(st2)){ spinStillOn = true; break; }
   }
   if (spinStillOn) list.push({text:'M5', ln:lines.length, syn:true});
-  // Then move off the part: to the park position if one is set, otherwise back to the job's
-  // XY zero, which is a known, predictable spot in front of the operator.
-  var pkE = PROFILE.run.park, endXY = null;
+  // Then off the part, as Carbide Motion does: back to the job's XY zero, then park.
+  var endXY = null;
   if (typeof MODEL !== 'undefined' && MODEL && MODEL.segs && MODEL.segs.length){
     var lastSeg = MODEL.segs[MODEL.segs.length - 1];
     endXY = {x:lastSeg.x1, y:lastSeg.y1};
   }
-  if (PROFILE.run.parkEnd !== false && pkE.enabled && pkE.x !== null && pkE.y !== null && homed){
-    list.push({text:'G53 G0 X' + (+pkE.x).toFixed(3) + ' Y' + (+pkE.y).toFixed(3), ln:lines.length, syn:true});
-    list.parked = true;
-  } else if (!endXY || Math.hypot(endXY.x, endXY.y) > 0.02){     // skip if the file already ends at X0 Y0
-    list.push({text:'G90 G0 X0 Y0', ln:lines.length, syn:true});
-    list.zeroed = true;
-  } else {
-    list.zeroed = 'already';
-  }
+  var em = homed ? endingMoves(endXY) : {cmds: (!endXY || Math.hypot(endXY.x, endXY.y) > 0.02) ? ['G90 G0 X0 Y0'] : [], zeroed: true, parked: null};
+  em.cmds.forEach(function (c) { list.push({text: c, ln: lines.length, syn: true}); });
+  list.zeroed = em.zeroed; list.parked = em.parked;
   tail.forEach(function(it){ list.push(it); });
   list.injected = injected;
   list.retracts = retracts;
@@ -4216,7 +4501,10 @@ function jobStart(opts){
   } else {
     msg += 'Machine travel: not checked (controller config not read yet).\n';
   }
-  if (MODEL.sMax && SERIAL.settings[30] !== undefined && MODEL.sMax > SERIAL.settings[30]){
+  // a router's speed is set on its dial, so S values only matter for a VFD
+  if (PROFILE.spindle.type === 'vfd' && MODEL.sMin > 0 && SERIAL.settings[31] > 0 && MODEL.sMin < SERIAL.settings[31])
+    msg += '\u26a0 Spindle: the file asks for S' + MODEL.sMin + ', below the controller\u2019s minimum of ' + SERIAL.settings[31] + ' ($31); it will run at ' + SERIAL.settings[31] + '.\n';
+  if (PROFILE.spindle.type === 'vfd' && MODEL.sMax && SERIAL.settings[30] !== undefined && MODEL.sMax > SERIAL.settings[30]){
     msg += '*** SPINDLE: file commands S' + MODEL.sMax + ' but the controller max ($30) is ' +
            SERIAL.settings[30] + ' — RPM will be capped. ***\n';
   }
@@ -4297,9 +4585,8 @@ function jobStart(opts){
   var endBits = [];
   if (PROFILE.run.highStart) endBits.push(SERIAL.homedSeen ? 'lift to traverse height' : 'lift ' + travelZ().toFixed(1) + ' mm (not homed, so relative)');
   endBits.push('spindle off');
-  if (list.parked) endBits.push('park at machine X' + (+PROFILE.run.park.x).toFixed(1) + ' Y' + (+PROFILE.run.park.y).toFixed(1));
-  else if (list.zeroed === 'already') endBits.push('stay at the job’s XY zero, where the file ends');
-  else endBits.push('return to the job’s XY zero (no park position set)');
+  endBits.push(list.zeroed === 'already' ? 'the file ends at the job’s XY zero' : 'back to the job’s XY zero');
+  if (list.parked) endBits.push('then park at ' + list.parked.name + ' (X' + list.parked.x.toFixed(1) + ' Y' + list.parked.y.toFixed(1) + ')');
   msg += 'At the end: ' + endBits.join(', ') + '.\n';
   msg += highStartNote;
   if (!PROFILE.run.highStart)
@@ -4314,6 +4601,9 @@ function jobStart(opts){
   JOB.list = list; JOB.total = list.length;
   JOB.idx = 0; JOB.acked = 0; JOB.lastLn = 0; JOB.inflight = [];
   JOB.startedAt = performance.now();
+  JOB.clock = {last: JOB.startedAt, machine: 0, tool: 0, hold: 0, probe: 0};
+  JOB.spinupAdded = (list.injected || 0) * (PROFILE.spindle.spinup || 0);   // waits Control inserted
+  JOB.estimate = MODEL.totalTime; JOB.name = document.getElementById('fileName').textContent;
   JOB.useBS = useBS;
   JOB.parkPending = false;
   ZN.val = 0; PROBE.tlo = 0; znDisplay();
@@ -4387,19 +4677,53 @@ function endingTick(){
     var cmds = ['G90', 'G21'];
     if (SERIAL.homedSeen) cmds.push(zHighCmd(topZ()));
     else { cmds.push('G91 G0 Z' + travelZ().toFixed(1)); cmds.push('G90'); }
-    var pk = PROFILE.run.park;
-    if (PROFILE.run.parkEnd !== false && pk.enabled && pk.x !== null && pk.y !== null && SERIAL.homedSeen)
-      cmds.push('G53 G0 X' + (+pk.x).toFixed(3) + ' Y' + (+pk.y).toFixed(3));
+    if (SERIAL.homedSeen){
+      var wp = SERIAL.wpos ? {x: SERIAL.wpos.x, y: SERIAL.wpos.y} : null;
+      endingMoves(wp).cmds.forEach(function (c) { cmds.push(c); });
+    }
     cmds.forEach(function (c) { sendLine(c); });
     updateJobUI('ended \u2014 lifted clear' + (cmds.some(function (c) { return /G53 G0 X/.test(c); }) ? ' and parked' : '') + '. Recover can resume from where it stopped.');
     logC('sys', 'job ended: spindle off, lifted clear');
   }
 }
+// Where a running job's time goes. Each status report's interval lands in one bucket: the machine
+// moving the job, waiting at a tool change, held, or measuring on the BitSetter. Only the first is
+// comparable with the estimate, which knows nothing of the others.
+function jobClockTick(){
+  if (!JOB.active || !JOB.clock) return;
+  var now = performance.now(), dt = (now - JOB.clock.last) / 1000;
+  JOB.clock.last = now;
+  if (!(dt > 0) || dt > 5) return;                     // a gap in reports (tab asleep, reconnect) isn't counted
+  var b = PROBE.active ? 'probe' : JOB.toolWait ? 'tool' : (JOB.held || SERIAL.state === 'Hold') ? 'hold' : 'machine';
+  JOB.clock[b] += dt;
+}
 function jobDone(){
+  jobClockTick();
   JOB.active = false;
-  var mins = ((performance.now() - JOB.startedAt) / 60000).toFixed(1);
-  updateJobUI('done — ' + JOB.acked + ' lines in ' + mins + ' min');
-  logC('sys', 'job complete (' + mins + ' min)');
+  var total = (performance.now() - JOB.startedAt) / 1000, c = JOB.clock || {machine: total, tool: 0, hold: 0, probe: 0};
+  var machine = Math.max(0, c.machine - (JOB.spinupAdded || 0)), est = JOB.estimate || 0;
+  var diff = est > 0 ? (machine - est) / est * 100 : null;
+  var extras = [];
+  if (JOB.spinupAdded > 0.5) extras.push(fmtTime(JOB.spinupAdded) + ' spin-up waits');
+  if (c.tool > 0.5) extras.push(fmtTime(c.tool) + ' at tool changes');
+  if (c.probe > 0.5) extras.push(fmtTime(c.probe) + ' measuring tools');
+  if (c.hold > 0.5) extras.push(fmtTime(c.hold) + ' held');
+  var line = 'Job finished in ' + fmtTime(total) + ': machine time ' + fmtTime(machine) +
+             (est > 0 ? ' against an estimate of ' + fmtTime(est) + ' (' + (diff >= 0 ? '+' : '') + diff.toFixed(0) + '%)' : '') +
+             (extras.length ? '; also ' + extras.join(', ') : '') + '.';
+  updateJobUI('done \u2014 ' + fmtTime(total) + (est > 0 ? ' (machine ' + fmtTime(machine) + ', estimated ' + fmtTime(est) + ')' : ''));
+  logC('sys', line);
+  // kept, so a pattern shows over several jobs
+  try{
+    var hist = JSON.parse(localStorage.getItem('454-control-jobtimes') || '[]');
+    hist.push({when: new Date().toISOString(), file: JOB.name || '', est: +est.toFixed(1), machine: +machine.toFixed(1), total: +total.toFixed(1)});
+    localStorage.setItem('454-control-jobtimes', JSON.stringify(hist.slice(-50)));
+    var withEst = hist.filter(function (h) { return h.est > 30; });
+    if (withEst.length >= 3){
+      var avg = withEst.reduce(function (a, h) { return a + (h.machine - h.est) / h.est; }, 0) / withEst.length * 100;
+      logC('sys', 'over the last ' + withEst.length + ' jobs, machine time has run ' + (avg >= 0 ? avg.toFixed(0) + '% longer' : (-avg).toFixed(0) + '% shorter') + ' than estimated');
+    }
+  }catch(e){}
 }
 // When a running job is interrupted, work out where the machine actually was. GRBL accepts
 // lines well ahead of the cutting, so the last line SENT overstates progress; the line whose
@@ -4781,6 +5105,7 @@ function wireMachine(){
   document.getElementById('zeroY').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 Y0'); });
   document.getElementById('zeroZ').addEventListener('click', zeroZNow);
   document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')){ sendLine('G10 L20 P0 X0 Y0 Z0'); markToolZeroed(); bsAfterZero(); } });
+  document.getElementById('jogZ6').addEventListener('click', jogLiftZ6);
   document.getElementById('gotoZero').addEventListener('click', function(){
     if (!requireIdle('go to zero')) return;
     sendLine(zHighCmd(travelZ())); // retract near top of travel (requires homing)
@@ -4843,6 +5168,7 @@ function wireMachine(){
   });
   document.getElementById('machinePreset').addEventListener('change', readUIToProfile);
 
+  document.getElementById('bsTest').addEventListener('click', bsTest);
   document.getElementById('bsCapture').addEventListener('click', function(){
     if (!SERIAL.connected){ logC('err', 'connect first, jog over the BitSetter button, then capture'); return; }
     document.getElementById('bsX').value = SERIAL.mpos.x.toFixed(1);
@@ -4877,10 +5203,12 @@ function wireMachine(){
   });
 
   document.getElementById('spinType').addEventListener('change', function(e){
+    PROFILE.spindle.typeUser = true;                     // chosen by you: connecting won't change it
+    applySpindleRange();
     if (e.target.value === 'vfd' && (parseFloat(document.getElementById('spinupSec').value) || 0) < 10){
       document.getElementById('spinupSec').value = 10;
       readUIToProfile();
-      logC('sys', 'spin-up dwell raised to 6 s for the VFD spindle — adjust in Machine profile if yours settles faster');
+      logC('sys', 'spin-up dwell raised to 10 s for the VFD spindle \u2014 adjust in Settings \u2192 Machine if yours settles faster');
     }
   });
 

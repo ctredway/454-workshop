@@ -1,4 +1,4 @@
-# Kerf licensing & commercial charter
+# 454 Workshop licensing & commercial charter
 
 *Drafted September 2026, before any commercial code exists — so the boundary is a promise
 made in advance, not a rug-pull after the fact. This document is the reference for what is
@@ -9,10 +9,10 @@ each other.*
 
 ## The one-paragraph version
 
-Everything in this repository is MIT-licensed and stays that way: the **Kerf sender** and the
-**Kerf Design sketcher**, including all file import (.crv, DXF, SVG), drawing, editing,
+Everything in this repository is MIT-licensed and stays that way: the **454 Control** and the
+**454 Design**, including all file import (.crv, DXF, SVG), drawing, editing,
 dimensioning, and save/load. The future **CAM engine** — the part that turns drawings into
-G-code — will be a separate commercial product ("Kerf Design Pro"), developed outside this
+G-code — will be a separate commercial product ("454 Design Pro"), developed outside this
 repository, sold as a one-time purchase in the $49 range with EstlCAM-style update terms.
 The free tools are the product for most people; Pro is for the people the free tools turned
 into believers.
@@ -23,14 +23,14 @@ into believers.
 
 | Component | Includes |
 |---|---|
-| **Kerf sender** (`index.html`) | Everything: serial, jog, probing (BitSetter / BitZero), job streaming, overrides, recovery, linting, 3D preview. The sender will never have a paid tier — senders are plumbing, and plumbing is free. |
-| **Kerf Design sketcher** (`design.html`) | All drawing tools, precision entry, dimensioning, construction geometry, snapping, guides, edit tools (fillet/trim/extend/offset/copy/mirror/rotate/array/join/explode), the configurable panel, save/load. |
+| **454 Control** (`index.html`) | Everything: serial, jog, probing (BitSetter / BitZero), job streaming, overrides, recovery, linting, 3D preview. The sender will never have a paid tier — senders are plumbing, and plumbing is free. |
+| **454 Design** (`design.html`) | All drawing tools, precision entry, dimensioning, construction geometry, snapping, guides, edit tools (fillet/trim/extend/offset/copy/mirror/rotate/array/join/explode), the configurable panel, save/load. |
 | **All import** | `.crv` (drawing + toolpath-preview extraction), and the coming DXF and SVG importers with scale-to-size. Import is free because migration should never be the thing you pay for — you pay for what you can *do* after migrating. |
 
 Versions already published under MIT remain MIT irrevocably. That is not a loophole to be
 managed; it is the design. Nothing that has ever been free becomes paid.
 
-## What will be commercial (Kerf Design Pro, separate distribution)
+## What will be commercial (454 Design Pro, separate distribution)
 
 The CAM layer — everything between "finished drawing" and "G-code file":
 
@@ -39,7 +39,7 @@ The CAM layer — everything between "finished drawing" and "G-code file":
 - Tool database and material/feeds-speeds library.
 - Toolpath preview & simulation inside the design environment.
 - G-code post-processing (GRBL / Carbide Motion dialect first) and export.
-- One-click handoff into the Kerf sender.
+- One-click handoff into 454 Control.
 
 The paywall sits exactly at the value line this market has proven it pays for (Vectric,
 EstlCAM, LightBurn, MillMage): **drawings in, G-code out.**
@@ -68,7 +68,7 @@ EstlCAM, LightBurn, MillMage): **drawings in, G-code out.**
 
 ## Distribution & license-key mechanics
 
-- **Product form:** Kerf Design Pro ships as a single self-contained HTML build (the same
+- **Product form:** 454 Design Pro ships as a single self-contained HTML build (the same
   form factor as the free tools — download it, open it, it works offline forever). Optionally
   later: a Tauri-wrapped desktop build from the same source.
 - **Sales:** through a merchant-of-record (Lemon Squeezy or Paddle) so VAT/sales-tax
@@ -81,7 +81,7 @@ EstlCAM, LightBurn, MillMage): **drawings in, G-code out.**
   same way EstlCAM and LightBurn effectively are. The defense is price (cheap enough that
   paying beats hassle), goodwill (the developer is a known person in the community, not a
   corporation), and the buyer's name rendered in their own title bar. This has worked for a
-  decade for the products Kerf is modeled on.
+  decade for the products 454 Workshop is modeled on.
 
 ## Pricing intent (subject to reality at launch)
 
@@ -91,7 +91,7 @@ EstlCAM, LightBurn, MillMage): **drawings in, G-code out.**
   EstlCAM's exact model, which its community publicly accepted.
 - **Early-supporter discount** for the pre-launch mailing list (people who used the free
   tools and asked for CAM get rewarded for being first).
-- Anchor positioning: VCarve Desktop is ~$350 and Windows-only. Kerf Design Pro at $49
+- Anchor positioning: VCarve Desktop is ~$350 and Windows-only. 454 Design Pro at $49
   covers the profile-and-pocket 95% and runs in a browser on anything.
 
 ## Sequence
@@ -106,8 +106,9 @@ EstlCAM, LightBurn, MillMage): **drawings in, G-code out.**
 
 ## Legal footnotes (not legal advice)
 
-- Before launch: a basic **trademark search on "Kerf"** in software (and a rename decision
-  if it's crowded — cheaper before there are customers than after).
+- Before launch: a basic **trademark search on "454 Workshop"** in software. (The project was
+  renamed from Kerf for this reason: cheaper before there are customers than after. Avoid GM's
+  trademarks, such as Corvette, Stingray, Chevy and Bowtie, in names and marketing.)
 - The `.crv` importer reads files the user created, was built by clean-room analysis of
   byte layouts (no Vectric code, no decompilation), and exists for interoperability —
   the classic protected case. It stays free partly because free interop is also the

@@ -264,6 +264,19 @@
     }
     if (raw.length < 3) return [];
 
+    // Judge the offset along its length, not only at its corners. The raw offset has points only
+    // where the outline has corners, so a deep V-notch (corners at its mouth and point) or a long
+    // straight run could keep or drop whole edges on the strength of their two ends: dropping the
+    // too-close point of a notch took both its sides with it (the path bridged the mouth), and a
+    // kept edge could pass through the part between two acceptable corners. Short pieces fix both.
+    var piece = Math.max(0.05, Math.abs(d) * 0.15), dense = [];
+    for (var di = 0; di < raw.length; di++){
+      var pa = raw[di], pb = raw[(di + 1) % raw.length], dl = dist(pa[0], pa[1], pb[0], pb[1]);
+      var pn = Math.max(1, Math.ceil(dl / piece));
+      for (var dk = 0; dk < pn; dk++) dense.push([pa[0] + (pb[0] - pa[0]) * dk / pn, pa[1] + (pb[1] - pa[1]) * dk / pn]);
+    }
+    raw = dense;
+
     // Two things go wrong with a raw offset, and they need different cures.
     //
     //  1. Parts of it end up closer to the original than the offset distance. That happens
@@ -286,39 +299,71 @@
       if (runs.length && ok[0]) runs[0] = run.concat(runs[0]);       // the outline wraps round
       else runs.push(run);
     }
+    // A lone survivor in a dropped stretch is the tip of a sharp corner's mitre, not a piece of path:
+    // it can't be joined by a crossing and would break the path apart.
+    runs = runs.filter(function (rn) { return rn.length >= 3; });
     if (!runs.length) return [];
 
     // Join one stretch to the next only when the straight line between them stays clear of the
     // shape. Where it doesn't, the region has genuinely come apart (a neck too narrow for the
     // cutter) and the stretches belong to separate loops.
     function bridgeable(a, b){
-      for (var t = 0; t <= 1; t += 0.1){
-        var x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
+      var bn = Math.max(10, Math.ceil(dist(a[0], a[1], b[0], b[1]) / piece));    // every short piece of the bridge
+      for (var t = 0; t <= bn; t++){
+        var x = a[0] + (b[0] - a[0]) * t / bn, y = a[1] + (b[1] - a[1]) * t / bn;
         if (near(x, y) < keep) return false;
       }
       return true;
     }
+    // Where a notch narrows below the cutter's width, the two sides' offsets run on past each other
+    // into the dropped stretch: they cross exactly where the cutter turns round. Join them there.
+    function crossJoin(a, b){
+      var K = 400;
+      for (var i = a.length - 2; i >= Math.max(0, a.length - 1 - K); i--)
+        for (var j = 0; j < Math.min(b.length - 1, K); j++){
+          var hx = segX(a[i][0], a[i][1], a[i + 1][0], a[i + 1][1], b[j][0], b[j][1], b[j + 1][0], b[j + 1][1]);
+          if (hx) return a.slice(0, i + 1).concat([[hx.x, hx.y]], b.slice(j + 1));
+        }
+      return null;
+    }
+    function join(a, b){
+      var c = crossJoin(a, b);
+      if (c) return c;
+      if (bridgeable(a[a.length - 1], b[0])) return a.concat(b);
+      return null;
+    }
     var chains = [], cur = runs[0].slice();
     for (var q = 1; q < runs.length; q++){
-      if (bridgeable(cur[cur.length - 1], runs[q][0])) cur = cur.concat(runs[q]);
+      var jn = join(cur, runs[q]);
+      if (jn) cur = jn;
       else { chains.push(cur); cur = runs[q].slice(); }
     }
-    if (chains.length && bridgeable(cur[cur.length - 1], chains[0][0])) chains[0] = cur.concat(chains[0]);
+    var wrap = chains.length ? join(cur, chains[0]) : (runs.length > 1 || !ok.every(Boolean) ? join(cur, cur) : null);
+    if (chains.length && wrap) chains[0] = wrap;
+    else if (!chains.length && wrap && wrap.length < cur.length * 2){
+      // one chain that closes on itself through a crossing: keep the part between the crossings
+      chains.push(wrap.length > 2 ? wrap : cur);
+    }
     else chains.push(cur);
 
+    if (opts.debug){ opts.debug.runs = runs.map(function (r) { return r.length; }); opts.debug.chains = chains.map(function (c) { return c.length; }); opts.debug.dropped = ok.filter(function (v) { return !v; }).length; opts.debug.raw = raw.length; }
     var out = [];
     chains.forEach(function (ch) {
       if (ch.length < 3) return;
       splitSelfIntersections(clean(ch)).forEach(function (lp) { out.push(lp); });
     });
+    if (opts.debug) opts.debug.loops = out.map(function (lp) { var mn = Infinity; lp.forEach(function (q) { mn = Math.min(mn, near(q[0], q[1])); }); return {n: lp.length, area: +area(lp).toFixed(1), ccw: isCCW(lp), nearest: +mn.toFixed(3)}; });
     return out.filter(function (lp) {
       if (lp.length < 3) return false;
       if (Math.abs(area(lp)) < Math.abs(d) * tol) return false;      // slivers
       if (!isCCW(lp)) return false;                                  // folds run backwards
-      for (var i = 0; i < lp.length; i++)
-        if (near(lp[i][0], lp[i][1]) < keep) return false;
+      for (var i = 0; i < lp.length; i++){                           // every piece, not just the corners
+        var la = lp[i], lb = lp[(i + 1) % lp.length], ln = Math.max(1, Math.ceil(dist(la[0], la[1], lb[0], lb[1]) / piece));
+        for (var lk = 0; lk < ln; lk++)
+          if (near(la[0] + (lb[0] - la[0]) * lk / ln, la[1] + (lb[1] - la[1]) * lk / ln) < keep) return false;
+      }
       return true;
-    });
+    }).map(function (lp) { return simplify(lp, Math.min(tol, Math.abs(d) * 0.01), true); });   // straight runs back to two points
   }
 
   // Break a closed polyline into simple loops at every point where it crosses itself.

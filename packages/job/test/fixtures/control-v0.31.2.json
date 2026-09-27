@@ -1,0 +1,5984 @@
+{
+ "files": [
+  "r1.gcode",
+  "r1-converted-by-454.nc",
+  "r1-454cam.gcode",
+  "RearArmInsertsUpdated.gcode",
+  "awkward.nc"
+ ],
+ "base": {
+  "settings": {
+   "20": 1,
+   "22": 1,
+   "23": 0,
+   "27": 1,
+   "30": 24000,
+   "31": 0,
+   "32": 0,
+   "110": 5000,
+   "111": 5000,
+   "112": 1000,
+   "130": 838,
+   "131": 838,
+   "132": 100
+  }
+ },
+ "scenarios": {
+  "standard": {
+   "homed": true,
+   "wco": {
+    "x": -400,
+    "y": -500,
+    "z": -80
+   },
+   "spinup": 10,
+   "highStart": true,
+   "topZ": 2,
+   "park": {
+    "enabled": false,
+    "x": null,
+    "y": null
+   },
+   "parkEnd": true
+  },
+  "not_homed": {
+   "homed": false,
+   "wco": {
+    "x": -400,
+    "y": -500,
+    "z": -80
+   },
+   "spinup": 10,
+   "highStart": true,
+   "topZ": 2,
+   "park": {
+    "enabled": false,
+    "x": null,
+    "y": null
+   },
+   "parkEnd": true
+  },
+  "park_captured": {
+   "homed": true,
+   "wco": {
+    "x": -400,
+    "y": -500,
+    "z": -80
+   },
+   "spinup": 10,
+   "highStart": true,
+   "topZ": 2,
+   "park": {
+    "enabled": true,
+    "x": -700,
+    "y": -820
+   },
+   "parkEnd": true
+  },
+  "no_waits": {
+   "homed": true,
+   "wco": {
+    "x": -400,
+    "y": -500,
+    "z": -80
+   },
+   "spinup": 0,
+   "highStart": false,
+   "topZ": 2,
+   "park": {
+    "enabled": false,
+    "x": null,
+    "y": null
+   },
+   "parkEnd": true
+  },
+  "counts_up": {
+   "homed": true,
+   "wco": {
+    "x": 300,
+    "y": 200,
+    "z": -80
+   },
+   "spinup": 10,
+   "highStart": true,
+   "topZ": 2,
+   "park": {
+    "enabled": false,
+    "x": null,
+    "y": null
+   },
+   "parkEnd": true,
+   "up": true
+  },
+  "no_end_park": {
+   "homed": true,
+   "wco": {
+    "x": -400,
+    "y": -500,
+    "z": -80
+   },
+   "spinup": 6,
+   "highStart": true,
+   "topZ": 3,
+   "park": {
+    "enabled": false,
+    "x": null,
+    "y": null
+   },
+   "parkEnd": false
+  }
+ },
+ "profile": {
+  "bitSetter": {
+   "enabled": false,
+   "x": null,
+   "y": null
+  },
+  "bitZero": {
+   "enabled": false,
+   "version": "v2",
+   "thk": null
+  },
+  "spindle": {
+   "type": "router",
+   "spinup": 10
+  },
+  "jog": {
+   "inc": "1",
+   "fastXY": 3000,
+   "fastZ": 600
+  },
+  "run": {
+   "highStart": true,
+   "travelZ": 5,
+   "topZ": 2,
+   "parkEnd": true,
+   "park": {
+    "enabled": false,
+    "x": null,
+    "y": null
+   },
+   "tc": {
+    "enabled": false,
+    "preset": "fc",
+    "x": null,
+    "y": null
+   }
+  },
+  "view": {
+   "envW": 425,
+   "envD": 425,
+   "envUser": false,
+   "origin": "corner",
+   "stock": 0,
+   "rapidRate": 5000,
+   "checkEnvelope": false,
+   "showEnvelope": false
+  },
+  "quick": [
+   {
+    "name": "Raise Z to top",
+    "code": "G53 G0 Z-5"
+   },
+   {
+    "name": "Spindle warm-up",
+    "code": "(2 minutes: slow, then faster)\nM3 S8000\nG4 P60\nM3 S16000\nG4 P60\nM5"
+   }
+  ]
+ },
+ "serial": {
+  "supported": false,
+  "port": null,
+  "reader": null,
+  "writer": null,
+  "connected": false,
+  "lineBuf": "",
+  "state": "offline",
+  "wco": {
+   "x": -400,
+   "y": -500,
+   "z": -80
+  },
+  "mpos": {
+   "x": 0,
+   "y": 0,
+   "z": 0
+  },
+  "wpos": {
+   "x": 0,
+   "y": 0,
+   "z": 0
+  },
+  "feed": 0,
+  "speed": 0,
+  "pins": "",
+  "ov": [
+   100,
+   100,
+   100
+  ],
+  "settings": {
+   "20": 1,
+   "22": 1,
+   "23": 0,
+   "27": 1,
+   "30": 24000,
+   "31": 0,
+   "32": 0,
+   "110": 5000,
+   "111": 5000,
+   "112": 1000,
+   "130": 838,
+   "131": 838,
+   "132": 100
+  },
+  "offsets": {},
+  "buildInfo": "",
+  "queried": false,
+  "rateApplied": false,
+  "homedSeen": true,
+  "prevState": "",
+  "pollTimer": null,
+  "writeChain": null,
+  "verbose": false,
+  "forceOrigin": false,
+  "axisSeen": {
+   "x": "down",
+   "y": "down",
+   "z": "down"
+  }
+ },
+ "results": {
+  "standard|r1.gcode": {
+   "items": 880,
+   "hash": "21ffff057dd86f446998957e8a07b2873cadcfd802e721ae049605d97a4ec611",
+   "extra": {
+    "dwellZ": 5.09,
+    "zeroed": "already",
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 10
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 11
+    },
+    {
+     "text": "M3S19000",
+     "ln": 12
+    },
+    {
+     "text": "G4 P10",
+     "ln": 12,
+     "syn": true
+    },
+    {
+     "text": "G0X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.517F240.0",
+     "ln": 15
+    },
+    {
+     "text": "G0Z0.483",
+     "ln": 16
+    },
+    {
+     "text": "G1Z-1.033F240.0",
+     "ln": 17
+    },
+    {
+     "text": "G0Z-0.033",
+     "ln": 18
+    },
+    {
+     "text": "G1Z-1.550F240.0",
+     "ln": 19
+    },
+    {
+     "text": "G0Z-0.550",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-2.067F240.0",
+     "ln": 21
+    },
+    {
+     "text": "G0Z-1.067",
+     "ln": 22
+    },
+    {
+     "text": "G1Z-2.583F240.0",
+     "ln": 23
+    },
+    {
+     "text": "G0Z-1.583",
+     "ln": 24
+    },
+    {
+     "text": "G1Z-3.100F240.0",
+     "ln": 25
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 26
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X0.987Y7.972",
+     "ln": 872
+    },
+    {
+     "text": "G1X0.942Y8.217",
+     "ln": 873
+    },
+    {
+     "text": "G1X0.906Y8.462",
+     "ln": 874
+    },
+    {
+     "text": "G1X0.877Y8.706",
+     "ln": 875
+    },
+    {
+     "text": "G1X0.856Y8.950",
+     "ln": 876
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 877
+    },
+    {
+     "text": "M5",
+     "ln": 878
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 879
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 880
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 881
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "standard|r1-converted-by-454.nc": {
+   "items": 702,
+   "hash": "c204032b858d079b0c76d82065bb399b7c2f96d341920d30e5a994d7d23cbf01",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G17",
+     "ln": 7
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 10,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "M3 S19000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 12
+    },
+    {
+     "text": "X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "Z1",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.6F240",
+     "ln": 15
+    },
+    {
+     "text": "G0Z1",
+     "ln": 16
+    },
+    {
+     "text": "Z-0.3",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-1.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z1",
+     "ln": 19
+    },
+    {
+     "text": "Z-0.9",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-1.8",
+     "ln": 21
+    },
+    {
+     "text": "G0Z1",
+     "ln": 22
+    },
+    {
+     "text": "Z-1.5",
+     "ln": 23
+    },
+    {
+     "text": "G1Z-2.4",
+     "ln": 24
+    },
+    {
+     "text": "G0Z1",
+     "ln": 25
+    },
+    {
+     "text": "Z-2.1",
+     "ln": 26
+    },
+    {
+     "text": "G1Z-3",
+     "ln": 27
+    },
+    {
+     "text": "G0Z1",
+     "ln": 28
+    }
+   ],
+   "tail": [
+    {
+     "text": "X27.49Y3.988",
+     "ln": 696
+    },
+    {
+     "text": "X27.253Y4.006",
+     "ln": 697
+    },
+    {
+     "text": "X26.771Y4.005",
+     "ln": 698
+    },
+    {
+     "text": "X26.289Y4.005",
+     "ln": 699
+    },
+    {
+     "text": "X25.807Y4.005",
+     "ln": 700
+    },
+    {
+     "text": "G0Z6",
+     "ln": 701
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 702
+    },
+    {
+     "text": "M5",
+     "ln": 703
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 704
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "standard|r1-454cam.gcode": {
+   "items": 871,
+   "hash": "8164967faa1cf80e0e0b078654749abb2d1bac9a90d565664be38b3ecb4dc8e0",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 4
+    },
+    {
+     "text": "G90",
+     "ln": 5
+    },
+    {
+     "text": "G17",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 9,
+     "tool": "1",
+     "next": {
+      "x": 7,
+      "y": 7
+     }
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 11
+    },
+    {
+     "text": "X7Y7",
+     "ln": 12
+    },
+    {
+     "text": "Z1",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.2F800",
+     "ln": 14
+    },
+    {
+     "text": "G0Z6",
+     "ln": 15
+    },
+    {
+     "text": "X32",
+     "ln": 16
+    },
+    {
+     "text": "Z1",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-0.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z6",
+     "ln": 19
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 20
+    },
+    {
+     "text": "M5",
+     "ln": 21
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 24,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 24,
+     "tool": "2",
+     "next": {
+      "x": 15.503,
+      "y": 6.26
+     }
+    },
+    {
+     "text": "M3 S20000",
+     "ln": 25
+    },
+    {
+     "text": "G4 P10",
+     "ln": 25,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 26
+    },
+    {
+     "text": "X15.503Y6.26",
+     "ln": 27
+    }
+   ],
+   "tail": [
+    {
+     "text": "X25.662Y13.122",
+     "ln": 862
+    },
+    {
+     "text": "X25.902Y13.193",
+     "ln": 863
+    },
+    {
+     "text": "X26.125Y13.305",
+     "ln": 864
+    },
+    {
+     "text": "X26.321Y13.451",
+     "ln": 865
+    },
+    {
+     "text": "X26.636Y13.715",
+     "ln": 866
+    },
+    {
+     "text": "G0Z6",
+     "ln": 867
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 868
+    },
+    {
+     "text": "M5",
+     "ln": 869
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 870
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "standard|RearArmInsertsUpdated.gcode": {
+   "items": 26335,
+   "hash": "d5b17d17c800fd2c96259a58790762d7a01d128a2ad261026063ab45ed78a91f",
+   "extra": {
+    "dwellZ": 12.01,
+    "zeroed": "already",
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "4",
+     "next": {
+      "x": 13.803,
+      "y": 10.529
+     }
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 8
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 9
+    },
+    {
+     "text": "M3S20000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0X13.803Y10.529",
+     "ln": 11
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 12
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 14
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 15
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 16
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 17
+    },
+    {
+     "text": "G0X24.903Y10.537",
+     "ln": 18
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 19
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 20
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 21
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 22
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 23
+    },
+    {
+     "text": "G0X50.468Y23.864",
+     "ln": 24
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X99.421Y8.238",
+     "ln": 26319
+    },
+    {
+     "text": "G1X99.317Y8.169",
+     "ln": 26320
+    },
+    {
+     "text": "G1X99.211Y8.107",
+     "ln": 26321
+    },
+    {
+     "text": "G1X99.103Y8.052",
+     "ln": 26322
+    },
+    {
+     "text": "G1X98.994Y8.004",
+     "ln": 26323
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 26324
+    },
+    {
+     "text": "M5",
+     "ln": 26325
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 26326
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 26327
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 26328
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "standard|awkward.nc": {
+   "items": 25,
+   "hash": "c704dd95a85cb81331528e00c1de8cf2d808618f2dbca1561045d628cdf9bd23",
+   "extra": {
+    "dwellZ": -2,
+    "zeroed": true,
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 3,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 2
+    },
+    {
+     "text": "G90",
+     "ln": 3
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 4
+    },
+    {
+     "text": "G4 P10",
+     "ln": 4,
+     "syn": true
+    },
+    {
+     "text": "G0 X10 Y10",
+     "ln": 5
+    },
+    {
+     "text": "G0 Z2",
+     "ln": 6
+    },
+    {
+     "text": "G1 Z-2 F300",
+     "ln": 7
+    },
+    {
+     "text": "G1 X50 F800",
+     "ln": 8
+    },
+    {
+     "text": "G53 G0 Z-5.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "tail": [
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "added": [
+    "G4 P10",
+    "G53 G0 Z-5.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "M5",
+    "M3 S16000",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "M5",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "not_homed|r1.gcode": {
+   "items": 882,
+   "hash": "a79defab50ebf90d73d0087b4395cf7e041d8a6c60e0cd8ec8a4d5b6ad82eabe",
+   "extra": {
+    "dwellZ": 5.09,
+    "zeroed": true,
+    "parked": null,
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 10
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 11
+    },
+    {
+     "text": "M3S19000",
+     "ln": 12
+    },
+    {
+     "text": "G4 P10",
+     "ln": 12,
+     "syn": true
+    },
+    {
+     "text": "G0X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.517F240.0",
+     "ln": 15
+    },
+    {
+     "text": "G0Z0.483",
+     "ln": 16
+    },
+    {
+     "text": "G1Z-1.033F240.0",
+     "ln": 17
+    },
+    {
+     "text": "G0Z-0.033",
+     "ln": 18
+    },
+    {
+     "text": "G1Z-1.550F240.0",
+     "ln": 19
+    },
+    {
+     "text": "G0Z-0.550",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-2.067F240.0",
+     "ln": 21
+    },
+    {
+     "text": "G0Z-1.067",
+     "ln": 22
+    },
+    {
+     "text": "G1Z-2.583F240.0",
+     "ln": 23
+    },
+    {
+     "text": "G0Z-1.583",
+     "ln": 24
+    },
+    {
+     "text": "G1Z-3.100F240.0",
+     "ln": 25
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X0.987Y7.972",
+     "ln": 872
+    },
+    {
+     "text": "G1X0.942Y8.217",
+     "ln": 873
+    },
+    {
+     "text": "G1X0.906Y8.462",
+     "ln": 874
+    },
+    {
+     "text": "G1X0.877Y8.706",
+     "ln": 875
+    },
+    {
+     "text": "G1X0.856Y8.950",
+     "ln": 876
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 877
+    },
+    {
+     "text": "M5",
+     "ln": 878
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 879
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 880
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 881
+    }
+   ],
+   "added": [
+    "G91 G0 Z5.0",
+    "G90",
+    "M5",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90"
+   ]
+  },
+  "not_homed|r1-converted-by-454.nc": {
+   "items": 704,
+   "hash": "3184067f74c65468b318d647fca290d9255b7776a95210ae761a0f514a5d9689",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": null,
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G17",
+     "ln": 7
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 10,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "M3 S19000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 12
+    },
+    {
+     "text": "X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "Z1",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.6F240",
+     "ln": 15
+    },
+    {
+     "text": "G0Z1",
+     "ln": 16
+    },
+    {
+     "text": "Z-0.3",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-1.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z1",
+     "ln": 19
+    },
+    {
+     "text": "Z-0.9",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-1.8",
+     "ln": 21
+    },
+    {
+     "text": "G0Z1",
+     "ln": 22
+    },
+    {
+     "text": "Z-1.5",
+     "ln": 23
+    },
+    {
+     "text": "G1Z-2.4",
+     "ln": 24
+    },
+    {
+     "text": "G0Z1",
+     "ln": 25
+    },
+    {
+     "text": "Z-2.1",
+     "ln": 26
+    },
+    {
+     "text": "G1Z-3",
+     "ln": 27
+    }
+   ],
+   "tail": [
+    {
+     "text": "X27.49Y3.988",
+     "ln": 696
+    },
+    {
+     "text": "X27.253Y4.006",
+     "ln": 697
+    },
+    {
+     "text": "X26.771Y4.005",
+     "ln": 698
+    },
+    {
+     "text": "X26.289Y4.005",
+     "ln": 699
+    },
+    {
+     "text": "X25.807Y4.005",
+     "ln": 700
+    },
+    {
+     "text": "G0Z6",
+     "ln": 701
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 702
+    },
+    {
+     "text": "M5",
+     "ln": 703
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 704
+    }
+   ],
+   "added": [
+    "G91 G0 Z5.0",
+    "G90",
+    "M5",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G90 G0 X0 Y0"
+   ]
+  },
+  "not_homed|r1-454cam.gcode": {
+   "items": 874,
+   "hash": "d3e7464d97b25de880f16a4faf462bc6ea16fa2a8a02761afaa075f8a0123a48",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": null,
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 4
+    },
+    {
+     "text": "G90",
+     "ln": 5
+    },
+    {
+     "text": "G17",
+     "ln": 6
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 9,
+     "tool": "1",
+     "next": {
+      "x": 7,
+      "y": 7
+     }
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 11
+    },
+    {
+     "text": "X7Y7",
+     "ln": 12
+    },
+    {
+     "text": "Z1",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.2F800",
+     "ln": 14
+    },
+    {
+     "text": "G0Z6",
+     "ln": 15
+    },
+    {
+     "text": "X32",
+     "ln": 16
+    },
+    {
+     "text": "Z1",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-0.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z6",
+     "ln": 19
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 20
+    },
+    {
+     "text": "M5",
+     "ln": 21
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 24,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 24,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 24,
+     "tool": "2",
+     "next": {
+      "x": 15.503,
+      "y": 6.26
+     }
+    },
+    {
+     "text": "M3 S20000",
+     "ln": 25
+    },
+    {
+     "text": "G4 P10",
+     "ln": 25,
+     "syn": true
+    }
+   ],
+   "tail": [
+    {
+     "text": "X25.662Y13.122",
+     "ln": 862
+    },
+    {
+     "text": "X25.902Y13.193",
+     "ln": 863
+    },
+    {
+     "text": "X26.125Y13.305",
+     "ln": 864
+    },
+    {
+     "text": "X26.321Y13.451",
+     "ln": 865
+    },
+    {
+     "text": "X26.636Y13.715",
+     "ln": 866
+    },
+    {
+     "text": "G0Z6",
+     "ln": 867
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 868
+    },
+    {
+     "text": "M5",
+     "ln": 869
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 870
+    }
+   ],
+   "added": [
+    "G91 G0 Z5.0",
+    "G90",
+    "M5",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G90 G0 X0 Y0"
+   ]
+  },
+  "not_homed|RearArmInsertsUpdated.gcode": {
+   "items": 26338,
+   "hash": "6fd17c6ec74d6cbfddb298c2c96c0be0249fc6313e31a9758eb1d1e3e521a15e",
+   "extra": {
+    "dwellZ": 12.01,
+    "zeroed": true,
+    "parked": null,
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "4",
+     "next": {
+      "x": 13.803,
+      "y": 10.529
+     }
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 8
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 9
+    },
+    {
+     "text": "M3S20000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0X13.803Y10.529",
+     "ln": 11
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 12
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 14
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 15
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 16
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 17
+    },
+    {
+     "text": "G0X24.903Y10.537",
+     "ln": 18
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 19
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 20
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 21
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 22
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 23
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X99.421Y8.238",
+     "ln": 26319
+    },
+    {
+     "text": "G1X99.317Y8.169",
+     "ln": 26320
+    },
+    {
+     "text": "G1X99.211Y8.107",
+     "ln": 26321
+    },
+    {
+     "text": "G1X99.103Y8.052",
+     "ln": 26322
+    },
+    {
+     "text": "G1X98.994Y8.004",
+     "ln": 26323
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 26324
+    },
+    {
+     "text": "M5",
+     "ln": 26325
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 26326
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 26327
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 26328
+    }
+   ],
+   "added": [
+    "G91 G0 Z5.0",
+    "G90",
+    "M5",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90"
+   ]
+  },
+  "not_homed|awkward.nc": {
+   "items": 27,
+   "hash": "ba8d37c56005783b3094cfd9dd1c5414e4bfe2769d3bf0adafa602ef2132e271",
+   "extra": {
+    "dwellZ": -2,
+    "zeroed": true,
+    "parked": null,
+    "injected": 3,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 2
+    },
+    {
+     "text": "G90",
+     "ln": 3
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 4
+    },
+    {
+     "text": "G4 P10",
+     "ln": 4,
+     "syn": true
+    },
+    {
+     "text": "G0 X10 Y10",
+     "ln": 5
+    },
+    {
+     "text": "G0 Z2",
+     "ln": 6
+    },
+    {
+     "text": "G1 Z-2 F300",
+     "ln": 7
+    },
+    {
+     "text": "G1 X50 F800",
+     "ln": 8
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "tail": [
+    {
+     "text": "G90",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G91 G0 Z5.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "added": [
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "M5",
+    "M3 S16000",
+    "G4 P10",
+    "G91 G0 Z5.0",
+    "G90",
+    "M5",
+    "G90 G0 X0 Y0"
+   ]
+  },
+  "park_captured|r1.gcode": {
+   "items": 880,
+   "hash": "b503a181d6f89917c45926766d345de649cff3dec989de4aa5b198c26cd6d4d9",
+   "extra": {
+    "dwellZ": 5.09,
+    "zeroed": "already",
+    "parked": {
+     "x": -700,
+     "y": -820,
+     "name": "your captured end position"
+    },
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 10
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 11
+    },
+    {
+     "text": "M3S19000",
+     "ln": 12
+    },
+    {
+     "text": "G4 P10",
+     "ln": 12,
+     "syn": true
+    },
+    {
+     "text": "G0X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.517F240.0",
+     "ln": 15
+    },
+    {
+     "text": "G0Z0.483",
+     "ln": 16
+    },
+    {
+     "text": "G1Z-1.033F240.0",
+     "ln": 17
+    },
+    {
+     "text": "G0Z-0.033",
+     "ln": 18
+    },
+    {
+     "text": "G1Z-1.550F240.0",
+     "ln": 19
+    },
+    {
+     "text": "G0Z-0.550",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-2.067F240.0",
+     "ln": 21
+    },
+    {
+     "text": "G0Z-1.067",
+     "ln": 22
+    },
+    {
+     "text": "G1Z-2.583F240.0",
+     "ln": 23
+    },
+    {
+     "text": "G0Z-1.583",
+     "ln": 24
+    },
+    {
+     "text": "G1Z-3.100F240.0",
+     "ln": 25
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 26
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X0.987Y7.972",
+     "ln": 872
+    },
+    {
+     "text": "G1X0.942Y8.217",
+     "ln": 873
+    },
+    {
+     "text": "G1X0.906Y8.462",
+     "ln": 874
+    },
+    {
+     "text": "G1X0.877Y8.706",
+     "ln": 875
+    },
+    {
+     "text": "G1X0.856Y8.950",
+     "ln": 876
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 877
+    },
+    {
+     "text": "M5",
+     "ln": 878
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 879
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 880
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-700.000 Y-820.000",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 881
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G53 G0 X-700.000 Y-820.000"
+   ]
+  },
+  "park_captured|r1-converted-by-454.nc": {
+   "items": 702,
+   "hash": "c38659e0834e3385b468fc901e63deac280b2ee67610ad108cfde709ee20ec12",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": {
+     "x": -700,
+     "y": -820,
+     "name": "your captured end position"
+    },
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G17",
+     "ln": 7
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 10,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "M3 S19000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 12
+    },
+    {
+     "text": "X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "Z1",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.6F240",
+     "ln": 15
+    },
+    {
+     "text": "G0Z1",
+     "ln": 16
+    },
+    {
+     "text": "Z-0.3",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-1.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z1",
+     "ln": 19
+    },
+    {
+     "text": "Z-0.9",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-1.8",
+     "ln": 21
+    },
+    {
+     "text": "G0Z1",
+     "ln": 22
+    },
+    {
+     "text": "Z-1.5",
+     "ln": 23
+    },
+    {
+     "text": "G1Z-2.4",
+     "ln": 24
+    },
+    {
+     "text": "G0Z1",
+     "ln": 25
+    },
+    {
+     "text": "Z-2.1",
+     "ln": 26
+    },
+    {
+     "text": "G1Z-3",
+     "ln": 27
+    },
+    {
+     "text": "G0Z1",
+     "ln": 28
+    }
+   ],
+   "tail": [
+    {
+     "text": "X27.49Y3.988",
+     "ln": 696
+    },
+    {
+     "text": "X27.253Y4.006",
+     "ln": 697
+    },
+    {
+     "text": "X26.771Y4.005",
+     "ln": 698
+    },
+    {
+     "text": "X26.289Y4.005",
+     "ln": 699
+    },
+    {
+     "text": "X25.807Y4.005",
+     "ln": 700
+    },
+    {
+     "text": "G0Z6",
+     "ln": 701
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 702
+    },
+    {
+     "text": "M5",
+     "ln": 703
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-700.000 Y-820.000",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 704
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-700.000 Y-820.000"
+   ]
+  },
+  "park_captured|r1-454cam.gcode": {
+   "items": 871,
+   "hash": "93d88f4c8e651c6ec6c3ea0f65da32582d4d4133fc829262d4b59a7827157614",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": {
+     "x": -700,
+     "y": -820,
+     "name": "your captured end position"
+    },
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 4
+    },
+    {
+     "text": "G90",
+     "ln": 5
+    },
+    {
+     "text": "G17",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 9,
+     "tool": "1",
+     "next": {
+      "x": 7,
+      "y": 7
+     }
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 11
+    },
+    {
+     "text": "X7Y7",
+     "ln": 12
+    },
+    {
+     "text": "Z1",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.2F800",
+     "ln": 14
+    },
+    {
+     "text": "G0Z6",
+     "ln": 15
+    },
+    {
+     "text": "X32",
+     "ln": 16
+    },
+    {
+     "text": "Z1",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-0.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z6",
+     "ln": 19
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 20
+    },
+    {
+     "text": "M5",
+     "ln": 21
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 24,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 24,
+     "tool": "2",
+     "next": {
+      "x": 15.503,
+      "y": 6.26
+     }
+    },
+    {
+     "text": "M3 S20000",
+     "ln": 25
+    },
+    {
+     "text": "G4 P10",
+     "ln": 25,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 26
+    },
+    {
+     "text": "X15.503Y6.26",
+     "ln": 27
+    }
+   ],
+   "tail": [
+    {
+     "text": "X25.662Y13.122",
+     "ln": 862
+    },
+    {
+     "text": "X25.902Y13.193",
+     "ln": 863
+    },
+    {
+     "text": "X26.125Y13.305",
+     "ln": 864
+    },
+    {
+     "text": "X26.321Y13.451",
+     "ln": 865
+    },
+    {
+     "text": "X26.636Y13.715",
+     "ln": 866
+    },
+    {
+     "text": "G0Z6",
+     "ln": 867
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 868
+    },
+    {
+     "text": "M5",
+     "ln": 869
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-700.000 Y-820.000",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 870
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-700.000 Y-820.000"
+   ]
+  },
+  "park_captured|RearArmInsertsUpdated.gcode": {
+   "items": 26335,
+   "hash": "4d4c9883f2e5b60f0ef4b05ee45bf0d1b476f91cfad68724d836bdb34caa1c31",
+   "extra": {
+    "dwellZ": 12.01,
+    "zeroed": "already",
+    "parked": {
+     "x": -700,
+     "y": -820,
+     "name": "your captured end position"
+    },
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "4",
+     "next": {
+      "x": 13.803,
+      "y": 10.529
+     }
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 8
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 9
+    },
+    {
+     "text": "M3S20000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0X13.803Y10.529",
+     "ln": 11
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 12
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 14
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 15
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 16
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 17
+    },
+    {
+     "text": "G0X24.903Y10.537",
+     "ln": 18
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 19
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 20
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 21
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 22
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 23
+    },
+    {
+     "text": "G0X50.468Y23.864",
+     "ln": 24
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X99.421Y8.238",
+     "ln": 26319
+    },
+    {
+     "text": "G1X99.317Y8.169",
+     "ln": 26320
+    },
+    {
+     "text": "G1X99.211Y8.107",
+     "ln": 26321
+    },
+    {
+     "text": "G1X99.103Y8.052",
+     "ln": 26322
+    },
+    {
+     "text": "G1X98.994Y8.004",
+     "ln": 26323
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 26324
+    },
+    {
+     "text": "M5",
+     "ln": 26325
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 26326
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 26327
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-700.000 Y-820.000",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 26328
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G53 G0 X-700.000 Y-820.000"
+   ]
+  },
+  "park_captured|awkward.nc": {
+   "items": 25,
+   "hash": "c5181c34d5a3af6ade83ab7aad4790da1fd0a5f18a06aa348b64725554ac36e6",
+   "extra": {
+    "dwellZ": -2,
+    "zeroed": true,
+    "parked": {
+     "x": -700,
+     "y": -820,
+     "name": "your captured end position"
+    },
+    "injected": 3,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 2
+    },
+    {
+     "text": "G90",
+     "ln": 3
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 4
+    },
+    {
+     "text": "G4 P10",
+     "ln": 4,
+     "syn": true
+    },
+    {
+     "text": "G0 X10 Y10",
+     "ln": 5
+    },
+    {
+     "text": "G0 Z2",
+     "ln": 6
+    },
+    {
+     "text": "G1 Z-2 F300",
+     "ln": 7
+    },
+    {
+     "text": "G1 X50 F800",
+     "ln": 8
+    },
+    {
+     "text": "G53 G0 Z-5.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-700.000 Y-820.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "tail": [
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-700.000 Y-820.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "added": [
+    "G4 P10",
+    "G53 G0 Z-5.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "M5",
+    "M3 S16000",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "M5",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-700.000 Y-820.000"
+   ]
+  },
+  "no_waits|r1.gcode": {
+   "items": 878,
+   "hash": "a908c6bc5b69dbf9e5bbfb9562688e704ccd12a8daaaf5455e46ef750b33e365",
+   "extra": {
+    "zeroed": "already",
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 0,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 10
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 11
+    },
+    {
+     "text": "M3S19000",
+     "ln": 12
+    },
+    {
+     "text": "G0X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.517F240.0",
+     "ln": 15
+    },
+    {
+     "text": "G0Z0.483",
+     "ln": 16
+    },
+    {
+     "text": "G1Z-1.033F240.0",
+     "ln": 17
+    },
+    {
+     "text": "G0Z-0.033",
+     "ln": 18
+    },
+    {
+     "text": "G1Z-1.550F240.0",
+     "ln": 19
+    },
+    {
+     "text": "G0Z-0.550",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-2.067F240.0",
+     "ln": 21
+    },
+    {
+     "text": "G0Z-1.067",
+     "ln": 22
+    },
+    {
+     "text": "G1Z-2.583F240.0",
+     "ln": 23
+    },
+    {
+     "text": "G0Z-1.583",
+     "ln": 24
+    },
+    {
+     "text": "G1Z-3.100F240.0",
+     "ln": 25
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 26
+    },
+    {
+     "text": "G0X33.836",
+     "ln": 27
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X0.987Y7.972",
+     "ln": 872
+    },
+    {
+     "text": "G1X0.942Y8.217",
+     "ln": 873
+    },
+    {
+     "text": "G1X0.906Y8.462",
+     "ln": 874
+    },
+    {
+     "text": "G1X0.877Y8.706",
+     "ln": 875
+    },
+    {
+     "text": "G1X0.856Y8.950",
+     "ln": 876
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 877
+    },
+    {
+     "text": "M5",
+     "ln": 878
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 879
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 880
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 881
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G53 G0 Z-2.0",
+    "G53 G0 Z-2.0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "no_waits|r1-converted-by-454.nc": {
+   "items": 700,
+   "hash": "e38e75af865be8dd44b84249e816054f98f752f8ebf38c193794e6b83d85f86f",
+   "extra": {
+    "zeroed": true,
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 0,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G17",
+     "ln": 7
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 10,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "M3 S19000",
+     "ln": 11
+    },
+    {
+     "text": "G0Z6",
+     "ln": 12
+    },
+    {
+     "text": "X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "Z1",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.6F240",
+     "ln": 15
+    },
+    {
+     "text": "G0Z1",
+     "ln": 16
+    },
+    {
+     "text": "Z-0.3",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-1.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z1",
+     "ln": 19
+    },
+    {
+     "text": "Z-0.9",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-1.8",
+     "ln": 21
+    },
+    {
+     "text": "G0Z1",
+     "ln": 22
+    },
+    {
+     "text": "Z-1.5",
+     "ln": 23
+    },
+    {
+     "text": "G1Z-2.4",
+     "ln": 24
+    },
+    {
+     "text": "G0Z1",
+     "ln": 25
+    },
+    {
+     "text": "Z-2.1",
+     "ln": 26
+    },
+    {
+     "text": "G1Z-3",
+     "ln": 27
+    },
+    {
+     "text": "G0Z1",
+     "ln": 28
+    },
+    {
+     "text": "Z-2.7",
+     "ln": 29
+    }
+   ],
+   "tail": [
+    {
+     "text": "X27.49Y3.988",
+     "ln": 696
+    },
+    {
+     "text": "X27.253Y4.006",
+     "ln": 697
+    },
+    {
+     "text": "X26.771Y4.005",
+     "ln": 698
+    },
+    {
+     "text": "X26.289Y4.005",
+     "ln": 699
+    },
+    {
+     "text": "X25.807Y4.005",
+     "ln": 700
+    },
+    {
+     "text": "G0Z6",
+     "ln": 701
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 702
+    },
+    {
+     "text": "M5",
+     "ln": 703
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 704
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G53 G0 Z-2.0",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "no_waits|r1-454cam.gcode": {
+   "items": 868,
+   "hash": "5f1596953ec32c46c15d6e4aae08409839c6b9dcfa823793d58853a6d4973c7e",
+   "extra": {
+    "zeroed": true,
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 0,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 4
+    },
+    {
+     "text": "G90",
+     "ln": 5
+    },
+    {
+     "text": "G17",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 9,
+     "tool": "1",
+     "next": {
+      "x": 7,
+      "y": 7
+     }
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 10
+    },
+    {
+     "text": "G0Z6",
+     "ln": 11
+    },
+    {
+     "text": "X7Y7",
+     "ln": 12
+    },
+    {
+     "text": "Z1",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.2F800",
+     "ln": 14
+    },
+    {
+     "text": "G0Z6",
+     "ln": 15
+    },
+    {
+     "text": "X32",
+     "ln": 16
+    },
+    {
+     "text": "Z1",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-0.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z6",
+     "ln": 19
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 20
+    },
+    {
+     "text": "M5",
+     "ln": 21
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 24,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 24,
+     "tool": "2",
+     "next": {
+      "x": 15.503,
+      "y": 6.26
+     }
+    },
+    {
+     "text": "M3 S20000",
+     "ln": 25
+    },
+    {
+     "text": "G0Z6",
+     "ln": 26
+    },
+    {
+     "text": "X15.503Y6.26",
+     "ln": 27
+    },
+    {
+     "text": "G1X16.169Y6.26Z-0.017F508",
+     "ln": 28
+    },
+    {
+     "text": "X16.836Y6.26Z-0.033",
+     "ln": 29
+    }
+   ],
+   "tail": [
+    {
+     "text": "X25.662Y13.122",
+     "ln": 862
+    },
+    {
+     "text": "X25.902Y13.193",
+     "ln": 863
+    },
+    {
+     "text": "X26.125Y13.305",
+     "ln": 864
+    },
+    {
+     "text": "X26.321Y13.451",
+     "ln": 865
+    },
+    {
+     "text": "X26.636Y13.715",
+     "ln": 866
+    },
+    {
+     "text": "G0Z6",
+     "ln": 867
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 868
+    },
+    {
+     "text": "M5",
+     "ln": 869
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 870
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G53 G0 Z-2.0",
+    "G53 G0 Z-2.0",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "no_waits|RearArmInsertsUpdated.gcode": {
+   "items": 26332,
+   "hash": "f84ce7c133fe0ae9916ce2b82f4bbe6eb907fffcccd087e0700232eafc316515",
+   "extra": {
+    "zeroed": "already",
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 0,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "4",
+     "next": {
+      "x": 13.803,
+      "y": 10.529
+     }
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 8
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 9
+    },
+    {
+     "text": "M3S20000",
+     "ln": 10
+    },
+    {
+     "text": "G0X13.803Y10.529",
+     "ln": 11
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 12
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 14
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 15
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 16
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 17
+    },
+    {
+     "text": "G0X24.903Y10.537",
+     "ln": 18
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 19
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 20
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 21
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 22
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 23
+    },
+    {
+     "text": "G0X50.468Y23.864",
+     "ln": 24
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 25
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X99.421Y8.238",
+     "ln": 26319
+    },
+    {
+     "text": "G1X99.317Y8.169",
+     "ln": 26320
+    },
+    {
+     "text": "G1X99.211Y8.107",
+     "ln": 26321
+    },
+    {
+     "text": "G1X99.103Y8.052",
+     "ln": 26322
+    },
+    {
+     "text": "G1X98.994Y8.004",
+     "ln": 26323
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 26324
+    },
+    {
+     "text": "M5",
+     "ln": 26325
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 26326
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 26327
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 26328
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G53 G0 Z-2.0",
+    "G53 G0 Z-2.0",
+    "G53 G0 Z-2.0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "no_waits|awkward.nc": {
+   "items": 22,
+   "hash": "9f3a9b1848f70fdf6a16651986b87f0294f556b75e5223b3ad67ee25caaf3bbb",
+   "extra": {
+    "zeroed": true,
+    "parked": {
+     "x": -419,
+     "y": -10,
+     "name": "the back centre"
+    },
+    "injected": 0,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 2
+    },
+    {
+     "text": "G90",
+     "ln": 3
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 4
+    },
+    {
+     "text": "G0 X10 Y10",
+     "ln": 5
+    },
+    {
+     "text": "G0 Z2",
+     "ln": 6
+    },
+    {
+     "text": "G1 Z-2 F300",
+     "ln": 7
+    },
+    {
+     "text": "G1 X50 F800",
+     "ln": 8
+    },
+    {
+     "text": "G53 G0 Z-5.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 11
+    },
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X-419.000 Y-10.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "added": [
+    "G53 G0 Z-5.0",
+    "G53 G0 Z-2.0",
+    "M5",
+    "M3 S16000",
+    "G53 G0 Z-2.0",
+    "M5",
+    "G90 G0 X0 Y0",
+    "G53 G0 X-419.000 Y-10.000"
+   ]
+  },
+  "counts_up|r1.gcode": {
+   "items": 880,
+   "hash": "bd54252ad0e7a142e6ef18fe0c9120f9cb816dc00303bace5527d8e85a1d6322",
+   "extra": {
+    "dwellZ": 5.09,
+    "zeroed": "already",
+    "parked": {
+     "x": 419,
+     "y": 828,
+     "name": "the back centre"
+    },
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 10
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 11
+    },
+    {
+     "text": "M3S19000",
+     "ln": 12
+    },
+    {
+     "text": "G4 P10",
+     "ln": 12,
+     "syn": true
+    },
+    {
+     "text": "G0X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.517F240.0",
+     "ln": 15
+    },
+    {
+     "text": "G0Z0.483",
+     "ln": 16
+    },
+    {
+     "text": "G1Z-1.033F240.0",
+     "ln": 17
+    },
+    {
+     "text": "G0Z-0.033",
+     "ln": 18
+    },
+    {
+     "text": "G1Z-1.550F240.0",
+     "ln": 19
+    },
+    {
+     "text": "G0Z-0.550",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-2.067F240.0",
+     "ln": 21
+    },
+    {
+     "text": "G0Z-1.067",
+     "ln": 22
+    },
+    {
+     "text": "G1Z-2.583F240.0",
+     "ln": 23
+    },
+    {
+     "text": "G0Z-1.583",
+     "ln": 24
+    },
+    {
+     "text": "G1Z-3.100F240.0",
+     "ln": 25
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 26
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X0.987Y7.972",
+     "ln": 872
+    },
+    {
+     "text": "G1X0.942Y8.217",
+     "ln": 873
+    },
+    {
+     "text": "G1X0.906Y8.462",
+     "ln": 874
+    },
+    {
+     "text": "G1X0.877Y8.706",
+     "ln": 875
+    },
+    {
+     "text": "G1X0.856Y8.950",
+     "ln": 876
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 877
+    },
+    {
+     "text": "M5",
+     "ln": 878
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 879
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 880
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X419.000 Y828.000",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 881
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G53 G0 X419.000 Y828.000"
+   ]
+  },
+  "counts_up|r1-converted-by-454.nc": {
+   "items": 702,
+   "hash": "1c3eeaa65163b74082f1c58a441e1449b1bdc59cbadb198a17a5bedfb0ef2257",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": {
+     "x": 419,
+     "y": 828,
+     "name": "the back centre"
+    },
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G17",
+     "ln": 7
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 10,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "M3 S19000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 12
+    },
+    {
+     "text": "X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "Z1",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.6F240",
+     "ln": 15
+    },
+    {
+     "text": "G0Z1",
+     "ln": 16
+    },
+    {
+     "text": "Z-0.3",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-1.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z1",
+     "ln": 19
+    },
+    {
+     "text": "Z-0.9",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-1.8",
+     "ln": 21
+    },
+    {
+     "text": "G0Z1",
+     "ln": 22
+    },
+    {
+     "text": "Z-1.5",
+     "ln": 23
+    },
+    {
+     "text": "G1Z-2.4",
+     "ln": 24
+    },
+    {
+     "text": "G0Z1",
+     "ln": 25
+    },
+    {
+     "text": "Z-2.1",
+     "ln": 26
+    },
+    {
+     "text": "G1Z-3",
+     "ln": 27
+    },
+    {
+     "text": "G0Z1",
+     "ln": 28
+    }
+   ],
+   "tail": [
+    {
+     "text": "X27.49Y3.988",
+     "ln": 696
+    },
+    {
+     "text": "X27.253Y4.006",
+     "ln": 697
+    },
+    {
+     "text": "X26.771Y4.005",
+     "ln": 698
+    },
+    {
+     "text": "X26.289Y4.005",
+     "ln": 699
+    },
+    {
+     "text": "X25.807Y4.005",
+     "ln": 700
+    },
+    {
+     "text": "G0Z6",
+     "ln": 701
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 702
+    },
+    {
+     "text": "M5",
+     "ln": 703
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X419.000 Y828.000",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 704
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X419.000 Y828.000"
+   ]
+  },
+  "counts_up|r1-454cam.gcode": {
+   "items": 871,
+   "hash": "29193c040de03783aecc6e60682c7dc8de59f7ff447d72d100ef07c1d780d227",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": {
+     "x": 419,
+     "y": 828,
+     "name": "the back centre"
+    },
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 4
+    },
+    {
+     "text": "G90",
+     "ln": 5
+    },
+    {
+     "text": "G17",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 9,
+     "tool": "1",
+     "next": {
+      "x": 7,
+      "y": 7
+     }
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 11
+    },
+    {
+     "text": "X7Y7",
+     "ln": 12
+    },
+    {
+     "text": "Z1",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.2F800",
+     "ln": 14
+    },
+    {
+     "text": "G0Z6",
+     "ln": 15
+    },
+    {
+     "text": "X32",
+     "ln": 16
+    },
+    {
+     "text": "Z1",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-0.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z6",
+     "ln": 19
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 20
+    },
+    {
+     "text": "M5",
+     "ln": 21
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 24,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 24,
+     "tool": "2",
+     "next": {
+      "x": 15.503,
+      "y": 6.26
+     }
+    },
+    {
+     "text": "M3 S20000",
+     "ln": 25
+    },
+    {
+     "text": "G4 P10",
+     "ln": 25,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 26
+    },
+    {
+     "text": "X15.503Y6.26",
+     "ln": 27
+    }
+   ],
+   "tail": [
+    {
+     "text": "X25.662Y13.122",
+     "ln": 862
+    },
+    {
+     "text": "X25.902Y13.193",
+     "ln": 863
+    },
+    {
+     "text": "X26.125Y13.305",
+     "ln": 864
+    },
+    {
+     "text": "X26.321Y13.451",
+     "ln": 865
+    },
+    {
+     "text": "X26.636Y13.715",
+     "ln": 866
+    },
+    {
+     "text": "G0Z6",
+     "ln": 867
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 868
+    },
+    {
+     "text": "M5",
+     "ln": 869
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X419.000 Y828.000",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 870
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G90 G0 X0 Y0",
+    "G53 G0 X419.000 Y828.000"
+   ]
+  },
+  "counts_up|RearArmInsertsUpdated.gcode": {
+   "items": 26335,
+   "hash": "810889d680208bee2a1e691eb0d839ee04236d0cee9e72d1db6454dcf714e2e8",
+   "extra": {
+    "dwellZ": 12.01,
+    "zeroed": "already",
+    "parked": {
+     "x": 419,
+     "y": 828,
+     "name": "the back centre"
+    },
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "4",
+     "next": {
+      "x": 13.803,
+      "y": 10.529
+     }
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 8
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 9
+    },
+    {
+     "text": "M3S20000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P10",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0X13.803Y10.529",
+     "ln": 11
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 12
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 14
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 15
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 16
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 17
+    },
+    {
+     "text": "G0X24.903Y10.537",
+     "ln": 18
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 19
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 20
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 21
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 22
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 23
+    },
+    {
+     "text": "G0X50.468Y23.864",
+     "ln": 24
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X99.421Y8.238",
+     "ln": 26319
+    },
+    {
+     "text": "G1X99.317Y8.169",
+     "ln": 26320
+    },
+    {
+     "text": "G1X99.211Y8.107",
+     "ln": 26321
+    },
+    {
+     "text": "G1X99.103Y8.052",
+     "ln": 26322
+    },
+    {
+     "text": "G1X98.994Y8.004",
+     "ln": 26323
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 26324
+    },
+    {
+     "text": "M5",
+     "ln": 26325
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 26326
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 26327
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X419.000 Y828.000",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 26328
+    }
+   ],
+   "added": [
+    "G53 G0 Z-2.0",
+    "M5",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "G53 G0 X419.000 Y828.000"
+   ]
+  },
+  "counts_up|awkward.nc": {
+   "items": 25,
+   "hash": "7a4ef2d72569a6ed46365d6bbced92a9e6458fb1b4e2ad029d4c997b71c7caf4",
+   "extra": {
+    "dwellZ": -2,
+    "zeroed": true,
+    "parked": {
+     "x": 419,
+     "y": 828,
+     "name": "the back centre"
+    },
+    "injected": 3,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 2
+    },
+    {
+     "text": "G90",
+     "ln": 3
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 4
+    },
+    {
+     "text": "G4 P10",
+     "ln": 4,
+     "syn": true
+    },
+    {
+     "text": "G0 X10 Y10",
+     "ln": 5
+    },
+    {
+     "text": "G0 Z2",
+     "ln": 6
+    },
+    {
+     "text": "G1 Z-2 F300",
+     "ln": 7
+    },
+    {
+     "text": "G1 X50 F800",
+     "ln": 8
+    },
+    {
+     "text": "G53 G0 Z-5.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P10",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X419.000 Y828.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "tail": [
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P10",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-2.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G53 G0 X419.000 Y828.000",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "added": [
+    "G4 P10",
+    "G53 G0 Z-5.0",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "M5",
+    "M3 S16000",
+    "G4 P10",
+    "G53 G0 Z-2.0",
+    "M5",
+    "G90 G0 X0 Y0",
+    "G53 G0 X419.000 Y828.000"
+   ]
+  },
+  "no_end_park|r1.gcode": {
+   "items": 879,
+   "hash": "0f95dbc2c2a9cc6af2a51fe97b2943fd470f3329f6be1eb83334d307cf4e72db",
+   "extra": {
+    "dwellZ": 5.09,
+    "zeroed": "already",
+    "parked": null,
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 10
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 11
+    },
+    {
+     "text": "M3S19000",
+     "ln": 12
+    },
+    {
+     "text": "G4 P6",
+     "ln": 12,
+     "syn": true
+    },
+    {
+     "text": "G0X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.517F240.0",
+     "ln": 15
+    },
+    {
+     "text": "G0Z0.483",
+     "ln": 16
+    },
+    {
+     "text": "G1Z-1.033F240.0",
+     "ln": 17
+    },
+    {
+     "text": "G0Z-0.033",
+     "ln": 18
+    },
+    {
+     "text": "G1Z-1.550F240.0",
+     "ln": 19
+    },
+    {
+     "text": "G0Z-0.550",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-2.067F240.0",
+     "ln": 21
+    },
+    {
+     "text": "G0Z-1.067",
+     "ln": 22
+    },
+    {
+     "text": "G1Z-2.583F240.0",
+     "ln": 23
+    },
+    {
+     "text": "G0Z-1.583",
+     "ln": 24
+    },
+    {
+     "text": "G1Z-3.100F240.0",
+     "ln": 25
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 26
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X1.039Y7.728",
+     "ln": 871
+    },
+    {
+     "text": "G1X0.987Y7.972",
+     "ln": 872
+    },
+    {
+     "text": "G1X0.942Y8.217",
+     "ln": 873
+    },
+    {
+     "text": "G1X0.906Y8.462",
+     "ln": 874
+    },
+    {
+     "text": "G1X0.877Y8.706",
+     "ln": 875
+    },
+    {
+     "text": "G1X0.856Y8.950",
+     "ln": 876
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 877
+    },
+    {
+     "text": "M5",
+     "ln": 878
+    },
+    {
+     "text": "G0Z5.090",
+     "ln": 879
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 880
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 882,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 881
+    }
+   ],
+   "added": [
+    "G53 G0 Z-3.0",
+    "M5",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G4 P6",
+    "G53 G0 Z-3.0"
+   ]
+  },
+  "no_end_park|r1-converted-by-454.nc": {
+   "items": 701,
+   "hash": "26966c0a2e290c2dfc3896613936282c438822b6e49efb1d26705d7b0e7553d6",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": null,
+    "injected": 2,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G17",
+     "ln": 7
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 10,
+     "tool": "3",
+     "next": {
+      "x": 8.836,
+      "y": 9.516
+     }
+    },
+    {
+     "text": "M3 S19000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P6",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 12
+    },
+    {
+     "text": "X8.836Y9.516",
+     "ln": 13
+    },
+    {
+     "text": "Z1",
+     "ln": 14
+    },
+    {
+     "text": "G1Z-0.6F240",
+     "ln": 15
+    },
+    {
+     "text": "G0Z1",
+     "ln": 16
+    },
+    {
+     "text": "Z-0.3",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-1.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z1",
+     "ln": 19
+    },
+    {
+     "text": "Z-0.9",
+     "ln": 20
+    },
+    {
+     "text": "G1Z-1.8",
+     "ln": 21
+    },
+    {
+     "text": "G0Z1",
+     "ln": 22
+    },
+    {
+     "text": "Z-1.5",
+     "ln": 23
+    },
+    {
+     "text": "G1Z-2.4",
+     "ln": 24
+    },
+    {
+     "text": "G0Z1",
+     "ln": 25
+    },
+    {
+     "text": "Z-2.1",
+     "ln": 26
+    },
+    {
+     "text": "G1Z-3",
+     "ln": 27
+    },
+    {
+     "text": "G0Z1",
+     "ln": 28
+    }
+   ],
+   "tail": [
+    {
+     "text": "X27.724Y3.942",
+     "ln": 695
+    },
+    {
+     "text": "X27.49Y3.988",
+     "ln": 696
+    },
+    {
+     "text": "X27.253Y4.006",
+     "ln": 697
+    },
+    {
+     "text": "X26.771Y4.005",
+     "ln": 698
+    },
+    {
+     "text": "X26.289Y4.005",
+     "ln": 699
+    },
+    {
+     "text": "X25.807Y4.005",
+     "ln": 700
+    },
+    {
+     "text": "G0Z6",
+     "ln": 701
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 702
+    },
+    {
+     "text": "M5",
+     "ln": 703
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 705,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 704
+    }
+   ],
+   "added": [
+    "G53 G0 Z-3.0",
+    "M5",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G90 G0 X0 Y0"
+   ]
+  },
+  "no_end_park|r1-454cam.gcode": {
+   "items": 870,
+   "hash": "9cc520a07f266f72a5bfa7000f7d401af9c8ea1ee70fb654f78aad6faaabbec3",
+   "extra": {
+    "dwellZ": 6,
+    "zeroed": true,
+    "parked": null,
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 4
+    },
+    {
+     "text": "G90",
+     "ln": 5
+    },
+    {
+     "text": "G17",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 9,
+     "tool": "1",
+     "next": {
+      "x": 7,
+      "y": 7
+     }
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P6",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 11
+    },
+    {
+     "text": "X7Y7",
+     "ln": 12
+    },
+    {
+     "text": "Z1",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.2F800",
+     "ln": 14
+    },
+    {
+     "text": "G0Z6",
+     "ln": 15
+    },
+    {
+     "text": "X32",
+     "ln": 16
+    },
+    {
+     "text": "Z1",
+     "ln": 17
+    },
+    {
+     "text": "G1Z-0.2",
+     "ln": 18
+    },
+    {
+     "text": "G0Z6",
+     "ln": 19
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 20
+    },
+    {
+     "text": "M5",
+     "ln": 21
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 24,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 24,
+     "tool": "2",
+     "next": {
+      "x": 15.503,
+      "y": 6.26
+     }
+    },
+    {
+     "text": "M3 S20000",
+     "ln": 25
+    },
+    {
+     "text": "G4 P6",
+     "ln": 25,
+     "syn": true
+    },
+    {
+     "text": "G0Z6",
+     "ln": 26
+    },
+    {
+     "text": "X15.503Y6.26",
+     "ln": 27
+    }
+   ],
+   "tail": [
+    {
+     "text": "X25.427Y13.096",
+     "ln": 861
+    },
+    {
+     "text": "X25.662Y13.122",
+     "ln": 862
+    },
+    {
+     "text": "X25.902Y13.193",
+     "ln": 863
+    },
+    {
+     "text": "X26.125Y13.305",
+     "ln": 864
+    },
+    {
+     "text": "X26.321Y13.451",
+     "ln": 865
+    },
+    {
+     "text": "X26.636Y13.715",
+     "ln": 866
+    },
+    {
+     "text": "G0Z6",
+     "ln": 867
+    },
+    {
+     "text": "G0 Z6",
+     "ln": 868
+    },
+    {
+     "text": "M5",
+     "ln": 869
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 871,
+     "syn": true
+    },
+    {
+     "text": "M30",
+     "ln": 870
+    }
+   ],
+   "added": [
+    "G53 G0 Z-3.0",
+    "M5",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G90 G0 X0 Y0"
+   ]
+  },
+  "no_end_park|RearArmInsertsUpdated.gcode": {
+   "items": 26334,
+   "hash": "807a8f0a6c82fa465a111782dbcb10c4236b6b7c70e4351b5fc817d385aec249",
+   "extra": {
+    "dwellZ": 12.01,
+    "zeroed": "already",
+    "parked": null,
+    "injected": 3,
+    "retracts": 4
+   },
+   "head": [
+    {
+     "text": "T1",
+     "ln": 3
+    },
+    {
+     "text": "G17",
+     "ln": 4
+    },
+    {
+     "text": "G21",
+     "ln": 5
+    },
+    {
+     "text": "G90",
+     "ln": 6
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 7,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 7,
+     "tool": "4",
+     "next": {
+      "x": 13.803,
+      "y": 10.529
+     }
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 8
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 9
+    },
+    {
+     "text": "M3S20000",
+     "ln": 10
+    },
+    {
+     "text": "G4 P6",
+     "ln": 10,
+     "syn": true
+    },
+    {
+     "text": "G0X13.803Y10.529",
+     "ln": 11
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 12
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 13
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 14
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 15
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 16
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 17
+    },
+    {
+     "text": "G0X24.903Y10.537",
+     "ln": 18
+    },
+    {
+     "text": "G0Z5.080",
+     "ln": 19
+    },
+    {
+     "text": "G1Z-0.675F457.2",
+     "ln": 20
+    },
+    {
+     "text": "G0Z0.325",
+     "ln": 21
+    },
+    {
+     "text": "G1Z-1.350F457.2",
+     "ln": 22
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 23
+    },
+    {
+     "text": "G0X50.468Y23.864",
+     "ln": 24
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1X99.520Y8.315",
+     "ln": 26318
+    },
+    {
+     "text": "G1X99.421Y8.238",
+     "ln": 26319
+    },
+    {
+     "text": "G1X99.317Y8.169",
+     "ln": 26320
+    },
+    {
+     "text": "G1X99.211Y8.107",
+     "ln": 26321
+    },
+    {
+     "text": "G1X99.103Y8.052",
+     "ln": 26322
+    },
+    {
+     "text": "G1X98.994Y8.004",
+     "ln": 26323
+    },
+    {
+     "text": "G0Z12.000",
+     "ln": 26324
+    },
+    {
+     "text": "M5",
+     "ln": 26325
+    },
+    {
+     "text": "G0Z12.010",
+     "ln": 26326
+    },
+    {
+     "text": "G0X0.000Y0.000",
+     "ln": 26327
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 26329,
+     "syn": true
+    },
+    {
+     "text": "M2",
+     "ln": 26328
+    }
+   ],
+   "added": [
+    "G53 G0 Z-3.0",
+    "M5",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "G4 P6",
+    "G53 G0 Z-3.0"
+   ]
+  },
+  "no_end_park|awkward.nc": {
+   "items": 24,
+   "hash": "9ff2e3aed922e63b6e7919f949c187ed48ff0131a0fab29ebf88a4ae7209882c",
+   "extra": {
+    "dwellZ": -2,
+    "zeroed": true,
+    "parked": null,
+    "injected": 3,
+    "retracts": 3
+   },
+   "head": [
+    {
+     "text": "G21",
+     "ln": 2
+    },
+    {
+     "text": "G90",
+     "ln": 3
+    },
+    {
+     "text": "M3 S18000",
+     "ln": 4
+    },
+    {
+     "text": "G4 P6",
+     "ln": 4,
+     "syn": true
+    },
+    {
+     "text": "G0 X10 Y10",
+     "ln": 5
+    },
+    {
+     "text": "G0 Z2",
+     "ln": 6
+    },
+    {
+     "text": "G1 Z-2 F300",
+     "ln": 7
+    },
+    {
+     "text": "G1 X50 F800",
+     "ln": 8
+    },
+    {
+     "text": "G53 G0 Z-5.0",
+     "ln": 9,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 9
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 11
+    },
+    {
+     "text": "G4 P6",
+     "ln": 11,
+     "syn": true
+    },
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P6",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "tail": [
+    {
+     "text": "G1 X60 Y20 F800",
+     "ln": 12
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "m6": true,
+     "ln": 13,
+     "tool": "2",
+     "next": {
+      "x": 20,
+      "y": 20
+     }
+    },
+    {
+     "text": "M3 S16000",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G4 P6",
+     "ln": 13,
+     "syn": true
+    },
+    {
+     "text": "G0 X20 Y20",
+     "ln": 15
+    },
+    {
+     "text": "G1 Z-1.5 F300",
+     "ln": 16
+    },
+    {
+     "text": "G1 X40 F800",
+     "ln": 17
+    },
+    {
+     "text": "G53 G0 Z-3.0",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "M5",
+     "ln": 19,
+     "syn": true
+    },
+    {
+     "text": "G90 G0 X0 Y0",
+     "ln": 19,
+     "syn": true
+    }
+   ],
+   "added": [
+    "G4 P6",
+    "G53 G0 Z-5.0",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "M5",
+    "M3 S16000",
+    "G4 P6",
+    "G53 G0 Z-3.0",
+    "M5",
+    "G90 G0 X0 Y0"
+   ]
+  }
+ }
+}

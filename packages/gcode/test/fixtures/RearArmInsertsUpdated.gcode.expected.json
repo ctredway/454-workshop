@@ -1,0 +1,41 @@
+{
+ "segments": 26311,
+ "segmentsHash": "48d0fe1f0a0cc0a6ff8259175db2e37309886f1ddac4e81d8caf3a366a04f02b",
+ "totalTime": 1842.21217,
+ "cutDist": 14690.417415,
+ "rapidDist": 10234.99893,
+ "extents": {
+  "x": [
+   0,
+   287.813
+  ],
+  "y": [
+   0,
+   182.981
+  ],
+  "z": [
+   -1.35,
+   12.01
+  ]
+ },
+ "tools": [
+  {
+   "line": 7,
+   "tool": 4
+  },
+  {
+   "line": 554,
+   "tool": 5
+  },
+  {
+   "line": 8119,
+   "tool": 2
+  }
+ ],
+ "issues": [
+  "info@7: M6 tool change to T4 — Carbide Motion pauses here (BitSetter / tool-length routine).",
+  "info@554: M6 tool change to T5 — Carbide Motion pauses here (BitSetter / tool-length routine).",
+  "info@8119: M6 tool change to T2 — Carbide Motion pauses here (BitSetter / tool-length routine)."
+ ],
+ "sections": []
+}

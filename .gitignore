@@ -1,1 +1,6 @@
-tools.vtdb
+# installed and built: never committed
+node_modules/
+site-dist/
+apps/desktop/app/
+apps/desktop/dist/
+packages/*/dist/

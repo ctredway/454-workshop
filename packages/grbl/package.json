@@ -1,0 +1,1 @@
+{ "name": "@454/grbl", "version": "0.1.0", "license": "MIT", "type": "module", "main": "dist/index.js", "types": "dist/index.d.ts" }

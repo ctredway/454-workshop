@@ -42,17 +42,23 @@ coordinates mean nothing, so lifting clear, parking and the BitSetter can&rsquo;
 
 <h3>Machine tab</h3>
 <ul>
-  <li><b>Work area</b> &mdash; filled in from the controller when you connect.</li>
+  <li><b>Work area</b> &mdash; filled in from the controller when you connect, or pick your machine
+      from the list (or type a size) and it stays as you set it.</li>
   <li><b>Spindle</b> &mdash; router or VFD, and the <b>spin-up</b> wait. Default 10 seconds.</li>
   <li><b>Start &amp; stop high</b> &mdash; leave this on. It keeps the bit above clamps.</li>
   <li><b>Lift at tool changes and job end</b> &mdash; how far below the top of travel to go. Default 2 mm.</li>
   <li><b>Tool-change position</b> &mdash; front centre by default, or capture your own.</li>
-  <li><b>Park at the end of a job</b> &mdash; optional; capture where the machine should finish.</li>
+  <li><b>Park at the end of a job</b> &mdash; the back centre by default, like Carbide Motion; capture a
+      position to park somewhere else.</li>
+  <li><b>Controller config</b> &mdash; the controller&rsquo;s own <code>$</code> settings, read when you
+      connect. <b>Check controller settings</b> looks them over for anything that would trip 454
+      Control up, and shows each axis&rsquo;s range.</li>
 </ul>
 
 <h3>Accessories tab</h3>
 <ul>
-  <li><b>BitSetter</b> &mdash; tick it, jog the tool over the button, press <b>Capture position</b>.</li>
+  <li><b>BitSetter</b> &mdash; tick it, jog the tool over the button, press <b>Capture position</b>, then
+      <b>Test</b>: it touches off once and reports, without changing anything.</li>
   <li><b>BitZero</b> &mdash; tick it, choose v1 or v2, and enter the plate thickness you measured
       with calipers (15 mm for a BitZero v2).</li>
 </ul>
@@ -84,7 +90,8 @@ the reading. The first descent is faster than you may expect; the measurement is
 The tool that sets Z zero is measured as the reference, so tool changes keep your zero.</div>
 
 <div class="cm same"><b>Same as Carbide Motion</b>
-With a BitSetter set up, the tool is measured at the start of every job.</div>
+With a BitSetter set up, every job measures its tool: when you confirm the first tool is loaded,
+or at Start if the file has no tool change.</div>
 
 <div class="cm diff"><b>Different from Carbide Motion</b>
 That measurement is compared with the reference taken at Z zero, so if you swapped bits after
@@ -108,7 +115,8 @@ zeroing, the difference is compensated instead of shifting your Z.</div>
   <li><b>At a tool change</b> the machine lifts, stops the spindle, moves to the tool-change position
       and waits. Change the bit, then press <b>Tool changed &mdash; continue</b>. With a BitSetter the new
       tool is measured automatically.</li>
-  <li><b>At the end</b> it lifts, stops the spindle and moves off the part.</li>
+  <li><b>At the end</b> it lifts, stops the spindle, returns to the job&rsquo;s XY zero, then parks at the
+      back centre.</li>
 </ol>
 
 <h3>Tool changes without a BitSetter</h3>
@@ -134,16 +142,16 @@ Without a BitSetter, you set Z zero again after each tool change.</div>
 The choice is made at Start, before anything moves, and the job can&rsquo;t continue past a tool
 change until Z has actually been zeroed for the new tool.</div>
 
-<div class="cm diff"><b>Different from Carbide Motion</b>
-Every job ends the same way whatever the file does: lift, spindle off, then move to your park
-position, or back to the job&rsquo;s XY zero if you haven&rsquo;t set one.</div>
+<div class="cm same"><b>Same as Carbide Motion</b>
+Every job ends by lifting, returning to the job&rsquo;s XY zero, then parking at the back centre.
+454 Control does this whatever the file does or forgets to do, and stops the spindle first.</div>
 
 <h2>When something goes wrong</h2>
 <table>
   <tr><th>Situation</th><th>What to do</th></tr>
   <tr><td>Need to pause</td><td><b>Hold.</b> The machine stops with the spindle running; <b>Resume</b> carries on.</td></tr>
   <tr><td>Something is about to be hit</td><td><b>STOP</b> (red). Immediate halt: motion and spindle stop at once.</td></tr>
-  <tr><td>Need to end the job early</td><td><b>End job.</b> The machine slows to a stop, then lifts clear, stops the spindle and moves off the part.</td></tr>
+  <tr><td>Need to end the job early</td><td><b>End job.</b> The machine slows to a stop, then lifts clear, stops the spindle, returns to XY zero and parks, the same as a finished job.</td></tr>
   <tr><td>Stopped and want to carry on</td><td>The <b>Recover</b> box is filled in with the line where cutting stopped. Check it in the preview, then press Recover.</td></tr>
   <tr><td>Probe failed</td><td>The tool was too far from the plate. Unlock when asked, jog closer, probe again.</td></tr>
   <tr><td>Machine says Alarm</td><td>Home it, or unlock if you know why it alarmed.</td></tr>

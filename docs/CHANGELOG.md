@@ -11,7 +11,228 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ---
 
+## 454 Workshop (the desktop app, in testing)
+
+### Building on GitHub
+- **A "windows build" workflow** builds the installer and zip on GitHub's Windows machines: by hand from
+  the Actions tab, or on a version tag, which also drafts a release with the files attached.
+- **The app is built from the repository's own index.html, design.html and docs/** when it sits in the
+  454-workshop repository (apps/desktop), so there's one copy of each app; outside it, from the pinned
+  copies as before.
+- **CAM goes in only if cam.js and geom.js are present.** Builds from the public repository have no CAM
+  and open Design with it firmly off, which also clears a "CAM on" choice an earlier build left behind.
+  The build records what went in (app/build-info.json).
+- **Fixed: the tests workflow would have failed on GitHub**: the top-level lock file predated two of the
+  packages, and a clean install refuses a mismatched lock file. Regenerated; 98 of 98 tests pass from a
+  clean install.
+
+### 0.4.9
+- Design 0.88.6 (recalculate without editing, below).
+
+### 0.4.8
+- Design 0.88.5 (repeated points, below).
+- Tests: the end-to-end job test failed now and then with "Machine isn't ready". It waited only for
+  Idle after a long move, and the last status report before the move still said Idle, so it pressed Run
+  while the machine was travelling, and Control rightly refused. It now waits for the machine to arrive
+  and the work zero to register. Passed three runs in a row.
+
+### 0.4.7
+- Design 0.88.4 (corners from VCarve and DXF, below).
+
+### 0.4.6
+- Design 0.88.3 (remove a fillet, below).
+
+### 0.4.5
+- Design 0.88.2 (the fillet radius, below).
+
+### 0.4.4
+- **Opens on 454 Design.** The machine connection still starts at launch, so Control connects straight
+  away when opened (454 Workshop menu, Ctrl+1, or its button in Design's header).
+- 454 Control 0.31.4 (below).
+
+### 0.4.3
+- Design 0.88.1 (display fixes, below).
+
+### 0.4.2
+- The About window's versions (the app, Design, Control and Electron) are filled in when the app is
+  built, and the build stops if one can't be found. The dedication's lines are balanced.
+- `LICENSING.md` uses the new names throughout (454 Control, 454 Design, 454 Design Pro); the one
+  remaining "Kerf" notes the rename. It also cautions against GM's trademarks in names.
+- The project README describes 454 Workshop: all four packages, the desktop app, how it's tested.
+
+### 0.4.1 — About 454 Workshop
+- **454 Workshop → About 454 Workshop** shows the app's version, the versions of 454 Design and 454
+  Control inside it (read from the apps when the app is built, so never out of date), the dedication,
+  and links to the docs and the project. Follows the system's light or dark theme.
+- Releases are published to the renamed repo, `ctredway/454-workshop`.
+
+### 0.4.0 — named 454 Workshop
+- The desktop app is **454 Workshop**: 454 Design and 454 Control, which keep their names, in one app.
+  The program is `454 Workshop.exe` (Task Manager shows "454 Workshop"), the menu is "454 Workshop", and
+  downloads are named `454-Workshop-<version>-<os>-<arch>`. The docs are "454 Workshop docs".
+- **Saved data stays put**: Electron names its data folder after the app, so renaming would have
+  switched to a new, empty "454 Workshop" folder and made the tool library, settings and drawings seem
+  to vanish. The app keeps using the existing "454" folder (checked: a run of the renamed app wrote
+  its data there, and no new folder appeared).
+
+### 0.3.1 — the header buttons work
+- **454 Design** in Control's header and **454 Control** in Design's now open (or bring forward) the
+  other app's window; links to the docs open the docs window. They did nothing: the app's pages are at
+  `app://454/`, but "454" looks like a number and the page side reads a numeric host as an IP address
+  (`0.0.1.198`), so links didn't match the router's `app://454` and were ignored. The router now checks
+  the scheme and both forms of the host. The address itself is unchanged, so saved data (tool library,
+  settings, drawings) stays where it is.
+- The CAM reference in the app now covers multi-sheet projects.
+
+### 0.3.0
+- Design 0.88.0: multi-sheet VCarve projects (below).
+
+### 0.2.2
+- The CAM engine fixes below (profiles: notches, links between passes, tabs on ramps).
+
+### 0.2.1
+- Design 0.87.2: converted VCarve profiles cut on the right side (below).
+
+### 0.2.0 — 454 Design joins
+- **Design in its own window**, from the 454 menu (Ctrl+2) or any link to it, with its CAM engine;
+  Control opens first (Ctrl+1). Docs open in their own window, web links in the browser. View has the
+  developer tools, for seeing the console when something goes wrong.
+- **Works offline**: everything Design would fetch from the internet is bundled: opentype.js, the
+  tool-database reader (sql.js, with its WebAssembly) and the Text tool's 20 fonts.
+- **Shared data**: both apps share saved settings and the tool library, so Design's Machine area reads
+  Control's work area.
+- Pages are served through the app's own private scheme, so they can load their bundled files.
+- Tested end to end, both apps at once, from source and as the packaged Linux AppImage: Control ran a
+  real job over a virtual serial port; Design loaded CAM, a font and the tool-database reader, made a
+  toolpath and saved its G-code, and read what Control had saved.
+- Windows: a ready-to-run zip, built on Linux (not yet run on Windows).
+
+### 0.1.0 — the shell
+- 454 Control as a desktop app, running unchanged, with the machine connection in its own process;
+  the icon; three.js bundled so it works offline; a Content Security Policy.
+
 ## 454 Control
+
+### 0.31.4
+- **The Machine tab comes first and is open when Control starts**: Machine, Code, Toolpaths, Checks.
+  Connecting, homing, jogging and running a job are what you need first, so they're no longer a click
+  away. Clicking a problem in Checks still jumps to its line in Code.
+
+### 0.31.3
+- The GitHub and Sponsor links point to the renamed repo, `ctredway/454-workshop`; the docs' links too.
+- The sample file is `454-sample.nc` (was `kerf-sample.nc`). Settings saved under the old Kerf names are
+  still read.
+
+### 0.31.2 — the spindle never stops in the material
+- **(machine)** With **Start & stop high** switched off, the lift before the spindle stops was skipped
+  even when the tool was in the material, so a file's mid-cut M5 stopped the spindle with the bit
+  buried (it can snap or burn as it spins down, and would restart buried). The setting now only skips
+  the lift when the tool is already clear of the material. Well-behaved posts never trigger this.
+  Found by the new safety suite. (Recorded late: this entry was missed when the fix was made.)
+
+### 0.31.1 — the spindle restarts after a tool change
+- **(machine)** When a file changes tools with the spindle running (no M5 before M6) and doesn't
+  restart it afterwards, 454 stopped the spindle for the change, but nothing restarted it: the rest of
+  the job would have plunged a stationary bit into the material. 454 now restarts it at the file's
+  speed, with the spin-up wait, while the tool is still at the top, unless the file restarts or stops
+  it itself before its next move. Well-behaved posts, which send M3 after M6, are unaffected. Found by
+  the new safety suite. (Recorded late, as above.)
+
+### 0.31.0 — Test the BitSetter
+- A **Test** button beside Capture position touches off once with the tool in the spindle, using
+  the same moves as a real measurement, and reports where it triggered, plus how much longer or
+  shorter the tool is than the reference if one has been taken. It changes nothing: no reference,
+  no offset. It refuses (with the reason) if the BitSetter isn't ready or the machine isn't idle.
+- The idle check's message now says what the machine is doing ("moving", "on hold", "homing")
+  instead of GRBL's state name ("the machine is Run").
+
+### 0.30.1 — actual time against the estimate
+- When a job finishes, Control reports how long it took and how that compares with the estimate:
+  "Job finished in 11:28: machine time 10:00 against an estimate of 9:30 (+5%); also 0:20 spin-up
+  waits, 0:45 at tool changes, 0:15 measuring tools, 0:08 held."
+- Only machine time is compared, since the estimate knows nothing of tool changes, holds,
+  BitSetter measuring or the spin-up waits Control inserts; those are listed separately. Time is
+  sorted with every status report, and gaps in reports (a sleeping tab, a reconnect) aren't counted.
+- The last 50 results are kept, and after three or more jobs the console says how estimates have
+  been running on this machine overall.
+
+### 0.30.0 — time estimates that allow for acceleration
+- Once the controller's settings are read, job times are estimated the way GRBL's planner runs
+  the machine: per-axis maximum rates ($110–112) and accelerations ($120–122), with corners limited
+  by junction deviation ($11), a backward and forward pass to set the speed at each junction, and
+  each move accelerating, cruising and decelerating within its length. The machine comes to rest
+  where GRBL's does: at the start, at dwells, and at spindle, tool-change and program stops.
+- Before, every move was assumed to run at its full feed rate from start to finish, which
+  underestimates jobs with many short moves and corners. On real jobs: arm inserts 30:42 → 37:16,
+  wing button 0:41 → 0:50, desktop pockets 0:32 → 0:55.
+- Checked against exact physics: a 100 mm move at 50 mm/s with 400 mm/s² acceleration gives 2.13 s
+  (exact 2.125; the old estimate said 2.00), and a 2 mm move that never reaches full speed 0.14 s
+  (exact 0.141; old 0.04).
+- Only the timing changes, never the moves. Without the controller's settings the estimate works
+  as before. A file already loaded is re-timed when the settings arrive.
+
+### 0.29.0 — more settings from the controller
+The controller is the authority on the machine, so anything it reports is used rather than typed.
+- **(machine)** Reporting units ($13): a controller set to report in inches had every position read
+  25.4 times too small, which would have misled lifts, jog limits and the BitSetter. Positions and
+  stored offsets are now converted.
+- Spindle type from $30, unless you've chosen it: Carbide boards use 1000 for a trim router (speed
+  set on its dial) and the real maximum, usually 24000, for a VFD. Choosing a type yourself keeps it.
+- For a VFD, the spindle speed box is limited to $31–$30, and the start summary also warns when a
+  file asks for less than the minimum ($31). For a router, the S-value warnings no longer appear:
+  a file asking for S18000 on a router board ($30 = 1000) showed a red "RPM will be capped" every
+  job, though the router ignores it.
+- A work area you've chosen that differs from the controller's travel is reported as information
+  by the controller check, not as "one of them is wrong".
+- Fixed: the stock-thickness help claimed it was filled in from $130/$131; choosing VFD logged
+  "raised to 6 s" while setting 10.
+
+### 0.28.2 — the work area you choose stays chosen
+- Picking a machine from the Work area list, or typing a size, now sticks. Before, every connect
+  replaced it with the controller's own travel whenever they differed by more than 1 mm, and the
+  list always showed "Custom…" after a reload. Saving also rebuilt the work-area record from the
+  form, which would have discarded any setting not on it.
+- The list gains **From the controller (automatic)**, the default and the way back to it. When a
+  chosen size differs from the controller's travel, connecting notes it in the console instead.
+
+### 0.28.1 — the light theme's 3D view
+- The grid stayed near-black in the light theme. It's built from several line sets, and the code
+  recolouring it for the theme looked for a single one, so it silently missed. The grid is now
+  built in the theme's colours and rebuilt when the theme changes.
+- Toolpath colours have a light-theme palette. On dark, cut paths turn brighter as they're done;
+  on light they now turn darker and stronger instead. The old pale-yellow "done" colour was barely
+  distinguishable from the light background (luminance gap 0.14; now 0.59).
+
+### 0.28.0 — Z +6 mm, and two fixes found adding it
+- **Z +6 mm** in the jog window's Work zero section, as in Carbide Motion: lifts Z 6 mm from where
+  it is. It's sent as a jog, so it can be cancelled, and it stops short at the top of travel.
+- **(machine)** The rapid-position grid (corners, edges, centre) still assumed coordinates count
+  down from 0, which 0.26.1 fixed everywhere else. On a machine that counts up, all nine buttons
+  targeted points off the machine. They now use the machine's real range.
+- **(machine)** The idle check only refused commands in alarm, despite its name, so zeroing, rapid
+  positions, Go to XY zero and spindle start could be sent while the machine was moving. These now
+  need the machine stopped (jogs may also follow a jog under way), and during a job only the pause
+  at a tool change counts as stopped.
+
+### 0.27.2
+- Controller config (Re-read, Check controller settings, and the settings table) moved from the
+  main Machine tab into Settings → Machine, alongside the rest of the machine's setup.
+
+### 0.27.1 — captured BitSetter positions are honoured
+- A BitSetter position captured from the machine is used as captured. 0.26.1 fixed how each
+  axis's range is worked out, but still second-guessed a captured position against that range,
+  so a machine whose range was misjudged kept rejecting a position it had physically been to.
+  Now a position is only refused if it can't be on the machine in either direction (beyond its
+  full travel both ways), which means a typing slip or another machine's profile.
+- When a captured position falls outside the range Control worked out, it's noted in the console,
+  since that range also sets jog limits.
+- Check controller settings now always reports each axis's range and how it was worked out.
+
+### 0.27.0 — jobs end the Carbide Motion way
+- **(machine)** Every job, finished or ended early, now lifts, stops the spindle, returns to the
+  job's XY zero, then parks at the back centre of the machine, which is Carbide Motion's order.
+  Before, it parked at a captured position *or* returned to XY zero, never both, with no default
+  park. A captured end position still overrides the back centre.
 
 ### 0.26.2 — one measurement, when the first tool is loaded
 - **(machine)** A file that loads its first tool (M6) before cutting now gets the tool prompt
@@ -94,6 +315,304 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Design
 
+### 0.88.6 — recalculate without editing
+- **A Recalculate button (&#8635;) on every toolpath card**, always there, highlighted when the toolpath
+  is out of date. Before, the only way was a Regenerate button that appeared only when Design judged
+  the toolpath out of date, or opening the editor and saving. It rebuilds from the shapes and the
+  material as they are now, keeping the toolpath's own settings, and says so when done (or shows the
+  toolpath's note, if it has one).
+- **Right-click a toolpath card** for a menu: Recalculate, Edit, show or hide on the drawing, include
+  in or leave out of the G-code, run earlier or later, and Delete. Arrow keys move through it; Escape
+  or a click elsewhere closes it.
+- **Recalculate all** in the Toolpaths panel's header (on the chosen sheet in multi-sheet projects),
+  for after a change that affects every toolpath, such as the material thickness.
+
+### 0.88.5 — repeated points
+- **Fillets beside a repeated point can be removed, and such corners filleted.** An outline can hold
+  the same point twice in a row, a zero-length edge between them; a corner beside one had no direction
+  to fillet or restore, so removing a fillet there did nothing and filleting said "didn't fit". The
+  Fillet tool now merges repeated points first; the outline looks and cuts the same. Found in a real
+  project, where the two left corners' fillets wouldn't come off.
+- **The polyline tool no longer repeats a point** when a corner is double-clicked or the same point is
+  typed twice, a way these outlines were being made.
+- **Filleting keeps a shape on its layer** (and sheet). The filleted shape kept its ID but not its
+  layer, so a shape on another layer moved to the active one.
+
+### 0.88.4 — corners from VCarve and DXF
+- **Removing fillets now works on imported shapes' corners too**, not only ones Design made:
+  - fillets **stored in pieces** (VCarve sometimes splits a corner's arc in two) are removed as one;
+  - fillets where a **curved edge** meets a straight one, or two curved edges meet: the curved edge is
+    extended along its own circle to the corner. Only true fillets qualify (touching both edges
+    smoothly, at a real corner), so smooth curves such as an S-bend aren't mistaken for fillets;
+  - fillets between **separate lines and an arc** (as many CAD programs export DXF) are found when
+    the ends meet within 0.005 mm, since exported coordinates are rounded.
+- **Fixed: filleting a corner where two arcs meet put the fillet outside the shape**, overshooting the
+  corner. The solver accepted a touch point on a curve's extension beyond the corner; it now must be
+  on the edge's own side. Straight-edged corners were unaffected.
+- Checked on real projects: the rear-arm project's removable fillets went from 108 to 126 of its 180
+  arcs; the rest are slot ends and smooth curves, correctly left alone. Every fillet round trip
+  (fillet a corner, remove it) restores the original exactly, including inner corners and corners
+  between arcs.
+- Still to do: VCarve's Bézier curves import as many short straight pieces, so a corner next to one
+  can't take a fillet.
+
+### 0.88.3 — remove a fillet
+- With the Fillet tool, **click a rounded corner to make it sharp again**. Hovering one shows the corner
+  that will come back, dashed in amber, with a restore mark at the cursor (a green check still means
+  "will fillet", a red X "can't"). Works for round fillets, dog-bones and T-bones on outlines and
+  rectangles, and for fillets between two separate lines (both lines are extended back to their
+  corner and the arc is removed). Undo puts the fillet back.
+- The straight edges on each side are extended until they meet, which restores the original corner
+  exactly: checked for every corner type, including the corner where an outline starts. Rounded ends
+  between parallel sides, like a slot's, aren't corners and are left alone. When a sharp corner is
+  nearer the cursor than a fillet, a click still fillets it.
+- Designed on 22 September alongside the fillet hover preview, but only the preview was built then.
+
+### 0.88.2 — the fillet radius
+- **A Radius box** in the prompt bar while the Fillet tool is active, beside Round / Dog-bone / T-bone,
+  showing the current radius in the drawing's units. Type a new one there (units like "4mm" work) and
+  it takes effect as you type; Enter hands the keys back to the drawing. It doesn't take focus, so
+  clicking corners works as before. Before, the radius could only be set by typing blind: the box
+  appeared only once you started.
+- **The first digit typed now counts.** Typing a radius without clicking the box put the first
+  keystroke into the field without it taking effect, so typing "6" and clicking a corner filleted it
+  at the old radius.
+- The prompt bar sizes itself to its contents, so its buttons can't be pushed past its edge.
+
+### 0.88.1 — three display fixes (found taking the README's screenshots)
+- **The Sheet selector showed on every project**, empty on single-sheet ones: its layout was an inline
+  style, which overrides "hidden". It now shows only for multi-sheet projects.
+- **The Sheet selector could go stale** after opening another project; it's refreshed on every
+  update of the Toolpaths panel.
+- **A selected toolpath wasn't drawn**: with a toolpath selected (as the newest is after Create), the
+  canvas showed only its tabs. It now draws the selected toolpath, highlighted, with its tabs, as
+  intended.
+
+### 0.88.0 — multi-sheet VCarve projects (CAM preview)
+- VCarve lays every sheet out in the same space, so a multi-sheet project loaded with all its sheets'
+  parts piled on top of each other. Each vector's record ends with its sheet's ID, and the sheets
+  (name and ID) are listed after the vectors; found by reading the multi-sheet Letters.crv, where the
+  IDs split the 31 outlines 21 / 10 and every overlapping pair is one from each sheet.
+- **Each sheet is now its own layer**, named as in VCarve, with one shown at a time, and a **Sheet**
+  selector at the top of the Toolpaths panel (only in multi-sheet projects): choosing a sheet shows it,
+  lists its toolpaths, and makes it the layer new shapes go on.
+- **Every toolpath belongs to one sheet.** Converted toolpaths whose shapes are on several sheets are
+  split, one per sheet. A new toolpath whose shapes are on different sheets is refused, since each
+  sheet is cut from its own material.
+- **Save G-code saves the chosen sheet only**, named for it ("… - Sheet 1.nc"), so a file can never put
+  two sheets' parts on one piece of material. A sheet with no toolpaths says so.
+- Single-sheet projects are unaffected.
+
+### 0.87.2 — converted VCarve profiles on the wrong side (CAM preview)
+- **(machine)** A VCarve profile could convert as inside when VCarve cuts it outside, or the reverse.
+  VCarve stores the side twice: `ProfileType` (0 outside, 1 inside, 2 on the line) and a label such as
+  "Profile Inside". The label is set when the toolpath is made and isn't updated when it's switched
+  later, so it can say the opposite; conversion trusted the label. VCarve's own calculated paths
+  follow `ProfileType` (checked by comparing their areas with their shapes': 18 of 18 inside for the
+  rear-arm project's "Profile 2", whose label says Outside), so `ProfileType` now decides, with the
+  label only a fallback. Reported on a new project; the battery-strap and rear-arm projects had the
+  same mismatch. The wing button, where both agree, converts exactly as before.
+- **Re-convert** any VCarve project converted before this, and check each profile's side.
+
+### 0.87.1 — smoother tracing
+- **Fit curves** (Trace image panel, on by default): true arcs and straight lines are fitted to the
+  traced outlines, longest first, each within the smoothing tolerance, and stored as curved
+  outlines. On test artwork (a circle, a ring with a hole, a rounded rectangle, a triangle), about
+  2,000 traced points became 25 pieces, 16 of them arcs, where plain tracing needs 109 points. Every
+  traced point stays within the tolerance of the fitted curve at every smoothing level, corners stay
+  sharp, holes stay holes, and accuracy against the exact shapes is unchanged. The hint compares the
+  two counts; untick it for straight segments as before.
+
+### 0.87.0 — VCarve conversion by VCarve's own record (CAM preview)
+- Each toolpath in a VCarve project lists the IDs of the vectors it uses, and each vector in the
+  drawing carries its ID. Found by reading the project format: the IDs follow each vector, and each
+  toolpath's record lists them after its name. Conversion now reads that record, so it no longer
+  depends on the saved previews lining up. On the battery-strap project, whose parts were moved after
+  VCarve last calculated, every toolpath previously found no shapes; now all seven find the right
+  ones (6 plate holes, 27 holes and slots, 2 cut-outs, 3 chamfered edges, the lettering, 5 part
+  outlines). On the wing button, the two methods agree exactly: the same shapes and the same moves.
+- Projects without the record fall back to preview matching as before, which now runs only if
+  needed. It compares every shape with every preview, which took minutes on the strap project and
+  was previously done for every project; conversion there now takes under two seconds.
+
+### 0.86.1 — CAM reference
+- A **CAM reference** (docs/cam-reference.html), linked from the foot of the Toolpaths panel: every
+  toolpath type and setting by its on-screen name, finishing, direction, leads, tabs and ramps, the
+  tool library and per-material feeds, cutting order, Check and saving, converting VCarve projects,
+  and how the toolpaths are checked. Linked only from the CAM build while CAM is in preview.
+
+### 0.86.0 — DXF blocks
+- Blocks placed in a DXF (INSERT) are imported instead of skipped: each placement's position,
+  rotation and scale applied, mirroring (negative scale) reversing arcs and curved segments as it
+  should, nested blocks expanded (to eight levels), array placements expanded, and circles under
+  unequal X and Y scaling brought in as the ellipse outlines they become. Shapes on layer 0 inside a
+  block take their placement's layer; others keep their own.
+- Checked against ezdxf's own expansion of a test file with every kind of placement: all 33 shapes
+  match within 0.007 mm both ways. The first version missed nested blocks (the definitions were
+  looked for inside the block instead of at the file's top level); caught by the same check.
+
+### 0.85.3 — SVG export
+- **Export SVG** (File group), for laser software, vinyl cutters and Inkscape: millimetres at true
+  size; circles, arcs and curved outline segments as real SVG arcs; layers as Inkscape layers
+  (hidden ones hidden); construction lines on a dashed "Construction" layer; groups flattened, text
+  as outlines.
+- SVG's Y axis points down, so arcs change direction when flipped. The first version had every arc
+  bending the wrong way; an independent library (svgpathtools) reading the file caught it. Now every
+  shape type matches within the check's own sampling precision.
+
+### 0.85.2 — clearing for capped V-carves
+- A V-carve with a max depth that leaves flat areas now brings a **clearing pocket** with it, like
+  inlays: stopping exactly where the V-bit's floor ends, running first, created with no tool chosen,
+  and following the V-carve when its max depth is changed.
+
+### 0.85.1 — recently used tools
+- The tool library opens with a **Recently used** folder: the last six tools chosen for toolpaths,
+  newest first.
+
+### 0.85.0 — edit the tool library
+- Tools can be edited, like VCarve's tool database: **Edit** on a tool turns its details into a
+  form: name, type, units (switching converts the sizes), diameter, angle and flat tip for V-bits,
+  flutes, notes, and its tool number on the chosen machine.
+- **Feeds and speeds per material**: choose a material in the bar and edit that tool's feed, plunge
+  (mm/min or in/min), spindle speed, pass depth and stepover for it. A material with none yet gets
+  **Add feeds**, started from another material's so you're adjusting rather than starting from
+  nothing, with a note saying where they came from and in which units.
+- **+ Tool**, **Duplicate**, **Delete**, and **+ Material**; **Start an empty library** for anyone
+  without a VCarve database to import.
+- Checks on save: a diameter above zero, an angle for V-bits, positive feeds and pass depths.
+- Saved in this browser and shared with 454 Control. Toolpaths already made keep their own feeds
+  and speeds until the tool is chosen for them again; new ones use the edited values.
+
+### 0.84.1 — new toolpaths take their place in the cutting order
+- A new toolpath slots into the usual sequence instead of going last: holes, chamfers, pockets,
+  V-carves, inside profiles, on-the-line, outside profiles. It lands after the last toolpath of the
+  same or an earlier kind, so an order arranged by hand is kept; editing never moves a toolpath,
+  and converted VCarve projects keep VCarve's order. An inlay's clearing pass goes before its
+  V-carve, as VCarve does.
+
+### 0.80.2 — toolpaths can use groups and text
+- Every toolpath type now works on groups and text. Before, a traced logo (a group) or text gave
+  a toolpath nothing to cut, whatever the type; a pocket on a traced logo now keeps its holes as
+  islands. (The V-carve toolpath itself is part of the CAM preview; see below.)
+
+### 0.79.1 — a DXF import bug
+- Curved segments of modern polylines (LWPOLYLINE bulges) were matched up in a second pass over the
+  whole file, including polylines inside block definitions such as arrowheads. Many CAD exports
+  have those, so a drawing's polylines could get another polyline's curves: curves lost, or arcs
+  appearing where the drawing has straight edges. Each polyline's curves are now read from its own
+  data. Found by importing a CAD-style file with blocks while testing DXF export.
+
+### 0.79.0 — DXF export, and DXF layers on import
+- **Export DXF** (File group): an R12 DXF in millimetres, which VCarve, Fusion, LibreCAD and laser
+  software read. Circles and arcs stay true circles and arcs (clockwise ones written as DXF's
+  anticlockwise arcs); curved outline segments keep their curves as polyline bulges. Layers become
+  DXF layers, hidden ones off and locked ones locked. Construction lines go on a "Construction"
+  layer; groups are flattened and text converted to outlines; dimensions, guides and toolpaths
+  stay out.
+- Opening a DXF now brings its layers in as Design layers, keeping which were off or locked. A
+  "Construction" layer's shapes come back as construction lines.
+- Checked by round trip (every point of every shape type back within 0.0001 mm, layers and their
+  states intact) and with ezdxf, an independent DXF library, whose auditor found no errors.
+
+### 0.78.0 — the machine's cutting area as a guide
+- Guides gains **Machine area**, toggling a dashed outline of the machine's cutting area, drawn like
+  a guide but not selectable or movable, and labelled with its size. It turns orange when shapes
+  fall outside it and red when the material doesn't fit.
+- Job setup gains a Machine section: the cutting area (from 454 Control's saved work area when both
+  apps run from the same place, a preset, or a custom size) and where the material sits on the bed:
+  any corner, optionally a distance in from it, or the centre. The machine size is remembered per
+  browser; the material's position is saved with the drawing.
+
+### 0.77.1
+- The left panel has vertical tabs down its edge: Tools (the tool groups, as before) and Layers,
+  which now gets the panel's full height instead of sitting below the tool groups. The chosen tab
+  is remembered, and the arrow keys move between tabs.
+
+### 0.77.0 — layers
+- Every shape belongs to a layer, listed in a new Layers section of the left panel. Each row has
+  show/hide, lock, the name (double-click to rename), a shape count, move-selection-here, and
+  delete. Clicking a row makes it the active layer, where new shapes go; + Layer adds one.
+- Hidden layers aren't drawn, picked or snapped to; locked layers are drawn but can't be picked or
+  changed. As in VCarve, hiding doesn't change what toolpaths cut.
+- A traced image goes on its own "Reference: name" layer at the bottom, so it can be hidden or
+  deleted like anything else (the old corner button is gone). Its outlines go on the active layer.
+- Deleting a layer with anything on it asks first; all layer changes are undoable. A saved file
+  keeps only the pictures still in use, and undo snapshots hold no image data, so they stay small.
+- Older drawings open with everything on "Layer 1"; a 0.76 reference image becomes a layer.
+- Changing XY zero in Job setup now moves reference images with the shapes, so a picture stays
+  under its traced outlines.
+
+### 0.76.0 — trace an image
+- Drop a PNG, JPG or other image on the drawing (or open it) and trace it into closed outlines.
+  The Trace image panel previews live: threshold (with Auto), invert, smoothing, ignore specks,
+  and the real width. The outlines are added as one group, centred on the material, with holes
+  kept as holes, so a pocket treats the inside of an "O" as an island.
+- The image can stay faintly behind the drawing for tracing by hand; a button removes it.
+- Written from scratch rather than using Potrace, which is GPL. Outlines are found where the image
+  crosses the threshold, interpolated between pixels, so edges are smooth rather than stepped.
+  On test artwork the traced sizes were within 0.01 mm of exact (60.00, 40.00 and a 35.00 hole
+  came out 59.99, 40.01 and 34.99). Auto sets the threshold halfway between the dark and light
+  parts of the image, which is where an anti-aliased edge truly lies.
+- Works in the public Design too; it doesn't need the CAM engine.
+
+### 0.75.3
+- The grid, origin axes and material outline follow the theme. They were fixed dark colours, so
+  the grid drew in near-black on the light theme.
+
+### 0.75.2
+- Toolpaths panel buttons are icons, each with a tooltip and a spoken label: Check and New in the
+  header; move earlier and later, Regenerate, Edit and Delete on each card (Delete turns red on
+  hover). Save G-code keeps its words, since it's the main action and says how many it saves.
+- The toolpath count sits on its own line under the header.
+
+### 0.75.1
+- A toolpath whose tool was picked from the library counts as having a chosen tool, however old.
+  0.74.1 treated every toolpath made before it as unchosen, so a pocket with the 1/4" end mill
+  picked in 0.74.0 showed that tool yet disabled Update. Only toolpaths with no library tool (the
+  old silent 1/8" default) still need one chosen.
+- Disabled buttons now look disabled. Before, they looked the same as enabled ones, so a disabled
+  Update or Create seemed to do nothing when clicked.
+
+### 0.75.0 — Job setup, and depth is never guessed
+- **Job setup**, a window of its own (header button, and it opens by itself for a new drawing):
+  units, material width and height, thickness, Z zero, and XY zero. These left Settings, which now
+  links to it, so there's one place for them.
+- **XY zero at any corner or the centre**, picked on a small diagram of the material. Before,
+  only front-left or centre. Changing it keeps the parts where they are on the material (VCarve's
+  behaviour): the drawing, guides and hand-placed tabs move with the material, toolpaths are
+  rebuilt, and undo restores the zero and the parts together. The G-code header names the choice.
+- **(machine)** A new toolpath no longer ticks "through" just because the material has a thickness,
+  and has no depth until one is typed or "through" is ticked; Create stays disabled until then.
+  Found when a pocket's depth silently came from the material thickness.
+
+### 0.74.1 — every toolpath's tool is chosen for it
+- **(machine)** No carrying a tool over from the previous toolpath (0.74.0 did): each toolpath
+  starts with no tool, and Create stays disabled until one is picked from the library or its
+  diameter typed.
+- **(machine)** Save G-code refuses while any included toolpath has no chosen tool, and names them.
+  Toolpaths made by earlier versions can't show their tool was chosen (the old silent 1/8"
+  default looked the same as a choice), so they count as unchosen until opened and given a tool.
+  Their cards say "no tool chosen". Toolpaths converted from VCarve keep the project's tool.
+- The toolpath editor opens older toolpaths cleanly even when they lack newer settings.
+
+### 0.74.0 — a toolpath never gets a tool by default
+- **(machine)** A new toolpath silently started with a 1/8" (3.175 mm) cutter unless one was
+  chosen. Found on a real job: after drilling with a 1/4" bit, a new pocket for 9 mm holes was
+  built for 1/8", and with the 1/4" bit in the spindle the holes came out oversize (the G-code
+  was exactly right for 9 mm with 1/8").
+- A new toolpath now starts with the tool the previous one used (kept with the drawing, so it
+  survives deleting every toolpath). With no previous tool, there is no tool: the button reads
+  "Choose a tool", the diameter box is empty, and Create stays disabled until a tool is picked
+  from the library or its diameter typed.
+
+### 0.73.2
+- A copy opened from your own computer (from disk or a local server) loads the CAM engine
+  automatically. 0.73.1 only loaded it after opening `design.html?cam`, which hid the + New
+  toolpath button for anyone who didn't know that. The public website still loads it only when
+  asked, and `?cam=off` turns it off.
+- If the engine is expected but `geom.js` and `cam.js` aren't beside `design.html`, the Toolpaths
+  panel says so instead of the button silently missing.
+
 ### 0.73.1
 - F is always Fillet (it meant Fit in the Select tool); Fit is now Home.
 - The CAM engine is only looked for when asked (`design.html?cam`), so the public site doesn't
@@ -121,6 +640,110 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ---
 
 ## CAM preview (not yet public)
+
+### Three profile fixes, found from Letters.crv (with desktop 0.2.2)
+- **(machine) Outside profiles bridged deep V-notches.** Offsetting an outline kept or dropped each
+  corner on its own, and a V-notch has corners only at its mouth and its point: dropping the point
+  (too narrow for the cutter) took both sides with it, and the path cut straight across the mouth.
+  The N in Letters.crv was profiled as a box, leaving its notches uncut. The same corner-only check
+  could also keep a straight stretch that passed through the part between two acceptable corners (a
+  test comb of V slots: 0.001 mm from the part, a cut 1.6 mm into it). Offsets are now judged along
+  their whole length in short pieces; where a notch narrows below the cutter, the two sides are
+  joined where they cross, which is where the cutter turns round.
+- **(machine) Moving between depth passes cut a chord into the part.** After each pass the ramped
+  stretch is recut at full depth, ending past the start, and the next pass went straight back to the
+  start: a chord at depth, into the part on a curved outline. Measured in real projects: 1.1 mm into
+  some letters in Letters.crv, 0.17 mm on the wing button, 0.05 mm on the rear arm. The recut is now
+  retraced back along the kerf instead. Present since ramps were added.
+- **(machine) Ramps cut into tabs.** A ramp descended through a tab on the ramp stretch (0.45 mm into
+  a tab in a test). Ramps now stay at tab height over tabs, like the rest of the path.
+- **Checked** with a new test that measures every point along every cutting move (not only move ends,
+  which is how these were missed): in all three real projects, every point of every converted profile
+  is now between the cutter's radius and 0.02 mm beyond it; tabs stay full height; V-carve, pocket,
+  lead and inlay checks unchanged.
+- **Regenerate** any profile toolpaths made before this, and re-save their G-code.
+
+### Inlays, a first version (with Design 0.84.0)
+- **Inlay (V-bit pocket or plug)** in the toolpath editor creates each half as ordinary toolpaths:
+  - **Pocket** (in the base): a V-carve to a flat depth D, and a pocket clearing its floor.
+  - **Plug** (in the inlay piece): a mirrored copy of the shapes and a boundary drawn on an "Inlay
+    plug" layer beside the design, a V-carve starting S below the surface down to M, and a pocket
+    clearing the flats around it.
+  - Clearing pockets start with no tool chosen, so G-code can't be saved until an end mill is
+    picked. Each clearing stops exactly where the V-bit's cone meets the floor.
+- Defaults are the usual starting point: D = 5 mm, S = 2.5 mm, M = 5 mm. The plug seats S deep,
+  leaving D − S for glue under it, and stands M − S proud to plane off; the hint says all three.
+- V-carving gained a **start depth** (the walls meet the outline that far below the surface).
+- **Proved by simulation**: both halves cut as surfaces (the V-bit's cone and the end mill's flat
+  bottom stamped along every move), the plug flipped and pushed in until it touches. With a star
+  and a ring-with-hole, from Design's own toolpaths: seats 2.449 mm deep (exact 2.5, within the
+  0.1 mm grid), walls touching over 12,700 points, glue gap under the face as expected.
+- The inlay piece must be **trimmed to its boundary** before gluing, or the uncarved stock around
+  it stops the plug seating; the hint says so.
+- Work in progress: expect refinement once real inlays are cut.
+
+### Lead-in and lead-out (with Design 0.83.0)
+- Inside and outside profiles can **lead** onto and off the line, by an arc (a quarter circle
+  tangent to the path) or a line at 45°, from the waste side, so no pass starts or stops on the
+  finished wall. With leads on, the path starts mid-way along the longest straight edge, where
+  the direction of travel is clear, rather than at a corner.
+- Passes that ramp in don't need a lead-in, so roughing passes get the lead-out only; a finishing
+  pass, which drops straight in, gets both. Size defaults to the cutter's diameter.
+- **Safe in tight spaces**: every point of a lead keeps the cutter its full radius from the part.
+  In a hole too small for the full lead it shrinks; where even a small one won't fit (a 6.4 mm hole
+  with a 6 mm cutter), it's dropped rather than touching the wall.
+
+### Tabs were wedges (fixed with Design 0.82.0)
+- **(machine)** Since tabs were first built, each tab's height was attached to the END of the move
+  crossing into it, so the cutter climbed gradually across the tab from full depth: a wedge, full
+  thickness at one end and cut right through at the other. Tabbed parts had weaker tabs than set,
+  and could break free before the job ended. The cutter now steps straight up at a tab's leading
+  edge, crosses at tab height, and steps straight down at the trailing edge. Checked with and
+  without ramps, with finishing passes, and in both directions: full tab height across its whole
+  length, full depth right up to its edges. Found while testing finishing passes with tabs.
+- **Regenerate any tabbed toolpaths** made before this, and re-save their G-code.
+
+### Finishing passes and cutting direction (with Design 0.82.0)
+- Profiles (inside and outside) and pockets can **leave** material on the walls during roughing,
+  and optionally **finish it** with one pass at full depth, where the cutter is barely loaded and
+  the wall comes out cleaner and truer. Without the finishing pass, the allowance is left for
+  another toolpath, as VCarve does. Tabs are respected on the finishing pass.
+- **Climb or conventional**, chosen in the editor for profiles, pockets and chamfers (climb stays
+  the default).
+- Checked: roughing passes 3.30 mm from the outline with a 0.3 mm allowance and a 6 mm cutter, the
+  finishing pass 3.00 mm; pockets finish with every wall and island at the full cutter radius and
+  nothing uncut, for offset rings and raster alike.
+
+### Raster pocket clearing (with Design 0.81.0)
+- Pockets can clear by **raster**: parallel back-and-forth lines at a chosen angle, clipped to the
+  same exact boundary as the wall pass (so islands and narrow necks behave the same), then a
+  climb-milled pass round the walls. Lines link with a short feed move where it stays inside the
+  pocket; otherwise the cutter lifts, moves, and ramps back in along the line, never plunging.
+  Chosen in the pocket options (Clearing: Offset rings / Raster, with the angle). Converted VCarve
+  pockets bring their raster setting across.
+- **(machine)** Found while testing it: the check deciding whether a linking move stays inside the
+  pocket sampled only 10 points and allowed a sixth of the stepover (0.4 mm here), so a link could
+  skim an island by up to 0.1 mm. It now samples every 0.2 mm to the distance map's accuracy.
+  This applied to offset-ring pockets too, though their short links hadn't shown it.
+- Tested at 0°, 30°, 45° and 90°, with and without islands, on squares, circles and an L: every
+  point along every move keeps the full cutter radius from every wall and island, and no
+  reachable material is left.
+
+### V-carving (with Design 0.80.2)
+- A V-carve toolpath: the V-bit's tip follows each shape's centre-line, deeper where it's wide and
+  rising to the surface at sharp points, so the cone's sides just touch the outline. Found as
+  F-Engrave does: walking each outline, the largest circle fitting inside the shape at each step
+  gives the tip's position and depth. Holes in letters work; corners come out sharp.
+- Flat-tipped engraving bits are allowed for; features narrower than the tip stay at the surface.
+  An optional max depth gives a flat floor, with a note that the middle needs a clearing pocket.
+  Depth passes are supported.
+- Warnings: not a V-bit; carving wider than the bit; deeper than the material.
+- Tested on shapes with exact answers (a 10 mm bar 8.662 deep against 8.660; a ring with a hole
+  5.200 against 5.196; a flat tip exact to 0.004 mm), with no gouging beyond the search's own
+  0.01 mm tolerance and nothing left uncovered.
+- VCarve's V-carve toolpaths convert: bit angle, tip width and flat depth, reading them from the
+  tool's name when it isn't in the library (fixed on the way: a name like "30° SC Engraving 0.005"
+  Tip" first read as 60° with a 25 mm tip). Shapes are matched by which one contains the preview.
 
 Profiles, pockets with islands, drilling with peck, chamfers (including VCarve's "vectors at
 top"), tabs placed by hand, ramps, material and cut-through, vector checking, uncut-shape check,
