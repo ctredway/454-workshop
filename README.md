@@ -2,7 +2,7 @@
   <img src="docs/images/icon.png" width="112" alt="454 Workshop">
 </p>
 
-<h1 align="center">454 Workshop</h1>
+<h1 align="center">454 Workshop <sup>beta</sup></h1>
 
 <p align="center">
   <b>Draw it, toolpath it, cut it.</b><br>
@@ -40,8 +40,10 @@
 Both run in a web browser with nothing to install, and both come together in the **454 Workshop
 desktop app** for Windows and Linux.
 
-> **CAM** (making toolpaths in Design: profiles, pockets, drilling, chamfers, V-carving and inlays) is
-> in preview and not yet part of the public release.
+> **This is beta software.** The toolpaths in Design (CAM: profiles with tabs, pockets, drilling,
+> chamfers, V-carving and inlays) are the newest part and still being tested. Check every job before
+> cutting material: preview it in 454 Control, read its Checks tab, and run it in the air first. See
+> the [CAM reference](https://454workshop.com/docs/cam-reference.html) for what to check.
 
 ## Why 454 Workshop?
 

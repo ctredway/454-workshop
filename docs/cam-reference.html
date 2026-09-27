@@ -19,8 +19,13 @@
 
 <h1>454 Design: CAM reference</h1>
 <p class="lede">Every toolpath type, setting and check in 454 Design&rsquo;s CAM, by topic. For a
-walkthrough from drawing to G-code, see the <a href="design-quickstart.html">Design quick start</a>.
-CAM is in preview: this page describes what&rsquo;s in the current build.</p>
+walkthrough from drawing to G-code, see the <a href="design-quickstart.html">Design quick start</a>.</p>
+<p class="warn"><b>CAM is in beta.</b> Toolpaths are new and still being tested on real projects, which
+is still finding problems. Check every job before cutting material: open it in 454 Control and watch the
+preview all the way through, read the Checks tab, then run it in the air with Z zeroed well above the
+material. Every G-code file 454 Design saves starts with a note saying so. If something looks wrong,
+<a href="https://github.com/ctredway/454-workshop/issues">report it on GitHub</a>, with the drawing if
+you can.</p>
 
 <p><b>On this page:</b>
 <a href="#basics">The basics</a> &middot;

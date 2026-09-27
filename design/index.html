@@ -52,13 +52,6 @@
   .toast.fade{opacity:0;transform:translateY(6px);transition:opacity .45s ease, transform .45s ease}
   #filletTypes{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-left:4px}
   #filletTypes[hidden]{display:none}
-  #filletRBox{display:inline-flex;align-items:center;gap:5px;margin-left:6px;font-size:12px;color:var(--muted);flex:none;white-space:nowrap}
-  #filletRBox[hidden]{display:none}
-  #promptBar #filletR{width:60px;min-width:0;padding:3px 6px;font-size:12.5px}
-  #promptBar #filletTypes{flex:none}
-  /* the bar is centred from the middle of the drawing, which caps it at half the width unless told to fit
-     its contents: without this the corner-type buttons were pushed out past its edge */
-  #promptBar{width:max-content;max-width:calc(100% - 32px)}
   #filletTypes button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 9px}
   #filletTypes button+button{border-left:1px solid var(--line)}
   #filletTypes button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
@@ -301,18 +294,6 @@
   .tpIcon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:24px;padding:0;font-size:14px;line-height:1}
   .tpIcon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
   .tpIcon.danger:hover{color:var(--err);border-color:var(--err)}
-  .tpIcon.stale{color:var(--amber);border-color:var(--amber)}
-  #tpBeta{margin:6px 12px 8px;padding:8px 10px;border-left:3px solid var(--amber);background:var(--panel-deep);border-radius:0 5px 5px 0;font-size:12px;line-height:1.45;color:var(--muted)}
-  #tpBeta[hidden]{display:none}
-  #tpBeta b{color:var(--amber)}
-  #tpBeta a{color:var(--amber)}
-  #ctxMenu{position:fixed;z-index:60;min-width:200px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
-  #ctxMenu[hidden]{display:none}
-  #ctxMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--ink);padding:6px 10px;font-size:13px;border-radius:4px}
-  #ctxMenu button:hover,#ctxMenu button:focus-visible{background:var(--accent-faint);outline:none}
-  #ctxMenu button:disabled{color:var(--faint);background:transparent}
-  #ctxMenu button.danger{color:var(--err)}
-  #ctxMenu .ctxSep{height:1px;background:var(--line);margin:4px 6px}
   .tpCountLine{padding:4px 12px 6px;font-size:11.5px;color:var(--muted);border-bottom:1px solid var(--line)}
   .tpCountLine:empty{display:none}
   #tpNew[hidden],#tpCheck[hidden],#tpVcBar[hidden]{display:none}
@@ -387,11 +368,11 @@
     <div class="brand">454<span> Design</span></div>
     <div class="sub" id="verSub">precision 2D sketcher</div>
     <div class="spacer"></div>
-    <a id="openDocs" class="hdrIcon" href="docs/index.html" target="_blank" rel="noopener" title="Docs — guides and reference, in a new tab" aria-label="Docs"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3.5h4.5A1.8 1.8 0 0 1 9 5v9a1.5 1.5 0 0 0-1.5-1.1H3z"/><path d="M15 3.5h-4.5A1.8 1.8 0 0 0 9 5v9a1.5 1.5 0 0 1 1.5-1.1H15z"/></svg></a>
+    <a id="openDocs" class="hdrIcon" href="../docs/index.html" target="_blank" rel="noopener" title="Docs — guides and reference, in a new tab" aria-label="Docs"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3.5h4.5A1.8 1.8 0 0 1 9 5v9a1.5 1.5 0 0 0-1.5-1.1H3z"/><path d="M15 3.5h-4.5A1.8 1.8 0 0 0 9 5v9a1.5 1.5 0 0 1 1.5-1.1H15z"/></svg></a>
     <button id="libBtn" class="hdrIcon" title="Tool library — your bits, tool numbers, and feeds and speeds" aria-label="Tool library"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M7 2.2h4v6.6l-2 4.4-2-4.4z"/><path d="M7 4.4h4M7 6.4h4M7 8.4h4" opacity=".75"/><path d="M9 13.2v2.6"/></svg></button>
     <button id="jobBtn" class="hdrIcon" title="Job setup — material size and thickness, units, where X, Y and Z zero are" aria-label="Job setup"><svg viewBox="0 0 18 18" aria-hidden="true"><rect x="2" y="5" width="14" height="9" rx="1"/><path d="M2 9h14M5 5V3M13 5V3"/><circle cx="2.2" cy="14" r="1.3"/></svg></button>
     <button id="settingsBtn" class="hdrIcon" title="Settings — appearance, display colours" aria-label="Settings"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="2.6"/><path d="M9 1.6v2.2M9 14.2v2.2M16.4 9h-2.2M3.8 9H1.6M14.2 3.8l-1.6 1.6M5.4 12.6l-1.6 1.6M14.2 14.2l-1.6-1.6M5.4 5.4 3.8 3.8"/></svg></button>
-    <a id="openControl" href="index.html" target="_blank" rel="noopener" title="Open 454 Control (the machine sender) in a new tab">454 Control ↗</a>
+    <a id="openControl" href="../control/" target="_blank" rel="noopener" title="Open 454 Control (the machine sender) in a new tab">454 Control ↗</a>
     <input type="file" id="loadFile" accept=".json,.crv,.dxf,.png,.jpg,.jpeg,.gif,.bmp,.webp" hidden>
   </header>
 
@@ -594,18 +575,14 @@
   </div>
   <input type="file" id="libFile" accept=".vtdb" hidden>
 
-  <div id="ctxMenu" role="menu" hidden></div>
   <aside id="tpPanel" aria-label="Toolpaths">
     <button id="tpStrip" aria-expanded="false" aria-controls="tpBody" title="Expand the toolpaths panel"><span class="chev">«</span><span>Toolpaths</span><span id="tpStripCount"></span></button>
     <div id="tpBody">
     <div class="tpHead"><b>Toolpaths</b>
       <button id="tpCheck" class="tpIcon" hidden aria-label="Check the drawing" title="Check: look over the drawing before cutting — open shapes, pieces, doubles, crossings, and shapes no toolpath cuts"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2l3.3 3.3M5.3 7l1.2 1.2 2.3-2.4"/></svg></button>
-      <button id="tpRecalcAll" class="tpIcon" hidden aria-label="Recalculate all toolpaths" title="Recalculate all: rebuild every toolpath from its shapes and the material as they are now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg></button>
       <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
       <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
     <div id="tpCount" class="tpCountLine"></div>
-    <p id="tpBeta" hidden><b>Beta.</b> Toolpaths are new and still being tested. Check every job in 454 Control&rsquo;s
-      preview and run it in the air before cutting material. <a href="docs/cam-reference.html" target="_blank" rel="noopener">What to check</a></p>
     <p class="tpNote" id="tpEmpty">No toolpaths yet. Open a VCarve project (.crv) that has toolpaths, and they&rsquo;ll be listed here.</p>
     <p class="tpNote" id="tpSrcNote">Read from the VCarve project, in the order VCarve lists them. They show how the job was set up; 454 Design can&rsquo;t cut them yet, and editing the drawing doesn&rsquo;t update them.</p>
     <p class="tpNote" id="tpCamMissing" hidden style="color:var(--amber)">The toolpath tools didn’t load: <code>geom.js</code> and <code>cam.js</code> need to be in the same folder as this <code>design.html</code>.</p>
@@ -616,7 +593,7 @@
       <label for="tpSheet">Sheet</label>
       <select id="tpSheet" style="flex:1" title="Each sheet is its own job: its own toolpaths and its own G-code"></select></div>
     <div id="tpList"></div>
-    <a id="tpDocs" href="docs/cam-reference.html" target="_blank" rel="noopener" style="display:block;padding:10px 12px;font-size:12px;color:var(--muted)">CAM reference &#8599;</a>
+    <a id="tpDocs" href="../docs/cam-reference.html" target="_blank" rel="noopener" style="display:block;padding:10px 12px;font-size:12px;color:var(--muted)">CAM reference &#8599;</a>
     </div>
   </aside>
 
@@ -762,8 +739,6 @@
     <div id="floatIn" hidden><span id="floatTag"></span><input id="promptIn" autocomplete="off" spellcheck="false"><button id="floatDel" hidden title="Delete this dimension">✕</button></div>
     <div id="promptBar">
       <label id="promptLbl">value</label>
-      <label id="filletRBox" hidden title="The fillet radius. Type a new one here, or just start typing a number while the Fillet tool is active">Radius
-        <input id="filletR" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"> <span id="filletRU"></span></label>
       <span id="filletTypes" hidden role="group" aria-label="Corner type">
         <button data-ft="round">Round</button><button data-ft="dogbone">Dog-bone</button><button data-ft="tbone">T-bone</button>
       </span>
@@ -808,8 +783,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
-<!-- The CAM engine is optional: without it 454 Design works exactly as before. It's released as a
-     beta and loads by default; ?cam=off turns it off in that browser (?cam turns it back on). -->
+<!-- The CAM engine is optional: without it 454 Design works exactly as before. A copy opened from
+     your own computer (from disk, or a local server) loads it automatically; the public website
+     only does when asked with ?cam, so it never requests files that aren't there. ?cam=off turns
+     it off in that browser. -->
 <script>
 (function(){
   var q = location.search, on = false;
@@ -818,7 +795,7 @@
     if (/[?&]cam=off\b/.test(q)) localStorage.setItem('454-cam', 'off');
     else if (/[?&]cam\b/.test(q)) localStorage.setItem('454-cam', 'on');
     var pref = localStorage.getItem('454-cam');
-    on = pref !== 'off';                            // CAM is released, in beta: on unless turned off (?cam=off)
+    on = pref === 'on' || (local && pref !== 'off');
   }catch(e){ on = local; }
   window.__camWanted = on;                         // so the panel can say if the files are missing
   if (on) document.write('<script src="geom.js"><\/script><script src="cam.js"><\/script>');
@@ -826,7 +803,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.89.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.88.1'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1594,9 +1571,9 @@ var STAGE_LABEL = {
   array0: 'Array \u2014 type "N@dx,dy" (linear, e.g. 5@12,0), or click a center for a circular array',
   array1: 'Array \u2014 type "N<step\u00b0" (e.g. 6<60) around the clicked center',
   selFirst:'Select something first \u2014 press V, click entities (shift adds), then pick the transform',
-  fillet0:'Fillet \u2014 radius R{R} \u00b7 click a corner (poly/rect corner, or two meeting lines) \u00b7 type a new radius anytime \u00b7 click a rounded corner to make it sharp again',
-  fillet0dog:'Dog-bone \u2014 bit radius {R} (\u00d8{D} bit) \u00b7 click a corner to relieve it so a square part fits \u00b7 type a new radius anytime \u00b7 click a rounded corner to make it sharp again',
-  fillet0t:'T-bone \u2014 bit radius {R} (\u00d8{D} bit) \u00b7 click a corner, nearer the edge the relief should cut into \u00b7 type a new radius anytime \u00b7 click a rounded corner to make it sharp again',
+  fillet0:'Fillet \u2014 radius R{R} \u00b7 click a corner (poly/rect corner, or two meeting lines) \u00b7 type a new radius anytime',
+  fillet0dog:'Dog-bone \u2014 bit radius {R} (\u00d8{D} bit) \u00b7 click a corner to relieve it so a square part fits \u00b7 type a new radius anytime',
+  fillet0t:'T-bone \u2014 bit radius {R} (\u00d8{D} bit) \u00b7 click a corner, nearer the edge the relief should cut into \u00b7 type a new radius anytime',
   trim0:  'Trim \u2014 click the piece to remove (lines, arcs, circles); crossings bound the cut',
   extend0:'Extend \u2014 click near the end of a line or arc to run it to the next crossing',
   node0:  'Edit nodes \u2014 click a polyline or path to show its points',
@@ -1659,8 +1636,6 @@ var TOOLS = {
 function hoverFillet(w){
   // is the cursor near a corner that can be filleted (or an already-filleted arc to remove)?
   var tol = 10/VIEW.scale;
-  var uf = filletRemovable(w);
-  if (uf) return {action:'unfillet', at:{x:uf.X.x, y:uf.X.y}, preview:[uf.A, [uf.X.x, uf.X.y], uf.B]};
   var pk = cornerPick(w);
   if (pk){
     var at = {x:pk.pe.pts[pk.vi][0], y:pk.pe.pts[pk.vi][1]};
@@ -1704,12 +1679,6 @@ function hoverExtend(w){
   return {action:'none', hint:'extend needs a line or arc'};
 }
 var HOVER = null; // last computed hover status, for cursor feedback in draw()
-// the Radius box in the prompt bar: shows the fillet radius in the drawing's units
-function filletRShow(){
-  var f = document.getElementById('filletR'), u = document.getElementById('filletRU');
-  if (f && document.activeElement !== f) f.value = fmtDisp(UICFG.filletR);
-  if (u) u.textContent = unitTag();
-}
 function refreshFilletTypes(){
   var ft = UICFG.filletType || 'round';
   var box = document.getElementById('filletTypes');
@@ -1883,8 +1852,6 @@ function toolMgrEnter(t){
   MEAS = null;
   var ftBox = document.getElementById('filletTypes');
   if (ftBox){ ftBox.hidden = t !== 'fillet'; refreshFilletTypes(); }
-  var frBox = document.getElementById('filletRBox');
-  if (frBox){ frBox.hidden = t !== 'fillet'; if (t === 'fillet') filletRShow(); }
   var pinEl = document.getElementById('promptIn');
   if (pinEl){ pinEl.value = ''; pinEl.blur(); }
   hidePrompt();
@@ -1962,10 +1929,9 @@ function toolClick(w, snap){
     if (!DRAW){ DRAW = {stage:1, pts:[[p.x,p.y]]}; stagePrompt('poly1'); }
     else {
       var f = DRAW.pts[0];
-      var lp = DRAW.pts[DRAW.pts.length-1];
       if (DRAW.pts.length > 2 && Math.hypot(p.x-f[0], p.y-f[1]) < 6/VIEW.scale){
         pushUndo(); DOC.ents.push({t:'poly', pts:DRAW.pts, closed:true}); DRAW=null; stagePrompt('poly0'); persist();
-      } else if (Math.hypot(p.x-lp[0], p.y-lp[1]) > 1e-6) DRAW.pts.push([p.x,p.y]);   // a double-click doesn't repeat the point
+      } else DRAW.pts.push([p.x,p.y]);
     }
   }
   else if (TOOL === 'arc'){
@@ -2115,9 +2081,7 @@ function toolClick(w, snap){
   }
   else if (TOOL === 'fillet'){
     var ftNow = UICFG.filletType || 'round', ftName = ftNow === 'round' ? 'Fillet' : (ftNow === 'dogbone' ? 'Dog-bone' : 'T-bone');
-    var ufc = filletRemovable(w);
-    if (ufc){ if (unfillet(ufc)){ persist(); stagePrompt('fillet0'); draw(); } }
-    else if (doFillet(w, UICFG.filletR)){ persist(); stagePrompt('fillet0'); }
+    if (doFillet(w, UICFG.filletR)){ persist(); stagePrompt('fillet0'); }
     else if (doFillet.lastMiss === 'fit'){
       stagePrompt('fillet0');
       toast('warn', ftName + ' didn\u2019t fit', ftNow === 'round'
@@ -2252,7 +2216,7 @@ function toolCommitText(txt){
     }
     var last = DRAW.pts[DRAW.pts.length-1];
     var pv = parseNumericPoint(txt, {x:last[0], y:last[1]});
-    if (pv && Math.hypot(pv.x-last[0], pv.y-last[1]) > 1e-6){ DRAW.pts.push([pv.x, pv.y]); draw(); }
+    if (pv){ DRAW.pts.push([pv.x, pv.y]); draw(); }
     return;
   }
   if (TOOL === 'arc'){
@@ -3857,7 +3821,7 @@ function tpExport(){
     return {moves: tp.moves, name: tp.name, tool: toolNumber(tp), rpm: tp.rpm || 18000,
             toolName: t ? t.name : fmtDisp(tp.dia) + ' ' + unitTag() + (tp.side === 'drill' ? ' drill' : ' cutter')};
   });
-  var notes = ['BETA: made with 454 Design\'s toolpaths, which are in beta. Preview this job in 454 Control and run it in the air before cutting material.'];
+  var notes = [];
   if (DOC.stock.t > 0) notes.push('Material: ' + DOC.stock.t.toFixed(2) + ' mm thick');
   notes.push('Z zero: ' + (DOC.stock.zero === 'bottom' ? 'spoilboard, under the material' : 'top of the material'));
   notes.push('XY zero: ' + ORIGIN_NAMES[originKey()] + ' of the material');
@@ -4840,48 +4804,6 @@ var TP_ICONS = {
   del: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.2 4.5V3h3.6v1.5M4.4 4.5l.7 8.5h5.8l.7-8.5M6.8 7v4M9.2 7v4"/></svg>',
   regen: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg>'
 };
-// Recalculate a toolpath from its shapes and the material as they are now, keeping its own settings.
-function tpRecalc(tp, quiet){
-  tpGenerate(tp); persist(); renderToolpathPanel(); draw();
-  if (!quiet){
-    if (tp.warning) toast('warn', tp.name + ' recalculated', tp.warning);
-    else toast('ok', tp.name + ' recalculated', 'Rebuilt from its shapes as they are now.');
-  }
-}
-function tpRecalcAll(){
-  var list = tpList().filter(function (tp) { return !multiSheet() || tpSheetOf(tp) === DOC.activeSheet; });
-  if (!list.length) return;
-  var warned = [];
-  list.forEach(function (tp) { tpGenerate(tp); if (tp.warning) warned.push(tp.name); });
-  persist(); renderToolpathPanel(); draw();
-  var what = list.length === 1 ? '1 toolpath' : list.length + ' toolpaths';
-  if (warned.length) toast('warn', what + ' recalculated', 'Check ' + warned.join(', ') + ': ' + (warned.length === 1 ? 'it has' : 'they have') + ' a note.');
-  else toast('ok', what + ' recalculated', 'All rebuilt from their shapes and the material as they are now.');
-}
-// ---- a small right-click menu: items {label, fn, disabled, danger}, null for a divider ----
-function ctxMenuClose(){
-  var m = document.getElementById('ctxMenu');
-  if (m && !m.hidden){ m.hidden = true; if (ctxMenuClose.back && ctxMenuClose.back.focus) ctxMenuClose.back.focus(); }
-}
-function ctxMenuOpen(x, y, items){
-  var m = document.getElementById('ctxMenu');
-  m.innerHTML = '';
-  ctxMenuClose.back = document.activeElement;
-  items.forEach(function (it) {
-    if (!it){ var hr = document.createElement('div'); hr.className = 'ctxSep'; hr.setAttribute('role', 'separator'); m.appendChild(hr); return; }
-    var b = document.createElement('button');
-    b.type = 'button'; b.textContent = it.label; b.setAttribute('role', 'menuitem');
-    if (it.danger) b.classList.add('danger');
-    if (it.disabled) b.disabled = true;
-    b.addEventListener('click', function (ev) { ev.stopPropagation(); m.hidden = true; it.fn(); });
-    m.appendChild(b);
-  });
-  m.hidden = false;
-  var w = m.offsetWidth, h = m.offsetHeight;
-  m.style.left = Math.max(4, Math.min(x, window.innerWidth - w - 4)) + 'px';
-  m.style.top = Math.max(4, Math.min(y, window.innerHeight - h - 4)) + 'px';
-  var first = m.querySelector('button:not([disabled])'); if (first) first.focus();
-}
 function renderMyToolpaths(){
   var box = document.getElementById('tpList');
   var all = tpList();
@@ -4971,32 +4893,13 @@ function renderMyToolpaths(){
     up.disabled = idx === 0; dn.disabled = idx === all.length - 1;
     bar.appendChild(up); bar.appendChild(dn);
     var gap = document.createElement('span'); gap.style.flex = '1'; bar.appendChild(gap);
-    var rc = btn('regen', stale ? 'Out of date: recalculate this toolpath from its shapes and the material as they are now'
-                                : 'Recalculate this toolpath from its shapes and the material as they are now, with its own settings',
-                 'Recalculate ' + tp.name, function () { tpRecalc(tp); });
-    if (stale) rc.classList.add('stale');
-    bar.appendChild(rc);
+    if (stale) bar.appendChild(btn('regen', 'Regenerate: rebuild this toolpath from the shapes as they are now', 'Regenerate ' + tp.name, function () { tpGenerate(tp); persist(); renderToolpathPanel(); draw(); }));
     bar.appendChild(btn('edit', 'Edit this toolpath', 'Edit ' + tp.name, function () { setTool('select'); cutOpen(tp); }));
     var del = btn('del', 'Delete this toolpath', 'Delete ' + tp.name, function () { tpDelete(tp.id); });
     del.classList.add('danger'); bar.appendChild(del);
     card.appendChild(bar);
 
     card.addEventListener('click', function () { CUTSEL = CUTSEL === tp.id ? null : tp.id; renderToolpathPanel(); draw(); });
-    card.addEventListener('contextmenu', function (e) {
-      e.preventDefault();
-      ctxMenuOpen(e.clientX, e.clientY, [
-        {label: stale ? 'Recalculate (out of date)' : 'Recalculate', fn: function () { tpRecalc(tp); }},
-        {label: 'Edit\u2026', fn: function () { setTool('select'); cutOpen(tp); }},
-        null,
-        {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); }},
-        {label: tp.exclude ? 'Include in the G-code' : 'Leave out of the G-code', fn: function () { tp.exclude = !tp.exclude; persist(); renderToolpathPanel(); }},
-        null,
-        {label: 'Run earlier', disabled: idx === 0, fn: function () { tpMoveTo(idx, idx - 1); }},
-        {label: 'Run later', disabled: idx === all.length - 1, fn: function () { tpMoveTo(idx, idx + 1); }},
-        null,
-        {label: 'Delete', danger: true, fn: function () { tpDelete(tp.id); }}
-      ]);
-    });
     // drag a card onto another to move it there
     card.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; card.classList.add('tpDropOver'); });
     card.addEventListener('dragleave', function () { card.classList.remove('tpDropOver'); });
@@ -5096,8 +4999,6 @@ function renderToolpathPanel(){
   document.getElementById('tpStripCount').textContent = list.length ? '(' + list.length + ')' : '';
   var mine = tpList();
   document.getElementById('tpNew').hidden = !camReady();
-  document.getElementById('tpBeta').hidden = !camReady();                // CAM is in beta: say so where it's used
-  document.getElementById('tpRecalcAll').hidden = !camReady() || !tpList().length;   // only when there's something to recalculate
   var camMissing = document.getElementById('tpCamMissing');
   if (camMissing) camMissing.hidden = !(window.__camWanted && !camReady());
   document.getElementById('tpCheck').hidden = !camReady();
@@ -7144,10 +7045,9 @@ function draw(){
       drawEntityOutline(DOC.ents[HOVER.idx]);
       ctx.restore();
     }
-    // preview of the corner a click will produce (amber and dashed: the sharp corner a removal restores)
-    var unf = HOVER.action === 'unfillet';
+    // preview of the corner a click will produce
     if (HOVER.preview && HOVER.preview.length > 1){
-      ctx.save(); ctx.strokeStyle = unf ? THEME.accent : '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash(unf ? [5, 4] : []);
+      ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
       ctx.beginPath();
       var pv0 = w2s(HOVER.preview[0][0], HOVER.preview[0][1]); ctx.moveTo(pv0.x, pv0.y);
       for (var pq = 1; pq < HOVER.preview.length; pq++){ var pvq = w2s(HOVER.preview[pq][0], HOVER.preview[pq][1]); ctx.lineTo(pvq.x, pvq.y); }
@@ -7157,7 +7057,7 @@ function draw(){
     if (HOVER.at){
       var ap = w2s(HOVER.at.x, HOVER.at.y);
       ctx.save();
-      ctx.strokeStyle = HOVER.action === 'do' ? '#7fb069' : (unf ? THEME.accent : '#e06c5a');
+      ctx.strokeStyle = HOVER.action === 'do' ? '#7fb069' : '#e06c5a';
       ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(ap.x, ap.y, 7, 0, Math.PI*2); ctx.stroke();
       ctx.restore();
     }
@@ -7166,8 +7066,6 @@ function draw(){
     ctx.font = 'bold 15px sans-serif'; ctx.textBaseline = 'middle';
     if (HOVER.action === 'do'){
       ctx.fillStyle = '#7fb069'; ctx.fillText('\u2713', gx, gy);   // check
-    } else if (unf){
-      ctx.fillStyle = THEME.accent; ctx.fillText('\u21ba', gx, gy);  // restore the corner
     } else {
       ctx.fillStyle = '#e06c5a'; ctx.fillText('\u2717', gx, gy);   // X
     }
@@ -7890,22 +7788,16 @@ function filletPathVertex(pe, vi, r){
     if (t < -EPS || t > 1+EPS) return null;
     return {x:curve.ax + dx*t, y:curve.ay + dy*t};
   }
-  function footOnArc(curve, O, incoming){
+  function footOnArc(curve, O){
     var d = Math.hypot(O.x-curve.cx, O.y-curve.cy);
     if (d < 1e-9) return null;
     var F = {x:curve.cx + (O.x-curve.cx)*curve.R/d, y:curve.cy + (O.y-curve.cy)*curve.R/d};
     var aF = Math.atan2(F.y-curve.cy, F.x-curve.cx);
     var aP = Math.atan2(P.y-curve.cy, P.x-curve.cx);
-    // The foot must be on the edge's own side of the corner: before it on the edge coming in, after it
-    // on the edge going out. It may run past a stored arc piece (split arcs), but never past the corner
-    // onto the circle's extension: that picked a fillet outside the shape where two arcs met.
-    var travel = function (from, to){ return curve.ccw ? angNorm(to-from) : angNorm(from-to); };
-    var along = incoming ? travel(aF, aP) : travel(aP, aF);
-    if (along > maxArc && along < 2*Math.PI - 1e-9) return null;
-    if (along > 2*Math.PI - 1e-6) along = 0;                    // at the corner itself
+    if (Math.abs(angNorm(aF-aP+Math.PI)-Math.PI) > maxArc) return null;
     return F;
   }
-  function footOn(curve, O, incoming){ return curve.kind === 'line' ? footOnLine(curve, O) : footOnArc(curve, O, incoming); }
+  function footOn(curve, O){ return curve.kind === 'line' ? footOnLine(curve, O) : footOnArc(curve, O); }
   // The correct fillet — convex OR concave — is the one whose two tangent points hug the corner:
   // both feet land right at P. Wrong-side solutions put at least one foot far around the arc or
   // off along the line. So among strictly on-segment tangent candidates, minimise the SUM of the
@@ -7913,7 +7805,7 @@ function filletPathVertex(pe, vi, r){
   // filter (the inside filter was backwards for concave/reentrant corners).
   var best = null;
   filletCenters(cIn, cOut, r).forEach(function(O){
-    var T1 = footOn(cIn, O, true), T2 = footOn(cOut, O, false);
+    var T1 = footOn(cIn, O), T2 = footOn(cOut, O);
     if (!T1 || !T2) return;
     var footDist = Math.hypot(T1.x-P.x, T1.y-P.y) + Math.hypot(T2.x-P.x, T2.y-P.y);
     if (!best || footDist < best.footDist) best = {O:O, T1:T1, T2:T2, footDist:footDist};
@@ -8395,28 +8287,6 @@ function dogboneVertex(pe, vi, r, kind, click){
 }
 // The corner a click (or hover) refers to: the NEAREST poly/path/rect vertex within reach.
 // Hover and click both use this, so the check mark always describes the corner that will change.
-// An outline with a point repeated (a zero-length edge between them, e.g. from a double-click while
-// drawing) looks and cuts the same without it, but a corner beside a zero-length edge has no direction
-// to fillet or restore. The corner tools work on the outline with repeats merged, and write it back so.
-function pathClean(pe){
-  var P = pe.pts, n = P.length;
-  if (n < 2) return pe;
-  var same = function (a, b){ return Math.hypot(a[0] - b[0], a[1] - b[1]) < 1e-6; };
-  var any = false;
-  for (var k = 0; k < n; k++){ if ((k + 1 < n || pe.closed) && same(P[k], P[(k + 1) % n])){ any = true; break; } }
-  if (!any) return pe;
-  var out = [];
-  for (var j = 0; j < n; j++){
-    var cur = [P[j][0], P[j][1], P[j][2] || 0];
-    var nxt = j + 1 < n ? P[j + 1] : (pe.closed ? P[0] : null);
-    if (nxt && same(cur, nxt) && (j + 1 < n || out.length)) continue;   // its edge goes nowhere: the next copy carries on
-    out.push(cur);
-  }
-  if (out.length < 2) return pe;
-  var c = {}; for (var key in pe) if (key !== 'pts') c[key] = pe[key];
-  c.pts = out; c.t = 'path';
-  return c;
-}
 function cornerPick(w){
   var tol = 10/VIEW.scale, pick = null;
   for (var i = 0; i < DOC.ents.length; i++){
@@ -8425,7 +8295,6 @@ function cornerPick(w){
     else if (e.t === 'path') pe = e;
     else if (e.t === 'rect') pe = rectToPath(e);
     if (!pe) continue;
-    pe = pathClean(pe);                                          // repeated points merged
     for (var vi = 0; vi < pe.pts.length; vi++){
       var dv = Math.hypot(w.x-pe.pts[vi][0], w.y-pe.pts[vi][1]);
       if (dv < tol && (!pick || dv < pick.d)) pick = {d:dv, i:i, vi:vi, e:e, pe:pe};
@@ -8439,180 +8308,6 @@ function cornerResult(pick, r, w){
   return ft === 'round' ? filletPathVertex(pick.pe, pick.vi, r) : dogboneVertex(pick.pe, pick.vi, r, ft, w);
 }
 
-// ---- removing a fillet ----
-// Every corner Design makes is an arc between two straight edges: a round fillet (tangent to both), a
-// dog-bone (through the old corner) or a T-bone (from an edge to the corner). Extending the straight
-// edges on each side of the arc until they meet puts back the sharp corner exactly. A fillet made
-// between two separate lines is an arc joining their trimmed ends: extend both lines to where they
-// meet and drop the arc. Only removes an arc whose edges really meet beyond it (not a slot's end,
-// whose sides are parallel).
-function filletAt(w){
-  var tol = 10 / VIEW.scale, best = null;
-  function consider(c){ if (c && c.d < tol && (!best || c.d < best.d)) best = c; }
-  for (var i = 0; i < DOC.ents.length; i++){
-    var e = DOC.ents[i], pe = e.t === 'path' ? e : (e.t === 'poly' ? polyToPath(e) : null);
-    if (!pe) continue;
-    pe = pathClean(pe);                                          // repeated points merged
-    if (pe.pts.length < 3) continue;
-    for (var k = 0; k < pe.pts.length; k++){
-      if (Math.abs(pe.pts[k][2] || 0) < 1e-9) continue;
-      var c = filletChainAt(pe, k, w);
-      if (c){ c.i = i; c.pe = pe; consider(c); }
-    }
-  }
-  // an arc joining two separate lines
-  DOC.ents.forEach(function (e, ai) {
-    if (e.t !== 'arc') return;
-    var d = arcHitDist(e, w); if (!(d < tol)) return;
-    var sw = arcSweepOf(e.a0, e.a1, e.ccw), a1 = e.a0 + (e.ccw ? 1 : -1) * sw;
-    var E0 = {x: e.cx + e.r * Math.cos(e.a0), y: e.cy + e.r * Math.sin(e.a0)}, E1 = {x: e.cx + e.r * Math.cos(a1), y: e.cy + e.r * Math.sin(a1)};
-    var eps = 0.005;                                    // DXF coordinates are rounded when written (4 decimals of an inch is ~0.0013 mm)
-    function lineAt(Pt, skip){
-      for (var li = 0; li < DOC.ents.length; li++){
-        var L = DOC.ents[li]; if (L.t !== 'line' || li === skip) continue;
-        if (Math.hypot(L.x1 - Pt.x, L.y1 - Pt.y) < eps) return {i: li, end: 1};
-        if (Math.hypot(L.x2 - Pt.x, L.y2 - Pt.y) < eps) return {i: li, end: 2};
-      }
-      return null;
-    }
-    var la = lineAt(E0, -1), lb = la ? lineAt(E1, la.i) : null;
-    if (!la || !lb) return;
-    var LA = DOC.ents[la.i], LB = DOC.ents[lb.i];
-    var X = xLineLine(LA.x1, LA.y1, LA.x2, LA.y2, LB.x1, LB.y1, LB.x2, LB.y2);
-    if (!X) return;
-    // each line grows from its arc end, away from its other end
-    function grows(L, end){ var fx = end === 1 ? L.x2 : L.x1, fy = end === 1 ? L.y2 : L.y1, ex = end === 1 ? L.x1 : L.x2, ey = end === 1 ? L.y1 : L.y2;
-      return (X.x - ex) * (ex - fx) + (X.y - ey) * (ey - fy) >= -1e-9; }
-    if (!grows(LA, la.end) || !grows(LB, lb.end)) return;
-    consider({d: d, kind: 'lines', arc: ai, la: la, lb: lb, A: [E0.x, E0.y], B: [E1.x, E1.y], X: X});
-  });
-  return best;
-}
-// ---- a fillet on an outline: one arc, or several on the same circle (VCarve sometimes splits a
-// corner's arc in two), between two edges. Straight edges: extend both until they meet (round,
-// dog-bone and T-bone alike). A curved edge: extend it along its own circle; only for a true fillet
-// (tangent to both edges, as one made by rounding a corner always is) at a real corner, so smooth
-// curves aren't mistaken for fillets. Returns the new points, or null.
-function spanCircle(p, q){
-  var t = tessPath({t: 'path', closed: false, pts: [[p[0], p[1], p[2]], [q[0], q[1], 0]]}, 0.02), m = t[Math.floor(t.length / 2)];
-  var g = arcFrom3({x: p[0], y: p[1]}, {x: q[0], y: q[1]}, {x: m[0], y: m[1]});
-  if (!g) return null;
-  return {cx: g.cx, cy: g.cy, r: g.r, ccw: (p[2] || 0) > 0, mid: {x: m[0], y: m[1]}, tess: t};
-}
-function sameCircle(g1, g2){ return g1 && g2 && g1.ccw === g2.ccw && Math.abs(g1.r - g2.r) < 1e-4 * g1.r + 1e-6 && Math.hypot(g1.cx - g2.cx, g1.cy - g2.cy) < 1e-4 * g1.r + 1e-6; }
-function filletChainAt(pe, k, w){
-  filletChainAt.why = null;
-  var P = pe.pts, n = P.length, closed = pe.closed;
-  var arcOf = function (j){ j = (j + n) % n; return Math.abs(P[j][2] || 0) > 1e-9 ? spanCircle(P[j], P[(j + 1) % n]) : null; };
-  var g = arcOf(k); if (!g) return null;
-  // grow the chain of same-circle arcs both ways
-  var s = k, e = k, guard = 0;
-  while (guard++ < n){ var gp = arcOf(s - 1); if (!closed && s === 0) break; if (sameCircle(g, gp)) s = s - 1; else break; }
-  guard = 0;
-  while (guard++ < n){ if (!closed && e + 1 >= n - 1) break; var gn = arcOf(e + 1); if (sameCircle(g, gn)) e = e + 1; else break; }
-  if (e - s + 1 >= n - 1){ filletChainAt.why = 'whole outline is one circle'; return null; }                                  // the whole outline is one circle
-  if (!closed && (s < 1 || e + 2 > n - 1)){ filletChainAt.why = 'no edge on one side'; return null; }                 // needs an edge on each side
-  var sI = (s + n) % n, bI = (e + 1 + n) % n, spI = (s - 1 + n) % n, snI = (e + 1 + n) % n, nxI = (e + 2 + n) % n;
-  var A = P[sI], B = P[bI], Pv = P[spI], Nx = P[nxI];
-  // distance from the cursor to the chain
-  var d = Infinity;
-  for (var j = s; j <= e; j++){
-    var gj = arcOf(j), t = gj.tess;
-    for (var q = 0; q + 1 < t.length; q++) d = Math.min(d, distToSeg(w.x, w.y, t[q][0], t[q][1], t[q + 1][0], t[q + 1][1]));
-  }
-  var inArc = Math.abs(Pv[2] || 0) > 1e-9 ? spanCircle(Pv, A) : null;       // the edge coming in
-  var outArc = Math.abs(B[2] || 0) > 1e-9 ? spanCircle(B, Nx) : null;       // the edge going out
-  var X, inBulge = 0, outBulge = 0;
-  if (!inArc && !outArc){
-    var L = xLineLine(Pv[0], Pv[1], A[0], A[1], B[0], B[1], Nx[0], Nx[1]);
-    if (!L || L.t < 1 - 1e-6 || L.u > 1e-6){ filletChainAt.why = 'straight edges do not meet beyond the arc'; return null; }                 // the edges must meet beyond the arc
-    var chord = Math.hypot(B[0] - A[0], B[1] - A[1]);
-    if (Math.hypot(L.x - A[0], L.y - A[1]) > 20 * chord + 1){ filletChainAt.why = 'edges nearly parallel'; return null; }  // nearly parallel: not a corner
-    X = {x: L.x, y: L.y};
-  } else {
-    // a true fillet: tangent to both edges
-    function dirLine(a, b){ var L2 = Math.hypot(b[0] - a[0], b[1] - a[1]); return L2 < 1e-12 ? null : {x: (b[0] - a[0]) / L2, y: (b[1] - a[1]) / L2}; }
-    function dirCirc(c, pt){ var rx = pt[0] - c.cx, ry = pt[1] - c.cy, rl = Math.hypot(rx, ry); return c.ccw ? {x: -ry / rl, y: rx / rl} : {x: ry / rl, y: -rx / rl}; }
-    var fA = dirCirc(g, A), fB = dirCirc(arcOf(e), B);
-    var eIn = inArc ? dirCirc(inArc, A) : dirLine(Pv, A), eOut = outArc ? dirCirc(outArc, B) : dirLine(B, Nx);
-    if (!eIn || !eOut || eIn.x * fA.x + eIn.y * fA.y < Math.cos(2 * Math.PI / 180) || eOut.x * fB.x + eOut.y * fB.y < Math.cos(2 * Math.PI / 180)){ filletChainAt.why = 'not tangent to its edges'; return null; }
-    // where the extended edges meet: line or circle, each
-    var cands = [];
-    function lineCirc(p0, dv, c){
-      var fx = p0[0] - c.cx, fy = p0[1] - c.cy, bq = fx * dv.x + fy * dv.y, cq = fx * fx + fy * fy - c.r * c.r, disc = bq * bq - cq;
-      if (disc < 0) return; var sq = Math.sqrt(disc);
-      [-bq - sq, -bq + sq].forEach(function (t){ cands.push({x: p0[0] + dv.x * t, y: p0[1] + dv.y * t}); });
-    }
-    if (inArc && outArc){
-      var dx = outArc.cx - inArc.cx, dy = outArc.cy - inArc.cy, D = Math.hypot(dx, dy);
-      if (D < 1e-9 || D > inArc.r + outArc.r || D < Math.abs(inArc.r - outArc.r)){ filletChainAt.why = 'the curved edges never meet'; return null; }
-      var aa = (inArc.r * inArc.r - outArc.r * outArc.r + D * D) / (2 * D), hh = Math.sqrt(Math.max(0, inArc.r * inArc.r - aa * aa));
-      var mx = inArc.cx + aa * dx / D, my = inArc.cy + aa * dy / D;
-      cands.push({x: mx + hh * dy / D, y: my - hh * dx / D}, {x: mx - hh * dy / D, y: my + hh * dx / D});
-    } else if (inArc) lineCirc(B, eOut, inArc);
-    else lineCirc(A, eIn, outArc);
-    var mid = g.mid, bestX = null;
-    cands.forEach(function (c2){ var dd = Math.hypot(c2.x - mid.x, c2.y - mid.y); if (!bestX || dd < bestX.d) bestX = {x: c2.x, y: c2.y, d: dd}; });
-    if (!bestX || bestX.d > 10 * g.r + 1e-6){ filletChainAt.why = 'the edges meet too far away'; return null; }                // the corner is near the fillet (further for pointed corners)
-    X = {x: bestX.x, y: bestX.y};
-    // a real corner at X: the edges arrive in different directions
-    var tIn = inArc ? dirCirc(inArc, [X.x, X.y]) : eIn, tOut = outArc ? dirCirc(outArc, [X.x, X.y]) : eOut;
-    var dotX = tIn.x * tOut.x + tIn.y * tOut.y, crossX = tIn.x * tOut.y - tIn.y * tOut.x;
-    if (dotX > Math.cos(3 * Math.PI / 180)){ filletChainAt.why = 'barely a corner'; return null; }                  // barely a turn: no corner
-    if (dotX < Math.cos(177 * Math.PI / 180)){ filletChainAt.why = 'edges meet head-on'; return null; }               // a U-turn, as where an S-curve's edges meet: not a corner
-    if ((crossX > 0) !== g.ccw){ filletChainAt.why = 'turns the other way to its corner'; return null; }                              // a fillet turns the same way as its corner
-    // extend each curved edge along its circle, the same way round, by less than a quarter turn
-    function sweepTo(c, from, to){ return arcSweepOf(Math.atan2(from[1] - c.cy, from[0] - c.cx), Math.atan2(to[1] - c.cy, to[0] - c.cx), c.ccw); }
-    if (inArc){
-      var sw0 = sweepTo(inArc, Pv, A), sw1 = sweepTo(inArc, Pv, [X.x, X.y]);
-      if (!(sw1 > sw0 - 1e-9 && sw1 - sw0 < Math.PI / 2)){ filletChainAt.why = 'incoming curve would not extend to the corner (' + (sw0 * 180 / Math.PI).toFixed(1) + ' to ' + (sw1 * 180 / Math.PI).toFixed(1) + ' deg)'; return null; }
-      inBulge = Math.tan(sw1 / 4) * (inArc.ccw ? 1 : -1);
-    }
-    if (outArc){
-      var so0 = sweepTo(outArc, B, Nx), so1 = sweepTo(outArc, [X.x, X.y], Nx);
-      if (!(so1 > so0 - 1e-9 && so1 - so0 < Math.PI / 2)){ filletChainAt.why = 'outgoing curve would not extend to the corner (' + (so0 * 180 / Math.PI).toFixed(1) + ' to ' + (so1 * 180 / Math.PI).toFixed(1) + ' deg)'; return null; }
-      outBulge = Math.tan(so1 / 4) * (outArc.ccw ? 1 : -1);
-    }
-  }
-  // the new outline: the chain's points give way to the corner
-  var drop = {}; for (var t2 = 0; t2 <= e - s + 1; t2++) drop[(s + t2 + n) % n] = true;
-  var pts = [];
-  for (var v = 0; v < n; v++){
-    if (v === sI) pts.push([X.x, X.y, outBulge]);
-    if (drop[v]) continue;
-    var cp = [P[v][0], P[v][1], P[v][2] || 0];
-    if (v === spI && inArc) cp[2] = inBulge;
-    pts.push(cp);
-  }
-  return {d: d, kind: 'path', A: [A[0], A[1]], B: [B[0], B[1]], X: X, newPts: pts, closed: closed};
-}
-// Remove a fillet filletAt found: the sharp corner comes back. Returns true when done.
-function unfillet(f){
-  if (!f) return false;
-  pushUndo();
-  if (f.kind === 'lines'){
-    var LA = DOC.ents[f.la.i], LB = DOC.ents[f.lb.i];
-    if (f.la.end === 1){ LA.x1 = f.X.x; LA.y1 = f.X.y; } else { LA.x2 = f.X.x; LA.y2 = f.X.y; }
-    if (f.lb.end === 1){ LB.x1 = f.X.x; LB.y1 = f.X.y; } else { LB.x2 = f.X.x; LB.y2 = f.X.y; }
-    DOC.ents.splice(f.arc, 1);
-    return true;
-  }
-  var old = DOC.ents[f.i], pts = f.newPts;
-  var allStraight = pts.every(function (q) { return Math.abs(q[2]) < 1e-9; });
-  var ne = allStraight ? {t: 'poly', pts: pts.map(function (q) { return [q[0], q[1]]; }), closed: f.closed}
-                       : {t: 'path', pts: pts, closed: f.closed};
-  ['tp', 'con', '_id', 'layer', 'vcId', 'vcSheet'].forEach(function (k2) { if (old[k2] !== undefined) ne[k2] = old[k2]; });
-  DOC.ents.splice(f.i, 1, ne);
-  return true;
-}
-// Fillet tool: is the cursor nearer a fillet (to remove) than a sharp corner (to fillet)?
-function filletRemovable(w){
-  var f = filletAt(w); if (!f) return null;
-  var pk = cornerPick(w);
-  if (pk && pk.d < f.d && !(Math.hypot(pk.pe.pts[pk.vi][0] - f.A[0], pk.pe.pts[pk.vi][1] - f.A[1]) < 1e-9 ||
-                          Math.hypot(pk.pe.pts[pk.vi][0] - f.B[0], pk.pe.pts[pk.vi][1] - f.B[1]) < 1e-9)) return null;   // a real corner is nearer
-  return f;
-}
 function doFillet(w, r){
   if (!(r > 0) || !isFinite(r)){ doFillet.lastMiss = "badr"; return false; }
   var tol = 10/VIEW.scale;
@@ -8626,7 +8321,6 @@ function doFillet(w, r){
       if (pick.e.tp) ne.tp = true;
       if (pick.e.con) ne.con = true;
       if (pick.e._id) ne._id = pick.e._id;
-      ['layer', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
       pushUndo(); DOC.ents.splice(pick.i, 1, ne); return true;
     }
     doFillet.lastMiss = dogboneVertex.why === 'curved' ? 'curved' : (dogboneVertex.why === 'flat' ? 'flat' : 'fit');
@@ -10179,17 +9873,6 @@ function wire(){
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
   document.getElementById('tpVcConvert').addEventListener('click', vcMakeEditable);
   document.getElementById('tpSheet').addEventListener('change', function(e){ sheetShow(e.target.value); });
-  document.getElementById('tpRecalcAll').addEventListener('click', tpRecalcAll);
-  document.addEventListener('pointerdown', function (e) { var m = document.getElementById('ctxMenu'); if (!m.hidden && !m.contains(e.target)) ctxMenuClose(); }, true);
-  window.addEventListener('blur', ctxMenuClose);
-  window.addEventListener('resize', ctxMenuClose);
-  document.getElementById('ctxMenu').addEventListener('keydown', function (e) {
-    var items = Array.prototype.slice.call(this.querySelectorAll('button:not([disabled])')), at = items.indexOf(document.activeElement);
-    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); ctxMenuClose(); }
-    else if (e.key === 'ArrowDown'){ e.preventDefault(); items[(at + 1) % items.length].focus(); }
-    else if (e.key === 'ArrowUp'){ e.preventDefault(); items[(at - 1 + items.length) % items.length].focus(); }
-    else if (e.key === 'Tab'){ e.preventDefault(); ctxMenuClose(); }
-  });
   document.getElementById('tpCheck').addEventListener('click', function(){ if (camReady()) vecCheckAll(); });
   document.getElementById('cutX').addEventListener('click', cutClose);
   document.getElementById('cutCancel').addEventListener('click', cutClose);
@@ -10721,23 +10404,8 @@ function wire(){
     if (!isNaN(v) && v > 0 && isFinite(v) && v <= 10000){
       UICFG.filletR = v;
       uiCfgSave();
-      filletRShow();
     }
   });
-  // the Radius box: live as you type, like the prompt; Enter or Esc hands the keys back to the drawing
-  var frIn = document.getElementById('filletR');
-  frIn.addEventListener('input', function(){
-    var v = lenIn(frIn.value);
-    if (!isNaN(v) && v > 0 && isFinite(v) && v <= 10000){
-      UICFG.filletR = v; uiCfgSave();
-      if (TOOL === 'fillet') document.getElementById('promptLbl').textContent = document.getElementById('promptLbl').textContent.replace(/R[\d.]+/, 'R' + v);
-    }
-  });
-  frIn.addEventListener('keydown', function(e){
-    e.stopPropagation();                      // letters here are the radius (e.g. "3mm"), not tool shortcuts
-    if (e.key === 'Enter' || e.key === 'Escape'){ filletRShow(); frIn.blur(); }
-  });
-  frIn.addEventListener('blur', filletRShow);
   pin.addEventListener('keydown', function(e){
     // A tool-hotkey letter typed while the field is focused switches tools (letters are never part
     // of a numeric entry). This lets you go fillet -> type radius -> press T for trim without
@@ -10892,7 +10560,6 @@ function wire(){
       placeFloatIn();
       pinEl.focus();
       pinEl.value += e.key;
-      pinEl.dispatchEvent(new Event('input'));             // so it takes effect at once (the fillet radius did only from the 2nd key)
       e.preventDefault();
       return;
     }

@@ -13,6 +13,16 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.5.0
+- Design 0.89.0 (CAM released as a beta, below). Builds from the repository now include CAM, since
+  cam.js and geom.js are public.
+
+## 454workshop.com
+- **CAM on the website, clearly labelled beta:** a Beta label on the tagline, a notice under the
+  buttons, toolpaths in the description and Design's features, and a "This is beta software" section
+  with the four things to do before cutting and how to report a problem. The CAM engine is published
+  beside Design, and the CAM reference in the docs.
+
 ### Building on GitHub
 - **A "windows build" workflow** builds the installer and zip on GitHub's Windows machines: by hand from
   the Actions tab, or on a version tag, which also drafts a release with the files attached.
@@ -314,6 +324,14 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.89.0 — CAM released, as a beta
+- **CAM loads by default**, on the website as in the desktop app; `?cam=off` still turns it off in that
+  browser. It was only loaded when asked for with `?cam`, or when Design was opened from a computer.
+- **Beta, said where it matters:** a note at the top of the Toolpaths panel (with a link to what to
+  check), and a first line in every saved G-code file saying the job was made with beta toolpaths and
+  to preview it in 454 Control and run it in the air before cutting material.
+- The CAM reference is published, with a beta note at its top, and linked from the docs home page.
 
 ### 0.88.6 — recalculate without editing
 - **A Recalculate button (&#8635;) on every toolpath card**, always there, highlighted when the toolpath
