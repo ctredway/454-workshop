@@ -13,6 +13,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.5.1
+- 454 Control 0.31.5 (the browser check, below; the app always has Web Serial, so it never shows).
+
 ### 0.5.0
 - Design 0.89.0 (CAM released as a beta, below). Builds from the repository now include CAM, since
   cam.js and geom.js are public.
@@ -122,6 +125,16 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.5 — tells you when your browser can't connect
+- **A browser that can't talk to the machine gets a clear message when Control opens**, in place of the
+  connect prompt: 454 Control needs Chrome, Edge or another Chromium-based browser on a computer (or the
+  desktop app), with links to Chrome and Edge. It says why in terms of the browser in use: Firefox and
+  Safari lack Web Serial, Brave is Chromium but turns it off, and no phone or tablet browser has it.
+  **Continue without a machine** still lets you open and check G-code; it isn't asked again that visit.
+- Decided by whether the browser has Web Serial, not by its name, so Brave and phones are right too.
+- The check has a script of its own, ahead of the rest, so it still appears if the rest of Control fails
+  to start (for instance if the 3D view's library can't load).
 
 ### 0.31.4
 - **The Machine tab comes first and is open when Control starts**: Machine, Code, Toolpaths, Checks.
