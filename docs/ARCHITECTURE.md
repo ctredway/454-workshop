@@ -1,32 +1,114 @@
-# Kerf architecture
+# 454 architecture
 
-Kerf is deliberately one self-contained HTML file. That's not laziness — it's the deployment model: no build step, no dependencies beyond three.js from a CDN, runs from a file:// path or any static host, and the whole app can be reviewed in one read. If it ever outgrows this, the module boundaries below are where it splits.
+454 is **one desktop application built from plugins**: design, CAM, machine control and file
+import are separate plugins sharing one core. It replaces the two single-file browser apps
+(454 Design and 454 Control), whose behaviour it carries over unchanged and tested.
 
-## Module map (top to bottom of the `<script>`)
+## Goals, in order
 
-| Section | Responsibility |
+1. **The machine is never at the mercy of the screen.** Streaming to the controller runs in its
+   own process. A frozen window or busy redraw cannot stall a running job.
+2. **Safety is enforced by the core, not by plugins.** No plugin can switch it off.
+3. **Behaviour is pinned by tests before code is changed.** Real job files are the reference.
+4. **Carbide Motion's process, step for step.** People's habits come from Carbide Motion: when
+   they're prompted, what they press, when the machine moves. 454 follows that order; its extra
+   safety lives in quiet guards that don't change it, and any unavoidable difference is documented.
+5. **One app, many plugins.** Drawing, toolpaths, the machine and VCarve import are plugins;
+   a paid CAM would be one more plugin.
+
+## Layout
+
+```
+packages/
+  plugin-api/   the contract between core and plugins, and the host that enforces it   (MIT)
+  gcode/        G-code parsing and checking, as the machine side sees it               (MIT)
+  grbl/         the controller protocol: streaming, status, alarms, the simulator      (MIT)   next
+  geom/         geometry: offsets, distance fields, tessellation                        (MIT)   next
+  vcarve/       reading VCarve .crv projects and .vtdb tool libraries                   (MIT)   next
+  cam/          toolpaths: profile, pocket, drill, chamfer                     (private if paid)
+  ui/           theme, dialogs, help, shared controls                                   (MIT)
+apps/
+  desktop/      the Electron shell: main process (machine service) and window
+plugins/
+  design/  cam/  control/  vcarve/  tools/     first-party plugins
+```
+
+## The core
+
+The core owns only what every plugin shares:
+
+| Service | What it holds |
 |---|---|
-| **Parser** (`parseGcode`) | GRBL-dialect tokenizer + modal-state interpreter. Produces tessellated micro-segments (all internal units mm), lint issues, tool-change list, tool metadata harvested from CAM comments (Vectric, Fusion 360, generic fallback), toolpath sections. Pure function; fully testable headless. |
-| **Dynamic checks** (`dynamicChecks`) | Settings-dependent lints (work-area, stock depth, lateral rapids below Z0) recomputed when settings change without re-parsing. |
-| **Viewer** | three.js scene: work-area grid (cells flush to the table edge), toolpath as two `LineSegments` (solid cuts / dashed rapids) with per-vertex progress coloring updated by delta, tool marker, view cube rendered in a scissored second pass over the same canvas. Custom orbit controls. |
-| **Playback** | Time-indexed simulation: cumulative-time binary search, per-source-line stepping, virtualized code panel synced to the current line. |
-| **Serial layer** (`SERIAL`, `handleRx`, `parseStatus`) | Web Serial connection, line assembly, status-report parsing (state, MPos/WPos/WCO, pins, feed/speed), `$$`/`$#`/`$I` auto-query, GRBL error/alarm translation. `handleRx` routes acks by priority: probe → jog → job. |
-| **Machine profile** (`PROFILE`) | Persisted settings (localStorage + JSON export/import, including Carbide Motion `shapeoko.json` import). Single source for BitSetter position, spindle behavior, jog prefs, traverse height, run options. |
-| **Controller config** | `$` settings store, machine-model detection from travel values, auto-sync of work area / rapid rate / jog rates. |
-| **Jogging** (`JOGC`) | Step jogs and ack-clocked continuous jog (≤3 segments in flight, each `ok` releases the next), commanded-position travel clamp on homed machines, pin-trip guard (edge-triggered), keyboard capture scoped to the jog modal. |
-| **Job streaming** (`JOB`, `buildJobList`) | Pre-built send list from the source file: cleaned lines, M6 markers with next-XY lookups, injected spin-up dwells, injected pre-stop retracts, optional start-high pre-position. Character-counting protocol (≤100 of GRBL's 128 RX bytes in flight). Error → auto feed-hold. |
-| **BitSetter probing** (`PROBE`) | Sequential two-touch probe state machine (fast seek → back off → slow probe), reference at job start, per-tool-change delta applied via volatile `G43.1`. Validates the stored position against controller travel before any motion. |
-| **UI shell** | Header (e-stop, state/spindle chips, hold/resume, icon actions), sidebar tabs (Code / Checks / Machine), jog modal, tabbed settings modal, footer transport + DRO. |
+| Document | shapes with stable ids, dimensions, material (size, thickness, Z zero) |
+| Undo | one history for the document; plugins contribute undoable operations |
+| Settings | per plugin, kept apart from every other plugin's |
+| Tool library | tools, machines, materials, feeds and speeds; shared by all plugins |
+| Commands and shortcuts | registered by plugins; clashing shortcuts are refused |
+| Files | which plugin opens which file type; one owner per type |
+| Machine | the controller connection and job runner, in the main process |
+| Theme and help | appearance, dialogs, the ⓘ help topics |
 
-## Design principles
+## Plugins
 
-1. **The G-code file is never modified.** Everything Kerf adds — dwells, retracts, pre-positions, probe sequences — is injected into the *send list* at runtime. The file on disk stays portable and safe in any other sender.
-2. **Runtime intelligence belongs to the sender.** The file can't know where the tool is, whether the machine is homed, or what the real travel is; Kerf can, so behaviors that depend on runtime state (start/stop-high, travel preflight, tool-length offsets) live here, never in CAM post hacks.
-3. **Flow control everywhere.** Both the job stream (character counting) and continuous jog (ack clocking) are paced by the controller's acknowledgements. Nothing blind-fires on a timer into the RX buffer.
-4. **Trust is explicit.** Machine-coordinate moves (`G53`) require `homedSeen` — a Home→Idle transition observed this session. Alarms and resets revoke it. Untrusted position degrades features gracefully rather than guessing.
-5. **Volatile over persistent for automated offsets.** Tool-length compensation uses `G43.1` (cleared by reset) rather than rewriting `G54`, so no interrupted job can permanently corrupt the user's work zero.
-6. **Safety states are loud and low-tech.** The e-stop is text, not an icon. The lock banner explains itself. Preflight dialogs state exactly what will be injected. First probe of a session prints its full command sequence.
+A plugin is a manifest plus contributions:
+
+```ts
+{
+  manifest: { id: '454.design', name: 'Design', version: '1.0.0', apiVersion: 1, trusted: true },
+  contributes: {
+    commands:     [{ id: 'sketch.fillet', title: 'Fillet', run }],
+    keybindings:  [{ key: 'F', command: 'sketch.fillet' }],
+    panels:       [...],
+    fileHandlers: [{ id: 'crv', extensions: ['.crv'], open }],
+    help:         [...],
+  },
+  activate(host) { ... },
+}
+```
+
+Extension points planned beyond these: drawing tools, toolpath types, post-processors,
+machine drivers (GRBL now; grblHAL and FluidNC later), accessories (BitSetter, BitZero),
+checks (drawing and job), and settings pages.
+
+### Rules the host enforces
+
+- **Shortcuts can't clash.** Registering a key already taken is refused, naming both plugins.
+  (The browser version had F meaning Fillet in some tools and Fit in others.)
+- **Registration is all or nothing.** A refused plugin leaves nothing behind.
+- **API versions and dependencies are checked.** A plugin for a newer 454, or missing a plugin
+  it needs, is refused with a reason.
+- **One owner per file type.**
+- **Only trusted, first-party plugins receive the machine.**
+
+## The machine service
+
+Runs in the Electron main process, not the window. It owns the serial port and streams jobs
+with GRBL's character-counting protocol. It applies every safety step itself, whatever the
+job or plugin: spin-up dwells after M3, lifts that never move down, homing required, the
+BitSetter reference taken at Z zero, the end-of-job sequence, and a controlled End job. The
+window receives status over IPC and sends requests; if the window hangs, the job does not.
 
 ## Testing
 
-There is no formal test suite in-repo yet, but every protocol-level behavior (parser geometry, streaming flow control, jog clamps, probe sequencing and delta signs, M6/M5/dwell injection ordering) was developed against headless Node simulations of a GRBL controller. Porting those harnesses into `tests/` is welcome work.
+- **Golden tests** pin behaviour to real files: every segment the parser produces for real
+  jobs is compared with what 454 Control produced.
+- **A simulated GRBL controller** (next) will let whole jobs run in tests, including tool
+  changes, End job, BitSetter and recovery, with the moves the machine would make checked.
+- **CI** runs every test on every push.
+
+## Migration
+
+Not a rewrite. Each module moves across **unchanged**, is pinned by golden tests, and only
+then is refactored and typed. The browser apps keep working until the desktop app replaces
+them, so there is always a working sender.
+
+| Step | Status |
+|---|---|
+| Plugin API and host, with tests | done |
+| G-code parser, moved unchanged, golden-tested on 4 real jobs | done |
+| GRBL protocol and a simulated controller | next |
+| Job builder (spin-up, lifts, tool changes, ending), golden-tested | next |
+| Geometry and CAM engines | then |
+| VCarve readers | then |
+| Electron shell with the machine service in the main process | then |
+| Design, CAM and Control as plugins | then |

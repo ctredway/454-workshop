@@ -171,6 +171,13 @@
   .modalHead h3{flex:1;margin:0}
   .modalX{background:none;border:0;padding:0 2px;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;flex:none}
   .modalX:hover{color:var(--ink)}
+  .libIco{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.2;opacity:.8;margin-right:2px}
+  .libIco .flute{opacity:.6}
+  .libItem{display:flex;align-items:center;gap:6px}
+  #libPickBar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+  #libPickBar[hidden]{display:none}
+  #libPickBar .grow{flex:1}
+  #libPickNote{font-size:12.5px;color:var(--muted)}
   #libModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:210}
   #libModal[hidden]{display:none}
   #libPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;width:min(980px,94vw);height:min(680px,88vh);display:flex;flex-direction:column;box-shadow:0 14px 48px rgba(0,0,0,.55)}
@@ -229,6 +236,37 @@
 
   #cv{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
 
+  #cutPanel{position:absolute;top:12px;right:12px;z-index:9;width:250px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);max-height:calc(100% - 24px);overflow-y:auto}
+  #cutPanel[hidden]{display:none}
+  #cutPanel h3{font-size:14px}
+  #cutPanel input[type=text]{width:66px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #cutPanel select{font-size:12px}
+  #cutTabPlace[aria-pressed=true]{border-color:var(--amber);background:var(--accent-soft)}
+  #cutTabSize[hidden],#cutTabTools[hidden],#cutStepRow[hidden],#cutPeckRow[hidden],#cutTabRow[hidden],#cutOverRow[hidden],#cutOverlapRow[hidden],#cutChamRow[hidden],#cutChamModeRow[hidden]{display:none}
+  .tpMine{border-left-color:#7fb069}
+  .tpInc{margin:0 6px 0 0;vertical-align:middle;accent-color:var(--amber)}
+  .tpEye{margin-left:auto;background:none;border:0;padding:1px 3px;color:var(--muted);cursor:pointer;line-height:0}
+  .tpEye svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round}
+  .tpEye:hover{color:var(--ink)}
+  .tpEye.off{color:var(--faint)}
+  .tpName{display:flex;align-items:center}
+  .tpExcluded{opacity:.55}
+  .tpExcluded .tpNum{background:var(--line);color:var(--muted)}
+  .tpNum{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;
+    background:var(--accent-soft);color:var(--amber);font-family:var(--mono);font-size:11px;margin-right:6px;padding:0 4px}
+  .tpOrderNote{margin-top:6px;font-size:11.5px;line-height:1.4;color:var(--amber)}
+  .tpGrip{cursor:grab;color:var(--faint);font-size:14px;line-height:1;padding:0 4px 0 0;user-select:none}
+  .tpGrip:hover{color:var(--ink)}
+  .tpNm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .tpDragging{opacity:.45}
+  .tpDropOver{outline:2px dashed var(--amber);outline-offset:-2px}
+  .tpStale{border-left-color:var(--err)}
+  #tpNew,#tpCheck{font-size:11.5px;padding:2px 8px}
+  #tpNew[hidden],#tpCheck[hidden],#tpVcBar[hidden]{display:none}
+  #cutIssues{margin-top:6px}
+  .cutIssue{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;line-height:1.4;color:var(--ink);background:var(--panel-deep);border-left:3px solid var(--err);border-radius:0 4px 4px 0;padding:5px 7px;margin-top:5px}
+  .cutIssue.fixable{border-left-color:var(--amber)}
+  .cutIssue button{font-size:11px;padding:1px 7px;flex:none;margin-left:auto}
   #offPanel{position:absolute;top:12px;right:12px;z-index:9;width:214px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #offPanel[hidden]{display:none}
   #offPanel h3{font-size:14px}
@@ -355,6 +393,15 @@
         </select>
       </div>
       <p class="snote">Match this to where you set X0 Y0 on the machine in 454 Control.</p>
+      <div class="srow">
+        <label for="stkT">Thickness</label><input type="text" inputmode="decimal" id="stkT" autocomplete="off" placeholder="not set">
+        <label for="stkZ" style="margin-left:10px">Z zero</label>
+        <select id="stkZ">
+          <option value="top">top of the material</option>
+          <option value="bottom">spoilboard (under it)</option>
+        </select>
+      </div>
+      <p class="snote">Used whenever something cuts right through the material, so measure it rather than trusting the label. Z zero must match where you zero the tool in 454 Control.</p>
       <h4>Appearance</h4>
       <div class="srow">
         <label for="uiTheme">Theme</label>
@@ -411,6 +458,12 @@
         <input id="libSearch" type="search" placeholder="Search tools" aria-label="Search tools">
       </div>
       <div class="libBody" id="libBody"><div id="libTree" role="tree" aria-label="Tools"></div><div id="libDetail"></div></div>
+      <div id="libPickBar" hidden>
+        <span id="libPickNote">Pick a tool, then Select — or double-click it.</span>
+        <span class="grow"></span>
+        <button id="libPickCancel">Cancel</button>
+        <button id="libPickGo" class="primary" disabled>Select</button>
+      </div>
       <div id="libEmpty" hidden>
         <b>No tool library yet.</b> Import your VCarve library and 454 will read every bit, its tool numbers and its feeds and speeds, just as VCarve stores them.
         <ol>
@@ -427,10 +480,15 @@
   <aside id="tpPanel" aria-label="Toolpaths">
     <button id="tpStrip" aria-expanded="false" aria-controls="tpBody" title="Expand the toolpaths panel"><span class="chev">«</span><span>Toolpaths</span><span id="tpStripCount"></span></button>
     <div id="tpBody">
-    <div class="tpHead"><b>Toolpaths</b><span id="tpCount"></span><button id="tpCollapse" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+    <div class="tpHead"><b>Toolpaths</b><span id="tpCount"></span>
+      <button id="tpCheck" hidden title="Look over the drawing before cutting: open shapes, pieces, doubles, crossings, and shapes no toolpath cuts">Check</button>
+      <button id="tpNew" hidden title="Create a toolpath from the selected shapes">+ New</button>
+      <button id="tpCollapse" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
     <p class="tpNote" id="tpEmpty">No toolpaths yet. Open a VCarve project (.crv) that has toolpaths, and they&rsquo;ll be listed here.</p>
     <p class="tpNote" id="tpSrcNote">Read from the VCarve project, in the order VCarve lists them. They show how the job was set up; 454 Design can&rsquo;t cut them yet, and editing the drawing doesn&rsquo;t update them.</p>
     <p class="tpNote" id="tpLibNote"></p>
+    <div id="tpVcBar" hidden style="padding:0 10px 8px"><button id="tpVcConvert" class="primary" style="width:100%"
+      title="Turn VCarve's toolpaths into 454 toolpaths you can edit, reorder and save as G-code">Make these editable</button></div>
     <div id="tpList"></div>
     </div>
   </aside>
@@ -438,6 +496,74 @@
   <div id="canvasWrap">
     <canvas id="cv"></canvas>
     <div id="promptHint"></div>
+    <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
+      <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="cutShapes"><span class="mirLbl">Shapes</span><span class="mirVal" id="cutShapesVal">none</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutType">Cut</label></span>
+        <select id="cutType" style="margin-left:auto">
+          <option value="outside">Profile, outside</option>
+          <option value="inside">Profile, inside</option>
+          <option value="on">Profile, on the line</option>
+          <option value="pocket">Pocket (clear the area)</option>
+          <option value="drill">Drill at centres</option>
+          <option value="chamfer">Chamfer edges (V-bit)</option>
+        </select></div>
+      <button class="mirSlot" id="cutTool" title="Choose from your tool library"><span class="mirLbl">Tool</span>
+        <span class="mirVal" id="cutToolName" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Choose…</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutDia">Diameter</label></span>
+        <input id="cutDia" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal" id="cutUnit">mm</span></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutDepth">Cut depth</label></span>
+        <label id="cutThroughLbl" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-left:auto">
+          <input type="checkbox" id="cutThrough"> through</label>
+        <input id="cutDepth" type="text" inputmode="decimal" autocomplete="off" style="margin-left:6px"></div>
+      <div class="mirSlot" id="cutOverRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutOver">Overcut</label></span>
+        <input id="cutOver" type="text" inputmode="decimal" autocomplete="off" title="How far past the bottom of the material to cut, so parts come free cleanly"></div>
+      <div class="mirSlot" id="cutStepRow" style="cursor:default"><span class="mirLbl"><label for="cutStep">Per pass</label></span>
+        <input id="cutStep" type="text" inputmode="decimal" autocomplete="off"></div>
+      <div class="mirSlot" id="cutChamRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutChamW">Bevel width</label></span>
+        <input id="cutChamW" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How wide the bevel is on the top face">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutVAngle">Bit</label></span>
+        <input id="cutVAngle" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The V-bit's included angle">
+        <span class="mirVal">°</span>
+      </div>
+      <div class="mirSlot" id="cutChamModeRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutChamMode">The line is</label></span>
+        <select id="cutChamMode" style="margin-left:auto;max-width:150px" title="Where the drawn line sits on the finished bevel">
+          <option value="edge">the part’s edge (tip on it)</option>
+          <option value="in">the bevel’s top, going inside</option>
+          <option value="out">the bevel’s top, going outside</option>
+        </select>
+      </div>
+      <div class="mirSlot" id="cutOverlapRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutStepover">Stepover</label></span>
+        <input id="cutStepover" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How far apart the clearing rings are, as a share of the cutter diameter">
+        <span class="mirVal">% of the cutter</span></div>
+      <div class="mirSlot" id="cutPeckRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutPeck">Peck</label></span>
+        <input id="cutPeck" type="text" inputmode="decimal" autocomplete="off" title="How far to drill before lifting to clear chips. 0 drills in one plunge."></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutFeed" id="cutFeedLbl">Feed</label></span>
+        <input id="cutFeed" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal">mm/min</span></div>
+      <div class="mirSlot" id="cutTabRow" style="cursor:default">
+        <input type="checkbox" id="cutTabsOn"><label for="cutTabsOn" class="mirLbl" style="color:var(--ink)">Add tabs</label>
+        <span class="mirVal" id="cutTabCount" style="margin-left:auto"></span>
+        <button id="cutTabPlace" title="Click the outline to add a tab, click a tab to remove it" aria-pressed="false" style="font-size:11.5px;padding:2px 7px">Edit tabs</button>
+      </div>
+      <div class="mirSlot" id="cutTabTools" hidden style="cursor:default">
+        <span class="mirLbl">Add evenly</span>
+        <input id="cutTabs" type="number" min="1" max="20" step="1" value="4" style="width:40px" title="How many to add, spread evenly round each shape">
+        <button id="cutTabSpread" style="font-size:11.5px;padding:2px 7px" title="Add this many, spaced evenly, to every shape">Add</button>
+        <button id="cutTabClear" style="font-size:11.5px;padding:2px 7px;margin-left:auto" title="Remove every tab">Clear</button>
+      </div>
+      <div class="mirSlot" id="cutTabSize" style="cursor:default">
+        <span class="mirLbl"><label for="cutTabLen">Length</label></span>
+        <input id="cutTabLen" type="text" inputmode="decimal" autocomplete="off" style="width:48px">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutTabThk">Thickness</label></span>
+        <input id="cutTabThk" type="text" inputmode="decimal" autocomplete="off" style="width:48px">
+      </div>
+      <p class="mirHint" id="cutHint"></p>
+      <div id="cutIssues"></div>
+      <div class="mirBtns"><button id="cutCancel">Cancel</button><button id="cutOk" class="primary">Create</button></div>
+    </div>
+
     <div id="offPanel" hidden role="dialog" aria-label="Offset">
       <div class="modalHead"><h3>Offset</h3><button class="modalX" id="offX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
       <button class="mirSlot" id="offObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="offObjsVal">none</span></button>
@@ -500,9 +626,23 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+<!-- The CAM engine is optional: without it 454 Design works exactly as before. It is only looked
+     for when asked (open design.html?cam once; that browser then remembers, and ?cam=off forgets),
+     so the public site never requests files that aren't there. -->
+<script>
+(function(){
+  var q = location.search, on = false;
+  try{
+    if (/[?&]cam=off\b/.test(q)) localStorage.removeItem('454-cam');
+    else if (/[?&]cam\b/.test(q)) localStorage.setItem('454-cam', 'on');
+    on = localStorage.getItem('454-cam') === 'on';
+  }catch(e){}
+  if (on) document.write('<script src="geom.js"><\/script><script src="cam.js"><\/script>');
+})();
+</script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.60.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.73.1'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1150,8 +1290,38 @@ function pickEntity(w){
 }
 
 /* ---------------- undo ---------------- */
-function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || []}); }
-function docRestore(str){ var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; }
+// A toolpath's moves can run to thousands of points, and they follow entirely from its settings
+// and the shapes, so they are left out of anything stored and rebuilt when needed. Keeping them
+// out matters: the browser's storage is small, and a full store fails silently.
+function tpLean(list){
+  return (list || []).map(function (tp) {
+    var c = {};
+    for (var k in tp) if (k !== 'moves' && k !== 'holes' && k !== 'preview' && k !== 'previewHoles') c[k] = tp[k];
+    return c;
+  });
+}
+function tpRebuildAll(){
+  if (!DOC.toolpaths || !DOC.toolpaths.length) return;
+  if (typeof camReady === 'function' && camReady()) DOC.toolpaths.forEach(function (tp) { tpGenerate(tp); });
+}
+function docForStorage(pretty){
+  var copy = {};
+  for (var k in DOC) copy[k] = DOC[k];
+  copy.toolpaths = tpLean(DOC.toolpaths);
+  return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
+}
+function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], toolpaths:tpLean(DOC.toolpaths), vcConverted: !!DOC.vcConverted}); }
+function docRestore(str){
+  var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || [];
+  DOC.vcConverted = !!s.vcConverted;
+  // Showing, hiding and ticking aren't edits, so undo leaves them as they are now.
+  var keep = {};
+  (DOC.toolpaths || []).forEach(function (tp) { keep[tp.id] = {hidden: tp.hidden, exclude: tp.exclude}; });
+  DOC.toolpaths = s.toolpaths || [];
+  DOC.toolpaths.forEach(function (tp) { if (keep[tp.id]){ tp.hidden = keep[tp.id].hidden; tp.exclude = keep[tp.id].exclude; } });
+  tpRebuildAll();
+  if (typeof renderToolpathPanel === 'function') renderToolpathPanel();
+}
 function pushUndo(){ if (typeof DRY !== 'undefined' && DRY) return; UNDO.push(docSnap()); if (UNDO.length>200) UNDO.shift(); REDO = []; }
 function doUndo(){ if (!UNDO.length) return; REDO.push(docSnap()); docRestore(UNDO.pop()); SEL=[]; draw(); persist(); }
 function doRedo(){ if (!REDO.length) return; UNDO.push(docSnap()); docRestore(REDO.pop()); SEL=[]; draw(); persist(); }
@@ -1771,6 +1941,7 @@ function toolClick(w, snap){
     } else stagePrompt('guide0');
   }
   else if (TOOL === 'select'){
+    if (CUT){ cutClick(w); return; }                     // the toolpath editor is picking shapes
     var sD = w2s(w.x, w.y), dPick = pickDim(sD.x, sD.y);
     if (dPick >= 0){                                  // a dimension: select it, ready for Delete
       DIMSEL = dPick; SEL = []; HANDLES.active = false; DRAW = null;
@@ -2299,20 +2470,1173 @@ function vcToolpathsFrom(bytes){
   });
 }
 
+/* ============================================================
+   TOOLPATHS (CAM)
+   The engine (geom.js + cam.js) is optional: when it isn't loaded, 454 Design
+   behaves exactly as before and the panel simply has nothing to create with.
+   A toolpath remembers WHICH SHAPES it was made from, so editing the drawing
+   marks it out of date rather than silently leaving a wrong path on screen.
+   ============================================================ */
+function camReady(){ return !!(window.Cam && window.Geom); }
+var CUT = null;            // the editor's working state
+var CUTSEL = null;         // id of the toolpath highlighted in the panel
+
+function tpList(){ return DOC.toolpaths || (DOC.toolpaths = []); }
+function tpNewId(){ return 'tp' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
+
+// A fingerprint of the shapes a toolpath was built from: if this changes, the path is stale.
+function tpSignature(ids){
+  return ids.map(function (id) {
+    var e = entById(id);
+    return e ? snapJSON(e) : 'gone';
+  }).join('|');
+}
+function tpOutlines(ids){ return tpOutlinesById(ids).map(function (o) { return o.loop; }); }
+function tpOutlinesById(ids){
+  var out = [];
+  ids.forEach(function (id) {
+    var e = entById(id);
+    if (!e) return;
+    var pts = null;
+    if (e.t === 'circle') pts = Geom.circlePoints(e.cx, e.cy, e.r, 0.01);
+    else if (e.t === 'rect') pts = [[e.x,e.y],[e.x+e.w,e.y],[e.x+e.w,e.y+e.h],[e.x,e.y+e.h]];
+    else if (e.t === 'poly' && e.closed) pts = e.pts.map(function (q) { return [q[0], q[1]]; });
+    else if (e.t === 'path' && e.closed) pts = tessPath(e, 0.01).map(function (q) { return [q[0], q[1]]; });
+    if (pts && pts.length > 2) out.push({id: id, loop: Geom.clean(pts)});
+  });
+  return out;
+}
+/* ============================================================
+   VECTOR CHECKING
+   Drawings that look right can still be wrong for cutting: an outline whose ends don't quite
+   meet, a shape that arrived from a DXF as a pile of separate lines, the same line drawn
+   twice, an outline that crosses itself. Each makes a toolpath quietly wrong, so they are
+   found before anything is cut, and fixed where a fix is safe.
+   ============================================================ */
+var VEC_GAP = 0.5;          // ends this close count as "meant to meet", mm
+var VEC_JOIN = 0.05;        // pieces whose ends are this close belong together, mm
+
+function vecPolyline(e){
+  if (!e) return null;
+  if (e.t === 'line') return {pts: [[e.x1, e.y1], [e.x2, e.y2]], closed: false};
+  if (e.t === 'arc'){
+    var sw = arcSweepOf(e.a0, e.a1, e.ccw), n = Math.max(8, Math.ceil(Math.abs(sw) / 0.05)), pts = [];
+    for (var i = 0; i <= n; i++){ var q = arcPtAt(e, sw * i / n); pts.push([q.x, q.y]); }
+    return {pts: pts, closed: false};
+  }
+  if (e.t === 'circle') return {pts: Geom.circlePoints(e.cx, e.cy, e.r, 0.02), closed: true};
+  if (e.t === 'rect') return {pts: [[e.x,e.y],[e.x+e.w,e.y],[e.x+e.w,e.y+e.h],[e.x,e.y+e.h]], closed: true};
+  if (e.t === 'poly') return {pts: e.pts.map(function (q) { return [q[0], q[1]]; }), closed: !!e.closed};
+  if (e.t === 'path') return {pts: tessPath(e, 0.05).map(function (q) { return [q[0], q[1]]; }), closed: !!e.closed};
+  return null;                                           // text and anything else: not checked
+}
+// A key that is the same for two identical shapes, even if one was drawn the other way round.
+function vecKey(e){
+  function r(v){ return Math.round(v * 1000) / 1000; }
+  if (e.t === 'line'){
+    var a = [r(e.x1), r(e.y1)], b = [r(e.x2), r(e.y2)];
+    return 'L' + (a[0] < b[0] || (a[0] === b[0] && a[1] <= b[1]) ? a.concat(b) : b.concat(a)).join(',');
+  }
+  if (e.t === 'circle') return 'C' + [r(e.cx), r(e.cy), r(e.r)].join(',');
+  if (e.t === 'rect') return 'R' + [r(e.x), r(e.y), r(e.w), r(e.h)].join(',');
+  if (e.t === 'arc') return 'A' + [r(e.cx), r(e.cy), r(e.r), r(e.a0), r(e.a1), e.ccw ? 1 : 0].join(',');
+  if (e.t === 'poly' || e.t === 'path'){
+    var pts = e.pts.map(function (q) { return r(q[0]) + ',' + r(q[1]) + (q[2] ? ',' + r(q[2]) : ''); });
+    var f = pts.join(';'), b2 = pts.slice().reverse().join(';');
+    return e.t[0] + (e.closed ? 'c' : 'o') + (f < b2 ? f : b2);
+  }
+  return null;
+}
+function vecBox(pts){
+  var b = {x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity};
+  pts.forEach(function (q) { if (q[0] < b.x0) b.x0 = q[0]; if (q[0] > b.x1) b.x1 = q[0]; if (q[1] < b.y0) b.y0 = q[1]; if (q[1] > b.y1) b.y1 = q[1]; });
+  return b;
+}
+// A grid of one outline's segments, built once and reused for every comparison.
+function vecSegGrid(pts){
+  var b = vecBox(pts), span = Math.max(b.x1 - b.x0, b.y1 - b.y0) || 1;
+  var cell = Math.max(span / 48, 0.05), grid = {};
+  for (var i = 0; i < pts.length; i++){
+    var p = pts[i], q = pts[(i + 1) % pts.length];
+    var x0 = Math.floor(Math.min(p[0], q[0]) / cell), x1 = Math.floor(Math.max(p[0], q[0]) / cell);
+    var y0 = Math.floor(Math.min(p[1], q[1]) / cell), y1 = Math.floor(Math.max(p[1], q[1]) / cell);
+    for (var cx = x0; cx <= x1; cx++) for (var cy = y0; cy <= y1; cy++){
+      var k = cx + ',' + cy; (grid[k] || (grid[k] = [])).push(i);
+    }
+  }
+  return {pts: pts, box: b, cell: cell, grid: grid};
+}
+// Do two closed outlines cross? Only segments sharing a grid cell are ever compared.
+function vecLoopsCross(A, B){
+  var ba = A.box, bb = B.box;
+  if (ba.x1 < bb.x0 || bb.x1 < ba.x0 || ba.y1 < bb.y0 || bb.y1 < ba.y0) return false;
+  var a = A.pts, b = B.pts, cell = A.cell;
+  for (var j = 0; j < b.length; j++){
+    var p = b[j], q = b[(j + 1) % b.length];
+    if (Math.max(p[0], q[0]) < ba.x0 || Math.min(p[0], q[0]) > ba.x1 || Math.max(p[1], q[1]) < ba.y0 || Math.min(p[1], q[1]) > ba.y1) continue;
+    var x0 = Math.floor(Math.min(p[0], q[0]) / cell), x1 = Math.floor(Math.max(p[0], q[0]) / cell);
+    var y0 = Math.floor(Math.min(p[1], q[1]) / cell), y1 = Math.floor(Math.max(p[1], q[1]) / cell);
+    for (var cx = x0; cx <= x1; cx++) for (var cy = y0; cy <= y1; cy++){
+      var list = A.grid[cx + ',' + cy];
+      if (!list) continue;
+      for (var k = 0; k < list.length; k++){
+        var i = list[k], c = a[i], d = a[(i + 1) % a.length];
+        var x = Geom.segX(p[0], p[1], q[0], q[1], c[0], c[1], d[0], d[1]);
+        if (x && x.t > 1e-9 && x.t < 1 - 1e-9 && x.u > 1e-9 && x.u < 1 - 1e-9) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Look over some shapes (by id) and report what's wrong. Each issue says what it is, which
+// shapes, and how to fix it if a fix is safe.
+function vecCheck(ids){
+  var issues = [], polys = {};
+  ids.forEach(function (id) { var e = entById(id); if (e && !e.con) polys[id] = vecPolyline(e); });
+  var live = ids.filter(function (id) { return polys[id]; });
+
+  // stacked duplicates
+  var seen = {};
+  live.forEach(function (id) {
+    var k = vecKey(entById(id));
+    if (!k) return;
+    (seen[k] || (seen[k] = [])).push(id);
+  });
+  var dupIds = [];
+  Object.keys(seen).forEach(function (k) { if (seen[k].length > 1) dupIds = dupIds.concat(seen[k].slice(1)); });
+  if (dupIds.length) issues.push({kind: 'dup', ids: dupIds, fix: 'Delete',
+    text: dupIds.length + (dupIds.length === 1 ? ' shape is' : ' shapes are') + ' drawn twice, on top of another. The toolpath would cut them twice.'});
+  var gone = {}; dupIds.forEach(function (id) { gone[id] = 1; });
+  live = live.filter(function (id) { return !gone[id]; });
+
+  // open ends: one shape nearly closed, or several pieces that together make a loop
+  var open = live.filter(function (id) { return !polys[id].closed; });
+  var nearly = open.filter(function (id) {
+    var pts = polys[id].pts, e = entById(id);
+    if (e.t !== 'poly' && e.t !== 'path') return false;
+    return Geom.dist(pts[0][0], pts[0][1], pts[pts.length - 1][0], pts[pts.length - 1][1]) <= VEC_GAP;
+  });
+  if (nearly.length) issues.push({kind: 'close', ids: nearly, fix: 'Close',
+    text: nearly.length + (nearly.length === 1 ? ' outline doesn\u2019t' : ' outlines don\u2019t') + ' quite close \u2014 the ends are under ' + fmtDisp(VEC_GAP) + ' ' + unitTag() + ' apart.'});
+  var rest = open.filter(function (id) { return nearly.indexOf(id) < 0; });
+  var chains = vecChains(rest, polys);
+  var joinable = chains.filter(function (c) { return c.closed && c.ids.length > 1; });
+  joinable.forEach(function (c) {
+    issues.push({kind: 'join', ids: c.ids, chain: c, fix: 'Join',
+      text: c.ids.length + ' separate pieces make up one outline. A toolpath needs them joined into one shape.'});
+  });
+  var loose = rest.filter(function (id) { return !joinable.some(function (c) { return c.ids.indexOf(id) >= 0; }); });
+  if (loose.length) issues.push({kind: 'open', ids: loose,
+    text: loose.length + (loose.length === 1 ? ' shape is' : ' shapes are') + ' open. Profiles and pockets need closed outlines; drilling doesn\u2019t mind.'});
+
+  // outlines that cross themselves, and outlines that cross each other
+  var closedIds = live.filter(function (id) { return polys[id].closed && polys[id].pts.length > 3; });
+  var selfX = closedIds.filter(function (id) {
+    var e = entById(id);
+    if (e.t === 'circle' || e.t === 'rect') return false;
+    return Geom.splitSelfIntersections(Geom.clean(polys[id].pts)).length > 1;
+  });
+  if (selfX.length) issues.push({kind: 'self', ids: selfX,
+    text: selfX.length + (selfX.length === 1 ? ' outline crosses' : ' outlines cross') + ' itself. The inside and outside are ambiguous, so the toolpath can\u2019t be trusted. Redraw or node-edit it.'});
+  // outlines crossing each other: sort by left edge so only neighbours in X are compared, and
+  // index each outline once
+  var grids = {};
+  closedIds.forEach(function (id) { grids[id] = vecSegGrid(Geom.clean(polys[id].pts)); });
+  var order = closedIds.slice().sort(function (p1, q1) { return grids[p1].box.x0 - grids[q1].box.x0; });
+  var crossPairs = [];
+  for (var a = 0; a < order.length; a++){
+    var A = grids[order[a]];
+    for (var b = a + 1; b < order.length; b++){
+      var B = grids[order[b]];
+      if (B.box.x0 > A.box.x1) break;                   // everything further right starts past A
+      if (vecLoopsCross(A, B)) crossPairs.push([order[a], order[b]]);
+    }
+  }
+  if (crossPairs.length){
+    var ids2 = []; crossPairs.forEach(function (pr) { if (ids2.indexOf(pr[0]) < 0) ids2.push(pr[0]); if (ids2.indexOf(pr[1]) < 0) ids2.push(pr[1]); });
+    issues.push({kind: 'cross', ids: ids2,
+      text: crossPairs.length + (crossPairs.length === 1 ? ' pair of outlines crosses' : ' pairs of outlines cross') + ' each other. Cutting both would cut into each part.'});
+  }
+  return issues;
+}
+// Group open pieces whose ends meet into chains, in order, noting whether a chain closes.
+function vecChains(ids, polys){
+  var pieces = ids.map(function (id) { var p = polys[id].pts; return {id: id, a: p[0], b: p[p.length - 1], used: false}; });
+  function near(p, q){ return Geom.dist(p[0], p[1], q[0], q[1]) <= VEC_JOIN; }
+  var chains = [];
+  pieces.forEach(function (start) {
+    if (start.used) return;
+    start.used = true;
+    var seq = [{id: start.id, rev: false}], head = start.a, tail = start.b, grew = true;
+    while (grew){
+      grew = false;
+      for (var i = 0; i < pieces.length; i++){
+        var pc = pieces[i];
+        if (pc.used) continue;
+        if (near(pc.a, tail)){ seq.push({id: pc.id, rev: false}); tail = pc.b; pc.used = grew = true; }
+        else if (near(pc.b, tail)){ seq.push({id: pc.id, rev: true}); tail = pc.a; pc.used = grew = true; }
+        else if (near(pc.b, head)){ seq.unshift({id: pc.id, rev: false}); head = pc.a; pc.used = grew = true; }
+        else if (near(pc.a, head)){ seq.unshift({id: pc.id, rev: true}); head = pc.b; pc.used = grew = true; }
+      }
+    }
+    chains.push({ids: seq.map(function (s2) { return s2.id; }), seq: seq, closed: seq.length > 1 && near(head, tail)});
+  });
+  return chains;
+}
+// Apply a fix. Everything is one undoable step.
+function vecFix(issue){
+  pushUndo();
+  if (issue.kind === 'dup'){
+    var drop = {}; issue.ids.forEach(function (id) { drop[id] = 1; });
+    DOC.ents = DOC.ents.filter(function (e) { return !drop[entId(e)]; });
+  } else if (issue.kind === 'close'){
+    issue.ids.forEach(function (id) { var e = entById(id); if (e) e.closed = true; });
+  } else if (issue.kind === 'join'){
+    var pts = [], polys = {};
+    issue.chain.seq.forEach(function (s2) {
+      var pl = vecPolyline(entById(s2.id)).pts.slice();
+      if (s2.rev) pl.reverse();
+      if (pts.length) pl.shift();                        // the shared end is already there
+      pts = pts.concat(pl);
+    });
+    if (pts.length > 1 && Geom.dist(pts[0][0], pts[0][1], pts[pts.length - 1][0], pts[pts.length - 1][1]) <= VEC_JOIN) pts.pop();
+    var drop2 = {}; issue.ids.forEach(function (id) { drop2[id] = 1; });
+    var at = DOC.ents.findIndex(function (e) { return drop2[entId(e)]; });
+    DOC.ents = DOC.ents.filter(function (e) { return !drop2[entId(e)]; });
+    var joined = {t: 'poly', pts: pts, closed: true};
+    DOC.ents.splice(Math.max(0, at), 0, joined);
+    issue.newId = entId(joined);
+  }
+  persist(); draw();
+  return issue;
+}
+// The whole drawing, from the Toolpaths panel's Check button.
+// Shapes that no toolpath cuts: the thing you preview in VCarve to catch. Only closed shapes
+// count, since those are what toolpaths cut; construction lines are left out, so anything drawn
+// purely for reference can be made construction (X) and it stops being reported.
+function tpUncutIssues(){
+  var list = tpList();
+  if (!list.length) return [];
+  var used = {}, usedOff = {};
+  list.forEach(function (tp) { (tp.ents || []).forEach(function (id) { (tp.exclude ? usedOff : used)[id] = 1; }); });
+  var cand = DOC.ents.filter(function (e) {
+    if (e.con || e.tp || e.t === 'text') return false;
+    return e.t === 'circle' || e.t === 'rect' || ((e.t === 'poly' || e.t === 'path') && e.closed);
+  });
+  var never = [], offOnly = [];
+  cand.forEach(function (e) {
+    var id = entId(e);
+    if (used[id]) return;
+    (usedOff[id] ? offOnly : never).push(e);
+  });
+  function kinds(arr){
+    var c = {circle: 0, rect: 0, other: 0};
+    arr.forEach(function (e) { if (e.t === 'circle') c.circle++; else if (e.t === 'rect') c.rect++; else c.other++; });
+    var bits = [];
+    if (c.circle) bits.push(c.circle + (c.circle === 1 ? ' circle' : ' circles'));
+    if (c.rect) bits.push(c.rect + (c.rect === 1 ? ' rectangle' : ' rectangles'));
+    if (c.other) bits.push(c.other + (c.other === 1 ? ' outline' : ' outlines'));
+    return bits.join(', ');
+  }
+  var out = [];
+  if (never.length) out.push({kind: 'uncut', ids: never.map(entId),
+    text: never.length + (never.length === 1 ? ' shape isn\u2019t' : ' shapes aren\u2019t') + ' cut by any toolpath: ' + kinds(never) +
+          '. If one is only there for reference, make it a construction line (X) and it won\u2019t be counted.'});
+  if (offOnly.length) out.push({kind: 'uncutOff', ids: offOnly.map(entId),
+    text: offOnly.length + (offOnly.length === 1 ? ' shape is' : ' shapes are') + ' only in unticked toolpaths (' + kinds(offOnly) +
+          '), so the saved G-code won\u2019t cut ' + (offOnly.length === 1 ? 'it.' : 'them.')});
+  return out;
+}
+function vecCheckAll(){
+  var ids = DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text'; }).map(entId);
+  var issues = vecCheck(ids).concat(tpUncutIssues());
+  if (!issues.length){
+    toast('ok', 'The drawing looks ready to cut', ids.length + ' shapes checked: nothing open, nothing doubled, nothing crossing' +
+          (tpList().length ? ', and every shape is in a toolpath.' : '.'));
+    return issues;
+  }
+  var fixable = issues.filter(function (i) { return i.fix; });
+  var problem = []; issues.forEach(function (i) { problem = problem.concat(i.ids); });
+  SEL = problem.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
+  draw();
+  uiDialog({title: issues.length + (issues.length === 1 ? ' thing needs' : ' things need') + ' a look before cutting',
+            body: issues.map(function (i) { return '\u2022 ' + i.text + (i.fix ? '  [' + i.fix + ' can fix this]' : ''); }).join('\n\n') +
+                  '\n\nThe shapes concerned are selected on the drawing.',
+            ok: fixable.length ? 'Fix what can be fixed' : 'OK', cancel: 'Leave it', note: !fixable.length}).then(function (go) {
+    if (!go || !fixable.length) return;
+    fixable.forEach(function (i) { if (i.kind !== 'join' || i.chain) vecFix(i); });
+    var left = vecCheck(DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text'; }).map(entId));
+    SEL = [];
+    toast(left.length ? 'info' : 'ok', 'Fixed ' + fixable.length + (fixable.length === 1 ? ' problem' : ' problems'),
+          left.length ? left.length + ' still need you: ' + left.map(function (i) { return i.text.split('.')[0]; }).join('; ') + '.' : 'The drawing is ready to cut.');
+    renderToolpathPanel(); draw();
+  });
+  return issues;
+}
+
+// Pocket groups: each outermost outline, with every picked shape inside it as an island. Shapes
+// inside an island are pockets again; the distance field works that out by itself, so they simply
+// go along with their outermost outline.
+function tpPocketGroups(ids){
+  var outs = tpOutlinesById(ids);
+  var inside = outs.map(function () { return 0; });
+  outs.forEach(function (a, i) {
+    outs.forEach(function (b, j) {
+      if (i === j) return;
+      var p = a.loop[0];
+      if (Geom.pointInLoop(p[0], p[1], b.loop) && Math.abs(Geom.area(b.loop)) > Math.abs(Geom.area(a.loop))) inside[i]++;
+    });
+  });
+  var groups = [];
+  outs.forEach(function (o, i) {
+    if (inside[i] !== 0) return;
+    var g = {outline: o.loop, islands: [], ids: [o.id]};
+    outs.forEach(function (q, j) {
+      if (j === i || inside[j] === 0) return;
+      if (Geom.pointInLoop(q.loop[0][0], q.loop[0][1], o.loop)){ g.islands.push(q.loop); g.ids.push(q.id); }
+    });
+    groups.push(g);
+  });
+  return groups;
+}
+// Drill positions: the centre of each circle, or the middle of any other closed shape. Also how
+// big each one is, so a drill that doesn't match the holes drawn can be pointed out.
+function tpDrillPoints(ids){
+  var out = [];
+  ids.forEach(function (id) {
+    var e = entById(id);
+    if (!e) return;
+    if (e.t === 'circle'){ out.push({p: [e.cx, e.cy], dia: e.r * 2, id: id}); return; }
+    var o = tpOutlinesById([id])[0];
+    if (!o) return;
+    var xs = o.loop.map(function (q) { return q[0]; }), ys = o.loop.map(function (q) { return q[1]; });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    out.push({p: [(x0 + x1) / 2, (y0 + y1) / 2], dia: Math.min(x1 - x0, y1 - y0), id: id});
+  });
+  return out;
+}
+// Tabs live on the drawn outline, one list per shape, so they stay put when the cutter changes.
+// Toolpaths saved before tabs were placed by hand only had a count: give those their tabs once.
+function tpEnsureTabs(tp){
+  if (!tp.tabsOn || tp.tabPts) return;
+  tp.tabPts = {};
+  tpOutlinesById(tp.ents).forEach(function (o) { tp.tabPts[o.id] = Cam.evenTabPoints(o.loop, tp.tabCount || 4); });
+}
+// The "add evenly" helper: adds to what is there, one batch per shape.
+function tpAddEvenTabs(tp, n){
+  tp.tabPts = tp.tabPts || {};
+  tpOutlinesById(tp.ents).forEach(function (o) {
+    tp.tabPts[o.id] = (tp.tabPts[o.id] || []).concat(Cam.evenTabPoints(o.loop, n));
+  });
+}
+function tpTabTotal(tp){
+  var n = 0;
+  if (tp.tabPts) tp.ents.forEach(function (id) { n += (tp.tabPts[id] || []).length; });
+  return n;
+}
+
+// Build (or rebuild) the moves for one toolpath.
+function tpGenerate(tp){
+  if (!camReady()) return tp;
+  if (tp.side === 'pocket'){
+    var groups = tpPocketGroups(tp.ents), pm = [], warnP = null, rings = 0;
+    var zs = tpSurface();
+    groups.forEach(function (g) {
+      var pr = Cam.pocket({outline: g.outline, islands: g.islands, toolDia: tp.dia,
+                           stepover: tp.dia * (tp.stepoverPct || 40) / 100, depth: tpDepth(tp), passDepth: tp.step,
+                           z0: zs, safeZ: zs + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
+                           climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, tp.dia * 4)}});
+      if (pr.warning) warnP = pr.warning;
+      rings += pr.rings || 0;
+      pr.moves.forEach(function (m) { pm.push(m); });
+    });
+    tp.moves = pm;
+    tp.rings = rings;
+    tp.islands = groups.reduce(function (s2, g) { return s2 + g.islands.length; }, 0);
+    tp.warning = groups.length ? warnP : 'nothing to pocket: pick closed shapes';
+    tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
+    return tp;
+  }
+  if (tp.side === 'chamfer'){
+    var cz = tpSurface(), cm = [], cd = tpChamferDepth(tp), tanH = Math.tan((tp.vAngle || 90) / 2 * Math.PI / 180);
+    var cmode = tp.chamMode || 'edge';
+    tpOutlinesById(tp.ents).forEach(function (o) {
+      if (cmode === 'edge'){
+        var cr = Cam.profile({outline: o.loop, side: 'on', toolDia: tp.dia, depth: cd, passDepth: tp.step, z0: cz,
+                              safeZ: cz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
+                              climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, cd * 3)}});
+        cr.moves.forEach(function (m) { cm.push(m); });
+        return;
+      }
+      // the line is the bevel's top edge: each pass runs the tip in from the line by exactly the
+      // width the cone reaches at that pass's depth, so the finished bevel meets the line
+      var np = Math.max(1, Math.ceil(cd / tp.step));
+      for (var pk = 1; pk <= np; pk++){
+        var zk = Math.min(cd, tp.step * pk), off = zk * tanH;
+        var loops = Geom.offsetLoop(o.loop, cmode === 'in' ? -off : off, {tol: 0.005});
+        loops.forEach(function (lp) {
+          var cr2 = Cam.profile({outline: lp, side: 'on', toolDia: tp.dia, depth: zk, passDepth: zk, z0: cz,
+                                 safeZ: cz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
+                                 climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, zk * 3)}});
+          cr2.moves.forEach(function (m) { cm.push(m); });
+        });
+      }
+    });
+    tp.moves = cm;
+    var reach = tp.dia / 2;                               // the widest bevel the bit's cone can make
+    tp.warning = !cm.length ? 'nothing to chamfer: pick closed shapes'
+               : (tp.chamW > reach + 1e-6 ? 'the bevel is wider than this bit can cut (' + fmtDisp(reach) + ' ' + unitTag() + ' at most)' : null);
+    tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
+    return tp;
+  }
+  if (tp.side === 'drill'){
+    var holes = tpDrillPoints(tp.ents);
+    var z0d = tpSurface();
+    var dr = Cam.drill({points: holes.map(function (h) { return h.p; }), depth: tpDepth(tp), z0: z0d,
+                        peck: tp.peck || 0, feed: tp.plunge || tp.feed, safeZ: z0d + (tp.safeZ || 6), retract: 1});
+    tp.moves = dr.moves;
+    tp.holes = holes.map(function (h) { return h.p; });
+    tp.warning = holes.length ? null : 'nothing to drill: pick circles or closed shapes';
+    tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
+    return tp;
+  }
+  var loops = tpOutlinesById(tp.ents);
+  var moves = [], warn = null;
+  if (tp.tabsOn === undefined) tp.tabsOn = tp.tabCount > 0;         // older toolpaths
+  tpEnsureTabs(tp);
+  loops.forEach(function (o) {
+    var pts = tp.tabsOn && tp.tabPts ? tp.tabPts[o.id] : null;
+    var res = Cam.profile({
+      outline: o.loop, side: tp.side, toolDia: tp.dia, depth: tpDepth(tp), passDepth: tp.step, z0: tpSurface(),
+      stepFinal: tp.allowance || 0,
+      feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2), climb: tp.climb !== false, safeZ: tpSurface() + (tp.safeZ || 6),
+      tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tp.tabThk || 0.5, at: pts} : null,
+      ramp: {length: tp.rampLen || Math.max(4, tp.dia * 4)}
+    });
+    if (res.warning) warn = res.warning;
+    res.moves.forEach(function (m) { moves.push(m); });
+  });
+  tp.moves = moves;
+  tp.warning = loops.length ? warn : 'nothing to cut: pick closed shapes';
+  tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
+  return tp;
+}
+function tpStale(tp){ return tp.sig !== tpSignature(tp.ents) + tpStockSig(tp); }
+// Depth is measured down from the top of the material. "Through" means the thickness plus a
+// little extra, so the part comes free. Where Z zero is decides where the top of the material
+// is in machine terms: at zero, or at the thickness when zero is the spoilboard.
+function tpDepth(tp){
+  if (tp.side === 'chamfer') return tpChamferDepth(tp);
+  if (tp.through) return (DOC.stock.t || 0) + (tp.over === undefined ? 0.2 : tp.over);
+  return tp.depth;
+}
+// A V-bit's sides slope at half its included angle. With the tip running along the edge, the
+// bevel on the top face is (tip depth) x tan(half angle) wide, so the depth follows from the
+// width wanted: a 1.155 mm bevel with a 60 degree bit puts the tip 2 mm down.
+function tpChamferDepth(tp){
+  var half = (tp.vAngle || 90) / 2 * Math.PI / 180;
+  return (tp.chamW || 1) / Math.tan(half);
+}
+function tpSurface(){ return DOC.stock.zero === 'bottom' ? (DOC.stock.t || 0) : 0; }
+function tpStockSig(tp){                              // what makes a through-cut out of date
+  return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top');
+}
+
+// ---- the editor ----
+function cutOpen(existing){
+  if (!camReady()){
+    toast('info', 'The CAM engine isn\u2019t loaded', 'geom.js and cam.js need to sit beside design.html. Without them the panel only shows toolpaths read from a VCarve project.');
+    return;
+  }
+  var picked = SEL.filter(function (i) { return DOC.ents[i] && !DOC.ents[i].con && !DOC.ents[i].tp; });
+  CUT = existing
+    ? Object.assign({}, existing, {ents: existing.ents.slice(), editing: existing.id})
+    : {ents: picked.map(function (i) { return entId(DOC.ents[i]); }),
+       side: 'outside', dia: 3.175, depth: 3, step: 1, feed: 800, plunge: 300,
+       tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5, tabPts: {}, toolId: null, editing: null, stepoverPct: 40,
+       chamW: 1, vAngle: 90,
+       through: DOC.stock.t > 0, over: 0.2};
+  if (existing) CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {}));
+  if (CUT.tabsOn === undefined) CUT.tabsOn = CUT.tabCount > 0;
+  CUT.placing = false;
+  document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
+  document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
+  cutFillTools();
+  cutToForm();
+  document.getElementById('cutPanel').hidden = false;
+  cutRender();
+}
+function cutClose(){ CUT = null; document.getElementById('cutPanel').hidden = true; draw(); }
+function cutFillTools(){                             // show the chosen tool's name on the button
+  var t = CUT && CUT.toolId ? libTool(CUT.toolId) : null;
+  var mid = TOOLLIB ? libDefaultMachine() : null;
+  document.getElementById('cutToolName').textContent = t
+    ? (t.numbers && t.numbers[mid] !== undefined ? 'T' + t.numbers[mid] + ' ' : '') + t.name
+    : (TOOLLIB ? 'Choose\u2026' : 'No library \u2014 set by hand');
+}
+// Take diameter, feed and stepdown from the library when a tool is chosen.
+function cutUseTool(id){
+  CUT.toolId = id || null;
+  var t = id ? libTool(id) : null;
+  if (!t) return;
+  var mm = t.units === 'in' ? 25.4 : 1;
+  if (t.diameter) CUT.dia = +(t.diameter * mm).toFixed(3);
+  if (t.angle > 0 && t.angle < 180) CUT.vAngle = t.angle;               // a V-bit's included angle
+  var cut = libCutFor(t, libDefaultMachine(), UICFG.libMaterial || null) ||
+            t.cuts.filter(function (c) { return c.machine === libDefaultMachine(); })[0] || t.cuts[0];
+  if (cut){
+    var rate = cut.rateUnits === 4 ? 25.4 : 1;                 // in/min -> mm/min
+    var len = cut.lengthUnits === 'in' ? 25.4 : 1;
+    if (cut.feed) CUT.feed = Math.round(cut.feed * rate);
+    if (cut.plunge) CUT.plunge = Math.round(cut.plunge * rate);
+    if (cut.stepdown) CUT.step = +(cut.stepdown * len).toFixed(3);
+    if (cut.stepover && CUT.dia > 0) CUT.stepoverPct = Math.max(5, Math.min(95, Math.round(cut.stepover * len / CUT.dia * 100)));
+    if (cut.rpm) CUT.rpm = cut.rpm;
+  }
+  cutFillTools(); cutToForm(); cutRender();
+}
+function cutToForm(){
+  document.getElementById('cutType').value = CUT.side;
+  document.getElementById('cutDia').value = fmtDisp(CUT.dia);
+  document.getElementById('cutDepth').value = fmtDisp(CUT.through ? tpDepth(CUT) : CUT.depth);
+  document.getElementById('cutThrough').checked = !!CUT.through;
+  document.getElementById('cutOver').value = fmtDisp(CUT.over === undefined ? 0.2 : CUT.over);
+  document.getElementById('cutStep').value = fmtDisp(CUT.step);
+  document.getElementById('cutPeck').value = fmtDisp(CUT.peck || 0);
+  document.getElementById('cutStepover').value = CUT.stepoverPct || 40;
+  document.getElementById('cutChamW').value = fmtDisp(CUT.chamW || 1);
+  document.getElementById('cutVAngle').value = CUT.vAngle || 90;
+  document.getElementById('cutChamMode').value = CUT.chamMode || 'edge';
+  document.getElementById('cutFeed').value = CUT.side === 'drill' ? (CUT.plunge || CUT.feed) : CUT.feed;
+  document.getElementById('cutTabs').value = CUT.tabCount;
+  document.getElementById('cutTabsOn').checked = !!CUT.tabsOn;
+  document.getElementById('cutTabLen').value = fmtDisp(CUT.tabLen);
+  document.getElementById('cutTabThk').value = fmtDisp(CUT.tabThk);
+  document.getElementById('cutUnit').textContent = unitTag();
+}
+function cutFromForm(){
+  CUT.side = document.getElementById('cutType').value;
+  var d = lenIn(document.getElementById('cutDia').value); if (d > 0) CUT.dia = d;
+  CUT.through = document.getElementById('cutThrough').checked;
+  if (!CUT.through){ var dep = lenIn(document.getElementById('cutDepth').value); if (dep > 0) CUT.depth = dep; }
+  var ov = lenIn(document.getElementById('cutOver').value); if (!isNaN(ov) && ov >= 0) CUT.over = ov;
+  var st = lenIn(document.getElementById('cutStep').value); if (st > 0) CUT.step = st;
+  var f = parseFloat(document.getElementById('cutFeed').value);
+  if (f > 0){ if (CUT.side === 'drill') CUT.plunge = f; else CUT.feed = f; }
+  var pk = lenIn(document.getElementById('cutPeck').value); if (!isNaN(pk) && pk >= 0) CUT.peck = pk;
+  var so2 = parseFloat(document.getElementById('cutStepover').value); if (so2 > 0) CUT.stepoverPct = Math.max(5, Math.min(95, so2));
+  var cw = lenIn(document.getElementById('cutChamW').value); if (cw > 0) CUT.chamW = cw;
+  var va = parseFloat(document.getElementById('cutVAngle').value); if (va > 5 && va < 175) CUT.vAngle = va;
+  CUT.chamMode = document.getElementById('cutChamMode').value;
+  CUT.tabsOn = document.getElementById('cutTabsOn').checked;
+  var tb = parseInt(document.getElementById('cutTabs').value, 10); if (tb > 0) CUT.tabCount = Math.min(20, tb);
+  var tl = lenIn(document.getElementById('cutTabLen').value); if (tl > 0) CUT.tabLen = tl;
+  var tt = lenIn(document.getElementById('cutTabThk').value); if (tt > 0) CUT.tabThk = tt;
+}
+function cutRender(){
+  if (!CUT) return;
+  document.getElementById('cutShapesVal').textContent = CUT.ents.length
+    ? CUT.ents.length + (CUT.ents.length === 1 ? ' shape' : ' shapes') : 'none';
+  document.getElementById('cutShapes').setAttribute('aria-pressed', 'true');
+  var drilling = CUT.side === 'drill', pocketing = CUT.side === 'pocket', chamfering = CUT.side === 'chamfer';
+  document.getElementById('cutChamRow').hidden = !chamfering;
+  document.getElementById('cutChamModeRow').hidden = !chamfering;
+  document.getElementById('cutThroughLbl').style.display = chamfering ? 'none' : '';
+  if (chamfering){ CUT.through = false; CUT.placing = false; }
+  document.getElementById('cutOverlapRow').hidden = !pocketing;
+  if (pocketing){ CUT.placing = false; document.getElementById('cutTabRow').hidden = true; document.getElementById('cutTabSize').hidden = true; document.getElementById('cutTabTools').hidden = true; }
+  var dEl = document.getElementById('cutDepth');
+  dEl.disabled = !!CUT.through;
+  document.getElementById('cutOverRow').hidden = !CUT.through;
+  if (CUT.through) dEl.value = fmtDisp(tpDepth(CUT));
+  var noThk = CUT.through && !(DOC.stock.t > 0);
+  document.getElementById('cutStepRow').hidden = drilling;
+  document.getElementById('cutPeckRow').hidden = !drilling;
+  document.getElementById('cutTabRow').hidden = drilling || pocketing || chamfering;
+  document.getElementById('cutFeedLbl').textContent = drilling ? 'Plunge' : 'Feed';
+  if (drilling){ CUT.placing = false; }
+  var loops = drilling ? tpDrillPoints(CUT.ents) : tpOutlines(CUT.ents);
+  var ok = loops.length > 0;
+  document.getElementById('cutOk').disabled = !ok;
+  var nTabs = CUT.tabsOn ? tpTabTotal(CUT) : 0;
+  document.getElementById('cutTabSize').hidden = !CUT.tabsOn;
+  document.getElementById('cutTabTools').hidden = !(CUT.tabsOn && CUT.placing);
+  document.getElementById('cutTabCount').textContent = CUT.tabsOn ? (nTabs ? nTabs + ' placed' : 'none yet') : '';
+  document.getElementById('cutTabPlace').disabled = !CUT.tabsOn || !ok;
+  document.getElementById('cutTabPlace').textContent = CUT.placing ? 'Done' : 'Edit tabs';
+  document.getElementById('cutTabPlace').setAttribute('aria-pressed', CUT.placing ? 'true' : 'false');
+  document.getElementById('cutShapes').setAttribute('aria-pressed', CUT.placing ? 'false' : 'true');
+  if (drilling){
+    document.getElementById('cutTabSize').hidden = true;
+    document.getElementById('cutTabTools').hidden = true;
+    var sizes = {}, off = 0;
+    loops.forEach(function (h) {
+      var k = fmtDisp(h.dia); sizes[k] = (sizes[k] || 0) + 1;
+      if (Math.abs(h.dia - CUT.dia) > 0.1) off++;
+    });
+    var sizeTxt = Object.keys(sizes).map(function (k) { return sizes[k] + ' \u00d7 ' + k; }).join(', ');
+    document.getElementById('cutHint').textContent = !CUT.ents.length
+      ? 'Click the circles to drill. Each is drilled at its centre.'
+      : noThk ? '\u26a0 Set the material thickness in Settings before drilling through \u2014 until then this drills only the overcut.'
+      : (loops.length + (loops.length === 1 ? ' hole' : ' holes') + ' (' + sizeTxt + ' ' + unitTag() + '), ' +
+         (CUT.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) : fmtDisp(CUT.depth) + ' ' + unitTag() + ' deep') +
+         (CUT.peck > 0 ? ', pecking every ' + fmtDisp(CUT.peck) : ', one plunge each') + '.' +
+         (off ? ' \u26a0 ' + off + (off === 1 ? ' hole doesn\u2019t' : ' holes don\u2019t') + ' match the ' + fmtDisp(CUT.dia) + ' ' + unitTag() + ' drill.' : ''));
+    CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
+    CUT.previewHoles = ok ? loops.map(function (h) { return h.p; }) : [];
+    SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
+    cutIssuesRender();
+    draw();
+    return;
+  }
+  CUT.previewHoles = null;
+  cutIssuesRender();
+  if (chamfering){
+    document.getElementById('cutTabSize').hidden = true; document.getElementById('cutTabTools').hidden = true;
+    var cdp = tpChamferDepth(CUT);
+    dEl.disabled = true; dEl.value = fmtDisp(cdp);
+    if (ok){
+      var pvc = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
+      CUT.preview = pvc.moves;
+      CUT.chamBand = tpOutlines(CUT.ents);
+      var np = Math.ceil(cdp / CUT.step);
+      document.getElementById('cutHint').textContent = pvc.warning
+        ? '\u26a0 ' + pvc.warning.charAt(0).toUpperCase() + pvc.warning.slice(1) + '.'
+        : (CUT.chamMode === 'in' || CUT.chamMode === 'out')
+          ? 'A ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' bevel with its top edge on the line, going ' + (CUT.chamMode === 'in' ? 'inside' : 'outside') +
+            ': the tip runs ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' ' + (CUT.chamMode === 'in' ? 'in' : 'out') + ' from it, ' + fmtDisp(cdp) + ' ' + unitTag() + ' deep, in ' + np + (np === 1 ? ' pass.' : ' passes.')
+          : 'A ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' bevel: the ' + (CUT.vAngle || 90) + '\u00b0 bit\u2019s tip runs along the edge ' +
+            fmtDisp(cdp) + ' ' + unitTag() + ' deep, in ' + np + (np === 1 ? ' pass' : ' passes') + '. Its other side cuts into the waste.';
+    } else {
+      CUT.preview = []; CUT.chamBand = null;
+      document.getElementById('cutHint').textContent = 'Click the edges to bevel: the part\u2019s outline, holes, slots.';
+    }
+    SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
+    draw();
+    return;
+  }
+  CUT.chamBand = null;
+  if (pocketing && ok){
+    var grp = tpPocketGroups(CUT.ents), isl = grp.reduce(function (s3, g) { return s3 + g.islands.length; }, 0);
+    var pv = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
+    CUT.preview = pv.moves;
+    var so = CUT.dia * (CUT.stepoverPct || 40) / 100;
+    document.getElementById('cutHint').textContent = pv.warning
+      ? '\u26a0 ' + pv.warning.charAt(0).toUpperCase() + pv.warning.slice(1) + '.'
+      : grp.length + (grp.length === 1 ? ' pocket' : ' pockets') + (isl ? ' with ' + isl + (isl === 1 ? ' island' : ' islands') + ' left standing' : '') + '. ' +
+        (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(CUT.over) : fmtDisp(tpDepth(CUT)) + ' ' + unitTag() + ' deep') +
+        ', ' + Math.ceil(tpDepth(CUT) / CUT.step) + (Math.ceil(tpDepth(CUT) / CUT.step) === 1 ? ' pass' : ' passes') +
+        ', rings ' + fmtDisp(so) + ' ' + unitTag() + ' apart.';
+    SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
+    draw();
+    return;
+  }
+  document.getElementById('cutHint').textContent = CUT.placing
+    ? 'Click the outline to add a tab, click a tab to remove it.'
+    : (CUT.tabsOn && ok && !nTabs)
+    ? 'Tabs are on but none are placed \u2014 press Edit tabs and click the outline where you want them.'
+    : !CUT.ents.length
+    ? 'Click closed shapes on the drawing to cut.'
+    : (!ok ? 'Nothing here is a closed outline yet. See below for what can be fixed.'
+           : noThk ? '\u26a0 Set the material thickness in Settings before cutting through \u2014 until then this cuts only the overcut.'
+           : (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) + ' overcut. ' : '') +
+             'Passes: ' + Math.ceil(tpDepth(CUT) / CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
+             (CUT.tabsOn ? ', ' + nTabs + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs'));
+  SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
+  CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
+  draw();
+}
+// Problems with the picked shapes, shown under the hint with a fix where one is safe.
+// Recomputed only when the set of shapes changes, not on every keystroke.
+function cutIssuesRender(){
+  var box = document.getElementById('cutIssues');
+  if (!CUT){ box.innerHTML = ''; return; }
+  var sig = CUT.ents.join(',') + '#' + CUT.ents.map(function (id) { var e = entById(id); return e ? snapJSON(e).length : 0; }).join(',');
+  if (CUT.vecSig !== sig){ CUT.vecSig = sig; CUT.vecIssues = CUT.ents.length ? vecCheck(CUT.ents) : []; }
+  var drilling = CUT.side === 'drill';
+  var list = (CUT.vecIssues || []).filter(function (i) { return !(drilling && (i.kind === 'open' || i.kind === 'self' || i.kind === 'cross')); });
+  box.innerHTML = '';
+  list.forEach(function (issue) {
+    var row = document.createElement('div');
+    row.className = 'cutIssue' + (issue.fix ? ' fixable' : '');
+    var t = document.createElement('span'); t.textContent = issue.text; row.appendChild(t);
+    if (issue.fix){
+      var b = document.createElement('button'); b.textContent = issue.fix;
+      b.addEventListener('click', function () {
+        vecFix(issue);
+        if (issue.kind === 'dup'){                       // the deleted copies leave the toolpath too
+          CUT.ents = CUT.ents.filter(function (id) { return !!entById(id); });
+        } else if (issue.kind === 'join'){               // the pieces become one shape
+          CUT.ents = CUT.ents.filter(function (id) { return issue.ids.indexOf(id) < 0; }).concat([issue.newId]);
+        }
+        CUT.vecSig = null;
+        cutRender();
+        toast('ok', issue.fix === 'Join' ? 'Joined into one shape' : issue.fix === 'Close' ? 'Closed' : 'Doubles deleted', 'Undo puts it back as it was.');
+      });
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+  });
+}
+function cutClick(w){
+  if (CUT.placing){ cutTabClick(w); return; }
+  var h = pickEntity(w);
+  if (h === null) return;
+  var id = entId(DOC.ents[h]);
+  var at = CUT.ents.indexOf(id);
+  if (at >= 0) CUT.ents.splice(at, 1); else CUT.ents.push(id);
+  cutRender();
+}
+// Add a tab where the outline was clicked, or take away the one that was clicked on.
+function cutTabClick(w){
+  var hitR = Math.max(CUT.tabLen / 2, 8 / VIEW.scale);
+  // on an existing tab? remove it
+  for (var id in CUT.tabPts){
+    if (CUT.ents.indexOf(id) < 0) continue;
+    var list = CUT.tabPts[id];
+    for (var i = 0; i < list.length; i++){
+      if (Math.hypot(list[i][0] - w.x, list[i][1] - w.y) <= hitR){ list.splice(i, 1); cutRender(); return; }
+    }
+  }
+  // otherwise, the nearest point on the nearest chosen outline
+  var best = null;
+  tpOutlinesById(CUT.ents).forEach(function (o) {
+    var n = o.loop.length;
+    for (var k = 0; k < n; k++){
+      var a = o.loop[k], b = o.loop[(k + 1) % n];
+      var q = Geom.closestOnSeg(w.x, w.y, a[0], a[1], b[0], b[1]);
+      var dd = Math.hypot(q[0] - w.x, q[1] - w.y);
+      if (!best || dd < best.d) best = {d: dd, id: o.id, p: q};
+    }
+  });
+  if (!best || best.d > 12 / VIEW.scale){ toast('info', 'Click on the outline', 'Tabs go on the edge of the shape being cut.'); return; }
+  (CUT.tabPts[best.id] || (CUT.tabPts[best.id] = [])).push([best.p[0], best.p[1]]);
+  cutRender();
+}
+function cutApply(){
+  cutFromForm();
+  if (!CUT.ents.length) return;
+  pushUndo();
+  var tp = {
+    id: CUT.editing || tpNewId(),
+    name: CUT.name || (CUT.side === 'drill' ? 'Drilling' : CUT.side === 'pocket' ? 'Pocket' : CUT.side === 'chamfer' ? 'Chamfer' : (CUT.side === 'inside' ? 'Inside' : CUT.side === 'on' ? 'On-line' : 'Outside') + ' profile'),
+    type: CUT.side === 'drill' ? 'drill' : CUT.side === 'pocket' ? 'pocket' : CUT.side === 'chamfer' ? 'chamfer' : 'profile', stepoverPct: CUT.stepoverPct || 40,
+    chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge',
+    rampLen: CUT.rampLen, allowance: CUT.allowance || 0, climb: CUT.climb !== false,
+    vcFrom: CUT.vcFrom, side: CUT.side, ents: CUT.ents.slice(), peck: CUT.peck || 0,
+    through: CUT.side === 'chamfer' ? false : !!CUT.through, over: CUT.over === undefined ? 0.2 : CUT.over,
+    dia: CUT.dia, depth: CUT.depth, step: CUT.step, feed: CUT.feed, plunge: CUT.plunge,
+    tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk,
+    tabPts: JSON.parse(JSON.stringify(CUT.tabPts || {})),
+    hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
+    toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
+  };
+  tpGenerate(tp);
+  var list = tpList(), at = -1;
+  list.forEach(function (x, i) { if (x.id === tp.id) at = i; });
+  if (at >= 0) list[at] = tp; else list.push(tp);
+  CUTSEL = tp.id;
+  persist();
+  toast('ok', at >= 0 ? 'Toolpath updated' : 'Toolpath created',
+        tp.type === 'drill'
+          ? tp.name + ': ' + (tp.holes ? tp.holes.length : 0) + ' holes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' drill.'
+          : tp.name + ': ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter' + (tp.side === 'pocket' && tp.islands ? ', leaving ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : '') + '.');
+  cutClose();
+  renderToolpathPanel();
+}
+// Toolpaths run in the order listed. Moving one is undoable like any other edit.
+function tpMoveTo(from, to){
+  var list = tpList();
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return;
+  pushUndo();
+  var item = list.splice(from, 1)[0];
+  list.splice(to, 0, item);
+  persist(); renderToolpathPanel(); draw();
+}
+function tpIndex(id){ var at = -1; tpList().forEach(function (x, i) { if (x.id === id) at = i; }); return at; }
+// Anything cut inside a part after that part's outside profile may be cutting a part that is
+// already loose. Only a nudge: with tabs it can be fine, but drilling first is the safe habit.
+function tpOrderNote(tp, idx){
+  if (tp.side !== 'drill' && tp.side !== 'inside' && tp.side !== 'pocket' && tp.side !== 'chamfer') return null;
+  var list = tpList();
+  if (tp.exclude) return null;
+  for (var i = 0; i < idx; i++){
+    var prior = list[i];
+    if (prior.side !== 'outside' || prior.exclude) continue;
+    var inside = tp.ents.some(function (id) {
+      if (prior.ents.indexOf(id) >= 0) return true;        // the very edge that was cut free (a chamfer on it, say)
+      var probe = tp.side === 'drill' ? tpDrillPoints([id])[0] : null;
+      var pt = probe ? probe.p : (tpOutlinesById([id])[0] || {loop: [[NaN, NaN]]}).loop[0];
+      return tpOutlinesById(prior.ents).some(function (o) { return Geom.pointInLoop(pt[0], pt[1], o.loop); });
+    });
+    if (inside) return 'Runs after \u201c' + prior.name + '\u201d, which cuts round it' +
+                       (prior.tabsOn ? '. The tabs should hold it, but running this first is safer.' : ' with no tabs \u2014 the part may be loose by then.');
+  }
+  return null;
+}
+function tpDelete(id){
+  var list = tpList(), at = -1;
+  list.forEach(function (x, i) { if (x.id === id) at = i; });
+  if (at < 0) return;
+  pushUndo();
+  var name = list[at].name;
+  list.splice(at, 1);
+  if (CUTSEL === id) CUTSEL = null;
+  persist(); renderToolpathPanel(); draw();
+  toast('ok', 'Toolpath deleted', name + ' removed. The drawing is untouched.');
+}
+// G-code for every toolpath, in order, as one file
+function tpExport(){
+  if (!camReady() || !tpList().length) return;
+  var mid = TOOLLIB ? libDefaultMachine() : null, nextNum = 1, numFor = {};
+  // each distinct tool gets its number from the library for this machine, or the next free one
+  function toolNumber(tp){
+    var key = tp.toolId || ('dia' + tp.dia);
+    if (numFor[key]) return numFor[key];
+    var t = tp.toolId ? libTool(tp.toolId) : null;
+    var n2 = t && t.numbers && t.numbers[mid] !== undefined ? t.numbers[mid] : null;
+    if (!n2){ while (Object.keys(numFor).some(function (k) { return numFor[k] === nextNum; })) nextNum++; n2 = nextNum++; }
+    numFor[key] = n2;
+    return n2;
+  }
+  var chosen = tpList().filter(function (tp) { return !tp.exclude; });
+  var blind = chosen.filter(function (tp) { return tp.through && !(DOC.stock.t > 0); });
+  if (blind.length){
+    uiDialog({title: 'Set the material thickness first',
+              body: blind.map(function (tp) { return '\u2022 ' + tp.name; }).join('\n') + '\n\n' +
+                    (blind.length === 1 ? 'This toolpath is' : 'These toolpaths are') + ' set to cut through the material, but its thickness isn\u2019t set, ' +
+                    'so ' + (blind.length === 1 ? 'it' : 'they') + ' would cut only the ' + fmtDisp(blind[0].over === undefined ? 0.2 : blind[0].over) + ' ' + unitTag() + ' overcut.\n\n' +
+                    'Measure the material and enter its thickness in Settings, then save again.',
+              ok: 'Open Settings', cancel: 'Cancel'}).then(function (go) { if (go) openSettings(); });
+    return;
+  }
+  if (!chosen.length){
+    toast('info', 'Nothing to save', 'Every toolpath is unticked. Tick the ones to include in the G-code.');
+    return;
+  }
+  var parts = chosen.map(function (tp) {
+    if (tpStale(tp)) tpGenerate(tp);
+    var t = tp.toolId ? libTool(tp.toolId) : null;
+    return {moves: tp.moves, name: tp.name, tool: toolNumber(tp), rpm: tp.rpm || 18000,
+            toolName: t ? t.name : fmtDisp(tp.dia) + ' ' + unitTag() + (tp.side === 'drill' ? ' drill' : ' cutter')};
+  });
+  var notes = [];
+  if (DOC.stock.t > 0) notes.push('Material: ' + DOC.stock.t.toFixed(2) + ' mm thick');
+  notes.push('Z zero: ' + (DOC.stock.zero === 'bottom' ? 'spoilboard, under the material' : 'top of the material'));
+  notes.push('XY zero: ' + (DOC.stock.origin === 'center' ? 'centre of the material' : 'front-left corner of the material'));
+  var gc = Cam.toGcodeJob(parts, {safeZ: tpSurface() + 6, notes: notes});
+  var base = (DOC.name || UICFG.lastGcodeName || 'toolpaths').replace(/\.(nc|gcode|tap|ngc)$/i, '');
+  var tools = {}; parts.forEach(function (p) { tools[p.tool] = 1; });
+  var nt = Object.keys(tools).length;
+  var total = tpList().length;
+  var said = (parts.length < total ? parts.length + ' of ' + total : parts.length) +
+             (parts.length === 1 && parts.length === total ? ' toolpath' : ' toolpaths') + (nt > 1 ? ' with ' + nt + ' tools' : '');
+  gcodeSave(gc, base + '.nc', said);
+}
+// Save with a real Save As dialog where the browser allows it (Chrome and Edge): the person
+// picks the folder and the name, and the browser starts in the same folder next time.
+// Elsewhere it falls back to a download, which lands wherever downloads go.
+function gcodeSave(text, suggested, said){
+  if (window.showSaveFilePicker){
+    window.showSaveFilePicker({
+      id: 'gcode',                                   // remembers the folder between saves
+      suggestedName: suggested,
+      types: [{description: 'G-code', accept: {'text/plain': ['.nc', '.gcode', '.tap', '.ngc']}}]
+    }).then(function (handle) {
+      return handle.createWritable().then(function (w) {
+        return w.write(text).then(function () { return w.close(); });
+      }).then(function () {
+        UICFG.lastGcodeName = handle.name; uiCfgSave();
+        toast('ok', 'G-code saved', said + ' written to ' + handle.name + '. Open it in 454 Control to check and run it.');
+      });
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') return;  // they cancelled: nothing to say
+      toast('err', 'Couldn\u2019t save the G-code', (err && err.message) || 'The browser refused to write the file.');
+    });
+    return;
+  }
+  var blob = new Blob([text], {type: 'text/plain'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = suggested;
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  toast('ok', 'G-code downloaded', said + ' saved as ' + suggested + ' in your downloads folder. Chrome or Edge would let you choose where.');
+}
+
+/* ============================================================
+   VCARVE TOOLPATHS -> EDITABLE 454 TOOLPATHS
+   The project records each toolpath's settings but not which shapes it cuts. VCarve's saved
+   toolpath previews answer that: each preview is an exact offset of the shape it came from
+   (a profile's sits one cutter radius outside or inside it, a drill's is centred on it), so
+   matching previews to shapes recovers the selection.
+   ============================================================ */
+function vcToolDia(t){
+  var lib = TOOLLIB ? libMatch({name: t.tool.name, num: t.tool.num}, t.machineId) : null;
+  var lt = lib && lib.tool;
+  if (lt && lt.diameter) return {dia: lt.diameter * (lt.units === 'in' ? 25.4 : 1), tool: lt};
+  var m = /\(([\d.]+)\s*mm\)/i.exec(t.tool.name);
+  if (m) return {dia: parseFloat(m[1]), tool: null};
+  m = /\((\d+)\s*\/\s*(\d+)\s*"?\)|\((\d+)\s+(\d+)\s*\/\s*(\d+)\s*"?\)/.exec(t.tool.name);
+  if (m){ var inch = m[1] ? (+m[1] / +m[2]) : (+m[3] + +m[4] / +m[5]); return {dia: inch * 25.4, tool: null}; }
+  return {dia: 3.175, tool: null};
+}
+function vcPreviewLoops(){
+  return (DOC.vcPreview || []).map(function (sp) {
+    return tessPath({t: 'path', pts: sp.map(function (q) { return [q[0], q[1], q[2] || 0]; }), closed: true}, 0.02)
+             .map(function (p) { return [p[0], p[1]]; });
+  });
+}
+// For each preview, the shape it is a constant offset of: how far, and on which side.
+function vcPreviewMatches(shapes){
+  var previews = vcPreviewLoops(), out = [];
+  var idx = shapes.map(function (sh) { return Geom.pathIndex(sh.loop, true); });
+  previews.forEach(function (P, pi) {
+    var best = null;
+    var step = Math.max(1, Math.floor(P.length / 40));
+    shapes.forEach(function (sh, si) {
+      var lo = Infinity, hi = -Infinity;
+      for (var k = 0; k < P.length; k += step){ var d = idx[si].dist(P[k][0], P[k][1]); if (d < lo) lo = d; if (d > hi) hi = d; }
+      if (hi - lo > 0.04) return;                       // not a constant offset of this shape
+      var mid = (lo + hi) / 2;
+      var inside = Geom.pointInLoop(P[0][0], P[0][1], sh.loop);
+      var cand = {preview: pi, id: sh.id, off: mid, side: mid < 1e-3 ? 'on' : (inside ? 'inside' : 'outside'), spread: hi - lo, loop: P};
+      if (!best || cand.spread < best.spread) best = cand;
+    });
+    if (best) out.push(best);
+  });
+  return out;
+}
+function vcMakeEditable(){
+  if (!camReady() || !DOC.vcToolpaths || !DOC.vcToolpaths.length || DOC.vcConverted) return;
+  var shapes = DOC.ents.filter(function (e) { return !e.con && !e.tp; }).map(function (e) {
+    var id = entId(e), o = tpOutlinesById([id])[0];
+    return o ? {id: id, loop: o.loop, circle: e.t === 'circle' ? e : null} : null;
+  }).filter(Boolean);
+  var matches = vcPreviewMatches(shapes);
+  var made = [], unsure = [];
+  pushUndo();
+  DOC.vcToolpaths.forEach(function (T) {
+    var set = T.set || {}, g = function (k) { for (var key in set) if (key.replace(/^_(ppd|dpd|chpd|pkpd|mc\w\wd)/, '') === k) return set[key]; };
+    var kind = String(g('ToolpathType') || T.type || '');
+    var td = vcToolDia(T), D = td.dia;
+    var side = /Drill/i.test(kind) ? 'drill' : /Chamfer/i.test(T.type) ? 'chamfer' : /Pocket/i.test(kind) ? 'pocket'
+             : /Inside/i.test(kind) ? 'inside' : /Outside/i.test(kind) ? 'outside' : (g('ProfileType') === 1 ? 'inside' : g('ProfileType') === 2 ? 'on' : 'outside');
+    var cutDepth = +(g('CutDepth') || g('ChamferDepth') || 3), allow = +(g('Allowance') || 0);
+    var passes = +(g('NumPasses') || 0), step = passes > 0 ? cutDepth / passes : (+(g('Stepdown') || 0) || Math.max(0.5, cutDepth / 2));
+    var tp = {id: tpNewId(), name: T.name, side: side, ents: [], dia: +D.toFixed(4), step: +step.toFixed(4), safeZ: 6,
+              rpm: T.tool.rpm || 18000, toolId: td.tool ? td.tool.id : null, climb: +(g('CutDirection') || 0) === 0,
+              allowance: allow, tabsOn: false, tabLen: 4, tabThk: 0.5, tabPts: {}, tabCount: 0, stepoverPct: 40,
+              vcFrom: T.name, depth: cutDepth};
+    tp.type = side === 'drill' ? 'drill' : side === 'pocket' ? 'pocket' : side === 'chamfer' ? 'chamfer' : 'profile';
+    if (g('DoRamping') && +(g('RampingDistance') || 0) > 0) tp.rampLen = +g('RampingDistance');
+    // feeds from the library, for the machine and material VCarve used
+    var cut = td.tool ? (libCutFor(td.tool, T.machineId, T.materialId) || td.tool.cuts[0]) : null;
+    if (cut){
+      var rate = cut.rateUnits === 4 ? 25.4 : 1;
+      tp.feed = cut.feed ? Math.round(cut.feed * rate) : 800;
+      tp.plunge = cut.plunge ? Math.round(cut.plunge * rate) : Math.round(tp.feed / 2);
+      if (cut.rpm && !T.tool.rpm) tp.rpm = cut.rpm;          // what the project used comes first
+    } else { tp.feed = 800; tp.plunge = 300; }
+    // through the material, when the depth is the thickness plus a little
+    var t = DOC.stock.t || 0;
+    if (side !== 'chamfer' && t > 0 && cutDepth >= t - 1e-6 && cutDepth - t <= 1){ tp.through = true; tp.over = +(cutDepth - t).toFixed(4); }
+    else tp.through = false;
+    if (side === 'drill'){
+      var sd = cut && cut.stepdown ? cut.stepdown * (cut.lengthUnits === 'in' ? 25.4 : 1) : cutDepth / 6;
+      tp.peck = g('PeckDrill') ? +sd.toFixed(4) : 0;
+    }
+    if (side === 'chamfer'){
+      var half = +(g('Angle') || 45);
+      tp.vAngle = half * 2;
+      tp.chamW = +(cutDepth * Math.tan(half * Math.PI / 180)).toFixed(4);
+      tp.chamMode = g('VectorsAtTop') ? (g('Inside') ? 'in' : 'out') : 'edge';
+      tp.step = +(g('Stepdown') || step);
+    }
+    if (g('UseTabs')){
+      tp.tabsOn = true;
+      var inMM = g('InMM') !== false;
+      tp.tabLen = +(g('TabLength') || 4) * (inMM ? 1 : 25.4); tp.tabThk = +(g('TabThickness') || 0.5) * (inMM ? 1 : 25.4);
+      tp.tabCount = +(g('tabsNumTabs') || 2);
+    }
+    // which shapes: the ones whose preview sits where this toolpath's cutter would run
+    var want;
+    if (side === 'outside') want = {off: D / 2 + allow, side: 'outside'};
+    else if (side === 'inside' || side === 'pocket') want = {off: D / 2 + allow, side: 'inside'};
+    else if (side === 'on') want = {off: 0, side: 'on'};
+    else if (side === 'chamfer') want = tp.chamMode === 'edge' ? {off: 0, side: 'on'} : {off: tp.chamW, side: tp.chamMode === 'in' ? 'inside' : 'outside'};
+    matches.forEach(function (m) {
+      if (tp.ents.indexOf(m.id) >= 0) return;
+      if (side === 'drill') return;                      // drills are matched below, by centre
+      if (Math.abs(m.off - want.off) < 0.06 && m.side === want.side) tp.ents.push(m.id);
+    });
+    if (side === 'drill'){
+      // VCarve draws a drill's preview as the cutter's circle with a mark through the middle, so it
+      // isn't a clean offset of anything. Its box is: centred on the hole, as wide as the cutter.
+      vcPreviewLoops().forEach(function (P) {
+        var xs = P.map(function (q) { return q[0]; }), ys = P.map(function (q) { return q[1]; });
+        var bx0 = Math.min.apply(null, xs), bx1 = Math.max.apply(null, xs), by0 = Math.min.apply(null, ys), by1 = Math.max.apply(null, ys);
+        var cxp = (bx0 + bx1) / 2, cyp = (by0 + by1) / 2;
+        if (Math.abs((bx1 - bx0) - D) > 0.1 || Math.abs((by1 - by0) - D) > 0.1) return;
+        shapes.forEach(function (sh) {
+          if (!sh.circle || tp.ents.indexOf(sh.id) >= 0) return;
+          if (Math.hypot(sh.circle.cx - cxp, sh.circle.cy - cyp) < 0.05) tp.ents.push(sh.id);
+        });
+      });
+    }
+    if (tp.side === 'chamfer' && tp.chamMode === 'edge') tp.ents = tp.ents.filter(function (id, i, a) { return a.indexOf(id) === i; });
+    if (!tp.ents.length) unsure.push(tp.name);
+    tpGenerate(tp);
+    made.push(tp);
+  });
+  // replace anything converted before from the same project, keep the user's own toolpaths
+  DOC.toolpaths = tpList().filter(function (x) { return !x.vcFrom; }).concat(made);
+  DOC.vcConverted = true;                    // kept, not deleted, so undo can bring the VCarve list back
+  persist(); renderToolpathPanel(); draw();
+  toast(unsure.length ? 'info' : 'ok', made.length + ' VCarve toolpaths are now editable',
+        made.map(function (x) { return x.name + ' (' + (x.ents.length ? x.ents.length + (x.ents.length === 1 ? ' shape' : ' shapes') : 'shapes not found') + ')'; }).join(', ') +
+        (unsure.length ? '. For ' + unsure.join(', ') + ', open Edit and pick the shapes: the project had no preview to match.' : '.'));
+}
+
+function renderMyToolpaths(){
+  var box = document.getElementById('tpList');
+  var all = tpList();
+  all.forEach(function (tp, idx) {
+    var stale = tpStale(tp);
+    var card = document.createElement('div');
+    card.className = 'tpCard tpMine' + (stale ? ' tpStale' : '') + (tp.exclude ? ' tpExcluded' : '');
+    card.dataset.idx = idx;
+    var h = document.createElement('div'); h.className = 'tpName';
+    // include in the saved G-code
+    var inc = document.createElement('input'); inc.type = 'checkbox'; inc.className = 'tpInc';
+    inc.checked = !tp.exclude;
+    inc.title = tp.exclude ? 'Left out of the saved G-code \u2014 tick to include it' : 'Included in the saved G-code \u2014 untick to leave it out';
+    inc.setAttribute('aria-label', 'Include ' + tp.name + ' when saving G-code');
+    inc.addEventListener('click', function (ev) { ev.stopPropagation(); });
+    inc.addEventListener('change', function () { tp.exclude = !inc.checked; persist(); renderToolpathPanel(); draw(); });
+    // a handle to drag by: dragging the whole card makes the tick box and eye unreliable to click
+    var grip = document.createElement('span'); grip.className = 'tpGrip'; grip.draggable = true;
+    grip.textContent = '\u2807'; grip.title = 'Drag to change the order';
+    grip.setAttribute('aria-hidden', 'true');
+    grip.addEventListener('click', function (ev) { ev.stopPropagation(); });
+    grip.addEventListener('dragstart', function (e) {
+      e.stopPropagation();
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+      card.classList.add('tpDragging');
+    });
+    grip.addEventListener('dragend', function () { card.classList.remove('tpDragging'); });
+    h.appendChild(grip);
+    h.appendChild(inc);
+    var num = document.createElement('span'); num.className = 'tpNum'; num.textContent = (idx + 1) + '';
+    num.title = 'Runs ' + (idx === 0 ? 'first' : 'number ' + (idx + 1));
+    h.appendChild(num);
+    var nm = document.createElement('span'); nm.className = 'tpNm'; nm.textContent = tp.name;
+    h.appendChild(nm);
+    // show or hide on the drawing
+    var eye = document.createElement('button'); eye.className = 'tpEye' + (tp.hidden ? ' off' : '');
+    eye.innerHTML = tp.hidden
+      ? '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8z"/><path d="M2.5 13.5l11-11"/></svg>'
+      : '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+    eye.title = tp.hidden ? 'Hidden on the drawing \u2014 click to show' : 'Shown on the drawing \u2014 click to hide';
+    eye.setAttribute('aria-label', (tp.hidden ? 'Show ' : 'Hide ') + tp.name);
+    eye.setAttribute('aria-pressed', tp.hidden ? 'false' : 'true');
+    eye.addEventListener('click', function (ev) { ev.stopPropagation(); tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); });
+    h.appendChild(eye);
+    var ty = document.createElement('span'); ty.className = 'tpType';
+    ty.textContent = stale ? 'the drawing changed' : (tp.side === 'chamfer' ? 'chamfer' : tp.side === 'pocket' ? 'pocket' : tp.side === 'drill' ? 'drilling' : tp.side === 'inside' ? 'inside' : tp.side === 'on' ? 'on the line' : 'outside');
+    h.appendChild(ty); card.appendChild(h);
+
+    var tl = document.createElement('div'); tl.className = 'tpTool';
+    var t = tp.toolId ? libTool(tp.toolId) : null;
+    tl.textContent = (t ? t.name : fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter') + ' \u00b7 ' + tp.feed + ' mm/min';
+    card.appendChild(tl);
+
+    var dl = document.createElement('dl'); dl.className = 'tpSet';
+    function row(k, v){ var dt = document.createElement('dt'); dt.textContent = k; var dd = document.createElement('dd'); dd.textContent = v; dl.appendChild(dt); dl.appendChild(dd); }
+    var dTxt = tp.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(tp.over) + ' ' + unitTag() : fmtDisp(tpDepth(tp)) + ' ' + unitTag();
+    if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
+    else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
+    else row('Depth', dTxt + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
+    if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Settings');
+    var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
+    if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
+    else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
+    else if (tp.side === 'pocket') row('Clearing', (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
+    else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
+    if (tp.warning) row('Note', tp.warning);
+    card.appendChild(dl);
+    var orderNote = tpOrderNote(tp, idx);
+    if (orderNote){
+      var on = document.createElement('div'); on.className = 'tpOrderNote';
+      on.textContent = '\u26a0 ' + orderNote;
+      card.appendChild(on);
+    }
+
+    var bar = document.createElement('div'); bar.style.cssText = 'display:flex;gap:6px;margin-top:8px';
+    function btn(label, title, fn){
+      var b = document.createElement('button');
+      b.textContent = label; b.title = title; b.style.cssText = 'font-size:11.5px;padding:2px 8px';
+      b.addEventListener('click', function (ev) { ev.stopPropagation(); fn(); });
+      return b;
+    }
+    var up = btn('\u25b2', 'Run earlier', function () { tpMoveTo(idx, idx - 1); });
+    var dn = btn('\u25bc', 'Run later', function () { tpMoveTo(idx, idx + 1); });
+    up.disabled = idx === 0; dn.disabled = idx === all.length - 1;
+    up.setAttribute('aria-label', 'Move ' + tp.name + ' earlier'); dn.setAttribute('aria-label', 'Move ' + tp.name + ' later');
+    up.style.padding = dn.style.padding = '2px 6px';
+    bar.appendChild(up); bar.appendChild(dn);
+    if (stale) bar.appendChild(btn('Regenerate', 'Rebuild this toolpath from the shapes as they are now', function () { tpGenerate(tp); persist(); renderToolpathPanel(); draw(); }));
+    bar.appendChild(btn('Edit', 'Change this toolpath', function () { setTool('select'); cutOpen(tp); }));
+    bar.appendChild(btn('Delete', 'Remove this toolpath', function () { tpDelete(tp.id); }));
+    card.appendChild(bar);
+
+    card.addEventListener('click', function () { CUTSEL = CUTSEL === tp.id ? null : tp.id; renderToolpathPanel(); draw(); });
+    // drag a card onto another to move it there
+    card.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; card.classList.add('tpDropOver'); });
+    card.addEventListener('dragleave', function () { card.classList.remove('tpDropOver'); });
+    card.addEventListener('drop', function (e) {
+      e.preventDefault(); card.classList.remove('tpDropOver');
+      var from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      if (!isNaN(from)) tpMoveTo(from, idx);
+    });
+    if (CUTSEL === tp.id) card.style.background = 'var(--accent-faint)';
+    box.appendChild(card);
+  });
+  if (camReady() && tpList().length){
+    var ex = document.createElement('button');
+    var nInc = tpList().filter(function (t2) { return !t2.exclude; }).length;
+    ex.textContent = nInc === tpList().length ? 'Save G-code\u2026' : 'Save ' + nInc + ' of ' + tpList().length + '\u2026';
+    ex.disabled = nInc === 0;
+    ex.className = 'primary';
+    ex.title = 'Choose where to save the G-code and what to call it';
+    ex.style.cssText = 'width:calc(100% - 20px);margin:4px 10px 10px';
+    ex.addEventListener('click', tpExport);
+    box.appendChild(ex);
+  }
+}
+
 function renderToolpathPanel(){
-  var list = DOC.vcToolpaths || [], pan = document.getElementById('tpPanel');
+  var list = DOC.vcConverted ? [] : (DOC.vcToolpaths || []), pan = document.getElementById('tpPanel');
   if (!pan) return;
   var open = UICFG.tpPanel !== false;                    // always present; open unless collapsed
   pan.classList.toggle('collapsed', !open);              // the canvas's size observer redraws it to fit
   document.getElementById('tpStrip').setAttribute('aria-expanded', open ? 'true' : 'false');
   document.getElementById('tpCollapse').setAttribute('aria-expanded', open ? 'true' : 'false');
   document.getElementById('tpStripCount').textContent = list.length ? '(' + list.length + ')' : '';
-  document.getElementById('tpCount').textContent = list.length ? list.length + (list.length === 1 ? ' toolpath' : ' toolpaths') : '';
-  document.getElementById('tpEmpty').hidden = !!list.length;
+  var mine = tpList();
+  document.getElementById('tpNew').hidden = !camReady();
+  document.getElementById('tpCheck').hidden = !camReady();
+  var total = list.length + mine.length;
+  document.getElementById('tpCount').textContent = total ? total + (total === 1 ? ' toolpath' : ' toolpaths') : '';
+  document.getElementById('tpEmpty').hidden = !!total;
   document.getElementById('tpSrcNote').hidden = !list.length;
+  document.getElementById('tpVcBar').hidden = !(list.length && camReady());
+  document.getElementById('tpList').innerHTML = '';
+  if (mine.length) renderMyToolpaths();
   if (!list.length){
     document.getElementById('tpLibNote').innerHTML = '';
-    document.getElementById('tpList').innerHTML = '';
     return;
   }
   var ln = document.getElementById('tpLibNote');
@@ -2327,7 +3651,6 @@ function renderToolpathPanel(){
                      libMachineName(libDefaultMachine()) + '.';
   }
   var box = document.getElementById('tpList');
-  box.innerHTML = '';
   list.forEach(function(tp){
     var s = tp.set || {}, rows = [];
     function pre(){ return tp.type === 'Profile' ? '_ppd' : tp.type === 'Drilling' ? '_dpd' : tp.type === 'Chamfer' ? '_chpd' : tp.type === 'V-Carve' ? '_vcpd' : '_pkpd'; }
@@ -2592,14 +3915,42 @@ function libCutText(c){
 }
 
 // ---- the Tool library dialog ----
-var LIBUI = {sel:null, q:''};
-function libOpen(selectId){
+var LIBUI = {sel:null, q:'', pick:null};           // pick: set when choosing a tool for a toolpath
+// Opened to manage tools, or (with onPick) to choose one for a toolpath, the way VCarve's
+// Tool Database is used both ways. The Machine and Material pickers at the top decide which
+// feeds and speeds the chosen tool brings with it.
+function libOpen(selectId, onPick){
   if (selectId) LIBUI.sel = selectId;
+  LIBUI.pick = onPick || null;
+  document.getElementById('libTitle').textContent = onPick ? 'Choose a tool' : 'Tool library';
+  document.getElementById('libPickBar').hidden = !onPick;
   document.getElementById('libModal').hidden = false;
   libRender();
   document.getElementById(TOOLLIB ? 'libSearch' : 'libImport').focus();
 }
-function libCloseDlg(){ document.getElementById('libModal').hidden = true; }
+function libCloseDlg(){
+  document.getElementById('libModal').hidden = true;
+  LIBUI.pick = null;
+  document.getElementById('libPickBar').hidden = true;
+  document.getElementById('libTitle').textContent = 'Tool library';
+}
+function libPickNow(){
+  if (!LIBUI.pick || !LIBUI.sel || !libTool(LIBUI.sel)) return;
+  var fn = LIBUI.pick, id = LIBUI.sel;
+  libCloseDlg();
+  fn(id);
+}
+// A small picture of the cutter, like VCarve's tree, so tools can be told apart at a glance.
+function libToolIcon(t){
+  var ty = (t.typeName || '').toLowerCase(), d;
+  if (ty.indexOf('v-bit') >= 0 || ty.indexOf('engrav') >= 0) d = 'M5 2h6v5l-3 7-3-7z';
+  else if (ty.indexOf('ball') >= 0) d = 'M5 2h6v8a3 3 0 0 1-6 0z';
+  else if (ty.indexOf('drill') >= 0) d = 'M5 2h6v9l-3 3-3-3z';
+  else if (ty.indexOf('radius') >= 0) d = 'M5 2h6v10a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 5 12z';
+  else d = 'M5 2h6v11.5H5z';                                  // end mill and anything else
+  return '<svg class="libIco" viewBox="0 0 16 16" aria-hidden="true"><path d="' + d + '"/>' +
+         '<path d="M6.5 5.5l3 1.5M6.5 8.5l3 1.5" class="flute"/></svg>';
+}
 function libRender(){
   var has = !!(TOOLLIB && TOOLLIB.tools.length);
   document.getElementById('libEmpty').hidden = has;
@@ -2620,15 +3971,27 @@ function libRender(){
   matSel.value = UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? UICFG.libMaterial : '';
   libRenderTree(mid);
   libRenderDetail(mid);
+  libPickState();
+}
+function libPickState(){
+  var go = document.getElementById('libPickGo');
+  if (!go) return;
+  var t = LIBUI.sel ? libTool(LIBUI.sel) : null;
+  go.disabled = !t;
+  document.getElementById('libPickNote').textContent = t
+    ? t.name + (UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? ' \u00b7 feeds for ' + libMaterialName(UICFG.libMaterial) : ' \u00b7 choose a material for its feeds')
+    : 'Pick a tool, then Select \u2014 or double-click it.';
 }
 function libToolRow(t, mid){
   var b = document.createElement('button');
   b.className = 'libItem'; b.setAttribute('role', 'treeitem');
   b.setAttribute('aria-selected', t.id === LIBUI.sel ? 'true' : 'false');
+  b.insertAdjacentHTML('beforeend', libToolIcon(t));
   var ln = document.createElement('span'); ln.className = 'ln'; ln.textContent = t.name; b.appendChild(ln);
   if (t.numbers[mid] !== undefined){ var tn = document.createElement('span'); tn.className = 'libT'; tn.textContent = 'T' + t.numbers[mid]; b.appendChild(tn); }
   b.title = t.name;
-  b.addEventListener('click', function(){ LIBUI.sel = t.id; libRenderTree(mid); libRenderDetail(mid); });
+  b.addEventListener('click', function(){ LIBUI.sel = t.id; libRenderTree(mid); libRenderDetail(mid); libPickState(); });
+  b.addEventListener('dblclick', function(){ LIBUI.sel = t.id; if (LIBUI.pick) libPickNow(); });
   return b;
 }
 function libRenderTree(mid){
@@ -2910,6 +4273,12 @@ function crvExtract(buf){
   var mdv = ms ? new DataView(ms.buffer, ms.byteOffset, ms.byteLength) : null;
   var stockW = mdv && ms.length >= 46 ? mdv.getFloat64(30, true) : 0;
   var stockH = mdv && ms.length >= 46 ? mdv.getFloat64(38, true) : 0;
+  // The material's Z range: top at 14, bottom at 22. Its size is the thickness; whichever end sits
+  // at zero is where Z zero is. Getting this from the project avoids "through" meaning nothing.
+  var zTop = mdv && ms.length >= 30 ? mdv.getFloat64(14, true) : 0;
+  var zBot = mdv && ms.length >= 30 ? mdv.getFloat64(22, true) : 0;
+  var stockT = isFinite(zTop) && isFinite(zBot) && zTop - zBot > 0.01 && zTop - zBot < 500 ? zTop - zBot : 0;
+  var stockZero = Math.abs(zBot) < 1e-6 && zTop > 0 ? 'bottom' : 'top';
   var dv = new DataView(vd.buffer, vd.byteOffset, vd.byteLength);
   // layer markers: ff fe ff <len> utf16 strings; layer names precede their content.
   // VCarve serializes the 'Toolpath Previews' layer first, drawing layers after.
@@ -2933,7 +4302,10 @@ function crvExtract(buf){
   if (layers.length && /toolpath/i.test(layers[0].name))
     drawingStart = layers.length > 1 ? layers[1].off : vd.length; // previews-only file: nothing is drawing
   var contours = [], preview = [], i = 0, L = vd.length;
-  function isHdr(o){ return o+9 <= L && (vd[o] === 0 || vd[o] === 1) && vd[o+1] === 2 && vd[o+2] === 0 && vd[o+3] === 0 && vd[o+4] === 0; }
+  // A segment starts with its kind: 0 line, 1 arc (a bulge follows), 2 cubic Bezier (two control
+  // points follow). Missing the Bezier kind used to drop whole outlines: VCarve's smooth curves
+  // are Beziers, so any shape with one simply vanished on import.
+  function isHdr(o){ return o+9 <= L && (vd[o] === 0 || vd[o] === 1 || vd[o] === 2) && vd[o+1] === 2 && vd[o+2] === 0 && vd[o+3] === 0 && vd[o+4] === 0; }
   while (i < L - 73){
     var n = dv.getInt32(i, true);
     if (n >= 2 && n <= 100000 && isHdr(i+4)){
@@ -2947,9 +4319,27 @@ function crvExtract(buf){
           var b = dv.getFloat64(o+61, true);
           if (!isFinite(b) || Math.abs(b) > 100){ ok = false; break; }
           spans.push([x, y, b]); o += 69;
+        } else if (vd[o] === 2){
+          // Bezier: start, end, then the two control points. Flattened into short straight
+          // steps, fine enough that the result stays within 0.01 mm of the true curve.
+          if (o + 93 > L){ ok = false; break; }
+          var ex2 = dv.getFloat64(o+33, true), ey2 = dv.getFloat64(o+41, true);
+          var c1x = dv.getFloat64(o+61, true), c1y = dv.getFloat64(o+69, true);
+          var c2x = dv.getFloat64(o+77, true), c2y = dv.getFloat64(o+85, true);
+          if (![ex2, ey2, c1x, c1y, c2x, c2y].every(function (v) { return isFinite(v) && Math.abs(v) < 1e5; })){ ok = false; break; }
+          var hull = Math.hypot(c1x - x, c1y - y) + Math.hypot(c2x - c1x, c2y - c1y) + Math.hypot(ex2 - c2x, ey2 - c2y);
+          var steps = Math.max(8, Math.min(200, Math.ceil(Math.sqrt(hull / 0.01) * 0.75)));
+          spans.push([x, y, 0]);
+          for (var bs = 1; bs < steps; bs++){
+            var t = bs / steps, u = 1 - t;
+            var bx = u*u*u*x + 3*u*u*t*c1x + 3*u*t*t*c2x + t*t*t*ex2;
+            var by = u*u*u*y + 3*u*u*t*c1y + 3*u*t*t*c2y + t*t*t*ey2;
+            spans.push([bx, by, 0]);
+          }
+          o += 93;
         } else { spans.push([x, y, 0]); o += 61; }
       }
-      if (ok && spans.length === n){
+      if (ok && spans.length >= n){
         (i < drawingStart ? preview : contours).push(spans);
         i = o; continue;
       }
@@ -2958,7 +4348,7 @@ function crvExtract(buf){
   }
   var toolpaths = [];
   try{ var td = ole.stream('ToolpathData'); if (td) toolpaths = vcToolpathsFrom(td); }catch(e){}   // never block the import
-  return {stockW: stockW, stockH: stockH, contours: contours, preview: preview, toolpaths: toolpaths};
+  return {stockW: stockW, stockH: stockH, stockT: stockT, stockZero: stockZero, contours: contours, preview: preview, toolpaths: toolpaths};
 }
 function crvToDoc(ex, scale){
   var ents = [];
@@ -2980,8 +4370,9 @@ function crvToDoc(ex, scale){
       ents.push({t:'path', pts: sc, closed:true});
     }
   });
-  return {stock:{w: Math.max(10, ex.stockW*scale), h: Math.max(10, ex.stockH*scale), origin:'corner'},
-          ents: ents, guides: []};
+  var st = {w: Math.max(10, ex.stockW*scale), h: Math.max(10, ex.stockH*scale), origin:'corner'};
+  if (ex.stockT > 0){ st.t = ex.stockT * scale; st.zero = ex.stockZero || 'top'; }
+  return {stock: st, ents: ents, guides: []};
 }
 
 /* ---------------- DXF import ----------------
@@ -3287,7 +4678,11 @@ function setMsgPanel(open){
 
 /* ---------------- persistence ---------------- */
 function persist(){
-  try{ localStorage.setItem('d454Design', JSON.stringify(DOC)); }catch(e){}
+  try{ localStorage.setItem('d454Design', docForStorage()); }
+  catch(e){                                             // say so: losing work quietly is the worst outcome
+    if (!persist.warned){ persist.warned = true;
+      toast('err', 'This drawing couldn\u2019t be saved in the browser', 'The browser\u2019s storage is full. Save the drawing to a file to keep it.'); }
+  }
 }
 // Material is often sold in inches even when the work is metric, so its size can be entered
 // in either. The drawing always stays in millimetres.
@@ -3337,6 +4732,8 @@ function syncStockUI(){
   document.getElementById('stkW').value = fmtStockLen(DOC.stock.w, u);
   document.getElementById('stkH').value = fmtStockLen(DOC.stock.h, u);
   document.getElementById('stkOrigin').value = DOC.stock.origin;
+  document.getElementById('stkT').value = DOC.stock.t > 0 ? fmtStockLen(DOC.stock.t, u) : '';
+  document.getElementById('stkZ').value = DOC.stock.zero === 'bottom' ? 'bottom' : 'top';
   var eq = document.getElementById('stkEq');
   eq.textContent = u === 'in'
     ? '= ' + DOC.stock.w.toFixed(2) + ' \u00d7 ' + DOC.stock.h.toFixed(2) + ' mm in the drawing. Fractions work: 12 1/2 or 3/4.'
@@ -3348,6 +4745,7 @@ function restore(){ // startup ONLY: pulls the persisted doc. Never call after s
     if (s){ var d = JSON.parse(s); if (d && d.stock) DOC = d; }
   }catch(e){}
   syncStockUI();
+  tpRebuildAll();                                     // toolpaths come back as settings only
 }
 
 /* ---------------- rendering ---------------- */
@@ -3603,6 +5001,86 @@ function draw(){
     });
     ctx.restore();
   }
+
+  // ---- toolpaths: the editor's live preview, then the saved ones ----
+  (function(){
+    function drawMoves(moves, cutCol, rapidCol){
+      var x = null, y = null, z = 0;
+      ctx.save();
+      moves.forEach(function (m) {
+        var nx = m.x !== undefined ? m.x : x, ny = m.y !== undefined ? m.y : y;
+        var nz = m.z !== undefined ? m.z : z;
+        if (x !== null && ny !== null && nx !== null && (nx !== x || ny !== y)){
+          var a = w2s(x, y), b = w2s(nx, ny);
+          ctx.beginPath();
+          ctx.strokeStyle = m.g === 0 ? rapidCol : cutCol;
+          ctx.lineWidth = m.g === 0 ? 1 : 1.6;
+          ctx.setLineDash(m.g === 0 ? [4,4] : []);
+          ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+        x = nx; y = ny; z = nz;
+      });
+      ctx.restore();
+    }
+    var cutCol = UICFG.colors && UICFG.colors.tp ? UICFG.colors.tp : THEME.accent;
+    function drawTabs(tp, strong){
+      if (!tp.tabsOn || !tp.tabPts) return;
+      ctx.save();
+      tp.ents.forEach(function (id) {
+        (tp.tabPts[id] || []).forEach(function (pt) {
+          var c = w2s(pt[0], pt[1]), r = Math.max(4, (tp.tabLen || 4) / 2 * VIEW.scale);
+          ctx.beginPath();
+          ctx.fillStyle = strong ? THEME.accent : accentRGBA(.55);
+          ctx.strokeStyle = THEME.theme === 'light' ? '#fff' : '#14181d';
+          ctx.lineWidth = 1.5;
+          ctx.rect(c.x - r, c.y - 3.5, r * 2, 7);
+          ctx.fill(); ctx.stroke();
+        });
+      });
+      ctx.restore();
+    }
+    function drawHoles(pts, dia, strong){
+      ctx.save();
+      pts.forEach(function (p) {
+        var c = w2s(p[0], p[1]), r = Math.max(3, dia / 2 * VIEW.scale);
+        ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = strong ? accentRGBA(.28) : accentRGBA(.14);
+        ctx.strokeStyle = strong ? THEME.accent : accentRGBA(.7);
+        ctx.lineWidth = 1.5; ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(c.x - r * 0.6, c.y); ctx.lineTo(c.x + r * 0.6, c.y);
+        ctx.moveTo(c.x, c.y - r * 0.6); ctx.lineTo(c.x, c.y + r * 0.6); ctx.stroke();
+      });
+      ctx.restore();
+    }
+    if (CUT && CUT.previewHoles && CUT.previewHoles.length) drawHoles(CUT.previewHoles, CUT.dia, true);
+    if (DOC.toolpaths && !CUT) DOC.toolpaths.forEach(function (tp) {
+      if (tp.side !== 'drill' || !tp.holes) return;
+      if (CUTSEL && tp.id !== CUTSEL) return;
+      if (tp.hidden && tp.id !== CUTSEL) return;
+      drawHoles(tp.holes, tp.dia, tp.id === CUTSEL);
+    });
+    if (CUT && CUT.side === 'chamfer' && CUT.chamBand && CUT.chamW > 0){
+      ctx.save(); ctx.strokeStyle = accentRGBA(.45); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      CUT.chamBand.forEach(function (loop) {
+        [CUT.chamW, -CUT.chamW].forEach(function (off) {
+          Geom.offsetLoop(loop, off, {tol: 0.02}).forEach(function (l2) {
+            ctx.beginPath(); l2.forEach(function (p, i) { var q = w2s(p[0], p[1]); if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); });
+            ctx.closePath(); ctx.stroke();
+          });
+        });
+      });
+      ctx.restore();
+    }
+    if (CUT && CUT.preview && CUT.preview.length && CUT.side !== 'drill') drawMoves(CUT.preview, THEME.accent, 'rgba(127,176,105,.5)');
+    if (CUT) drawTabs(CUT, true);
+    else if (DOC.toolpaths && CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL) drawTabs(tp, false); });
+    else if (DOC.toolpaths) DOC.toolpaths.forEach(function (tp) {
+      if (!tp.moves || !tp.moves.length) return;
+      if (CUTSEL && tp.id !== CUTSEL) return;                     // one selected: show only that
+      if (tp.hidden && tp.id !== CUTSEL) return;                  // hidden, unless it's the one picked
+      drawMoves(tp.moves, tp.id === CUTSEL ? THEME.accent : cutCol, 'rgba(120,130,140,.35)');
+    });
+  })();
 
   // ---- offset preview ----
   if (TOOL === 'offset' && OFF){
@@ -6234,9 +7712,9 @@ var PANEL_BTNS = {
  clearGuides:{id:'clearGuides', icon:'gclr', title:'Remove all guides'},
  undoBtn:{id:'undoBtn', icon:'undo', title:'Undo (Ctrl+Z)'},
  redoBtn:{id:'redoBtn', icon:'redo', title:'Redo (Ctrl+Y)'},
- fitBtn2:{id:'fitBtn2', icon:'fit', title:'Fit stock (F)'},
+ fitBtn2:{id:'fitBtn2', icon:'fit', title:'Fit stock (Home)'},
  newBtn:{id:'newBtn', icon:'neu', title:'New — clear all vectors and guides (undoable with Ctrl+Z)'},
- saveBtn:{id:'saveBtn', icon:'save', title:'Save design as JSON (goes in your repo next to the G-code)'},
+ saveBtn:{id:'saveBtn', icon:'save', title:'Save the drawing to a file (.454.json): keep it with your G-code, or as a backup'},
  loadBtn:{id:'loadBtn', icon:'load', title:'Load a saved design'}
 };
 var PANEL_GROUPS = [
@@ -6451,6 +7929,9 @@ function wirePanel(){
     DOC.guides = [];
     DOC.dims = [];
     DOC.vcToolpaths = [];
+    DOC.vcConverted = false; DOC.vcPreview = [];
+    DOC.toolpaths = [];
+    CUTSEL = null;
     renderToolpathPanel();
     SEL.length = 0;
     setTool('select');
@@ -6458,7 +7939,7 @@ function wirePanel(){
     fit();
   });
   document.getElementById('saveBtn').addEventListener('click', function(){
-    var blob = new Blob([JSON.stringify(DOC, null, 1)], {type:'application/json'});
+    var blob = new Blob([docForStorage(true)], {type:'application/json'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'design.454.json';
@@ -6478,6 +7959,19 @@ function wire(){
   wirePanel();
   fit();
 
+  document.getElementById('stkT').addEventListener('change', function(e){
+    var raw = e.target.value.trim();
+    if (!raw){ DOC.stock.t = 0; }
+    else {
+      var t = parseStockLen(raw, stockUnits());
+      if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
+      DOC.stock.t = t;
+    }
+    syncStockUI(); persist(); renderToolpathPanel(); draw();       // cut-through toolpaths follow it
+  });
+  document.getElementById('stkZ').addEventListener('change', function(e){
+    DOC.stock.zero = e.target.value; persist(); renderToolpathPanel(); draw();
+  });
   ['stkW','stkH','stkOrigin'].forEach(function(id){
     document.getElementById(id).addEventListener('change', function(){
       var u = stockUnits();
@@ -6555,6 +8049,53 @@ function wire(){
   document.getElementById('offOk').addEventListener('click', offApply);
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
+  document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
+  document.getElementById('tpVcConvert').addEventListener('click', vcMakeEditable);
+  document.getElementById('tpCheck').addEventListener('click', function(){ if (camReady()) vecCheckAll(); });
+  document.getElementById('cutX').addEventListener('click', cutClose);
+  document.getElementById('cutCancel').addEventListener('click', cutClose);
+  document.getElementById('cutOk').addEventListener('click', cutApply);
+  document.getElementById('cutTool').addEventListener('click', function(){
+    if (!CUT) return;
+    if (!TOOLLIB){ toast('info', 'No tool library yet', 'Import your VCarve library from the tool library window, or type the cutter diameter and feeds in yourself.'); libOpen(); return; }
+    libOpen(CUT.toolId, function(id){ cutUseTool(id); });
+  });
+  document.getElementById('cutType').addEventListener('change', function(){
+    if (!CUT) return;
+    CUT.side = document.getElementById('cutType').value;
+    if (CUT.side === 'drill' && !(CUT.plunge > 0)) CUT.plunge = 300;
+    cutToForm(); cutRender();                            // boxes now show what this type uses
+  });
+  ['cutDia','cutDepth','cutStep','cutPeck','cutStepover','cutFeed','cutTabLen','cutTabThk','cutOver','cutChamW','cutVAngle','cutChamMode'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){ if (CUT){ cutFromForm(); cutRender(); } });
+  });
+  document.getElementById('cutThrough').addEventListener('change', function(){ if (CUT){ cutFromForm(); cutRender(); } });
+  document.getElementById('cutTabsOn').addEventListener('change', function(){
+    if (!CUT) return;
+    cutFromForm();
+    if (!CUT.tabsOn) CUT.placing = false;
+    else if (!tpTabTotal(CUT)) CUT.placing = true;        // straight into placing them
+    cutRender();
+  });
+  document.getElementById('cutTabs').addEventListener('input', function(){ if (CUT) cutFromForm(); });
+  document.getElementById('cutTabSpread').addEventListener('click', function(){
+    if (!CUT) return;
+    cutFromForm(); tpAddEvenTabs(CUT, CUT.tabCount); cutRender();
+  });
+  document.getElementById('cutTabClear').addEventListener('click', function(){
+    if (!CUT) return;
+    CUT.tabPts = {}; cutRender();
+  });
+  document.getElementById('cutTabPlace').addEventListener('click', function(){
+    if (!CUT) return;
+    CUT.placing = !CUT.placing;
+    cutRender();
+  });
+  document.getElementById('cutPanel').addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }
+    else if (e.key === 'Enter'){ e.preventDefault(); cutApply(); }
+    e.stopPropagation();
+  });
   document.getElementById('mirObjs').addEventListener('click', function(){ if (MIR){ MIR.slot = 'objs'; mirRender(); } });
   document.getElementById('mirLine').addEventListener('click', function(){ if (MIR){ MIR.slot = 'line'; mirRender(); } });
   document.getElementById('mirOk').addEventListener('click', mirApply);
@@ -6603,13 +8144,16 @@ function wire(){
     UICFG.libMachine = e.target.value; uiCfgSave(); libRenderTree(e.target.value); libRenderDetail(e.target.value); renderToolpathPanel();
   });
   document.getElementById('libMaterial').addEventListener('change', function(e){
-    UICFG.libMaterial = e.target.value; uiCfgSave(); libRenderDetail(libDefaultMachine());
+    UICFG.libMaterial = e.target.value; uiCfgSave(); libRenderDetail(libDefaultMachine()); libPickState();
   });
   document.getElementById('libSearch').addEventListener('input', function(e){ LIBUI.q = e.target.value; libRenderTree(libDefaultMachine()); });
   document.getElementById('libPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); libCloseDlg(); }
+    else if (e.key === 'Enter' && LIBUI.pick && LIBUI.sel && e.target.id !== 'libSearch'){ e.preventDefault(); libPickNow(); }
     e.stopPropagation();
   });
+  document.getElementById('libPickGo').addEventListener('click', libPickNow);
+  document.getElementById('libPickCancel').addEventListener('click', libCloseDlg);
   document.getElementById('libModal').addEventListener('pointerdown', function(e){ if (e.target.id === 'libModal') libCloseDlg(); });
   libLoad().then(function(lib){ if (lib && lib.tools){ TOOLLIB = lib; renderToolpathPanel(); } });
   document.getElementById('tpCollapse').addEventListener('click', function(){ UICFG.tpPanel = false; uiCfgSave(); renderToolpathPanel(); });
@@ -6757,13 +8301,17 @@ function wire(){
     if (!useD && !useP){ impClose(); return; }
     var scale = document.getElementById('impIN').checked ? 25.4 : 1;
     pushUndo();
-    var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, contours: useD ? ex.contours : []}, scale);
+    var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockT: ex.stockT, stockZero: ex.stockZero, contours: useD ? ex.contours : []}, scale);
     var docP = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, contours: useP ? ex.preview : []}, scale);
     docP.ents.forEach(function(en){ en.tp = true; });
-    DOC = {stock: docD.stock, ents: docD.ents.concat(docP.ents), guides: [], dims: [], vcToolpaths: ex.toolpaths || []};
+    DOC = {stock: docD.stock, ents: docD.ents.concat(docP.ents), guides: [], dims: [], vcToolpaths: ex.toolpaths || [],
+           vcPreview: (ex.preview || []).map(function (c) { return c.map(function (sp) { return [sp[0]*scale, sp[1]*scale, sp[2]]; }); })};
     syncStockUI(); persist(); fit();
     impClose();
     renderToolpathPanel();
+    if (DOC.stock.t > 0)
+      toast('info', 'Material from the project', fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' thick, Z zero on the ' +
+            (DOC.stock.zero === 'bottom' ? 'spoilboard' : 'top of the material') + '. Change it in Settings if that\u2019s not what you\u2019ll cut.');
   });
   window.addEventListener('keydown', function(e){
     if (e.code === 'Escape' && !document.getElementById('impModal').hidden){
@@ -7058,6 +8606,7 @@ function wire(){
       }
       else if (DRAW){ DRAW = null; if (TOOL !== 'select') stagePrompt(TOOL + '0'); else hidePrompt(); }
       else if (NODE){ NODE = null; stagePrompt('node0'); }     // close an open node-edit shape
+      else if (CUT){ cutClose(); }                             // cancel the toolpath editor
       else if (MIR){ mirClose(); setTool('select'); }          // cancel the mirror
       else if (OFF){ offClose(); setTool('select'); }          // cancel the offset
       else if (MEAS){ MEAS = null; }                           // clear the last measurement
@@ -7164,7 +8713,7 @@ function wire(){
       return;
     }
     if (e.key === 'Enter' && TOOL !== 'select'){ toolCommitText(pinEl.value); pinEl.value=''; return; }
-    if (e.key.toLowerCase() === 'f' && TOOL === 'select'){ fit(); return; }
+    if (e.key === 'Home'){ e.preventDefault(); fit(); return; }   // F is always Fillet, as in Fusion
   });
 
   new ResizeObserver(function(){ draw(); }).observe(cv);

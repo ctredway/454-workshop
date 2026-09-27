@@ -307,7 +307,7 @@
       <button id="rbHold" class="danger iconBtn" title="Feed hold — pause motion now"><svg viewBox="0 0 16 16"><line x1="6" y1="3.5" x2="6" y2="12.5"/><line x1="10" y1="3.5" x2="10" y2="12.5"/></svg></button>
       <button id="rbResume" class="iconBtn" title="Cycle start / resume"><svg viewBox="0 0 16 16"><path d="M5.5 3.5 L12 8 L5.5 12.5 Z"/></svg></button>
       <button id="rbDoor" title="Pause with retract — Z lifts and the spindle stops (firmware safety-door); Resume restores">Pause ⏏</button>
-      <button id="rbStop" title="End the job — hold, then reset and clear the buffer">End job</button>
+      <button id="rbStop" title="End the job: slow to a stop, then lift clear and move off the part. STOP is the instant halt.">End job</button>
       <div id="rbProg"><div id="rbFill"></div></div>
       <span id="rbTxt">—</span>
       <button id="rbAdjust" title="Feed / spindle / Z adjustments">Adjust</button>
@@ -396,7 +396,7 @@
             <div class="mRow">
               <button id="homeBtn">Home ($H)</button>
               <button id="unlockBtn">Unlock ($X)</button>
-              <button id="resetBtn" class="danger" title="Soft reset (Ctrl-X) — clears GRBL's buffer">Reset</button>
+              <button id="resetBtn" class="danger" title="Reset the controller: stops the spindle and throws away anything queued. Use it to recover from an alarm.">Reset</button>
             </div>
             <div class="mRow"><span class="chip" id="mposChip">machine —</span><span class="chip" id="pinChip" style="display:none"></span></div>
           </div>
@@ -428,7 +428,7 @@
             <div class="mRow">
               <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
               <button id="spinOn">Start (M3)</button>
-              <button id="spinOff" class="danger">Stop (M5)</button>
+              <button id="spinOff" class="danger" title="Turn the spindle off (M5)">Spindle off</button>
               <span class="chip" id="spinState">stopped</span>
             </div>
           </div>
@@ -452,7 +452,7 @@
               <button id="jobRecover" title="Resume a crashed/stopped job from a line \u2014 state is reconstructed, approach is careful">Recover</button>
               <button id="jobHold">Hold</button>
               <button id="jobResume">Resume</button>
-              <button id="jobStop" class="danger">Stop</button>
+              <button id="jobStop" class="danger" title="End the job: slow to a stop, then lift clear and move off the part. The red STOP is the instant halt.">End job</button>
             </div>
             <div id="jobBar"><div id="jobBarFill"></div></div>
             <div class="mRow" style="color:var(--muted);font-size:12px" id="jobStatus">no job running</div>
@@ -695,6 +695,13 @@
     <div id="toolBody">
       <p id="toolWhich" style="font-size:15px;color:var(--ink);margin:0 0 8px"></p>
       <p id="toolSteps" style="font-size:12.5px;color:var(--muted);line-height:1.55;margin:0;white-space:pre-wrap"></p>
+      <div id="toolZeroRow" hidden style="margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-deep)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="toolBz">Probe with BitZero</button>
+          <button id="toolJog">Jog &amp; zero Z</button>
+        </div>
+        <p id="toolZeroState" style="margin:8px 0 0;font-size:12.5px"></p>
+      </div>
     </div>
     <div class="dlgBtns">
       <button id="toolStop" class="danger">End job</button>
@@ -707,7 +714,7 @@
   <div id="dlgPanel" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
     <div class="dlgHead"><b id="dlgTitle">Confirm</b><button id="dlgX" title="Close (Esc)" aria-label="Close">✕</button></div>
     <div id="dlgBody"></div>
-    <div class="dlgBtns"><button id="dlgCancel">Cancel</button><button id="dlgOk" class="primary">OK</button></div>
+    <div class="dlgBtns"><button id="dlgCancel">Cancel</button><button id="dlgAlt" hidden></button><button id="dlgOk" class="primary">OK</button></div>
   </div>
 </div>
 
@@ -785,7 +792,8 @@
       <span style="color:var(--faint)">mm — caliper your plate once; saved to the profile</span>
     </div>
     <div class="mRow"><button id="bzStart" class="primary">Probe Z</button></div>
-    <div class="mRow" id="bzStatusLine" style="color:var(--muted);font-size:12px">ready</div>
+    <p class="note" style="margin:4px 0 0;font-size:12px;color:var(--muted)">BitSetter: <span id="bsRefState">no reference yet</span></p>
+            <div class="mRow" id="bzStatusLine" style="color:var(--muted);font-size:12px">ready</div>
     <p class="kbdHint">Probes down max 25 mm (fast), backs off, re-probes slow, sets work Z0 to the stock top via G10 L2, then lifts 10 mm clear. Verify with the paper test before cutting.</p>
   </div>
 </div>
@@ -798,7 +806,7 @@
    Produces: segments (tessellated micro-moves), issues, tools
    All internal units are mm. seg.units records display units.
    ============================================================ */
-var CONTROL_VERSION = '0.22.0';
+var CONTROL_VERSION = '0.26.2';
 
 var SUPPORTED_G = {0:1,1:1,2:1,3:1,4:1,17:1,18:1,19:1,20:1,21:1,28:1,28.2:1,90:1,91:1,91.1:1,90.1:1,53:1};
 var IGNORED_G   = {40:'G40 cutter compensation off — accepted but ignored by Carbide Motion',
@@ -1804,6 +1812,19 @@ function jobSummary(model){
   }
   bounds.sort(function(a, b){ return a.line - b.line; });
   bounds.forEach(function(b){ b.from = b.line; });
+  // Some posts write the tool change and spindle speed just BEFORE the next toolpath's name.
+  // Those set-up lines belong to the toolpath they are setting up, so pull each boundary back
+  // over any set-up lines directly above it (tool, spindle, comments, blank lines; no motion).
+  if (how === 'named') bounds.forEach(function(b, bi){
+    if (bi === 0) return;
+    var ln = b.from - 1;
+    while (ln > bounds[bi - 1].from){
+      var c = (cleanForSend(lines[ln - 1]) || '').trim();
+      if (c === '' || /^(M0*6|M0*[345]|T\d|S[\d.])/i.test(c.replace(/^N\d+\s*/i, '')) && !/[XYZ]/i.test(c)) ln--;
+      else break;
+    }
+    b.from = ln + 1;
+  });
   if (bounds[0].from > 1){
     var cutsBefore = segs.some(function(g){ return g.line < bounds[0].from && !g.rapid; });
     if (cutsBefore) bounds.unshift({line:1, from:1, name:'Before the first toolpath'});
@@ -2248,8 +2269,9 @@ function clampJogDist(p, dist){
     // clamp against the COMMANDED position, not the reported one — status
     // reports lag, and several segments can be issued between them
     var m = JOGC.pred[axes[i]];
-    // machine coords run [-travel, 0]; keep 0.5 mm off each end
-    var room = p[i] > 0 ? (-0.5 - m) : (m - (-trav[i] + 0.5));
+    // keep 0.5 mm off each end of this axis's actual range
+    var rg = axisRange(axes[i]) || {min: -trav[i], max: 0};
+    var room = p[i] > 0 ? ((rg.max - 0.5) - m) : (m - (rg.min + 0.5));
     if (room < 0) room = 0;
     var axScale = Math.min(1, room / dist);
     if (axScale < scale) scale = axScale;
@@ -2377,6 +2399,22 @@ function probeFinish(){
 }
 
 /* ----- BitSetter (job-integrated tool length) ----- */
+// The machine coordinates each axis can reach. Standard GRBL counts from -travel up to 0 whichever
+// way an axis homes. Firmware built to set the origin at home instead counts UP from 0 on an axis
+// that homes towards its minimum. The build options say which; positions the machine reports
+// after homing confirm it, and win if they disagree.
+function axisRange(axis){
+  var T = SERIAL.settings[{x: 130, y: 131, z: 132}[axis]];
+  if (!(T > 0)) return null;
+  var homesToMin = !!((SERIAL.settings[23] || 0) & {x: 1, y: 2, z: 4}[axis]);
+  var up = !!SERIAL.forceOrigin && homesToMin;
+  var seen = SERIAL.axisSeen && SERIAL.axisSeen[axis];
+  if (seen === 'up') up = true; else if (seen === 'down') up = false;
+  return up ? {min: 0, max: T} : {min: -T, max: 0};
+}
+// Machine Z for "this far below the top of travel", whichever way the Z axis counts.
+function zBelowTop(n){ var r = axisRange('z'); return (r ? r.max : 0) - n; }
+function zHighCmd(n){ return 'G53 G0 Z' + zBelowTop(n).toFixed(1); }
 function bitSetterReady(){ // null = ready, else the reason it isn't
   if (!PROFILE.bitSetter.enabled) return 'disabled in Machine profile';
   if (PROFILE.bitSetter.x === null || PROFILE.bitSetter.y === null)
@@ -2384,32 +2422,40 @@ function bitSetterReady(){ // null = ready, else the reason it isn't
   if (!SERIAL.homedSeen) return 'machine has not homed this session';
   var s = SERIAL.settings;
   if (s[130] === undefined || s[131] === undefined) return 'controller travel not read yet';
-  var x = PROFILE.bitSetter.x, y = PROFILE.bitSetter.y;
-  if (x > 0.5 || x < -s[130] - 1 || y > 0.5 || y < -s[131] - 1)
-    return 'stored position (' + x + ', ' + y + ') is outside controller travel ' +
-           s[130] + ' \u00d7 ' + s[131] + ' \u2014 re-capture it, or fix $130/$131';
+  var x = PROFILE.bitSetter.x, y = PROFILE.bitSetter.y, rx = axisRange('x'), ry = axisRange('y');
+  if (x < rx.min - 1 || x > rx.max + 1 || y < ry.min - 1 || y > ry.max + 1)
+    return 'stored position (' + x + ', ' + y + ') is outside the machine\u2019s travel (X ' + rx.min + ' to ' + rx.max +
+           ', Y ' + ry.min + ' to ' + ry.max + ') \u2014 re-capture it, or check $130/$131';
   return null;
 }
 function probeSteps(){ // BitSetter sequence (name kept: the preflight preview prints it)
   var down = Math.max(10, (SERIAL.settings[132] || 80) - travelZ() - 1);
   return [
-    'G53 G0 Z-' + travelZ().toFixed(1),
+    zHighCmd(travelZ()),
     'G53 G0 X' + PROFILE.bitSetter.x.toFixed(3) + ' Y' + PROFILE.bitSetter.y.toFixed(3),
     'G21 G91',
     {cmd: 'G38.2 Z-' + down.toFixed(1) + ' F200', capture: 'zf'},
     'G0 Z2',
     {cmd: 'G38.2 Z-5 F40', capture: 'z'},
     'G90',
-    'G53 G0 Z-' + travelZ().toFixed(1)
+    zHighCmd(travelZ())
   ];
 }
 function probeStart(kind, onDone){ // BitSetter entry point (job code calls this)
+  // Measuring a tool means comparing it with the reference. With no reference there is nothing to
+  // compare with, and the arithmetic would apply the tool's whole machine Z as its length offset,
+  // so this measurement becomes the reference instead.
+  if (kind === 'tool' && PROBE.refZ === null){
+    logC('sys', 'BitSetter: no reference yet, so this tool becomes the reference');
+    kind = 'ref';
+  }
   updateJobUI(kind === 'ref' ? 'BitSetter: probing reference tool\u2026' : 'BitSetter: probing new tool\u2026');
   probeRun(kind === 'ref' ? 'BitSetter reference' : 'BitSetter tool', probeSteps(), function(cap){
     if (cap.z === undefined){ probeFail('sequence completed but no probe result was received'); return; }
     if (kind === 'ref'){
       PROBE.refZ = cap.z;
       logC('sys', 'BitSetter: reference tool triggers at machine Z ' + PROBE.refZ.toFixed(3));
+      bsRefNote();
     } else {
       var delta = cap.z - PROBE.refZ;
       PROBE.tlo = delta;
@@ -2421,6 +2467,40 @@ function probeStart(kind, onDone){ // BitSetter entry point (job code calls this
   });
 }
 
+// Setting Z zero makes the tool in the spindle the one every later tool must be measured
+// against. So the reference is taken right then, with that tool, the way Carbide Motion does:
+// measuring it later (at job start) would silently use whatever bit happens to be in by then.
+function bsAfterZero(){
+  var why = bitSetterReady();
+  if (why !== null){
+    if (PROFILE.bitSetter.enabled)                      // switched on but unusable: say so, don't go quiet
+      uiNote('The BitSetter can\u2019t measure this tool', 'It\u2019s switched on, but ' + why + '.\n\n' +
+             'Until that\u2019s sorted, tools won\u2019t be measured, and a tool change would cut at the old tool\u2019s depth.');
+    bsRefNote();
+    return;
+  }
+  PROBE.refZ = null; PROBE.tlo = 0;                     // the old reference belonged to the old zero
+  uiDialog({title: 'Measure this tool on the BitSetter?',
+            body: 'Z zero was just set with the tool that\u2019s in the spindle. Measuring it now makes it the reference: ' +
+                  'every tool is measured against it, so tool changes keep this zero, and swapping bits before pressing Start is caught.\n\n' +
+                  'The machine will lift, move to the BitSetter and touch off.',
+            ok: 'Measure now', cancel: 'Later'}).then(function (go) {
+    if (!go){ logC('sys', 'BitSetter reference not taken \u2014 the tool in the spindle at Start will be used instead'); return; }
+    probeStart('ref', function () {
+      updateJobUI('BitSetter reference taken with the tool that set Z zero.');
+      bsRefNote();
+    });
+  });
+}
+function bsRefNote(){
+  var el = document.getElementById('bsRefState');
+  if (!el) return;
+  var why = bitSetterReady();
+  if (!PROFILE.bitSetter.enabled){ el.textContent = 'not set up'; el.style.color = ''; return; }
+  if (why !== null){ el.textContent = 'switched on but unavailable: ' + why; el.style.color = 'var(--amber)'; return; }
+  el.textContent = PROBE.refZ === null ? 'ready, no reference yet' : 'reference taken (machine Z ' + PROBE.refZ.toFixed(3) + ')';
+  el.style.color = '';
+}
 /* ----- BitZero (standalone Z zeroing) ----- */
 var BZ = {circuitOk:false};
 function bzStatus(t){
@@ -2439,13 +2519,13 @@ function bitZeroSteps(){
 }
 function bzOpenModal(){
   if (!SERIAL.connected){ logC('err', 'connect to the machine first'); return; }
-  if (JOB.active) return;
+  if (JOB.active && !atToolChange()) return;
   BZ.circuitOk = false;
   bzUpdateCircuit();
   bzStatus('ready');
   document.getElementById('bzModal').hidden = false;
 }
-function bzCloseModal(){ document.getElementById('bzModal').hidden = true; }
+function bzCloseModal(){ document.getElementById('bzModal').hidden = true; if (atToolChange()) maybeToolPrompt(); }
 function bzUpdateCircuit(){
   var el = document.getElementById('bzCircuit');
   if (!el || document.getElementById('bzModal').hidden) return;
@@ -2458,8 +2538,8 @@ function bzUpdateCircuit(){
   el.classList.toggle('ok', BZ.circuitOk);
 }
 function bzStart(){
-  if (qaBusy('probe')) return;
-  if (!SERIAL.connected || JOB.active || PROBE.active) return;
+  if (!atToolChange() && qaBusy('probe')) return;
+  if (!SERIAL.connected || (JOB.active && !atToolChange()) || PROBE.active) return;
   if (SERIAL.state === 'Alarm'){ bzStatus('machine is locked \u2014 home ($H) or unlock ($X) first'); return; }
   readUIToProfile();
   var thk = PROFILE.bitZero.thk;
@@ -2471,6 +2551,8 @@ function bzStart(){
       if (cap.z === undefined){ probeFail('sequence completed but no probe result was received'); return; }
       var wcoZ = cap.z - thk;
       sendLine('G10 L2 P0 Z' + wcoZ.toFixed(3));
+      markToolZeroed();
+      setTimeout(bsAfterZero, 1500);                    // once the lift has finished
       var lift = (thk + 10).toFixed(2);
       sendLine('G90 G0 Z' + lift);
       logC('sys', 'BitZero: stock top set as work Z0 (plate ' + thk.toFixed(2) +
@@ -2532,7 +2614,7 @@ function runPark(done){
   var sp = toolChangeSpot();
   if (!sp){ done(); return; }
   probeRun('Tool-change position', [
-    'G53 G0 Z-' + topZ().toFixed(1),                          // right up, so there is room to work
+    zHighCmd(topZ()),                          // right up, so there is room to work
     'G53 G0 X' + sp.x.toFixed(3) + ' Y' + sp.y.toFixed(3)
   ], function(){ done(); });
 }
@@ -2549,19 +2631,61 @@ function rapidTo(fx, fy){
   var m = 10;
   var x = -(t[130] - m) + (t[130] - 2 * m) * fx;
   var y = -(t[131] - m) + (t[131] - 2 * m) * fy;
-  sendLine('G53 G0 Z-' + travelZ().toFixed(1));
+  sendLine(zHighCmd(travelZ()));
   sendLine('G53 G0 X' + x.toFixed(1) + ' Y' + y.toFixed(1));
 }
 
 /* ---------------- jog modal + keyboard ---------------- */
+// Stopped at a tool change with nothing left queued: the one moment during a job when jogging
+// and zeroing are safe, and exactly when they're needed without a BitSetter.
+// Carry on after a tool change: blocked until Z is zeroed when the new tool needs it.
+function toolContinueNow(){
+  if (!JOB.toolWait) return;
+  if (JOB.toolWait.needZero && !JOB.toolWait.zeroed) return;   // Z must be zeroed for this tool first
+  document.getElementById('toolModal').hidden = true;
+  var tw = JOB.toolWait;
+  // when probing, the machine ends parked over the BitSetter — returning to
+  // the work at height is mandatory, not just the highStart preference
+  // After probing (parked over the BitSetter) or re-zeroing (the tip is down on the stock), lifting
+  // before moving back is mandatory, not the start-high preference: otherwise the bit drags across.
+  var wantHigh = (PROFILE.run.highStart || JOB.useBS || tw.zeroed) && SERIAL.homedSeen && tw.next;
+  var resume = function(){
+    if (wantHigh){
+      JOB.list.splice(JOB.idx, 0,
+        {text: zHighCmd(travelZ()), ln: 0, syn: true},
+        {text: 'G21 G90', ln: 0, syn: true},
+        {text: 'G0 X' + tw.next.x.toFixed(3) + ' Y' + tw.next.y.toFixed(3), ln: 0, syn: true});
+      JOB.total = JOB.list.length;
+      logC('sys', 'traversing at top of travel to X' + tw.next.x.toFixed(1) +
+           ' Y' + tw.next.y.toFixed(1) + ' before resuming');
+    }
+    logC('sys', 'continuing after tool change (T' + tw.tool + ')');
+    jobFill();
+  };
+  JOB.toolWait = null;
+  maybeToolPrompt();
+  if (JOB.useBS) probeStart(PROBE.refZ !== null ? 'tool' : 'ref', resume);
+  else resume();
+}
+function zeroZNow(){ if (requireIdle('zeroing')){ sendLine('G10 L20 P0 Z0'); markToolZeroed(); bsAfterZero(); } }
+function toolJogNow(){ document.getElementById('toolModal').hidden = true; jogModalOpen(); }   // the prompt returns when the panel closes
+function toolBzNow(){ document.getElementById('toolModal').hidden = true; bzOpenModal(); }
+function markToolZeroed(){
+  if (JOB.active && JOB.toolWait){
+    JOB.toolWait.zeroed = true;
+    logC('sys', 'Z zero set for T' + JOB.toolWait.tool + ' at the tool change');
+  }
+}
+function atToolChange(){ return !!(JOB.active && JOB.toolWait && !JOB.inflight.length && !PROBE.active && !JOB.parkPending); }
 function jogModalOpen(){
-  if (qaBusy('jog')) return;
+  if (!atToolChange() && qaBusy('jog')) return;
   if (!SERIAL.connected){ logC('err', 'connect to the machine first'); return; }
-  if (JOB.active) return;
+  if (JOB.active && !atToolChange()) return;
   document.getElementById('jogModal').hidden = false;
 }
 function jogModalClose(){
   document.getElementById('jogModal').hidden = true;
+  if (atToolChange()) setTimeout(maybeToolPrompt, 0);   // back to the tool-change prompt
   KEYJOG.code = null;
   jogFastStop(true);
   document.querySelectorAll('#jogGrid button.kbdOn').forEach(function(b){ b.classList.remove('kbdOn'); });
@@ -2694,6 +2818,7 @@ async function serialConnect(pick){
     SERIAL.queried = false; SERIAL.rateApplied = false; SERIAL.jogRateApplied = false;
     SERIAL.homedSeen = false; SERIAL.prevState = ''; HOME_ASKED = false;
     PROBE.active = false; PROBE.onDone = null; PROBE.refZ = null; PROBE.previewDone = false;
+    if (typeof bsRefNote === 'function') bsRefNote();
     uiConn(true);
     logC('sys', 'port open @ 115200 — waiting for GRBL');
     readLoop();
@@ -2830,6 +2955,7 @@ function handleRx(line){
   var bm = /^\[(G54|G55|G56|G57|G58|G59|G28|G30|G92|TLO|PRB|VER|OPT):([^\]]*)\]/.exec(line);
   if (bm){
     if (bm[1] === 'VER' || bm[1] === 'OPT') SERIAL.buildInfo += (SERIAL.buildInfo ? ' ' : '') + bm[1] + ':' + bm[2];
+    if (bm[1] === 'OPT') SERIAL.forceOrigin = /Z/.test(bm[2].split(',')[0]);   // homing sets the origin
     else {
       var parts2 = bm[2].split(':');
       var coords = parts2[0].split(',').map(parseFloat);
@@ -2846,7 +2972,10 @@ function parseStatus(s){
   var body = s.replace(/[<>]/g, '');
   var f = body.split('|');
   SERIAL.state = f[0].split(':')[0];
+  SERIAL.subState = f[0].indexOf(':') > 0 ? f[0].split(':')[1] : '';
+  if (SERIAL.state !== parseStatus.lastState){ parseStatus.lastState = SERIAL.state; if (typeof bsRefNote === 'function') bsRefNote(); }
   if (SERIAL.prevState === 'Home' && SERIAL.state === 'Idle') SERIAL.homedSeen = true;
+  if (typeof ENDING !== 'undefined' && ENDING) endingTick();
   SERIAL.prevState = SERIAL.state;
   SERIAL.spindleOn = /\|A:[^|>]*[SC]/.test(s);   // A:S / A:C = spindle running; no A field = everything off
   if (!HOME_ASKED) setTimeout(homeMaybeAsk, 0);
@@ -2873,6 +3002,14 @@ function parseStatus(s){
   SERIAL.pins = pinsNow; // Pn only appears while a pin is active, so absence = all clear
   if (pinsNow !== pinsPrev) pinTripJogGuard(pinsPrev, pinsNow);
   uiStatus();
+  if (SERIAL.homedSeen && SERIAL.mpos){                // positions well to one side settle each axis
+    SERIAL.axisSeen = SERIAL.axisSeen || {};
+    ['x', 'y', 'z'].forEach(function (ax) {
+      var v = SERIAL.mpos[ax];
+      if (!isFinite(v) || SERIAL.axisSeen[ax]) return;
+      if (v > 2) SERIAL.axisSeen[ax] = 'up'; else if (v < -2) SERIAL.axisSeen[ax] = 'down';
+    });
+  }
 }
 
 /* stop any jog the moment a watched sensor becomes newly active.
@@ -2933,10 +3070,10 @@ function uiStatus(){
   document.getElementById('jmZ').textContent = SERIAL.wpos.z.toFixed(3);
   var jm = document.getElementById('jmState');
   jm.textContent = st; jm.dataset.s = st;
-  document.getElementById('jogOpen').disabled = JOB.active;
-  if (JOB.active && !document.getElementById('jogModal').hidden) jogModalClose();
-  document.getElementById('bzOpen').disabled = JOB.active;
-  if (JOB.active && !document.getElementById('bzModal').hidden) bzCloseModal();
+  document.getElementById('jogOpen').disabled = JOB.active && !atToolChange();
+  if (JOB.active && !atToolChange() && !document.getElementById('jogModal').hidden) jogModalClose();
+  document.getElementById('bzOpen').disabled = JOB.active && !atToolChange();
+  if (JOB.active && !atToolChange() && !document.getElementById('bzModal').hidden) bzCloseModal();
   bzUpdateCircuit();
   // live marker while a job (or manual motion during one) is happening
   if (JOB.active && marker){
@@ -3013,6 +3150,8 @@ function uiDialog(o){
     ok.classList.toggle('danger', !!o.danger);
     ok.classList.toggle('primary', !o.danger);
     cancel.style.display = o.note ? 'none' : '';
+    var alt = document.getElementById('dlgAlt');
+    alt.hidden = !o.alt; alt.textContent = o.alt || '';
     cancel.textContent = o.cancel || 'Cancel';
     document.getElementById('dlgModal').hidden = false;
     ok.focus();
@@ -3037,7 +3176,7 @@ var HELP_TEXT = {
   'jobzero': {t:'Job zero', b:"Where the drawing's 0,0 sits on the stock: the front-left corner, or the middle.\n\nThis only affects the preview and the outside-work-area check. It does not move your machine's work zero, which you set with the BitZero or by zeroing the axes."},
   'stock': {t:'Stock thickness', b:'Cuts deeper than the thickness get flagged, which usually means into the wasteboard.\n\nThe controller\u2019s own $130/$131 are read on connect and fill this in.\n\nThe thickness of the material, used to flag cuts that go deeper than the stock.\n\nLeave it at 0 to turn the check off. Set it when Z0 is the top of your material and you want warning of cuts that reach your wasteboard.'},
   'rapid': {t:'Rapid rate (time estimate only)', b:"The speed 454 Control assumes for G0 moves when estimating how long a job takes. It changes the estimate only; the machine's real rapid speed comes from $110/$111/$112 in the controller.\n\nReal jobs run a little longer than the estimate because acceleration isn't modelled."},
-  'bitsetter': {t:'BitSetter', b:'Probing runs automatically on jobs with tool changes when this is enabled.\n\nThe fixed button the tool touches so the machine can measure tool length.\n\nJog the tool over the button and press Capture position; the machine coordinates are stored. During a job with tool changes, each new tool is measured here and the length difference is applied automatically, so you only zero Z once.\n\nIt needs a homed machine, because the position is in machine coordinates.'},
+  'bitsetter': {t:'BitSetter', b:'The fixed button the tool touches so the machine can measure tool length.\n\nJog the tool over the button and press Capture position; the machine coordinates are stored.\n\nWhen you set Z zero, 454 Control offers to measure that tool straight away. That makes it the reference: at Start the loaded tool is measured against it, and every new tool at each change, so the zero holds through tool changes, and swapping bits before pressing Start is caught rather than silently shifting Z.\n\nIt needs a homed machine, because the position is in machine coordinates.'},
   'bitzero': {t:'BitZero', b:"The touch plate used to set your work zero. 454 Control uses it for Z.\n\nSet the plate thickness by measuring it with calipers; the probe sets Z0 at the top of the stock, which is the plate's trigger height minus the thickness. Verify the circuit (touch the pin to the plate) before probing, and paper-test the zero before cutting."},
   'spindle': {t:'Spindle type and spin-up', b:"Trim router or VFD spindle, and how long to wait after M3 before any cutting move.\n\nMost CAM files don't include that wait, so 454 Control inserts a dwell after each spindle start. Carbide Motion does the same thing, at about 2.5 s, which suits a router. A VFD spindle takes longer to reach speed: 10 s is the default here.\n\nToo short means the bit enters the material before it is up to speed."},
   'highstart': {t:'Start & stop high', b:'Keeps the tool high whenever it is travelling rather than cutting.\n\nAt the start and after every tool change, the machine traverses to the next XY at the top of travel before plunging. Before every spindle stop, and at the end of the job, it lifts clear first.\n\nThis is what stops a bit dragging across clamps and stock. A lift is skipped when the tool is already higher than traverse height, so it never moves down.'},
@@ -3403,7 +3542,8 @@ function frontCentre(){
   var mx = g[130] > 0 ? g[130] : PROFILE.view.envW;
   var my = g[131] > 0 ? g[131] : PROFILE.view.envD;
   if (!(mx > 0) || !(my > 0)) return null;
-  return {x: -(mx / 2), y: -(my - 10)};                        // 10 mm back from the front limit
+  var rx = axisRange('x') || {min: -mx, max: 0}, ry = axisRange('y') || {min: -my, max: 0};
+  return {x: (rx.min + rx.max) / 2, y: ry.min + 10};           // 10 mm back from the front limit
 }
 var TC_PRESETS = {fc:'Front centre', fl:'Front left', fr:'Front right', bc:'Back centre', custom:'Captured position'};
 function presetSpot(which){
@@ -3412,7 +3552,8 @@ function presetSpot(which){
   var my = g[131] > 0 ? g[131] : PROFILE.view.envD;
   if (!(mx > 0) || !(my > 0)) return null;
   var m = 10;                                        // keep clear of the limits
-  var front = -(my - m), back = -m, left = -(mx - m), right = -m, midX = -(mx / 2);
+  var rx = axisRange('x') || {min: -mx, max: 0}, ry = axisRange('y') || {min: -my, max: 0};
+  var front = ry.min + m, back = ry.max - m, left = rx.min + m, right = rx.max - m, midX = (rx.min + rx.max) / 2;
   if (which === 'fl') return {x:left,  y:front};
   if (which === 'fr') return {x:right, y:front};
   if (which === 'bc') return {x:midX,  y:back};
@@ -3646,8 +3787,9 @@ function travelPreflight(){
   var bb = modelBBox(MODEL), tol = 0.5, msgs = [];
   function chk(axis, lo, hi, travel, label){
     var mLo = lo + SERIAL.wco[axis], mHi = hi + SERIAL.wco[axis];
-    if (mHi > tol) msgs.push(label + '+ side by ' + mHi.toFixed(1) + ' mm');
-    if (mLo < -travel - tol) msgs.push(label + '− side by ' + (-travel - mLo).toFixed(1) + ' mm');
+    var rg = axisRange(axis) || {min: -travel, max: 0};
+    if (mHi > rg.max + tol) msgs.push(label + '+ side by ' + (mHi - rg.max).toFixed(1) + ' mm');
+    if (mLo < rg.min - tol) msgs.push(label + '− side by ' + (rg.min - mLo).toFixed(1) + ' mm');
   }
   chk('x', bb.min.x, bb.max.x, s[130], 'X overruns the ');
   chk('y', bb.min.y, bb.max.y, s[131], 'Y overruns the ');
@@ -3804,7 +3946,7 @@ function buildJobList(lines){
       list.push({text:'G91 G0 Z' + travelZ().toFixed(1), ln:ln, syn:true});
       list.push({text:'G90', ln:ln, syn:true});
     } else {
-      list.push({text:'G53 G0 Z-' + topZ().toFixed(1), ln:ln, syn:true});
+      list.push({text:zHighCmd(topZ()), ln:ln, syn:true});
     }
     atTraverse = true;
     retracts++;
@@ -3816,12 +3958,12 @@ function buildJobList(lines){
     if (wz === null) return;               // nothing has moved yet: position unknown, and nothing to lift away from
     if (fileTopZ !== null && wz >= fileTopZ - 0.01) return;   // already at the file's own safe height
     var pv = list.length ? list[list.length - 1] : null;
-    if (pv && pv.text && (pv.text.indexOf('G53 G0 Z-') === 0 || pv.text.indexOf('G91 G0 Z') === 0)) return; // already climbing
-    var target = -travelZ();
+    if (pv && pv.text && (/^G53 G0 Z/.test(pv.text) || pv.text.indexOf('G91 G0 Z') === 0)) return; // already climbing
+    var target = zBelowTop(travelZ());
     var mz = homed ? machineZAt(ln) : null;
     if (homed && mz !== null){
       if (mz >= target - 0.01) return;                  // already at or above traverse height: a "lift" would go down
-      list.push({text:'G53 G0 Z-' + travelZ().toFixed(1), ln:ln, syn:true});
+      list.push({text:zHighCmd(travelZ()), ln:ln, syn:true});
       atTraverse = true;
     } else if (homed){
       // homed but the work offset isn't known yet: lift relative, which can only go up
@@ -3922,10 +4064,14 @@ function buildJobList(lines){
 
 function jobFill(){
   if (PROBE.active) return; // probe sequence owns the wire
+  if (JOB.ending) return;   // End job pressed: nothing more from the file
   while (JOB.active && !JOB.held && !JOB.toolWait && JOB.idx < JOB.total){
     var it = JOB.list[JOB.idx];
     if (it.m6){
-      JOB.toolWait = {line: it.ln, tool: it.tool, next: it.next};
+      // Without a BitSetter, a tool change after cutting has started needs Z zeroed again for the
+      // new tool. A change before anything has been cut is the tool you zeroed with.
+      var cutBefore = !!(MODEL && MODEL.segs.some(function (sg) { return !sg.rapid && sg.line < it.ln; }));
+      JOB.toolWait = {line: it.ln, tool: it.tool, next: it.next, needZero: !JOB.useBS && cutBefore, zeroed: false};
       JOB.parkPending = parkReady();
       JOB.idx++; JOB.acked++;
       logC('sys', 'tool change at line ' + it.ln + ' (T' + it.tool + ') — waiting for buffer to drain');
@@ -3959,14 +4105,26 @@ function maybeToolPrompt(){
     var ti2 = MODEL && MODEL.toolInfo ? MODEL.toolInfo[JOB.toolWait.tool] : null;
     var which = 'Insert T' + JOB.toolWait.tool + (ti2 ? ' \u2014 ' + ti2.desc : '');
     document.getElementById('toolWhich').textContent = which;
+    var tw = JOB.toolWait, needZero = !!tw.needZero;
     document.getElementById('toolSteps').textContent =
       'The spindle has stopped and the machine is waiting.\n\n' +
       '1. Change the tool and check the stickout.\n' +
-      (JOB.useBS ? '2. Press continue: the new tool is measured on the BitSetter and its length applied automatically.\n'
-                 : '2. Without a BitSetter the new tool must match the old length, or re-zero Z before continuing.\n') +
-      '3. Keep clear \u2014 the machine moves as soon as you continue.';
+      (JOB.useBS ? '2. Press continue: the new tool is measured on the BitSetter and its length applied automatically.\n' +
+                   '3. Keep clear \u2014 the machine moves as soon as you continue.'
+       : needZero ? '2. Set Z zero for the new tool, with the BitZero or by jogging down and zeroing. Without a BitSetter it would otherwise cut at the old tool\u2019s depth.\n' +
+                    '3. Continue: the machine lifts, moves to the next cut, and carries on.'
+       : '2. This is the first tool, before anything is cut: Z zero should already have been set with it.\n' +
+         '3. Keep clear \u2014 the machine moves as soon as you continue.');
+    document.getElementById('toolZeroRow').hidden = !needZero;
+    document.getElementById('toolBz').hidden = !(PROFILE.bitZero && PROFILE.bitZero.enabled);
+    var zs = document.getElementById('toolZeroState');
+    zs.textContent = tw.zeroed ? '\u2713 Z zero set for this tool.' : 'Z zero not set for this tool yet.';
+    zs.style.color = tw.zeroed ? 'var(--ok)' : 'var(--amber)';
+    var go = document.getElementById('toolContinue');
+    go.disabled = needZero && !tw.zeroed;
+    go.title = go.disabled ? 'Set Z zero for the new tool first' : '';
     document.getElementById('toolModal').hidden = false;
-    document.getElementById('toolContinue').focus();
+    (go.disabled ? document.getElementById(PROFILE.bitZero && PROFILE.bitZero.enabled ? 'toolBz' : 'toolJog') : go).focus();
   } else {
     b.style.display = 'none';
     document.getElementById('toolModal').hidden = true;
@@ -3996,7 +4154,8 @@ function onAck(ok, code){
   jobFill();
 }
 
-function jobStart(){
+function jobStart(opts){
+  opts = opts || {};
   if (qaBusy('run a job')) return;
   if (!MODEL || !MODEL.segs.length){ uiNote('No file loaded', 'Open a G-code file first.'); return; }
   // Homing first, always: without it the machine's own coordinates mean nothing, so lifting to
@@ -4037,7 +4196,7 @@ function jobStart(){
       if (p0){
         list.unshift({text: 'G0 X' + p0.x.toFixed(3) + ' Y' + p0.y.toFixed(3), ln: 0, syn: true});
         list.unshift({text: 'G21 G90', ln: 0, syn: true});
-        list.unshift({text: 'G53 G0 Z-' + travelZ().toFixed(1), ln: 0, syn: true});
+        list.unshift({text: zHighCmd(travelZ()), ln: 0, syn: true});
         highStartNote = 'Start high: traverse ' + travelZ().toFixed(0) + ' mm below Z top to X' + p0.x.toFixed(1) +
                         ' Y' + p0.y.toFixed(1) + ', then the file plunges there. Also applies after each tool change.\n';
       }
@@ -4062,7 +4221,32 @@ function jobStart(){
            SERIAL.settings[30] + ' — RPM will be capped. ***\n';
   }
   var bsErr = bitSetterReady();
-  var useBS = (bsErr === null && MODEL.tools.length > 0);
+  var firstCut = null;
+  for (var fc = 0; fc < MODEL.segs.length; fc++) if (!MODEL.segs[fc].rapid){ firstCut = MODEL.segs[fc].line; break; }
+  var startsWithToolChange = MODEL.tools.some(function (t) { return firstCut === null || t.line < firstCut; });
+  // Like Carbide Motion: with a BitSetter set up, the tool is measured at Start whether or not the
+  // file changes tools. Against a reference taken at Z zero, that also catches a swapped bit.
+  var useBS = (bsErr === null);
+  // Tool changes after cutting has started, with no BitSetter to measure the new tools: decide
+  // how before anything moves, rather than finding out at the first change.
+  var laterChanges = MODEL.tools.filter(function (t) { return MODEL.segs.some(function (sg) { return !sg.rapid && sg.line < t.line; }); }).length;
+  if (laterChanges && bsErr !== null && !opts.rezeroChosen){
+    uiDialog({title: 'This job changes tools, but the BitSetter isn\u2019t set up',
+              body: 'It changes tool ' + laterChanges + (laterChanges === 1 ? ' time' : ' times') + ' after cutting starts. The BitSetter is ' +
+                    'unavailable (' + bsErr + ').\n\n' +
+                    'Each new tool is a different length, so without a BitSetter it needs Z zeroed again before it cuts, or it cuts at the wrong depth.\n\n' +
+                    '\u2022 Set up the BitSetter to have every tool measured automatically, or\n' +
+                    '\u2022 re-zero Z yourself at each change: the tool-change prompt will ask you to, with the BitZero or by jogging.',
+              ok: 'Re-zero at each change', alt: 'Set up the BitSetter', cancel: 'Cancel'}).then(function (v) {
+      if (v === true) jobStart({rezeroChosen: true});
+      else if (v === 'alt'){
+        document.getElementById('setModal').hidden = false;
+        var accTab = document.querySelector('#smTabs button[data-sm="smAcc"]');
+        if (accTab) accTab.click();
+      }
+    });
+    return;
+  }
   if (MODEL.tools.length > 1){
     var names = MODEL.tools.map(function(t){
       var ti = MODEL.toolInfo[t.tool];
@@ -4073,16 +4257,25 @@ function jobStart(){
     msg += tcSp ? '   At each change: up to ' + topZ().toFixed(1) + ' mm below the top of travel, then X' + tcSp.x.toFixed(1) + ' Y' + tcSp.y.toFixed(1) + (tcSp.auto ? ' (front centre).\n' : ' (your captured spot).\n')
                 : '   At each change the machine stays where the file stopped \u2014 set a tool-change position in Settings.\n';
   }
-  if (MODEL.tools.length > 0){
+  if (PROFILE.bitSetter.enabled && bsErr !== null)
+    msg += '*** The BitSetter is switched on but can\u2019t be used: ' + bsErr + '. No tool will be measured. ***\n';
+  if (MODEL.tools.length > 0 || useBS){
     if (useBS){
-      msg += 'BitSetter: reference probe at start, automatic re-probe + length offset (G43.1) at each tool change.\n';
-      msg += '  Assumes Z was zeroed with the tool currently loaded.\n';
+      var firstTool = startsWithToolChange && MODEL.tools.length ? 'T' + MODEL.tools[0].tool : null;
+      var when = firstTool ? 'when you confirm ' + firstTool + ' is loaded' : 'at the start';
+      if (PROBE.refZ !== null){
+        msg += 'BitSetter: reference taken when Z was zeroed. The first tool is measured against it ' + when + ', and every new tool at each change.\n';
+      } else {
+        msg += 'BitSetter: no reference yet, so the first tool is measured AS the reference ' + when + ', then every new tool at each change.\n';
+        msg += '\u26a0 Z zero must have been set with ' + (firstTool ? firstTool : 'the tool in the spindle now') + '. Setting Z zero offers to take the reference then, which avoids this.\n';
+      }
       if (!PROBE.previewDone){
         PROBE.previewDone = true;
         msg += '  First probe this session — exact sequence:\n    ' + probeSteps().join('\n    ') + '\n';
       }
     } else {
-      msg += 'BitSetter INACTIVE (' + bsErr + ') — tool lengths must match, or re-zero Z at each change.\n';
+      msg += laterChanges ? 'No BitSetter: at each tool change you\u2019ll set Z zero for the new tool before continuing.\n'
+                          : 'BitSetter INACTIVE (' + bsErr + ') — not needed: no tool changes after cutting starts.\n';
     }
   }
   var hasM3 = list.some(function(it){ return it.text && /M0*3(?![\d.])/i.test(it.text); });
@@ -4130,7 +4323,11 @@ function jobStart(){
   animateView(0, 0.02); // snap to Top for the run \u2014 camera stays free afterward
   playing = false; updatePlayBtn(); setTime(0);
   logC('sys', 'job started — ' + JOB.total + ' blocks' + (list.injected ? ' (incl. ' + list.injected + ' spin-up dwells)' : ''));
-  if (JOB.useBS) probeStart('ref', jobFill);
+  // With a reference from when Z was zeroed, the loaded tool is measured against it: no change
+  // if it's the same bit, and a swap since zeroing is compensated rather than silently wrong.
+  // A file that loads its first tool (M6) before cutting gets the tool prompt straight away, and
+  // the tool is measured there, as Carbide Motion does. Only a file with no such M6 is measured here.
+  if (JOB.useBS && !startsWithToolChange) probeStart(PROBE.refZ !== null ? 'tool' : 'ref', jobFill);
   else jobFill();
   });
 }
@@ -4146,18 +4343,57 @@ function jobResume(){
   sendRT(0x7e, '~ (resume)');
   if (JOB.active){ JOB.held = false; jobFill(); }
 }
+// END JOB, done properly. GRBL can only cancel moves it has already queued by resetting, and a
+// reset while moving loses the machine's position. So: hold, wait until the machine has actually
+// stopped, reset to clear the queue (safe once still, and position is kept), then lift clear and
+// move off the part the same way a finished job does. The red STOP stays the instant halt.
+var ENDING = null;
 function jobStop(){
   if (!SERIAL.connected) return;
+  if (ENDING) return;                                  // already ending
   recoveryNote('stopped');
   PROBE.active = false; PROBE.onDone = null;
+  JOB.ending = true;                                   // send nothing more from the file
+  ENDING = {stage: 'holding', since: performance.now()};
   sendRT(0x21, '! (feed hold)');
-  setTimeout(function(){
-    sendRT(0x18, 'ctrl-x (soft reset)');
+  updateJobUI('ending \u2014 slowing to a stop\u2026');
+  logC('sys', 'ending the job: holding, then lifting clear');
+  ENDING.timer = setInterval(endingTick, 100);
+}
+function endingTick(){
+  if (!ENDING) return;
+  var waited = performance.now() - ENDING.since;
+  if (ENDING.stage === 'holding'){
+    var stopped = (SERIAL.state === 'Hold' && SERIAL.subState === '0') || SERIAL.state === 'Idle';
+    if (!stopped && waited < 8000) return;             // still decelerating
+    if (!stopped) logC('err', 'the machine didn\u2019t report stopping \u2014 resetting anyway; re-home before the next job');
+    ENDING.stage = 'reset'; ENDING.since = performance.now();
+    sendRT(0x18, 'ctrl-x (soft reset: clears the queued moves)');
     JOB.active = false; JOB.held = false; JOB.toolWait = null; JOB.inflight = [];
     maybeToolPrompt();
-    updateJobUI('stopped — buffer cleared. Verify position/zero before running again.');
-    logC('sys', 'job stopped');
-  }, 500);
+    updateJobUI('ending \u2014 queue cleared, lifting clear\u2026');
+    return;
+  }
+  if (ENDING.stage === 'reset'){
+    if (waited < 1200) return;                         // give the controller time to come back
+    clearInterval(ENDING.timer);
+    var done = ENDING; ENDING = null; JOB.ending = false;
+    if (SERIAL.state === 'Alarm'){
+      updateJobUI('ended, but the controller is in alarm \u2014 home it before moving');
+      logC('err', 'job ended; controller reports ALARM after the reset, so nothing was moved');
+      return;
+    }
+    // lift and park exactly as the end of a finished job does
+    var cmds = ['G90', 'G21'];
+    if (SERIAL.homedSeen) cmds.push(zHighCmd(topZ()));
+    else { cmds.push('G91 G0 Z' + travelZ().toFixed(1)); cmds.push('G90'); }
+    var pk = PROFILE.run.park;
+    if (PROFILE.run.parkEnd !== false && pk.enabled && pk.x !== null && pk.y !== null && SERIAL.homedSeen)
+      cmds.push('G53 G0 X' + (+pk.x).toFixed(3) + ' Y' + (+pk.y).toFixed(3));
+    cmds.forEach(function (c) { sendLine(c); });
+    updateJobUI('ended \u2014 lifted clear' + (cmds.some(function (c) { return /G53 G0 X/.test(c); }) ? ' and parked' : '') + '. Recover can resume from where it stopped.');
+    logC('sys', 'job ended: spindle off, lifted clear');
+  }
 }
 function jobDone(){
   JOB.active = false;
@@ -4214,7 +4450,7 @@ function jobStartFrom(target){
   function u(mm){ return inch ? (mm / 25.4).toFixed(4) : mm.toFixed(3); }
   var pre = [];
   pre.push({text:'G21 G90', ln:0, syn:true});
-  pre.push({text:'G53 G0 Z-' + travelZ().toFixed(1), ln:0, syn:true});
+  pre.push({text:zHighCmd(travelZ()), ln:0, syn:true});
   pre.push({text:'G0 X' + st.x.toFixed(3) + ' Y' + st.y.toFixed(3), ln:0, syn:true});
   if (st.spindle){
     pre.push({text: st.sVal !== null ? 'M3 S' + st.sVal : 'M3', ln:0, syn:true});
@@ -4465,6 +4701,7 @@ function wireMachine(){
   rbMenuRender();
   document.getElementById('dlgOk').addEventListener('click', function(){ dlgEnd(true); });
   document.getElementById('dlgCancel').addEventListener('click', function(){ dlgEnd(false); });
+  document.getElementById('dlgAlt').addEventListener('click', function(){ dlgEnd('alt'); });
   document.getElementById('dlgX').addEventListener('click', function(){ dlgEnd(false); });
   document.getElementById('dlgModal').addEventListener('pointerdown', function(e){ if (e.target.id === 'dlgModal') dlgEnd(false); });
   document.getElementById('dlgPanel').addEventListener('keydown', function(e){
@@ -4542,11 +4779,11 @@ function wireMachine(){
 
   document.getElementById('zeroX').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 X0'); });
   document.getElementById('zeroY').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 Y0'); });
-  document.getElementById('zeroZ').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 Z0'); });
-  document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 X0 Y0 Z0'); });
+  document.getElementById('zeroZ').addEventListener('click', zeroZNow);
+  document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')){ sendLine('G10 L20 P0 X0 Y0 Z0'); markToolZeroed(); bsAfterZero(); } });
   document.getElementById('gotoZero').addEventListener('click', function(){
     if (!requireIdle('go to zero')) return;
-    sendLine('G53 G0 Z-' + travelZ().toFixed(1)); // retract near top of travel (requires homing)
+    sendLine(zHighCmd(travelZ())); // retract near top of travel (requires homing)
     sendLine('G90 G0 X0 Y0');
   });
   document.querySelectorAll('#rapidGrid button[data-rp]').forEach(function(b){
@@ -4575,35 +4812,13 @@ function wireMachine(){
   document.getElementById('jobHold').addEventListener('click', jobHold);
   document.getElementById('jobResume').addEventListener('click', jobResume);
   document.getElementById('jobStop').addEventListener('click', jobStop);
+  document.getElementById('toolJog').addEventListener('click', toolJogNow);
+  document.getElementById('toolBz').addEventListener('click', toolBzNow);
   document.getElementById('toolStop').addEventListener('click', function(){
     document.getElementById('toolModal').hidden = true;
     jobStop();
   });
-  document.getElementById('toolContinue').addEventListener('click', function(){
-    if (!JOB.toolWait) return;
-    document.getElementById('toolModal').hidden = true;
-    var tw = JOB.toolWait;
-    // when probing, the machine ends parked over the BitSetter — returning to
-    // the work at height is mandatory, not just the highStart preference
-    var wantHigh = (PROFILE.run.highStart || JOB.useBS) && SERIAL.homedSeen && tw.next;
-    var resume = function(){
-      if (wantHigh){
-        JOB.list.splice(JOB.idx, 0,
-          {text: 'G53 G0 Z-' + travelZ().toFixed(1), ln: 0, syn: true},
-          {text: 'G21 G90', ln: 0, syn: true},
-          {text: 'G0 X' + tw.next.x.toFixed(3) + ' Y' + tw.next.y.toFixed(3), ln: 0, syn: true});
-        JOB.total = JOB.list.length;
-        logC('sys', 'traversing at top of travel to X' + tw.next.x.toFixed(1) +
-             ' Y' + tw.next.y.toFixed(1) + ' before resuming');
-      }
-      logC('sys', 'continuing after tool change (T' + tw.tool + ')');
-      jobFill();
-    };
-    JOB.toolWait = null;
-    maybeToolPrompt();
-    if (JOB.useBS) probeStart('tool', resume);
-    else resume();
-  });
+  document.getElementById('toolContinue').addEventListener('click', toolContinueNow);
 
   document.getElementById('consoleIn').addEventListener('keydown', function(e){
     if (e.key !== 'Enter') return;

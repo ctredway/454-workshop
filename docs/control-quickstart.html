@@ -74,9 +74,21 @@ of whatever the plate is sitting on.</div>
 The BitZero probe is two-stage: a quick search, a small back-off, then a slow re-probe that gives
 the reading. The first descent is faster than you may expect; the measurement is the slow one.</div>
 
-<div class="warn"><b>With a BitSetter and a multi-tool file:</b> zero Z with the bit that will be in
-the spindle when you press Start. 454 Control takes its reference measurement at job start, so
-swapping bits in between shifts your Z.</div>
+<ol class="steps" start="5" style="counter-reset:s 4">
+  <li><b>Say yes to the BitSetter.</b> If you have one set up, setting Z zero offers to measure the tool
+      straight away. That makes it the reference every other tool is measured against. The Probe
+      section shows the BitSetter&rsquo;s status; if it&rsquo;s switched on but can&rsquo;t be used, it says why.</li>
+</ol>
+
+<div class="cm same"><b>Same as Carbide Motion</b>
+The tool that sets Z zero is measured as the reference, so tool changes keep your zero.</div>
+
+<div class="cm same"><b>Same as Carbide Motion</b>
+With a BitSetter set up, the tool is measured at the start of every job.</div>
+
+<div class="cm diff"><b>Different from Carbide Motion</b>
+That measurement is compared with the reference taken at Z zero, so if you swapped bits after
+zeroing, the difference is compensated instead of shifting your Z.</div>
 
 <h2>4. Load the file</h2>
 <ol class="steps">
@@ -93,11 +105,34 @@ swapping bits in between shifts your Z.</div>
       added, where the bit waits during spin-up, and how the job will end.</li>
   <li><b>Read it, then press Start job.</b> The control bar over the preview shows progress,
       position, and Hold, Resume and STOP.</li>
-  <li><b>At a tool change</b> the machine lifts, moves to the tool-change position and waits.
-      Change the bit, then press <b>Tool changed &mdash; continue</b>; with a BitSetter it measures
-      the new tool itself.</li>
+  <li><b>At a tool change</b> the machine lifts, stops the spindle, moves to the tool-change position
+      and waits. Change the bit, then press <b>Tool changed &mdash; continue</b>. With a BitSetter the new
+      tool is measured automatically.</li>
   <li><b>At the end</b> it lifts, stops the spindle and moves off the part.</li>
 </ol>
+
+<h3>Tool changes without a BitSetter</h3>
+<p>A new tool is a different length from the last one, so without a BitSetter to measure it, Z has
+to be zeroed again before it cuts. 454 Control won&rsquo;t let that be missed:</p>
+<ol class="steps">
+  <li><b>You choose at Start.</b> If the file changes tools after cutting has begun and the BitSetter
+      isn&rsquo;t set up, a dialog says so before anything moves. <b>Set up the BitSetter</b> opens
+      Settings instead of starting; <b>Re-zero at each change</b> starts the job.</li>
+  <li><b>At each change, zero Z for the new tool.</b> The tool-change prompt offers <b>Probe with
+      BitZero</b> and <b>Jog &amp; zero Z</b>. The job waits, stopped, while you do it.</li>
+  <li><b>Then continue.</b> <b>Tool changed &mdash; continue</b> stays disabled until Z has been zeroed
+      for the new tool. When you continue, the machine lifts to the top before moving back to the
+      work, since the tip is still down on the stock.</li>
+</ol>
+<p>The first tool, loaded before anything is cut, doesn&rsquo;t need re-zeroing: that&rsquo;s the one
+you zeroed with.</p>
+
+<div class="cm same"><b>Same as Carbide Motion</b>
+Without a BitSetter, you set Z zero again after each tool change.</div>
+
+<div class="cm diff"><b>Different from Carbide Motion</b>
+The choice is made at Start, before anything moves, and the job can&rsquo;t continue past a tool
+change until Z has actually been zeroed for the new tool.</div>
 
 <div class="cm diff"><b>Different from Carbide Motion</b>
 Every job ends the same way whatever the file does: lift, spindle off, then move to your park
@@ -108,14 +143,15 @@ position, or back to the job&rsquo;s XY zero if you haven&rsquo;t set one.</div>
   <tr><th>Situation</th><th>What to do</th></tr>
   <tr><td>Need to pause</td><td><b>Hold.</b> The machine stops with the spindle running; <b>Resume</b> carries on.</td></tr>
   <tr><td>Something is about to be hit</td><td><b>STOP</b> (red). Immediate halt: motion and spindle stop at once.</td></tr>
+  <tr><td>Need to end the job early</td><td><b>End job.</b> The machine slows to a stop, then lifts clear, stops the spindle and moves off the part.</td></tr>
   <tr><td>Stopped and want to carry on</td><td>The <b>Recover</b> box is filled in with the line where cutting stopped. Check it in the preview, then press Recover.</td></tr>
   <tr><td>Probe failed</td><td>The tool was too far from the plate. Unlock when asked, jog closer, probe again.</td></tr>
   <tr><td>Machine says Alarm</td><td>Home it, or unlock if you know why it alarmed.</td></tr>
 </table>
 
 <div class="cm diff"><b>Different from Carbide Motion</b>
-<b>End job</b> stops the spindle where it stands, with no lift, so mid-cut it leaves the bit in the
-material. Use <b>Hold</b> if you only need to pause.</div>
+<b>End job</b> finishes the way a completed job does: it waits for the machine to stop, then lifts
+clear and parks. Only the red <b>STOP</b> halts instantly.</div>
 
 <h2>Worth knowing</h2>
 <ul>
