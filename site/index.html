@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>454 Workshop (beta): free CNC design, toolpaths and machine control</title>
+<meta name="description" content="Free, open-source software for GRBL CNC routers like the Shapeoko and Nomad, in beta: draw your parts and make their toolpaths in 454 Design, run the machine with 454 Control.">
+<meta property="og:title" content="454 Workshop">
+<meta property="og:description" content="Free, open-source design and machine control for GRBL CNC routers like the Shapeoko and Nomad.">
+<meta property="og:image" content="https://454workshop.com/images/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:url" content="https://454workshop.com/">
+<meta name="theme-color" content="#14181d">
+<link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="images/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --slate:#14181d; --panel:#1d232b; --grid:#2f3944; --line:#3a4552;
+    --ink:#dce3ea; --muted:#9aa6b2;
+    --brand:#0083ff; --brand-hi:#2e99ff;       /* the logo's blue: the logo, the main button, the Beta badge, the hero */
+    --accent:#52abff; --accent-hi:#85c3ff;     /* the same blue, lighter: links and small text, readable on the dark */
+    --sans:'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--slate);color:var(--ink);font:17px/1.6 var(--sans)}
+  a{color:var(--accent)}
+  a:hover{color:var(--accent-hi)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+
+  /* top bar */
+  .bar{display:flex;align-items:center;gap:22px;padding:20px 0}
+  .bar .mark{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:700;font-stretch:112%}
+  .bar .mark img{width:84px;height:auto}
+  .bar nav{margin-left:auto;display:flex;gap:22px;font-size:15px}
+  .bar nav a{color:var(--muted);text-decoration:none}
+  .bar nav a:hover{color:var(--ink)}
+
+  /* hero: the headline, and 454 being cut */
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:36px 0 72px}
+  h1{margin:0;font-size:clamp(46px,7vw,86px);line-height:.95;font-weight:800;font-stretch:125%;letter-spacing:-.01em}
+  .tag{margin:18px 0 0;font-size:clamp(20px,2.3vw,26px);font-weight:600;font-stretch:110%;color:var(--brand)}
+  .lede{margin:18px 0 0;max-width:34em;color:var(--muted)}
+  .actions{margin-top:30px;display:flex;flex-wrap:wrap;gap:12px}
+  .btn{display:inline-block;padding:12px 20px;border-radius:6px;font-weight:600;text-decoration:none;font-size:16px;border:1.5px solid var(--accent)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#0d1822}
+  .btn.primary:hover{background:var(--brand-hi);border-color:var(--brand-hi);color:#0d1822}
+  .btn.plain{color:var(--accent)}
+  .btn.plain:hover{background:rgba(0,131,255,.12)}
+  .note{margin-top:18px;font-size:15px;color:var(--muted)}
+  .plate{width:100%;max-width:560px;justify-self:end;display:block}
+  #solid{transition:opacity .9s ease}
+  #cut,#vectors{transition:opacity .9s ease}
+  .tag .beta{display:inline-block;vertical-align:.15em;margin-left:.35em;padding:.25em .6em .28em;font-size:.62em;font-weight:700;font-stretch:100%;letter-spacing:.02em;line-height:1;color:var(--slate);background:var(--brand);border-radius:4px}
+  .betaNote{margin:22px 0 0;max-width:34em;padding:12px 16px;border:1px solid var(--accent);border-radius:6px;background:rgba(0,131,255,.08);color:var(--ink);font-size:16px}
+  .betaNote b{color:var(--accent)}
+  .steps{margin:0;padding:0;list-style:none;counter-reset:step}
+  .steps li{counter-increment:step;position:relative;padding:14px 0 14px 40px;border-top:1px solid var(--grid)}
+  .steps li:first-child{border-top:0;padding-top:4px}
+  .steps li::before{content:counter(step);position:absolute;left:0;top:14px;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .steps li:first-child::before{top:4px}
+  .steps b{display:block;font-stretch:108%}
+  .steps span{color:var(--muted)}
+
+  /* the two apps */
+  h2{margin:0 0 8px;font-size:clamp(28px,3.4vw,40px);line-height:1.1;font-weight:750;font-stretch:118%}
+  section{padding:64px 0;border-top:1px solid var(--grid)}
+  .intro{max-width:40em;color:var(--muted);margin:0 0 34px}
+  .shots{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .shots figure{margin:0}
+  .shots img{width:100%;height:auto;display:block;border-radius:6px;border:1px solid var(--line)}   /* height follows width: no stretching */
+  .shots figcaption{margin-top:14px}
+  .shots figcaption b{display:block;font-stretch:110%;font-size:19px;margin-bottom:2px}
+  .shots figcaption span{color:var(--muted);font-size:16px}
+  .does{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:40px}
+  .does ul{margin:0;padding-left:20px;color:var(--muted)}
+  .does li{margin:6px 0}
+  .does li::marker{color:var(--accent)}
+
+  /* trust, free, requirements */
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+  .pair p{color:var(--muted);margin:0 0 14px}
+  .points{list-style:none;margin:0;padding:0}
+  .points li{padding:14px 0;border-top:1px solid var(--grid)}
+  .points li:first-child{border-top:0;padding-top:4px}
+  .points b{display:block;font-stretch:108%}
+  .points span{color:var(--muted)}
+  .caution{margin-top:18px;padding:14px 16px;border-left:3px solid var(--accent);background:var(--panel);border-radius:0 6px 6px 0;color:var(--ink)}
+
+  /* the name */
+  .story{display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:center}
+  .story .big{width:clamp(220px,28vw,340px);height:auto;display:block}
+  .story p{max-width:36em;font-size:19px;margin:0}
+
+  footer{border-top:1px solid var(--grid);padding:34px 0 48px;color:var(--muted);font-size:15px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:22px;align-items:center}
+  footer .grow{flex:1}
+
+  @media (max-width:860px){
+    .hero,.pair,.shots,.does,.story{grid-template-columns:1fr}
+    .plate{justify-self:start;max-width:360px}
+    .hero{padding-top:12px}
+    .bar nav{gap:16px}
+    .story{gap:16px}
+  }
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="mark" href="/" aria-label="454 Workshop, home"><img src="images/logo.svg" alt="" width="84" height="27">Workshop</a>
+    <nav aria-label="Site">
+      <a href="docs/index.html">Docs</a>
+      <a href="https://github.com/ctredway/454-workshop">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <h1>454 Workshop</h1>
+        <p class="tag">Draw it, toolpath it, cut it. <span class="beta" title="This is beta software: new, and still being tested">Beta</span></p>
+        <p class="lede">Free, open-source software for CNC routers running GRBL, like the Shapeoko and Nomad.
+          Draw your parts and make their toolpaths in 454 Design, then run the machine with 454 Control, right
+          in your browser.</p>
+        <div class="actions">
+          <a class="btn primary" href="design/">Open 454 Design</a>
+          <a class="btn plain" href="control/">Open 454 Control</a>
+        </div>
+        <p class="betaNote"><b>This is beta software.</b> It&rsquo;s new, and the toolpaths especially are still
+          being tested. Check every job before you cut it. <a href="#beta">What that means</a></p>
+        <p class="note">A desktop app for Windows and Linux is in testing, and works without an internet
+          connection. <a href="https://github.com/ctredway/454-workshop">Follow it on GitHub</a>.</p>
+      </div>
+
+      <!-- your logo, cut as a toolpath once when the page opens -->
+      <svg class="plate" viewBox="0 0 600 330" role="img" aria-label="The 454 logo being cut as a toolpath on a gridded plate">
+        <defs>
+          <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232b35"/><stop offset="1" stop-color="#14181d"/></linearGradient>
+          <clipPath id="clip"><rect x="10" y="10" width="580" height="310" rx="48"/></clipPath>
+        </defs>
+        <rect x="10" y="10" width="580" height="310" rx="48" fill="url(#bg)"/>
+        <g clip-path="url(#clip)" stroke="#2f3944" stroke-width="1.5"><path d="M10 68 H590 M10 126 H590 M10 184 H590 M10 242 H590 M10 300 H590 M68 10 V320 M126 10 V320 M184 10 V320 M242 10 V320 M300 10 V320 M358 10 V320 M416 10 V320 M474 10 V320 M532 10 V320 M590 10 V320"/></g>
+        <rect x="10" y="10" width="580" height="310" rx="48" fill="none" stroke="#3a4552" stroke-width="2.5"/>
+        <g transform="translate(50.00 86.09) scale(0.63131)">
+          <g id="solid" opacity="0">
+            <path fill="#fff" fill-rule="evenodd" d="M359.50 224.38 C313.02 219.12 275.76 205.56 255.04 186.38 L249.42 181.17 L200.71 181.05 L152.00 180.92 L152.00 191.46 L152.00 202.00 L106.53 202.00 L61.07 202.00 L60.78 191.75 L60.50 181.50 L45.25 181.22 L30.00 180.95 L30.00 152.47 L30.00 124.00 L45.50 124.00 L61.00 124.00 L61.00 89.50 L61.00 55.00 L100.15 55.00 L139.30 55.00 L192.87 82.25 C222.33 97.24 246.90 109.62 247.47 109.76 C248.04 109.90 254.57 89.87 262.00 65.26 L275.50 20.50 L395.99 20.50 L516.47 20.50 L526.21 52.50 C531.57 70.10 535.96 85.28 535.98 86.23 C536.00 87.81 534.11 87.98 514.25 88.23 C494.32 88.48 492.84 88.62 496.50 89.88 C505.19 92.86 520.91 101.26 528.50 106.98 C532.90 110.29 536.76 113.00 537.07 113.00 C537.39 113.00 563.26 99.95 594.57 84.01 L651.50 55.01 L690.75 55.01 L730.00 55.00 L730.00 89.50 L730.00 124.00 L745.50 124.00 L761.00 124.00 L761.00 152.47 L761.00 180.95 L745.75 181.22 L730.50 181.50 L730.22 191.75 L729.93 202.00 L684.47 202.00 L639.00 202.00 L639.00 191.46 L639.00 180.93 L590.12 181.05 L541.24 181.17 L537.37 185.16 C526.29 196.59 504.56 207.91 479.20 215.45 C467.86 218.83 447.36 222.60 430.29 224.46 C412.89 226.35 376.51 226.31 359.50 224.38 Z"/>
+            <path fill="#0083ff" fill-rule="evenodd" d="M380.50 207.87 C340.57 206.21 303.58 197.04 279.63 182.87 C273.36 179.16 258.08 165.54 259.11 164.58 C259.33 164.39 276.48 163.66 297.24 162.97 L334.97 161.71 L338.89 164.43 C344.62 168.39 356.94 172.89 368.43 175.21 C381.82 177.91 407.42 178.12 420.50 175.63 C432.84 173.28 443.64 169.60 450.63 165.35 L456.50 161.78 L494.00 163.00 C514.62 163.67 531.66 164.37 531.86 164.56 C532.66 165.29 521.14 176.49 516.00 179.99 C487.23 199.54 435.56 210.17 380.50 207.87 Z M77.67 184.33 C77.30 183.97 77.00 179.02 77.00 173.33 L77.00 163.00 L62.00 163.00 L47.00 163.00 L47.00 151.50 L47.00 140.00 L62.00 140.00 L77.00 140.00 L77.00 105.50 L77.00 71.00 L106.41 71.00 L135.82 71.00 L196.91 102.13 L258.00 133.27 L258.00 148.13 L258.00 162.98 L196.75 163.24 L135.50 163.50 L135.22 174.25 L134.93 185.00 L106.63 185.00 C91.07 185.00 78.03 184.70 77.67 184.33 Z M655.78 174.27 L655.50 163.50 L594.25 163.24 L533.00 162.98 L533.00 148.13 L533.00 133.27 L594.09 102.13 L655.18 71.00 L684.59 71.00 L714.00 71.00 L714.00 105.50 L714.00 140.00 L729.00 140.00 L744.00 140.00 L744.00 151.50 L744.00 163.00 L729.03 163.00 L714.07 163.00 L713.78 173.75 L713.50 184.50 L684.78 184.77 L656.07 185.03 L655.78 174.27 Z M380.83 168.04 C368.05 165.70 357.92 161.26 354.00 156.27 C352.75 154.69 352.00 152.21 352.00 149.71 C352.00 141.99 362.16 135.49 379.00 132.43 C400.05 128.61 425.60 132.95 435.06 141.94 C444.31 150.74 437.66 160.66 418.90 166.03 C410.63 168.40 389.01 169.54 380.83 168.04 Z M200.45 139.16 C199.28 138.13 139.18 105.39 136.75 104.46 C135.12 103.83 135.00 105.06 135.00 121.89 L135.00 140.00 L168.20 140.00 C186.46 140.00 200.97 139.62 200.45 139.16 Z M656.00 121.89 C656.00 105.06 655.88 103.83 654.25 104.46 C651.82 105.39 591.72 138.13 590.55 139.16 C590.03 139.62 604.54 140.00 622.80 140.00 L656.00 140.00 L656.00 121.89 Z M292.73 134.50 C274.70 133.83 259.72 133.05 259.43 132.76 C259.03 132.36 280.06 61.34 287.12 39.25 L288.16 36.00 L396.02 36.00 L503.88 36.00 L506.51 44.75 C507.96 49.56 510.24 57.01 511.57 61.30 C512.91 65.59 514.00 69.31 514.00 69.55 C514.00 69.80 479.17 70.00 436.60 70.00 L359.20 70.00 L357.61 77.25 C356.73 81.24 355.72 86.01 355.36 87.85 L354.71 91.19 L367.11 90.35 C383.96 89.20 416.10 89.49 429.50 90.91 C461.22 94.28 490.46 102.63 510.51 114.05 C518.02 118.33 532.95 131.39 531.72 132.61 C531.40 132.94 514.35 133.81 493.84 134.55 L456.54 135.89 L452.12 132.96 C432.90 120.22 391.71 116.23 360.70 124.09 C351.57 126.40 342.92 130.06 338.37 133.53 C335.87 135.44 334.04 135.97 330.32 135.85 C327.67 135.77 310.75 135.16 292.73 134.50 Z"/>
+          </g>
+          <g id="vectors" fill="none" stroke="#7f8b97" stroke-width="2.4" stroke-dasharray="8 8">
+            <path d="M77.67 184.33 C77.30 183.97 77.00 179.02 77.00 173.33 L77.00 163.00 L62.00 163.00 L47.00 163.00 L47.00 151.50 L47.00 140.00 L62.00 140.00 L77.00 140.00 L77.00 105.50 L77.00 71.00 L106.41 71.00 L135.82 71.00 L196.91 102.13 L258.00 133.27 L258.00 148.13 L258.00 162.98 L196.75 163.24 L135.50 163.50 L135.22 174.25 L134.93 185.00 L106.63 185.00 C91.07 185.00 78.03 184.70 77.67 184.33 Z"/>
+            <path d="M200.45 139.16 C199.28 138.13 139.18 105.39 136.75 104.46 C135.12 103.83 135.00 105.06 135.00 121.89 L135.00 140.00 L168.20 140.00 C186.46 140.00 200.97 139.62 200.45 139.16 Z"/>
+            <path d="M380.50 207.87 C340.57 206.21 303.58 197.04 279.63 182.87 C273.36 179.16 258.08 165.54 259.11 164.58 C259.33 164.39 276.48 163.66 297.24 162.97 L334.97 161.71 L338.89 164.43 C344.62 168.39 356.94 172.89 368.43 175.21 C381.82 177.91 407.42 178.12 420.50 175.63 C432.84 173.28 443.64 169.60 450.63 165.35 L456.50 161.78 L494.00 163.00 C514.62 163.67 531.66 164.37 531.86 164.56 C532.66 165.29 521.14 176.49 516.00 179.99 C487.23 199.54 435.56 210.17 380.50 207.87 Z"/>
+            <path d="M292.73 134.50 C274.70 133.83 259.72 133.05 259.43 132.76 C259.03 132.36 280.06 61.34 287.12 39.25 L288.16 36.00 L396.02 36.00 L503.88 36.00 L506.51 44.75 C507.96 49.56 510.24 57.01 511.57 61.30 C512.91 65.59 514.00 69.31 514.00 69.55 C514.00 69.80 479.17 70.00 436.60 70.00 L359.20 70.00 L357.61 77.25 C356.73 81.24 355.72 86.01 355.36 87.85 L354.71 91.19 L367.11 90.35 C383.96 89.20 416.10 89.49 429.50 90.91 C461.22 94.28 490.46 102.63 510.51 114.05 C518.02 118.33 532.95 131.39 531.72 132.61 C531.40 132.94 514.35 133.81 493.84 134.55 L456.54 135.89 L452.12 132.96 C432.90 120.22 391.71 116.23 360.70 124.09 C351.57 126.40 342.92 130.06 338.37 133.53 C335.87 135.44 334.04 135.97 330.32 135.85 C327.67 135.77 310.75 135.16 292.73 134.50 Z"/>
+            <path d="M380.83 168.04 C368.05 165.70 357.92 161.26 354.00 156.27 C352.75 154.69 352.00 152.21 352.00 149.71 C352.00 141.99 362.16 135.49 379.00 132.43 C400.05 128.61 425.60 132.95 435.06 141.94 C444.31 150.74 437.66 160.66 418.90 166.03 C410.63 168.40 389.01 169.54 380.83 168.04 Z"/>
+            <path d="M655.78 174.27 L655.50 163.50 L594.25 163.24 L533.00 162.98 L533.00 148.13 L533.00 133.27 L594.09 102.13 L655.18 71.00 L684.59 71.00 L714.00 71.00 L714.00 105.50 L714.00 140.00 L729.00 140.00 L744.00 140.00 L744.00 151.50 L744.00 163.00 L729.03 163.00 L714.07 163.00 L713.78 173.75 L713.50 184.50 L684.78 184.77 L656.07 185.03 L655.78 174.27 Z"/>
+            <path d="M656.00 121.89 C656.00 105.06 655.88 103.83 654.25 104.46 C651.82 105.39 591.72 138.13 590.55 139.16 C590.03 139.62 604.54 140.00 622.80 140.00 L656.00 140.00 L656.00 121.89 Z"/>
+          </g>
+          <g id="cut" fill="none" stroke="#0083ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M77.67 184.33 C77.30 183.97 77.00 179.02 77.00 173.33 L77.00 163.00 L62.00 163.00 L47.00 163.00 L47.00 151.50 L47.00 140.00 L62.00 140.00 L77.00 140.00 L77.00 105.50 L77.00 71.00 L106.41 71.00 L135.82 71.00 L196.91 102.13 L258.00 133.27 L258.00 148.13 L258.00 162.98 L196.75 163.24 L135.50 163.50 L135.22 174.25 L134.93 185.00 L106.63 185.00 C91.07 185.00 78.03 184.70 77.67 184.33 Z"/>
+            <path d="M200.45 139.16 C199.28 138.13 139.18 105.39 136.75 104.46 C135.12 103.83 135.00 105.06 135.00 121.89 L135.00 140.00 L168.20 140.00 C186.46 140.00 200.97 139.62 200.45 139.16 Z"/>
+            <path d="M380.50 207.87 C340.57 206.21 303.58 197.04 279.63 182.87 C273.36 179.16 258.08 165.54 259.11 164.58 C259.33 164.39 276.48 163.66 297.24 162.97 L334.97 161.71 L338.89 164.43 C344.62 168.39 356.94 172.89 368.43 175.21 C381.82 177.91 407.42 178.12 420.50 175.63 C432.84 173.28 443.64 169.60 450.63 165.35 L456.50 161.78 L494.00 163.00 C514.62 163.67 531.66 164.37 531.86 164.56 C532.66 165.29 521.14 176.49 516.00 179.99 C487.23 199.54 435.56 210.17 380.50 207.87 Z"/>
+            <path d="M292.73 134.50 C274.70 133.83 259.72 133.05 259.43 132.76 C259.03 132.36 280.06 61.34 287.12 39.25 L288.16 36.00 L396.02 36.00 L503.88 36.00 L506.51 44.75 C507.96 49.56 510.24 57.01 511.57 61.30 C512.91 65.59 514.00 69.31 514.00 69.55 C514.00 69.80 479.17 70.00 436.60 70.00 L359.20 70.00 L357.61 77.25 C356.73 81.24 355.72 86.01 355.36 87.85 L354.71 91.19 L367.11 90.35 C383.96 89.20 416.10 89.49 429.50 90.91 C461.22 94.28 490.46 102.63 510.51 114.05 C518.02 118.33 532.95 131.39 531.72 132.61 C531.40 132.94 514.35 133.81 493.84 134.55 L456.54 135.89 L452.12 132.96 C432.90 120.22 391.71 116.23 360.70 124.09 C351.57 126.40 342.92 130.06 338.37 133.53 C335.87 135.44 334.04 135.97 330.32 135.85 C327.67 135.77 310.75 135.16 292.73 134.50 Z"/>
+            <path d="M380.83 168.04 C368.05 165.70 357.92 161.26 354.00 156.27 C352.75 154.69 352.00 152.21 352.00 149.71 C352.00 141.99 362.16 135.49 379.00 132.43 C400.05 128.61 425.60 132.95 435.06 141.94 C444.31 150.74 437.66 160.66 418.90 166.03 C410.63 168.40 389.01 169.54 380.83 168.04 Z"/>
+            <path d="M655.78 174.27 L655.50 163.50 L594.25 163.24 L533.00 162.98 L533.00 148.13 L533.00 133.27 L594.09 102.13 L655.18 71.00 L684.59 71.00 L714.00 71.00 L714.00 105.50 L714.00 140.00 L729.00 140.00 L744.00 140.00 L744.00 151.50 L744.00 163.00 L729.03 163.00 L714.07 163.00 L713.78 173.75 L713.50 184.50 L684.78 184.77 L656.07 185.03 L655.78 174.27 Z"/>
+            <path d="M656.00 121.89 C656.00 105.06 655.88 103.83 654.25 104.46 C651.82 105.39 591.72 138.13 590.55 139.16 C590.03 139.62 604.54 140.00 622.80 140.00 L656.00 140.00 L656.00 121.89 Z"/>
+          </g>
+          <g id="cutter" opacity="0">
+            <circle r="26" fill="none" stroke="#d2e5f6" stroke-width="5"/>
+            <circle r="7" fill="#d2e5f6"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <section id="apps" aria-labelledby="apps-h">
+      <h2 id="apps-h">Draw in Design, cut with Control</h2>
+      <p class="intro">Two apps that work together, from the first line of a drawing to the machine parking
+        at the end of the job.</p>
+      <div class="shots">
+        <figure>
+          <img src="images/design.png" width="1400" height="873" loading="lazy"
+               alt="454 Design with a workshop sign drawn: a plate with holes, a pocket and the word Workshop">
+          <figcaption><b>454 Design</b><span>Draw your parts, or open them from VCarve and DXF files, and make their toolpaths.</span></figcaption>
+        </figure>
+        <figure>
+          <img src="images/control.png" width="1400" height="873" loading="lazy"
+               alt="454 Control with a job loaded: a 3D preview of the toolpaths and the G-code beside it">
+          <figcaption><b>454 Control</b><span>Check every move of a job, then send it to the machine.</span></figcaption>
+        </figure>
+      </div>
+      <div class="does">
+        <ul aria-label="What 454 Design does">
+          <li>Lines, arcs, shapes and text, with snapping, fillets, offsets and dimensions</li>
+          <li>Traces images into clean outlines, and keeps work organised in layers</li>
+          <li>Opens VCarve projects, including multi-sheet jobs, and your VCarve tool library</li>
+          <li>Opens DXF files, and saves DXF and SVG for other software</li>
+          <li>Toolpaths, in beta: profiles with tabs, pockets, drilling, chamfers, V-carving and inlays</li>
+        </ul>
+        <ul aria-label="What 454 Control does">
+          <li>Homing, zeroing, jogging, and probing with a BitZero</li>
+          <li>BitSetter tool measuring and guided tool changes</li>
+          <li>Checks a file for problems before you cut, and estimates the time using your machine's own settings</li>
+          <li>Works the way Carbide Motion does, so the steps at the machine are ones you know</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="beta" aria-labelledby="beta-h">
+      <div class="pair">
+        <div>
+          <h2 id="beta-h">This is beta software</h2>
+          <p>454 Workshop is new. It works, and it&rsquo;s being used on real jobs, but it hasn&rsquo;t had the years
+            of use that established software has. The toolpaths in 454 Design are the newest part: testing
+            them on real projects is still finding problems, which are fixed as they turn up.</p>
+          <p>So treat every job as one to check, especially one whose toolpaths 454 Design made.</p>
+        </div>
+        <ol class="steps">
+          <li><b>Open the job in 454 Control first</b><span>Watch the preview all the way through, and read
+            anything on the Checks tab.</span></li>
+          <li><b>Run it in the air</b><span>Zero Z well above the material, run the whole job, and watch where
+            the bit goes.</span></li>
+          <li><b>Stay at the machine</b><span>On the real cut, keep a hand near the stop, especially for the
+            first minutes and at every tool change.</span></li>
+          <li><b>Tell us when something&rsquo;s wrong</b><span><a href="https://github.com/ctredway/454-workshop/issues">Report
+            it on GitHub</a>, with the drawing or G-code file if you can. That&rsquo;s how the beta gets better.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section aria-labelledby="trust-h">
+      <div class="pair">
+        <div>
+          <h2 id="trust-h">Made to be trusted around a spinning bit</h2>
+          <p>A mistake in machine software doesn't just crash; it breaks a bit or ruins a part. So 454 is careful about the
+            things that matter at the machine.</p>
+        </div>
+        <ul class="points">
+          <li><b>Tested on every change</b><span>Real jobs run through a simulated controller, checking that the
+            spindle is up to speed before every cut, lifts before it stops, and every job ends safely.</span></li>
+          <li><b>Says what it will do</b><span>Before you start, 454 tells you in plain words what's about to happen,
+            and flags anything in a file it doesn't like.</span></li>
+          <li><b>Fills in what files leave out</b><span>If a file forgets the spin-up wait, the lift before the
+            spindle stops, or a safe ending, 454 adds it.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="free-h">
+      <div class="pair">
+        <div>
+          <h2 id="free-h">Free, for everyone</h2>
+          <p>454 Workshop is free and open source under the MIT licence. There's no paid version and no account to
+            make. If it's useful to you, you can <a href="https://github.com/sponsors/ctredway">support it on GitHub</a>,
+            and bug reports and ideas are always welcome.</p>
+        </div>
+        <div>
+          <h2 id="need-h">What you need</h2>
+          <p>A CNC router with a GRBL 1.1 controller, such as a Shapeoko or Nomad, and Chrome or Edge on Windows,
+            macOS or Linux. Those browsers can talk to the machine over USB; others can't yet.</p>
+          <p class="caution">A CNC machine can hurt you. Check every job before you cut it: run it in the air first,
+            keep a hand near the stop, and wear eye and ear protection.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="name-h">
+      <div class="story">
+        <img class="big" src="images/logo.svg" alt="" width="330" height="104">
+        <div>
+          <h2 id="name-h">Why 454?</h2>
+          <p>454 is a nod to my dad. He was a huge Chevy guy, and when I was five he bought a 1967 Corvette with a 454
+            big block in it. He's the one who taught me how to build things, so I named my making after his love for
+            Chevy big blocks.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span class="grow">454 Workshop, free and open source under the MIT licence</span>
+    <a href="docs/index.html">Documentation</a>
+    <a href="https://github.com/ctredway/454-workshop">GitHub</a>
+    <a href="https://github.com/ctredway/454-workshop/issues">Report a problem</a>
+  </div>
+</footer>
+
+<script>
+// Cut the logo once: each piece in turn, the cutter riding along it, then the finished logo fills in.
+// Still (and finished) for reduced motion.
+(function () {
+  var cuts = Array.prototype.slice.call(document.querySelectorAll('#cut path'));
+  var cutter = document.getElementById('cutter'), solid = document.getElementById('solid');
+  var vectors = document.getElementById('vectors'), cutG = document.getElementById('cut');
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function finish(){ solid.style.opacity = 1; cutG.style.opacity = 0; vectors.style.opacity = 0; cutter.setAttribute('opacity', '0'); }
+  var lens = cuts.map(function (p) { return p.getTotalLength(); });
+  cuts.forEach(function (p, i) { p.style.strokeDasharray = lens[i]; p.style.strokeDashoffset = lens[i]; });
+  if (still){ finish(); return; }
+  var speed = 900, pause = 180, start = null;                     // logo units per second
+  function frame(now) {
+    if (start === null) start = now + 500;                        // a moment before the cut begins
+    var t = Math.max(0, now - start), done = true;
+    for (var i = 0, offset = 0; i < cuts.length; i++) {
+      var dur = lens[i] / speed * 1000, local = t - offset;
+      var k = Math.max(0, Math.min(1, local / dur));
+      cuts[i].style.strokeDashoffset = lens[i] * (1 - k);
+      if (local >= 0 && k < 1) {
+        var pt = cuts[i].getPointAtLength(lens[i] * k);
+        cutter.setAttribute('transform', 'translate(' + pt.x + ' ' + pt.y + ')');
+        cutter.setAttribute('opacity', '1');
+        done = false;
+      } else if (k < 1) done = false;
+      offset += dur + pause;
+    }
+    if (!done) requestAnimationFrame(frame);
+    else setTimeout(finish, 250);                                  // the cutter lifts away; the logo appears
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

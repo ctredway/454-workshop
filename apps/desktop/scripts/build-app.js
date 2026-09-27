@@ -75,7 +75,7 @@ const about = fs.readFileSync(path.join(root, 'src', 'renderer', 'about.html'), 
   .replace('__ELECTRON__', JSON.parse(fs.readFileSync(mod('electron/package.json'), 'utf8')).version);
 if (/__[A-Z]+__/.test(about)) throw new Error('build-app: the About page has an unfilled version');
 fs.writeFileSync(path.join(out, 'about.html'), about);
-copy(path.join(root, 'build', 'icon.png'), 'about-icon.png');
+copy(path.join(root, 'build', 'logo.svg'), 'about-logo.svg');
 
 // ---- the docs, shared by both
 if (fs.existsSync(SRC.docs)) fs.cpSync(SRC.docs, path.join(out, 'docs'), { recursive: true,

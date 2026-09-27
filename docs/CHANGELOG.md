@@ -11,7 +11,24 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ---
 
+## The 454 logo
+
+- **Your logo throughout**, traced from the PNG into a crisp SVG (checked against the original: the only
+  differences are the PNG's soft edges). Two colours: the logo blue #0083ff and its white outline.
+- **The website:** in the header beside "Workshop"; the hero now cuts **your logo** on a wide gridded plate
+  (dashed outlines, then each piece traced by the cutter, then the finished logo fills in; still for
+  reduced motion); beside the "Why 454?" story; the browser-tab and home-screen icons; and a new
+  link-preview picture for sharing. The site's blue is now the logo's: #0083ff for the logo, the main
+  button, the Beta badge and the hero, and a lighter #52abff for links and small text (7.3:1 on the page).
+- **The app:** the program, taskbar and window icons; the About window (whose accent is now blue); and the
+  headers of Control, Design and the docs, with the app's name in white beside the logo.
+- **Icons per size:** the full logo from 48 px up; at 16 to 32 px, where a wide logo becomes a sliver,
+  the 5 with its ring, which stays recognisable.
+
 ## 454 Workshop (the desktop app, in testing)
+
+### 0.5.2
+- The 454 logo (above). Control 0.31.6 and Design 0.89.1: the logo in their headers.
 
 ### 0.5.1
 - 454 Control 0.31.5 (the browser check, below; the app always has Web Serial, so it never shows).

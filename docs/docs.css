@@ -19,8 +19,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15p
 
 header{display:flex;align-items:center;gap:14px;padding:12px 20px;background:var(--panel);
   border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
-header .brand{font-weight:700;font-size:17px;letter-spacing:.2px;text-decoration:none;color:var(--ink)}
-header .brand span{color:var(--amber)}
+header .brand{font-weight:700;font-size:17px;letter-spacing:.2px;text-decoration:none;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+header .brand img{height:23px;width:auto;display:block}
+header .brand span{color:var(--muted)}
 header .spacer{flex:1}
 header a.app{color:var(--amber);text-decoration:none;font-size:13px;font-weight:600;padding:5px 10px;
   border:1px solid var(--line);border-radius:5px;white-space:nowrap}
