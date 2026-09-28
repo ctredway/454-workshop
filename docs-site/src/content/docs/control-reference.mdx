@@ -1,0 +1,223 @@
+---
+title: "454 Control: reference"
+description: "Every part of 454 Control's screen: the Machine tab, jogging and zeroing, probing, running a job, the Code, Toolpaths and Checks tabs, playback, and Settings."
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Shot from '../../components/Shot.astro';
+import overview from '../../assets/shots/control-overview.png';
+import machineTab from '../../assets/shots/control-machine-tab.png';
+import jogPanel from '../../assets/shots/control-jog-panel.png';
+import codeTab from '../../assets/shots/control-code-tab.png';
+import toolpathsTab from '../../assets/shots/control-toolpaths-tab.png';
+import checksTab from '../../assets/shots/control-checks-tab.png';
+import footer from '../../assets/shots/control-footer.png';
+import toolChoice from '../../assets/shots/control-toolchange-choice.png';
+import startDialog from '../../assets/shots/control-start-dialog.png';
+import settings from '../../assets/shots/control-settings.png';
+
+Every part of 454 Control's screen, and what each control does. For your first job from start to finish,
+see the [Control quick start](control-quickstart.html). The ⓘ beside each section in the app gives a short
+reminder of the same.
+
+:::caution
+454 Control moves a real machine. Keep a hand near the stop, wear eye and ear protection, and run anything
+new in the air first.
+:::
+
+## The screen
+
+<Shot src={overview} alt="454 Control connected to a machine, with a job loaded: the 3D preview of the toolpaths on the left, the Machine tab on the right, and the position and playback bar along the bottom." caption="Connected, with the sample job loaded and its preview partway through." />
+
+- **The header** shows the loaded file's name and, once connected, a red **STOP** button, the machine's
+  state (such as *Idle*, *Run* or *Alarm*), whether the spindle is running, and **Hold** and **Resume**. On
+  the right: **Docs**, **454 Design**, **Settings**, the sample file, and **Open** for a G-code file (`.nc`,
+  `.gcode`, `.tap` or `.ngc`). You can also drop a file anywhere on the window.
+- **The 3D preview** draws the job: cuts as solid lines, rapids dashed. Left-drag to orbit, right-drag to
+  pan, scroll to zoom. The cube in the corner turns the view to Top, Front, Left and so on, and **Fit**
+  frames the whole job.
+- **The summary** above the tabs gives the job's extents in X, Y and Z, its estimated run time, how far it
+  cuts and travels, and its tools.
+- **The tabs:** [Machine](#the-machine-tab), [Code](#the-code-tab), [Toolpaths](#the-toolpaths-tab) and
+  [Checks](#the-checks-tab).
+- **The bar along the bottom:** the [position readout and playback](#the-position-and-playback-bar).
+
+## The Machine tab
+
+Everything for running the machine, top to bottom: connecting, homing, jogging and zeroing, probing, the
+spindle, quick actions, and running a job. It's the tab Control opens on.
+
+<Shot src={machineTab} alt="The Machine tab, connected: Disconnect; Home, Unlock and Reset; Open jog panel; BitZero Z zero; the spindle speed with Start and Spindle off; quick actions; Run loaded file, Recover, Hold, Resume and End job; and the console." />
+
+### Connecting
+
+<Steps>
+
+1. Switch the machine on and plug it in by USB.
+2. Press **Connect to machine** and pick your controller from the browser's list. After the first time, the
+   button says **Reconnect** and skips the list; **Choose port…** picks a different one.
+3. Control reads the controller's settings and asks to **home** the machine. Say yes: homing is required
+   before a job, because lifting clear, parking and the BitSetter all use the machine's own coordinates.
+
+</Steps>
+
+Control talks to GRBL 1.1 controllers over USB, which covers the Shapeoko and Nomad. The web version needs
+**Chrome or Edge on a computer**, because other browsers can't talk to USB devices; the desktop app works on
+its own. Everything else, including opening and checking G-code, works anywhere.
+
+### Machine
+
+- **Home ($H)** runs the homing cycle, finding each axis's limit switch.
+- **Unlock ($X)** clears an alarm without homing. Use it with care: until you home, the machine doesn't
+  know where it is.
+- **Reset** stops everything at once, as the controller's reset does.
+- The line underneath shows the **machine position**, in the machine's own coordinates.
+
+### Jog and zero
+
+**Open jog panel** moves the machine by hand and sets your work zero: where the job's X0, Y0 and Z0 are on
+the material.
+
+<Shot src={jogPanel} alt="The jog panel: a STOP button, the work position in large figures, step sizes 0.025, 0.1, 1, 10 and Fast, buttons for each direction in X, Y and Z, rapid-position buttons for nine points around the table, and Zero X, Zero Y, Zero Z, Zero all, Go to XY zero, Z +6 mm and Probe." />
+
+- **Move** sets how far each press goes: 0.025, 0.1, 1 or 10 mm. In **Fast**, the machine moves while you
+  hold a button or key, at the **Fast XY** and **Fast Z** speeds, and stops the moment you let go.
+- **The arrow buttons** move X and Y, including diagonally; **Z+** and **Z−** move Z. On the keyboard, while
+  the panel is open: <kbd>←</kbd> <kbd>→</kbd> for X, <kbd>↑</kbd> <kbd>↓</kbd> for Y, <kbd>PgUp</kbd> <kbd>PgDn</kbd> for Z.
+- **Rapid position** moves quickly to one of nine points around the table: the corners, the middles of the
+  edges, and the centre. It needs a homed machine.
+- **Work zero:** **Zero X**, **Zero Y**, **Zero Z** or **Zero all** makes the current position zero on those
+  axes. The zero is stored in the controller, so it survives homing and restarting Control.
+- **Go to XY zero** raises Z first, then moves over the job's X0 Y0. **Z +6 mm** lifts the tool 6 mm from
+  where it is, as in Carbide Motion. **Probe…** opens the BitZero panel.
+
+### Probe
+
+**BitZero Z zero…** sets Z zero with the BitZero touch plate, which puts Z0 at the top of your material.
+
+<Steps>
+
+1. Set the plate's thickness in **Settings → Accessories**, measured with calipers.
+2. Put the plate on the material and jog the tool over it, 2 to 10 mm above.
+3. Touch the pin to the plate to check the circuit, then probe. Control finds the plate quickly, backs off,
+   and measures again slowly for accuracy.
+4. Check the result with a piece of paper under the tool before cutting.
+
+</Steps>
+
+### Spindle
+
+Type a speed and press **Start (M3)**, or **Spindle off**. With a VFD, the speed shown is what was asked
+for, not a measurement. Starting by hand here doesn't wait for the spindle to reach speed, so give it a few
+seconds before cutting. Jobs are different: Control adds a spin-up wait after every spindle start
+automatically, set in **Settings → Accessories**.
+
+### Quick actions
+
+Saved G-code for things you do often, like **Raise Z to top** or **Spindle warm-up**. **+ Add** makes a new
+one, and the pencil edits one. Lines are sent one at a time, each waiting for the controller to confirm the
+last, and any error, alarm or reset stops the action at once. They're saved with your machine profile.
+
+### Running a job
+
+<Steps>
+
+1. Load the file, check its preview and the **Checks** tab, and set your work zero.
+2. Press **Run loaded file**. If the job changes tools, Control first asks how each change should work (see
+   below).
+3. Read the summary of what will happen, then press **Start job**.
+4. While it runs, **Hold** pauses, **Resume** continues, and **End job** stops it: it lifts clear before
+   stopping the spindle.
+
+</Steps>
+
+<Shot src={startDialog} alt="The Start this job? dialog: the file name, the cut extents, the checks, the tool changes and where they happen, the spin-up waits, where the machine lifts and parks, and a reminder to check the zero, the tool and the stop." caption="Before anything moves, Control says exactly what it will do: extents, tool changes, spin-up waits, lifts and the ending." />
+
+**Tool changes.** For a job with more than one tool, Control needs a way to set each new tool's height. With
+a BitSetter set up, it measures each tool automatically. Without one, it asks what you'd like to do:
+
+<Shot src={toolChoice} alt="A dialog: This job changes tools, but the BitSetter isn't set up. Choices: Cancel, Set up the BitSetter, or Re-zero at each change." />
+
+At each change, the machine lifts, moves to the tool-change position, stops the spindle and asks for the
+new tool; with **Re-zero at each change**, it then asks you to set Z zero again, with the BitZero or by
+jogging.
+
+**Recover** restarts a stopped job from a line, for example after a broken bit: type the line in **from
+line**, or scrub the preview to the spot. Control rebuilds the job's state up to that line, moves back
+carefully, and lets you back out at any point.
+
+### Console
+
+The raw conversation with the controller: everything Control sends, and everything it says back. You can
+type commands here for anything the app doesn't cover.
+
+:::caution
+Commands typed in the console are sent exactly as written, with no checks and no lifting or spindle
+handling. Treat it as typing straight into the controller.
+:::
+
+## The Code tab
+
+<Shot src={codeTab} alt="The Code tab: the job's G-code with line numbers, and below it Follow playback, a jump to toolpath menu, and the file's line and segment count." />
+
+The job's G-code, line by line. Click a line to move the preview there. With **Follow playback** on, the
+list scrolls to keep the current line in view as the preview plays. **Jump to toolpath…** goes to the start
+of any toolpath named in the file.
+
+## The Toolpaths tab
+
+<Shot src={toolpathsTab} alt="The Toolpaths tab: two toolpaths, Circle Pocket and Outside Profile, each with its tool, share of the time, deepest cut, cutting levels, feed, plunge, spindle speed, area, distance and lines." />
+
+Each toolpath in the file, with its tool, estimated time and share of the job, deepest cut and cutting
+levels, feeds, spindle speed, the area it covers, and its lines. Click one to show just that toolpath in the
+preview. If a file doesn't name its toolpaths, they're grouped by tool change instead.
+
+## The Checks tab
+
+<Shot src={checksTab} alt="The Checks tab: two notes, one for each tool change, each with the line it's on." />
+
+Anything in the file worth knowing before you cut: **errors** (red) that the machine would refuse or that
+would make the job go wrong, **warnings** (orange), and **notes** (blue) like tool changes. Click one to go
+to its line. A file with nothing to report says so.
+
+## The position and playback bar
+
+<Shot src={footer} alt="The bottom bar: X 56.600, Y 87.250, Z 32.500, the current line and tool, the playback buttons, a speed menu set to 1×, a timeline slider, and 0:54 of 1:27." />
+
+- **X, Y, Z** show the work position: where the tool is relative to your work zero. While connected, that's
+  the machine's live position; otherwise, the preview's.
+- **line** and **tool** show where the preview is in the file.
+- **The playback buttons** go to the start, step back a line, play or pause, step forward a line, and go to
+  the end. The menu sets the speed, from 0.5× to 100×, and the slider scrubs through the job. The time on
+  the right is the preview's position in the estimated run time.
+
+Playback only moves the preview, never the machine.
+
+## Settings
+
+The gear in the header. Settings are saved as you change them, in your machine profile.
+
+<Shot src={settings} alt="The Settings window on its Machine tab: the machine it recognised, display options, the work area, job zero, stock thickness, the time estimate's rapid rate, and the controller's settings as read." />
+
+- **Machine:** what to show in the preview; the **work area** (from the controller, or a machine you pick),
+  where the job's zero sits on the material, and whether to flag moves outside the work area; the **stock
+  thickness**, to flag cuts deeper than the material; the rapid rate used for time estimates; and the
+  **controller config**, the controller's own settings as read, with **Check controller settings** to look
+  them over for anything that would cause trouble.
+- **Accessories:** the **BitSetter** (jog over it and **Capture position**; **Test** touches off once to
+  check it, changing nothing), the **BitZero** (v1 or v2, and the plate thickness), and the **spindle**
+  (trim router or VFD, and the spin-up wait after each start: about 2.5 s suits a router, 10 s a VFD).
+- **Job:** **Start & stop high**, which keeps the bit above clamps and stock whenever it's travelling (leave
+  it on); the traverse height; how far to lift at tool changes and the end; and where to change tools and
+  where to park at the end of a job.
+- **Profile:** the theme (dark or light) and accent colour, and exporting or importing your machine profile,
+  including a Carbide Motion `shapeoko.json`.
+
+## Keyboard shortcuts
+
+| Keys | What they do |
+| --- | --- |
+| <kbd>Space</kbd> | play or pause the preview |
+| <kbd>←</kbd> <kbd>→</kbd> | step the preview back or forward a line |
+| <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>PgUp</kbd> <kbd>PgDn</kbd> | jog X, Y and Z, while the jog panel is open |
+| <kbd>Esc</kbd> | close the open panel or dialog |

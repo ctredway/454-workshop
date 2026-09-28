@@ -27,6 +27,27 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### Node 22 for the builds
+- **The Windows build failed on GitHub with "Node.js v20 is not supported by Astro"**: the docs site needs
+  Node 22.12 or newer, and the workflows used Node 20. Both workflows now use Node 22; the docs site
+  declares it; and both builds check the Node version first, stopping with a plain message instead of
+  failing inside the docs build.
+
+### Repository tidy-up
+- **The Windows build failed on GitHub**: the website's built files had been committed at the top of the
+  repository, so the landing page replaced Control's source (`index.html`) and the build couldn't find
+  Control. The build now recognises each app by its contents (`index.html` or `control/index.html`,
+  `design.html` or `design/index.html`), and reports which it used.
+- **The repository goes back to sources only** (`repo-sync.zip` with `tidy-repo.ps1`): Control restored as
+  `index.html` (0.31.6; the only copy left was an old 0.31.3), the rest of the docs site, the website's
+  built copies, stray images, old docs pages and the old site zip removed, and `.gitignore` fixed (it
+  was saved without its dot). The website is still built from the sources and uploaded as a zip; nothing
+  built needs committing. Checked on a copy of the repository: both builds succeed, with Control 0.31.6,
+  Design 0.90.0 and the new docs.
+
+### 0.5.4
+- Design 0.90.0 (the job sheet, below), and the docs' CAM reference section about it.
+
 ### 0.5.3
 - The new docs site, bundled (see Docs, above), and its docs window.
 - Building from the repository needs the docs site installed (`npm ci --prefix docs-site`); the Windows
@@ -43,6 +64,19 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   cam.js and geom.js are public.
 
 ## Docs
+
+### Control reference
+- **A new page: every part of 454 Control's screen**, with 10 screenshots: the whole window connected with a
+  job loaded, the Machine tab section by section (connecting, homing, jogging and zeroing, the BitZero,
+  the spindle, quick actions, running a job, the console), the Code, Toolpaths and Checks tabs, the
+  position and playback bar, Settings, and the keyboard shortcuts. Written from Control's own help text
+  and interface.
+- **Screenshots of a connected machine without one:** the pipeline feeds Control the lines a GRBL 1.1
+  controller sends (greeting, settings, work offset, status), so Control draws everything itself as it
+  would with a Shapeoko attached. It reacted for real: with a factory Shapeoko's settings it warned that
+  soft limits were off, and with no BitSetter, pressing Run asked how to handle the tool changes (now a
+  screenshot of its own).
+- The screenshot pipeline now reports the actual error when a shot's setup fails.
 
 ### The new docs site
 - **The docs are now an Astro Starlight site**, in `docs-site/`, at 454workshop.com/docs and inside the
@@ -181,6 +215,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.7 — the work position, right away
+- **The work position is right from the first status report after the work offset changes**, such as on
+  connecting or straight after zeroing. GRBL lists the machine position before the work offset in a
+  report, and Control worked out the work position as it read the machine position, with the previous
+  offset: the position readouts (the bottom bar and the jog panel) lagged one report, about a quarter of a
+  second, behind. Found while making the docs' screenshots; checked with reports as GRBL sends them, and
+  the end-to-end job test passes.
 
 ### 0.31.5 — tells you when your browser can't connect
 - **A browser that can't talk to the machine gets a clear message when Control opens**, in place of the
@@ -393,6 +435,28 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.90.0 — the job sheet
+- **Job sheet…**, under Save G-code in the Toolpaths panel: everything about the job on one printable page
+  (or a PDF), to keep at the machine.
+  - **The top:** the logo, the job name (click to rename), the date and version, and key facts: material
+    size and thickness, toolpaths, tools and tool changes, estimated time.
+  - **The job, to scale:** the material, the shapes, each toolpath's cuts in its own colour with a numbered
+    marker where it starts, drilled holes as rings, and where X0 Y0 is.
+  - **Setup checklist:** the material, how far the cutting reaches (so clamps stay clear), where to zero X
+    and Y, where Z zero goes and the deepest cut, the first tool, and the air cut.
+  - **Tools:** T number, name, diameter, type, flutes, spindle speed, and which toolpaths use each.
+  - **Toolpaths in cutting order:** tool, feed, plunge and spindle, the same description as the cards, and
+    an estimated time each.
+  - **Anything that needs attention** (notes on toolpaths, order warnings, no thickness set, toolpaths left
+    out), and a Notes area to type in before printing.
+- **It matches the G-code:** the same tool numbers (checked against a saved file: T1, T2, T3, T2 in both),
+  the same toolpaths (those left out of the G-code are left out), and out-of-date toolpaths recalculated
+  first, as Save G-code does. In a multi-sheet project, it covers the chosen sheet.
+- Prints as clean pages: only the sheet prints, sections never split from their headings, and every page
+  prints (the app's full-window layout had clipped printing to the first page).
+- The toolpath cards and the job sheet share one description of each toolpath, and the G-code export and
+  the job sheet share one tool numbering, so they can't disagree.
 
 ### 0.89.0 — CAM released, as a beta
 - **CAM loads by default**, on the website as in the desktop app; `?cam=off` still turns it off in that

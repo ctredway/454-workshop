@@ -26,6 +26,9 @@ export default defineConfig({
           { label: 'Design quick start', link: '/design-quickstart' },
           { label: 'Coming from Carbide Motion', link: '/carbide-motion' },
         ] },
+        { label: '454 Control', items: [
+          { label: 'Reference', link: '/control-reference' },
+        ] },
         { label: '454 Design', items: [
           { label: 'Tools', link: '/design-tools' },
         ] },

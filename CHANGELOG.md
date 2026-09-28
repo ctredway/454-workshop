@@ -65,6 +65,19 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## Docs
 
+### Control reference
+- **A new page: every part of 454 Control's screen**, with 10 screenshots: the whole window connected with a
+  job loaded, the Machine tab section by section (connecting, homing, jogging and zeroing, the BitZero,
+  the spindle, quick actions, running a job, the console), the Code, Toolpaths and Checks tabs, the
+  position and playback bar, Settings, and the keyboard shortcuts. Written from Control's own help text
+  and interface.
+- **Screenshots of a connected machine without one:** the pipeline feeds Control the lines a GRBL 1.1
+  controller sends (greeting, settings, work offset, status), so Control draws everything itself as it
+  would with a Shapeoko attached. It reacted for real: with a factory Shapeoko's settings it warned that
+  soft limits were off, and with no BitSetter, pressing Run asked how to handle the tool changes (now a
+  screenshot of its own).
+- The screenshot pipeline now reports the actual error when a shot's setup fails.
+
 ### The new docs site
 - **The docs are now an Astro Starlight site**, in `docs-site/`, at 454workshop.com/docs and inside the
   desktop app: a sidebar of every section, an "On this page" outline, search (Ctrl+K; it works offline in
@@ -202,6 +215,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.7 — the work position, right away
+- **The work position is right from the first status report after the work offset changes**, such as on
+  connecting or straight after zeroing. GRBL lists the machine position before the work offset in a
+  report, and Control worked out the work position as it read the machine position, with the previous
+  offset: the position readouts (the bottom bar and the jog panel) lagged one report, about a quarter of a
+  second, behind. Found while making the docs' screenshots; checked with reports as GRBL sends them, and
+  the end-to-end job test passes.
 
 ### 0.31.5 — tells you when your browser can't connect
 - **A browser that can't talk to the machine gets a clear message when Control opens**, in place of the

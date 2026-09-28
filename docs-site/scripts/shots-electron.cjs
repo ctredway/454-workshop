@@ -43,7 +43,9 @@ async function shoot(port, shot, i) {
   // dismiss startup prompts (Control's "Connect to your machine?")
   await win.webContents.executeJavaScript(`(() => { const s = document.getElementById('connSkip'); if (s && s.offsetParent) s.click(); })()`);
   await new Promise((r) => setTimeout(r, 300));
-  let rect = await win.webContents.executeJavaScript(`(async () => { ${PRELUDE}\n ${shot.setup || ''} })()`);
+  // run the setup, and bring back its actual error message if it throws (not just "script failed")
+  let rect = await win.webContents.executeJavaScript(`(async () => { try { ${PRELUDE}\n ${shot.setup || ''} } catch (e) { return { __error: String(e && e.stack || e).split('\\n').slice(0, 2).join(' | ') }; } })()`);
+  if (rect && rect.__error) throw new Error('setup: ' + rect.__error);
   if (shot.capture && shot.capture.selector) {
     const pad = shot.capture.pad || 0;
     rect = await win.webContents.executeJavaScript(`(async () => { const e = document.querySelector(${JSON.stringify(shot.capture.selector)});

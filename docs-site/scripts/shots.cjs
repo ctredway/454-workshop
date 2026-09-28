@@ -94,4 +94,60 @@ SHOTS.push({ name: 'design-job-sheet', page: 'design.html', size: [1300, 1000],
     const top = document.querySelector('#jobSheet').getBoundingClientRect(), pic = document.querySelector('#jobSheet .jsPic').getBoundingClientRect();
     return { x: top.left, y: top.top, width: top.width, height: pic.bottom - top.top + 24 };` });
 
+// Control, connected: fed the lines a real GRBL 1.1 controller sends (greeting, settings, work offset,
+// status) for a Shapeoko set up as Control recommends (homing and soft limits on), so Control draws everything itself exactly as it would with a Shapeoko on the USB port.
+// Nothing is written to a machine: writes go to a stand-in that accepts and discards them.
+const OPEN_DIALOG = `const openDialogBox = () => { const d = Array.from(document.querySelectorAll('[role=dialog], [role=alertdialog]'))
+  .filter((e) => e.offsetParent && e.getBoundingClientRect().width > 100).pop();
+  if (!d) throw new Error('no dialog appeared'); const r = d.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; };`;
+const CONTROL_CONNECTED = OPEN_DIALOG + `
+  SERIAL.writer = { write: () => Promise.resolve(), releaseLock: () => {} }; SERIAL.writeChain = Promise.resolve();
+  SERIAL.connected = true; SERIAL.homedSeen = true; uiConn(true);
+  handleRx("Grbl 1.1f ['$' for help]");
+  ['$0=10','$1=255','$2=0','$3=0','$10=255','$11=0.020','$20=1','$21=1','$22=1','$23=0','$24=100.000','$25=1500.000','$27=5.000',
+   '$30=24000','$31=0','$32=0','$100=40.000','$101=40.000','$102=40.000','$110=5000.000','$111=5000.000','$112=5000.000',
+   '$120=400.000','$121=400.000','$122=400.000','$130=838.000','$131=838.000','$132=80.000'].forEach((l) => handleRx(l));
+  handleRx('ok');
+  handleRx('[G54:-419.000,-419.000,-72.500]'); handleRx('ok');
+  handleRx('<Idle|MPos:-362.400,-331.750,-40.000|FS:0,0|WCO:-419.000,-419.000,-72.500>');   // work position 56.6, 87.25, 32.5
+  await wait(150);
+  ['connModal', 'homeModal'].forEach((id) => { const m = document.getElementById(id); if (m) m.hidden = true; });
+`;
+const withJob = (at) => `document.getElementById('sampleBtn').click(); await wait(900);
+  ['connModal', 'homeModal'].forEach((id) => { const m = document.getElementById(id); if (m) m.hidden = true; });
+  document.getElementById('fitBtn').click(); await wait(300);` + (at ? ` setTime(MODEL.totalTime * ${at}); await wait(500);` : '');
+const tab = (id) => `document.getElementById('${id}').click(); await wait(300);`;
+// the dialog on screen (Control's prompts), as a capture rectangle
+
+
+SHOTS.push(
+  { name: 'control-overview', page: 'index.html', size: [1400, 860],
+    setup: CONTROL_CONNECTED + withJob(0.62) },
+  { name: 'control-machine-tab', page: 'index.html', size: [1400, 1000],
+    setup: CONTROL_CONNECTED + withJob(0) + tab('tabMachine'), capture: { selector: '#paneMachine', pad: 0 } },
+  { name: 'control-jog-panel', page: 'index.html', size: [1400, 1000],
+    setup: CONTROL_CONNECTED + `document.getElementById('jogOpen').click(); await wait(400);
+      const p = document.querySelector('#jogModal > div, #jogPanel'); return box(p.id ? '#' + p.id : '#jogModal > div');` },
+  { name: 'control-code-tab', page: 'index.html', size: [1400, 900],
+    setup: CONTROL_CONNECTED + withJob(0.4) + tab('tabCode'), capture: { selector: '#paneCode', pad: 0 } },
+  { name: 'control-toolpaths-tab', page: 'index.html', size: [1400, 900],
+    setup: CONTROL_CONNECTED + withJob(0) + tab('tabTp'), capture: { selector: '#paneTp', pad: 0 } },
+  { name: 'control-checks-tab', page: 'index.html', size: [1400, 900],
+    setup: CONTROL_CONNECTED + withJob(0) + tab('tabChecks'), capture: { selector: '#paneChecks', pad: 0 } },
+  { name: 'control-footer', page: 'index.html', size: [1400, 860],
+    setup: CONTROL_CONNECTED + withJob(0.62), capture: { selector: 'footer', pad: 0 } },
+  // Run, with two tools and no BitSetter: Control first asks how tool changes should go...
+  { name: 'control-toolchange-choice', page: 'index.html', size: [1400, 900],
+    setup: CONTROL_CONNECTED + withJob(0) + tab('tabMachine') + `document.getElementById('jobRun').click(); await wait(700);
+      return openDialogBox();` },
+  // ...then, choosing to re-zero at each change, shows what will happen before anything moves
+  { name: 'control-start-dialog', page: 'index.html', size: [1400, 900],
+    setup: CONTROL_CONNECTED + withJob(0) + tab('tabMachine') + `document.getElementById('jobRun').click(); await wait(700);
+      const choice = Array.from(document.querySelectorAll('button')).find((b) => b.offsetParent && /Re-zero at each change/.test(b.textContent));
+      if (!choice) throw new Error('the tool-change choice did not appear'); choice.click(); await wait(800);
+      return openDialogBox();` },
+  { name: 'control-settings', page: 'index.html', size: [1400, 1000],
+    setup: CONTROL_CONNECTED + `document.getElementById('settingsBtn').click(); await wait(400);`, capture: { selector: '#setPanel', pad: 0 } },
+);
+
 module.exports = { PRELUDE, SHOTS };
