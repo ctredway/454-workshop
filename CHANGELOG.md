@@ -27,31 +27,6 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.0 — automatic updates
-- **The installed app updates itself from GitHub Releases** (electron-updater). It checks a little while
-  after starting and every few hours, and offers a new version with what's new: Download, Later, or Skip
-  this version. It downloads in the background (progress on the taskbar button), checks the download
-  against the release, and asks to restart: Restart now, or Later, which installs when the app next closes.
-- **Never during a job:** update questions, and restarting, wait while 454 Control is busy (its own
-  `machineBusy()`: a job, probe, quick action or jog running, the spindle on, or the machine moving). If
-  the machine gets busy while the restart question is open, it doesn't restart.
-- **The 454 Workshop menu:** Check for updates… (tells you either way; becomes "Restart to update to…" once
-  one is downloaded), Updates → Check automatically, and Updates → Stable releases or Beta: pre-releases
-  too. Settings are kept in `updates.json` in the app's data folder.
-- **Copies that can't update say so:** one run from a zip, or a development build, explains why and how to
-  get one that can (the installer; settings, tools and drawings carry over).
-- **A download you asked for that fails is always reported**, including one that doesn't match its
-  checksum, which is thrown away rather than installed.
-- **Tested:** 17 unit tests of every decision (with a fake updater, machine and timers), and the real app
-  against a local update server offering a new version: found, offered, downloaded and checksum-checked,
-  then offered for restart without restarting; a corrupted download refused and reported once; and, with
-  a job running in the real 454 Control, the question held until the job ended (0.4 s after). The
-  end-to-end job test passes, with the updater silent.
-- **Releases:** the Windows workflow checks the tag matches the app's version, checks the update files
-  (`latest.yml` and the blockmap) were made, attaches them to the draft release, and marks a tag with a
-  suffix (`v0.6.1-beta.1`) as a pre-release, for the beta channel. See DEVELOPING.md, "Releasing".
-- A docs page, "The desktop app": installing, updates, and the beta channel.
-
 ### Node 22 for the builds
 - **The Windows build failed on GitHub with "Node.js v20 is not supported by Astro"**: the docs site needs
   Node 22.12 or newer, and the workflows used Node 20. Both workflows now use Node 22; the docs site
@@ -89,19 +64,6 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   cam.js and geom.js are public.
 
 ## Docs
-
-### Toolpath screenshots in the CAM reference
-- **Each toolpath type pictured on a real drawing**, made through the editor as a user makes it: a profile
-  with tabs, a pocket with an island in both clearing styles (offset rings and raster), drilling, a
-  chamfer, a V-carve, and an inlay's pocket and plug; plus a profile's editor with tabs and leads.
-- The pipeline can frame a shot on everything drawn, not just the material (the inlay's plug is made on a
-  mirrored copy beside the design), and select a toolpath so its tabs show.
-
-### Design workspace
-- **A new page: everything in Design around the drawing tools**, with 9 screenshots: the screen, Job
-  setup, layers, the tool library (with a neutral sample library), the Toolpaths panel and its editor,
-  checking the drawing (with a drawing that has deliberate problems), Settings, and the status bar.
-- The screenshot pipeline has 33 shots now; all were retaken to confirm them.
 
 ### Control reference
 - **A new page: every part of 454 Control's screen**, with 10 screenshots: the whole window connected with a
@@ -473,16 +435,6 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
-
-### 0.90.1 — Job setup, and the accent colour
-- **Job setup was drawing unstyled**: its labels and fields ran together and the XY zero picker overlapped
-  the text above it. Its styles were written for the Settings panel it used to live in, and didn't follow
-  when it became a panel of its own. It now shares them, and the picker has room for its corner buttons.
-  Found while making the docs' screenshots.
-- **Three highlights never showed**, because they asked for an accent colour variable Design doesn't
-  have (`--accent`; Design's is `--amber`, set by the theme's accent): the chosen XY zero corner in Job
-  setup, the selected Tools or Layers tab, and the active layer's border. Checked both apps: no other
-  colour variable is used without being defined.
 
 ### 0.90.0 — the job sheet
 - **Job sheet…**, under Save G-code in the Toolpaths panel: everything about the job on one printable page

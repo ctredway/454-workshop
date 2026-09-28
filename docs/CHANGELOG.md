@@ -254,6 +254,18 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### Source split into files (no change in behaviour)
+- **Control is now worked on as 35 source files** in `apps/control/src` (its styles, and its code by
+  subject: the parser, the 3D view, playback, each panel, the machine layer, jogging, probing, the
+  BitSetter and BitZero, the connection, status, quick actions, the profile, and the job: building,
+  running and recovery), assembled into the same single `index.html` by `node apps/control/build.mjs`.
+  The website, the desktop app and the release workflow use `index.html` exactly as before.
+- **Proven unchanged:** the split was cut at whole lines, and the build reassembles the original byte for
+  byte (289,384 bytes, identical SHA-256). `index.html` now differs from before only by a note at its top
+  saying it's generated. The end-to-end job test passes on it.
+- **GitHub checks on every push** that `index.html` matches its source files, so a direct edit, or a
+  source change without a rebuild, can't slip through. See `apps/control/README.md`.
+
 ### 0.31.7 — the work position, right away
 - **The work position is right from the first status report after the work offset changes**, such as on
   connecting or straight after zeroing. GRBL lists the machine position before the work offset in a

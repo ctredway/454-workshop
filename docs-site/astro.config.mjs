@@ -25,14 +25,12 @@ export default defineConfig({
           { label: 'Control quick start', link: '/control-quickstart' },
           { label: 'Design quick start', link: '/design-quickstart' },
           { label: 'Coming from Carbide Motion', link: '/carbide-motion' },
-          { label: 'The desktop app', link: '/desktop-app' },
         ] },
         { label: '454 Control', items: [
           { label: 'Reference', link: '/control-reference' },
         ] },
         { label: '454 Design', items: [
           { label: 'Tools', link: '/design-tools' },
-          { label: 'Workspace', link: '/design-workspace' },
         ] },
         { label: 'Toolpaths (CAM)', badge: { text: 'Beta', variant: 'caution' }, items: [
           { label: 'CAM reference', link: '/cam-reference' },
