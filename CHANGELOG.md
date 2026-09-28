@@ -28,6 +28,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ## 454 Workshop (the desktop app, in testing)
 
 ### 0.6.2-beta.4 — built only from the right files
+- **Fixed: the new source check failed on GitHub's Windows machine**, on a correct repository. Git there
+  checks files out with Windows line endings (\r\n), and Control's build matched its include lines by
+  \n alone, so it found none of them. The build now reads either, and a `.gitattributes` keeps the
+  repository's text files with \n endings on every computer. Tested with both kinds of line ending.
 - **The desktop build refuses a repository whose `index.html` isn't 454 Control**, and the Windows workflow
   checks the apps' sources before building. The website zip had been unzipped into the repository: its
   landing page replaced Control's `index.html`, and the build fell back to the website's copies in

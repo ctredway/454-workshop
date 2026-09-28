@@ -21,8 +21,12 @@ const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? (args[i + 1] || true) : null; };
 const out = path.resolve(typeof opt('--out') === 'string' ? opt('--out') : path.join(here, '..', '..', 'index.html'));
 
+// Read a text file with \n line endings, whatever the computer: Git on Windows can check files out with
+// \r\n, and the page and its files are assembled and compared line by line.
+const readText = (f) => fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n');
+
 export function assemble({ bare = false } = {}) {
-  const page = fs.readFileSync(path.join(src, 'control.html'), 'utf8');
+  const page = readText(path.join(src, 'control.html'));
   const used = new Set();
   const repo = path.resolve(here, '..', '..');
   let html = page.replace(/^@@include (\S+)\n/gm, (_, file) => {
@@ -32,7 +36,7 @@ export function assemble({ bare = false } = {}) {
     if (!fs.existsSync(f)) throw new Error('control build: ' + file + ' is included by control.html but doesn\u2019t exist');
     if (used.has(file)) throw new Error('control build: ' + file + ' is included twice');
     used.add(file);
-    return fs.readFileSync(f, 'utf8');
+    return readText(f);
   });
   // every source file must be used: a file that isn't included is code silently left out
   const all = ['styles', 'js'].flatMap((d) => fs.existsSync(path.join(src, d)) ? fs.readdirSync(path.join(src, d)).map((f) => d + '/' + f) : []);
@@ -50,7 +54,7 @@ if (import.meta.url === 'file://' + process.argv[1] || fileURLToPath(import.meta
   catch (e) { console.error(e.message); process.exit(1); }       // its own explanation, not a stack trace
   const { html, files } = built;
   if (opt('--check')) {
-    const have = fs.existsSync(out) ? fs.readFileSync(out, 'utf8') : '';
+    const have = fs.existsSync(out) ? readText(out) : '';
     if (have !== html) {
       console.error('index.html doesn\u2019t match apps/control/src. Run: node apps/control/build.mjs, and commit the result.');
       process.exit(1);
