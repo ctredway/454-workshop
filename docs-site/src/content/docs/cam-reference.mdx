@@ -1,0 +1,219 @@
+---
+title: "454 Design: CAM reference"
+description: "Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a walkthrough from drawing to G-code, see the Design quick start."
+---
+
+import Compare from '../../components/Compare.astro';
+import Shot from '../../components/Shot.astro';
+import jobSheet from '../../assets/shots/design-job-sheet.png';
+
+Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a walkthrough from drawing to G-code, see the [Design quick start](design-quickstart.html).
+
+**CAM is in beta.** Toolpaths are new and still being tested on real projects, which is still finding problems. Check every job before cutting material: open it in 454 Control and watch the preview all the way through, read the Checks tab, then run it in the air with Z zeroed well above the material. Every G-code file 454 Design saves starts with a note saying so. If something looks wrong, <a href="https://github.com/ctredway/454-workshop/issues" target="_blank" rel="noopener">report it on GitHub<span class="sr-only"> (opens in a new tab)</span></a>, with the drawing if you can.
+
+**On this page:** [The basics](#the-basics) · [Profile](#profile) · [Pocket](#pocket) · [Drill](#drill) · [Chamfer](#chamfer) · [V-carve](#v-carve) · [Inlay](#inlay) · [Finishing, direction, leads, tabs, ramps](#finishing-direction-leads-tabs-ramps) · [Tools and materials](#tools-and-materials) · [Order, checking and saving](#order-checking-and-saving) · [VCarve projects](#vcarve-projects) · [How the toolpaths are checked](#how-the-toolpaths-are-checked)
+
+## The basics
+
+**The Toolpaths panel** sits on the right. Select shapes on the drawing, then press **New toolpath** (the + icon). The editor opens beside the drawing with a live preview; press **Create** to add the toolpath, or **Cancel**. Each toolpath gets a card in the panel, where you can edit it, move it up or down, show or hide its preview, leave it out of the G-code, recalculate it, or delete it. Right-click a card for the same actions in a menu.
+
+**Recalculating** rebuilds a toolpath from its shapes and the material as they are now, keeping its own settings (tool, depths, feeds). The **Recalculate** button (↻) on each card is highlighted when a toolpath is out of date, because its shapes or the material changed since it was made; **Recalculate all** in the panel’s header does every toolpath at once. A toolpath keeps its own copy of the tool’s feeds and speeds, so after changing a tool in the library, edit the toolpath to pick up the new values.
+
+**Nothing is guessed.** A new toolpath starts with no tool and no depth, and **Create** stays disabled until you’ve chosen both. G-code can’t be saved while any toolpath has no tool. Z zero, the material’s thickness and where X0 Y0 sits all come from **Job setup**.
+
+**The hint** under the editor’s settings says what the toolpath will do in plain words (depth, passes, rings, tabs, finishing), and starts with ⚠ when something is wrong. Read it before pressing **Create**.
+
+**Any closed shape can be cut**: rectangles, circles, closed outlines, **groups** (such as a traced logo) and **text**. A group’s outlines, or a word’s letters, count as one shape.
+
+<Compare kind="same" title="Same as VCarve">
+
+Toolpaths are made from selected vectors, listed in the order they’ll run, and saved together as one G-code file with tool changes.
+
+</Compare>
+
+## Profile
+
+Cuts along an outline. Choose **Profile, outside** (the part keeps the outline’s size), **Profile, inside** (a hole keeps its size), or **Profile, on the line** (the cutter’s centre follows the line).
+
+| Setting | What it does |
+| --- | --- |
+| **Cut depth** | How deep, from Z zero. Or tick **through** to cut the material’s full thickness. |
+| **Overcut** | With **through**: how far past the bottom of the material to cut, so parts come free cleanly. |
+| **Per pass** | The depth of each pass. Filled from the tool’s feeds and speeds for the chosen material. |
+| **Feed** | Cutting speed. Also from the library; plunge rate and spindle speed come with it. |
+
+Profiles also take [finishing, direction, leads, tabs and ramps](#finishing-direction-leads-tabs-ramps).
+
+## Pocket
+
+**Pocket (clear the area)** removes everything inside an outline to a depth. **Islands are automatic**: shapes inside the pocket’s outline (a letter’s hole, a boss) are left standing.
+
+| Setting | What it does |
+| --- | --- |
+| **Cut depth**, **Per pass** | As for profiles. |
+| **Stepover** | How far apart the clearing passes are, as a share of the cutter’s diameter. 40% is the default. |
+| **Clearing** | **Offset rings** work outwards from the middle, following the pocket’s shape. **Raster** runs back and forth in straight lines **at** the angle you set (0° left to right, 90° front to back), then once round the walls. Raster is often quicker on long or rectangular pockets. |
+
+Pockets ramp into each depth, never plunge, and link passes with short feed moves only where the cutter stays inside the pocket; otherwise it lifts, moves and ramps back in. Pockets also take [finishing and direction](#finishing-direction-leads-tabs-ramps).
+
+**If the cutter is too big** for part of a pocket, that part is left and the hint says so. A narrow strip the cutter can’t reach needs a smaller tool.
+
+## Drill
+
+**Drill at centres** drills at the centre of each selected circle, nearest hole next.
+
+| Setting | What it does |
+| --- | --- |
+| **Cut depth** or **through** | How deep each hole goes. |
+| **Peck** | How far to drill before lifting to clear chips. **0** drills each hole in one plunge. |
+
+<Compare kind="diff" title="Different from VCarve’s post">
+
+GRBL has no drilling cycles (G81, G83), so drilling is written as plain moves. It runs the same way; the G-code is just longer.
+
+</Compare>
+
+## Chamfer
+
+**Chamfer edges (V-bit)** bevels an edge with a V-bit.
+
+| Setting | What it does |
+| --- | --- |
+| **Bevel width** | How wide the bevel is on the top face. The depth follows from the bit’s angle. |
+| **Bit** | The V-bit’s included angle, filled from the library. |
+| **The line is** | **the part’s edge (tip on it)**: the bevel runs down to the line. **the bevel’s top, going inside** or **going outside**: the line is where the bevel starts, as VCarve’s “vectors at top”. Going inside countersinks a hole to its drawn size. |
+
+A bevel wider than the bit can cut is refused, with the reason in the hint.
+
+## V-carve
+
+**V-carve (V-bit)** carves text, logos and artwork with a V-bit. The bit’s tip follows each shape’s centre-line, deeper where the shape is wide and rising to the surface at sharp points, so the carving’s edges land exactly on the outline and corners come out sharp. There’s no depth to set: the shape decides it.
+
+| Setting | What it does |
+| --- | --- |
+| **Bit** | The V-bit’s included angle, from the library. |
+| **Max depth** | Optional. Deeper than this, the carving gets a flat floor. A **clearing pocket** is added with it for the flat middles, runs first, and follows if you change the max depth; open it and choose its end mill. |
+| **Tip** | The width of the bit’s flat tip, if it has one (engraving bits usually do). From the library. Lines narrower than the tip stay at the surface. |
+
+**Warnings** in the hint: the tool isn’t a V-bit; the carving is wider than the bit can make (set a max depth, or use a larger bit); or it would go deeper than the material.
+
+<Compare kind="same" title="Same as VCarve">
+
+Flat depth with a clearance tool works as VCarve’s does, and clearing runs before the V-carve.
+
+</Compare>
+
+## Inlay
+
+**Inlay (V-bit pocket or plug)** makes the two halves of a V-carve inlay from the same shapes, so they fit. Cut both with the **same V-bit**.
+
+| Setting | What it does |
+| --- | --- |
+| **Cut the** | **pocket (in the base)** or **plug (in the inlay piece)**. |
+| **Pocket depth** | How deep the pocket’s flat floor is. 5 mm to start. |
+| **Start depth** | Plug only: how deep the plug’s walls begin. The plug seats this deep in the pocket. 2.5 mm to start. |
+| **Plug depth** | Plug only: how deep the plug is carved. More than the start depth, so it stands proud. 5 mm to start. |
+
+**Create** makes each half as two ordinary toolpaths: a clearing pocket (choose its end mill) and a V-carve. The **plug** half also draws a mirrored copy of your shapes, and a boundary around them, on an **Inlay plug** layer beside the design.
+
+**How it fits:** flipped into the pocket, the plug wedges on its walls at the start depth, leaves *pocket depth − start depth* underneath for glue, and stands *plug depth − start depth* above the surface to plane off. The hint states all three.
+
+**Trim the inlay piece to the boundary before gluing.** Stock left outside it hits the base and stops the plug seating.
+
+## Finishing, direction, leads, tabs, ramps
+
+### Finishing
+
+Profiles (inside and outside) and pockets: **Finishing** — **leave** an amount on the walls during the roughing passes, then, with **then finish it** ticked, take it off in one pass at full depth. The cutter is barely loaded on that pass, so walls come out cleaner and truer. Untick it to leave the material for another toolpath or tool.
+
+### Direction
+
+Profiles, pockets and chamfers: **Climb** (the default) usually leaves the better finish on a rigid machine; **Conventional** can suit flexible setups or brittle material.
+
+### Lead in/out
+
+Inside and outside profiles: **Arc** (a quarter circle that meets the line tangentially) or **Line** (at 45°), sized by the box beside it (the cutter’s diameter by default). The cutter sweeps onto the line from the waste side and off it again, so no pass starts or stops on the finished wall, and the path starts mid-way along the longest straight edge.
+
+- **Passes that ramp in** get only the lead-out; a **finishing pass**, which drops straight in, gets both.
+- **In a tight hole** the lead shrinks to fit, and is left out if even a small one would touch the wall.
+
+### Tabs
+
+Profiles: tick **Add tabs**, then either click **Edit tabs** and click the outline to add a tab (click a tab to remove it), or type how many and press **Add** to space them evenly round each shape. **Clear** removes them all. Set their **Length** and thickness. The cutter steps straight up at each tab’s edge and straight down after it, so tabs are full height along their length. Tabs are kept on finishing passes too.
+
+### Ramps
+
+Profiles ramp into each pass rather than plunging, over four cutter diameters (at least 4 mm), then recut the ramped stretch at full depth, so a through-cut never leaves a sloping web holding the part. Pockets ramp along their rings. Converted VCarve toolpaths keep VCarve’s ramp length.
+
+## Tools and materials
+
+Choosing a tool opens the **tool library**. Pick the machine and material in its bar; the toolpath takes that tool’s feeds and speeds for that material. **Recently used** at the top holds your last six.
+
+- **Edit** a tool: name, type, units, diameter, angle and flat tip for V-bits, flutes, notes, and its tool number on the chosen machine.
+- **Feeds and speeds are per material**: with a material chosen, **Edit** shows that tool’s feed, plunge, spindle speed, pass depth and stepover for it. A material with none yet offers **Add feeds**, started from another material’s (a note says which, and in which units).
+- **+ Tool**, **Duplicate**, **Delete**, **+ Material**, and **Import VCarve library…** (reads VCarve’s `tools.vtdb`). No VCarve? **Start an empty library**.
+
+**Toolpaths keep their own feeds.** Editing the library doesn’t change toolpaths already made, so a job you’ve checked can’t change under you. Choose the tool again in a toolpath to take the new values. The library lives in this browser and is shared with 454 Control.
+
+## Order, checking and saving
+
+### Order
+
+A new toolpath slots into the usual cutting order: **holes, chamfers, pockets, V-carves, inside profiles, on-the-line profiles, outside profiles**, so the part is held until the end. Reorder with the arrows on each card; an order you’ve arranged is kept, and editing never moves a toolpath. A toolpath that would run after the outside profile has cut the part free gets a warning.
+
+### Check
+
+**Check** looks over the drawing before cutting: open shapes, shapes in pieces, doubled shapes, crossings, and shapes no toolpath cuts. It lists what needs a look, selects those shapes on the drawing, and offers to fix the ones it can.
+
+### Saving G-code
+
+**Save G-code…** writes every included toolpath to one file, in order, with a tool change wherever the tool changes, numbered from your library, and each toolpath’s name so 454 Control can show which one is running. It refuses while any toolpath has no tool chosen.
+
+<Compare kind="same" title="Same as Carbide Motion">
+
+The G-code is plain GRBL: tool changes are M6 with a T number, which 454 Control and Carbide Motion both handle with their tool-change routine.
+
+</Compare>
+
+### Job sheet
+
+**Job sheet…**, under **Save G-code** in the Toolpaths panel, puts everything about the job on one
+printable page, to keep at the machine: the material and its thickness, a picture of the job to scale
+with each toolpath numbered where it starts, a setup checklist (where to zero X, Y and Z, the first
+tool, how far the cutting reaches so clamps stay clear), the tools, every toolpath in cutting order with
+its tool, feeds, depths and estimated time, and anything that needs attention. Click the job name or
+**Notes** to edit them before printing; **Print…** prints it, or saves it as a PDF.
+
+<Shot src={jobSheet} alt="The top of a job sheet: the 454 logo, the job name Workshop sign, the material size, thickness, toolpath and tool counts, estimated time, and the job drawn to scale with four numbered toolpaths." caption="The top of a job sheet. The tools, the toolpaths in cutting order, and notes follow." />
+
+The tool numbers (T1, T2...) are the ones in the G-code, and the sheet describes exactly what **Save
+G-code** will write: toolpaths left out of the G-code are left out of the sheet too, and any that are out
+of date are recalculated first. In a multi-sheet project, it covers the chosen sheet.
+
+:::note
+The times are estimates at the programmed feeds, without acceleration, so real jobs run somewhat longer.
+454 Control's estimate, which uses your machine's own settings, is closer.
+:::
+
+## VCarve projects
+
+Opening a VCarve `.crv` brings in its drawing, material and zero, and its toolpaths as previews. **Make these editable** converts them into 454 toolpaths, keeping VCarve’s tools, depths, passes, feeds, order and settings:
+
+- **Profiles**, with tabs, ramps, allowance and direction
+- **Pockets**, including raster clearing and its angle
+- **Drilling**, and **chamfers** in both of VCarve’s modes
+- **V-carves**, with the bit’s angle and tip and the flat depth
+
+**How shapes are found:** each toolpath in a VCarve project records which vectors it uses, by VCarve’s own IDs, and 454 reads that record. It doesn’t depend on where anything is, so it works even if parts were moved after VCarve last calculated. For a project without that record, 454 falls back to matching VCarve’s saved toolpath previews to the shapes; if nothing matches, the toolpath comes across with no shapes: open it with **Edit** and pick them. Inlay toolpaths aren’t converted yet.
+
+**Multi-sheet projects:** each sheet comes in as its own layer, named as in VCarve, with one shown at a time. Choose the sheet at the top of the Toolpaths panel: it shows that sheet, lists its toolpaths, and **Save G-code** saves that sheet only, named for it. Each sheet is its own job, cut from its own material, so a toolpath can’t mix shapes from different sheets.
+
+<Compare kind="diff" title="Check converted jobs">
+
+Conversion is careful, but read each toolpath’s hint and run **Check** before cutting, as you would with any new job.
+
+</Compare>
+
+## How the toolpaths are checked
+
+Every toolpath type is tested the same way before release: every point along every move is checked to keep the full cutter radius from every wall and island, and every reachable point is checked to be cut. V-carves and inlays are checked against exact answers (a V-carved 10 mm bar comes out 8.662 mm deep against an exact 8.660), and an inlay’s fit is proved by simulating both halves and pushing the plug in. Converted toolpaths are compared with VCarve’s own paths.

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design tools · 454 Workshop docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="index.html"><img src="images/logo.svg" alt="454" width="72" height="23"> Workshop<span> docs</span></a>
+  <div class="spacer"></div>
+  <a class="app" href="../index.html" target="_blank" rel="noopener">454 Control &#8599;<span class="sr"> (opens in a new tab)</span></a>
+  <a class="app" href="../design.html" target="_blank" rel="noopener">454 Design &#8599;<span class="sr"> (opens in a new tab)</span></a>
+</header>
+<div class="wrap">
+<h1>454 Design: tools</h1>
+<p class="lede">Every tool in the panel on the left of 454 Design, group by group: what each one does and how
+to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank
+drawing to G-code, see the <a href="design-quickstart.html">Design quick start</a>.</p>
+
+<p><b>Groups:</b> <a href="#file">File</a> &middot; <a href="#create">Create vectors</a> &middot;
+<a href="#edit">Edit vectors</a> &middot; <a href="#align">Align and nest</a> &middot; <a href="#guides">Guides</a>
+&middot; <a href="#view">View and history</a></p>
+
+<h2 id="typing">Before you start: typing exact values</h2>
+<p>Most tools can be used with the mouse alone, but for exact work you can type values at any time: just start
+typing while a tool is active, and a box appears at the pointer. Press <kbd>Enter</kbd> to use the value. Values
+are in the drawing&rsquo;s units unless you type a unit after the number (<code>3mm</code>, <code>0.5in</code>).</p>
+<table>
+  <tr><th>Type</th><th>Means</th><th>Example</th></tr>
+  <tr><td><code>x,y</code></td><td>a point, measured from the drawing&rsquo;s zero</td><td><code>50,30</code></td></tr>
+  <tr><td><code>@dx,dy</code></td><td>a point relative to the last one</td><td><code>@10,0</code> is 10 to the right</td></tr>
+  <tr><td><code>length&lt;angle</code></td><td>a distance at an angle from the last point (degrees, counter-clockwise from the right)</td><td><code>50&lt;45</code></td></tr>
+</table>
+<p><b>Snapping:</b> while drawing, the pointer snaps to the ends, midpoints, corners and centers of shapes, to
+guides and where guides cross, and to the grid. <b>Esc</b> cancels whatever you&rsquo;re in the middle of, and
+<kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes almost anything.</p>
+<h2 id="file">File</h2>
+<p>Starting, saving and opening drawings, and handing them to other software.</p>
+<h3>New</h3>
+<p>Clears all shapes and guides, to start a fresh drawing.</p>
+<ol>
+  <li>Click <b>New</b>.</li>
+  <li>Changed your mind? <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings everything back.</li>
+</ol>
+<h3>Save</h3>
+<p>Saves the drawing, with its toolpaths, to a <code>.454.json</code> file you can open again later.</p>
+<ol>
+  <li>Click <b>Save</b> and choose where to put the file.</li>
+  <li>Keep it with the job&rsquo;s G-code, or as a backup.</li>
+</ol>
+<h3>Load</h3>
+<p>Opens a saved drawing, a VCarve project, a DXF file, or an image to trace.</p>
+<ol>
+  <li>Click <b>Load</b> and pick a file, or drag the file onto Design&rsquo;s window.</li>
+  <li><b>A saved drawing</b> (<code>.454.json</code>) opens as it was.</li>
+  <li><b>A VCarve project</b> (<code>.crv</code>) opens a panel: choose whether to bring in the <b>Drawing vectors</b> and the <b>Toolpath preview vectors</b>, whether to <b>Scale to width</b> or <b>Move to origin</b>, and millimetres or inches. The material size comes across too, and the project&rsquo;s toolpaths can be made editable in Design afterwards.</li>
+  <li><b>A DXF file</b> comes in with its layers and true curves.</li>
+  <li><b>An image</b> (PNG, JPG, GIF, BMP or WebP) opens the <b>Trace image</b> panel: set the <b>Threshold</b> (or press <b>Auto</b>), <b>Invert</b> for light artwork on a dark background, the <b>Smoothing</b>, specks to ignore, and the traced width, then press <b>Trace</b>. <b>Fit curves</b> turns the outlines into smooth arcs and lines with far fewer points.</li>
+</ol>
+<h3>Export DXF</h3>
+<p>Saves the drawing as a DXF file, for VCarve, Fusion, a laser, or other CAD and CAM software.</p>
+<ol>
+  <li>Click <b>Export DXF</b> and choose where to save it.</li>
+  <li>Shapes keep their true curves and their layers; everything is in millimetres.</li>
+</ol>
+<h3>Export SVG</h3>
+<p>Saves the drawing as an SVG file, for laser software, vinyl cutters and Inkscape.</p>
+<ol>
+  <li>Click <b>Export SVG</b> and choose where to save it.</li>
+  <li>It&rsquo;s true to size in millimetres, with true curves and your layers.</li>
+</ol>
+<h2 id="create">Create vectors</h2>
+<p>Selecting, and drawing new shapes.</p>
+<h3>Select / move <kbd>V</kbd></h3>
+<p>Picks shapes so you can move them, change them, or use another tool on them.</p>
+<ol>
+  <li><b>Click</b> a shape to select it; <b>Shift-click</b> to add or remove shapes.</li>
+  <li><b>Drag a box</b> on empty space: left to right selects shapes entirely inside it; right to left also selects any shape it touches.</li>
+  <li><b>Drag</b> a selected shape to move it, or nudge it with the arrow keys: 1&nbsp;mm a press, 0.1&nbsp;mm with <kbd>Shift</kbd>.</li>
+  <li><b>Double-click</b> a selected shape for handles: corners scale in proportion, sides stretch one way. Click it again for rotate handles.</li>
+  <li><kbd>Delete</kbd> removes what&rsquo;s selected.</li>
+</ol>
+<p class="note">Shapes on hidden or locked layers can&rsquo;t be selected.</p>
+<h3>Line <kbd>L</kbd></h3>
+<p>Draws straight lines, one after another.</p>
+<ol>
+  <li>Click the first point, or type it as <code>x,y</code>.</li>
+  <li>Click the next point, or type it: <code>x,y</code>, <code>@dx,dy</code> or <code>length&lt;angle</code>. Each click adds a line from the last point.</li>
+  <li>Press <kbd>Esc</kbd> when you&rsquo;re done.</li>
+</ol>
+<h3>Rectangle <kbd>R</kbd></h3>
+<p>Draws a rectangle.</p>
+<ol>
+  <li>Click one corner, or type it as <code>x,y</code>.</li>
+  <li>Click the opposite corner, or type the size as <code>width,height</code>, such as <code>120,80</code>.</li>
+</ol>
+<h3>Circle <kbd>C</kbd></h3>
+<p>Draws a circle.</p>
+<ol>
+  <li>Click the center, or type it as <code>x,y</code>.</li>
+  <li>Click a point on the edge, or type the size: <code>D5</code> for a 5&nbsp;mm diameter, <code>R2.5</code> for a 2.5&nbsp;mm radius.</li>
+</ol>
+<h3>Arc <kbd>A</kbd></h3>
+<p>Draws an arc through a start and end point.</p>
+<ol>
+  <li>Click the start point, or type it.</li>
+  <li>Click the end point, or type it (<code>x,y</code>, <code>@dx,dy</code> or <code>length&lt;angle</code>).</li>
+  <li>Move the pointer to bow the arc and click to place it, or type a radius: a positive radius bows it to the left of the line from start to end, a negative one to the right.</li>
+</ol>
+<h3>Polyline <kbd>P</kbd></h3>
+<p>Draws a connected outline of straight lines, open or closed.</p>
+<ol>
+  <li>Click the first point, or type it.</li>
+  <li>Click each next point, or type it (<code>@dx,dy</code> and <code>length&lt;angle</code> work too).</li>
+  <li>Click the first point again to close the shape, or press <kbd>Enter</kbd> to leave it open.</li>
+</ol>
+<h3>Text <kbd>K</kbd></h3>
+<p>Adds text, in any of Design&rsquo;s fonts or one from your computer.</p>
+<ol>
+  <li>Click where the text should start: the bottom of the first letter.</li>
+  <li>In the <b>Add text</b> panel, type the text, and choose the <b>Font</b> (or <b>Use font file&hellip;</b> for a <code>.ttf</code>, <code>.otf</code> or <code>.woff</code>), the <b>Letter height</b> and the <b>Align</b>ment.</li>
+  <li>Press <b>Place text</b> to add it as text you can edit later, or <b>Convert to curves</b> to add it as ordinary shapes.</li>
+  <li>To edit text later, click it with the Text tool, or double-click it twice with Select.</li>
+</ol>
+<h2 id="edit">Edit vectors</h2>
+<p>Changing shapes you&rsquo;ve drawn: corners, trimming, offsets, copies, arrangement and more. Tools that act on a selection need something selected first: press <kbd>V</kbd>, pick the shapes, then choose the tool.</p>
+<h3>Fillet <kbd>F</kbd></h3>
+<p>Rounds a corner, or cuts a relief into it so a square part fits a CNC-cut pocket. It can also put a rounded corner back to sharp.</p>
+<ol>
+  <li>Set the size in the <b>Radius</b> box at the bottom of the drawing, or just start typing a number.</li>
+  <li>Choose the corner type beside it: <b>Round</b>, <b>Dog-bone</b> (a relief at the corner, for the bit&rsquo;s radius), or <b>T-bone</b> (a relief into one edge; click nearer the edge it should cut into).</li>
+  <li>Move over a corner: a green check and a preview show what a click will do. Click to apply it. This works on outline and rectangle corners, and (with <b>Round</b>) where two separate lines meet.</li>
+  <li>To make a rounded corner sharp again, click the rounded corner: the sharp corner that will come back is shown dashed in amber first.</li>
+</ol>
+<h3>Trim <kbd>T</kbd></h3>
+<p>Removes a piece of a line, arc or circle, cut off where other shapes cross it.</p>
+<ol>
+  <li>Click the piece you want to remove. The crossings on either side mark where it&rsquo;s cut.</li>
+</ol>
+<h3>Extend <kbd>E</kbd></h3>
+<p>Lengthens a line or arc until it meets the next shape.</p>
+<ol>
+  <li>Click near the end you want to lengthen. It runs out to the next shape in that direction.</li>
+</ol>
+<h3>Offset <kbd>O</kbd></h3>
+<p>Makes a copy of shapes a set distance outside or inside them, like a border.</p>
+<ol>
+  <li>Select the shapes, or click them after choosing Offset.</li>
+  <li>In the <b>Offset</b> panel, type the <b>Distance</b>, and click <b>Direction</b> to switch between outward and inward. A preview shows the result.</li>
+  <li>Press <b>OK</b>. You can also type the distance directly: <code>+2</code> for 2&nbsp;mm outward, <code>-1.5</code> for inward.</li>
+</ol>
+<p class="note">For open shapes, such as a single line, a positive distance goes to the left of the direction it was drawn in.</p>
+<h3>Edit nodes <kbd>N</kbd></h3>
+<p>Moves the individual points of an outline, or sets them exactly.</p>
+<ol>
+  <li>Click an outline to show its points.</li>
+  <li><b>Drag</b> a point to move it.</li>
+  <li><b>Click a point</b> to type its exact position as <code>x,y</code>.</li>
+  <li><b>Click a segment</b> to type its length; the later point moves along the segment.</li>
+  <li>Press <kbd>Esc</kbd> when you&rsquo;re done.</li>
+</ol>
+<h3>Dimension <kbd>D</kbd></h3>
+<p>Sets exact distances and sizes, and keeps a dimension on the drawing that updates as things change.</p>
+<ol>
+  <li><b>For a distance between two shapes:</b> click the shape to move, then the one to measure from (that one stays put). Type the distance and press <kbd>Enter</kbd>. Start it with <code>E</code> to measure edge to edge.</li>
+  <li><b>For a shape&rsquo;s own size:</b> click the shape twice, type the size, and press <kbd>Enter</kbd>; the shape resizes.</li>
+  <li>To change a dimension later, click its value. To remove one, click it and press the &#10005; beside the value.</li>
+</ol>
+<h3>Copy <kbd>M</kbd></h3>
+<p>Makes a copy of the selection somewhere else.</p>
+<ol>
+  <li>Select the shapes first.</li>
+  <li>Click a base point on them, or type the offset as <code>@dx,dy</code>.</li>
+  <li>Click where the base point should go, or type it as <code>x,y</code> or <code>@dx,dy</code>.</li>
+</ol>
+<h3>Mirror <kbd>Shift+M</kbd></h3>
+<p>Makes a mirrored copy of shapes, as if seen in a mirror along a line.</p>
+<ol>
+  <li>In the <b>Mirror</b> panel, click <b>Objects</b> and pick the shapes, then click <b>Mirror line</b> and pick the line to mirror across. A construction line is used as the mirror line automatically (to make a line a construction line, select it and press <kbd>X</kbd>).</li>
+  <li>Or click two points to set a mirror line of your own.</li>
+  <li>Press <b>OK</b> to make the mirrored copy.</li>
+</ol>
+<p class="note">To turn shapes over where they are, without a copy, use Flip horizontal or Flip vertical.</p>
+<h3>Flip horizontal <kbd>Shift+H</kbd></h3>
+<p>Turns the selection over left to right, where it is.</p>
+<ol>
+  <li>Select the shapes, then click <b>Flip horizontal</b>.</li>
+</ol>
+<h3>Flip vertical <kbd>Shift+V</kbd></h3>
+<p>Turns the selection over top to bottom, where it is.</p>
+<ol>
+  <li>Select the shapes, then click <b>Flip vertical</b>.</li>
+</ol>
+<h3>Rotate <kbd>Shift+R</kbd></h3>
+<p>Turns the selection by an exact angle.</p>
+<ol>
+  <li>Select the shapes first.</li>
+  <li>Click the point to turn around, or type it as <code>x,y</code>.</li>
+  <li>Type the angle in degrees and press <kbd>Enter</kbd>: positive turns counter-clockwise, negative clockwise.</li>
+</ol>
+<p class="note">To turn shapes by eye instead, double-click them twice with Select for rotate handles.</p>
+<h3>Array <kbd>Y</kbd></h3>
+<p>Makes several evenly spaced copies, in a row or around a circle.</p>
+<ol>
+  <li>Select the shapes first.</li>
+  <li><b>In a row:</b> type how many and the step between them as <code>count@dx,dy</code>; <code>5@12,0</code> makes 5 copies 12&nbsp;mm apart to the right.</li>
+  <li><b>Around a circle:</b> click the center, then type how many and the angle between them as <code>count&lt;angle</code>; <code>6&lt;60</code> makes 6 copies 60&deg; apart.</li>
+</ol>
+<h3>Group <kbd>Ctrl+G</kbd></h3>
+<p>Bundles the selected shapes so they select and move as one piece. Nothing about the shapes changes.</p>
+<ol>
+  <li>Select the shapes, then click <b>Group</b>.</li>
+</ol>
+<h3>Ungroup <kbd>Ctrl+U</kbd></h3>
+<p>Breaks a group back into its separate shapes.</p>
+<ol>
+  <li>Select the group, then click <b>Ungroup</b>.</li>
+</ol>
+<h3>Join</h3>
+<p>Joins open shapes whose ends meet into one continuous outline, such as lines drawn separately into a closed shape.</p>
+<ol>
+  <li>Select the open shapes, then click <b>Join</b>.</li>
+</ol>
+<p class="note">Toolpaths that cut around a shape need a closed outline; Join is how separate pieces become one.</p>
+<h3>Explode</h3>
+<p>Breaks an outline into its separate lines and arcs.</p>
+<ol>
+  <li>Select the outline, then click <b>Explode</b>.</li>
+</ol>
+<h3>Convert to curves</h3>
+<p>Turns text into ordinary shapes, so you can trim, offset or reshape the letters.</p>
+<ol>
+  <li>Select the text, then click <b>Convert to curves</b>.</li>
+</ol>
+<p class="note">Once converted, the text can no longer be edited as text.</p>
+<h2 id="align">Align and nest</h2>
+<p>Arranging shapes: packing parts onto the material, centering, lining up and spacing. The tools that line shapes up use the <b>last one you picked</b> as the reference, outlined in green.</p>
+<h3>Nest parts</h3>
+<p>Packs parts onto the material as tightly as it can, to save material, with as many copies as you ask for.</p>
+<ol>
+  <li>Select the parts to nest, or select nothing to nest everything.</li>
+  <li>In the <b>Nest parts</b> panel, set the <b>Copies of each</b>, the <b>Spacing</b> between parts, the <b>Edge margin</b> from the material&rsquo;s edges, and the <b>Rotation</b>: any angle for the tightest fit, 90&deg; steps, or none, to keep parts as drawn.</li>
+  <li>Press <b>Nest parts</b>. The parts are laid out on the material.</li>
+</ol>
+<h3>Center in material <kbd>F9</kbd></h3>
+<p>Moves the selection, as one block, to the middle of the material.</p>
+<ol>
+  <li>Select the shapes, then click <b>Center in material</b>.</li>
+</ol>
+<h3>Center left-right in material</h3>
+<p>Moves the selection sideways to the middle of the material, leaving its height as it is.</p>
+<ol>
+  <li>Select the shapes, then click the tool.</li>
+</ol>
+<h3>Center top-bottom in material</h3>
+<p>Moves the selection up or down to the middle of the material, leaving it where it is sideways.</p>
+<ol>
+  <li>Select the shapes, then click the tool.</li>
+</ol>
+<h3>Center on last picked</h3>
+<p>Centers the other selected shapes on the last one you picked.</p>
+<ol>
+  <li>Select the shapes to move, then Shift-click the one to center them on last.</li>
+  <li>Click <b>Center on last picked</b>.</li>
+</ol>
+<h3>Line up centers left-right</h3>
+<p>Moves shapes sideways so their centers line up with the last one picked.</p>
+<ol>
+  <li>Select the shapes, picking the one to line up with last, then click the tool.</li>
+</ol>
+<h3>Line up centers top-bottom</h3>
+<p>Moves shapes up or down so their centers line up with the last one picked.</p>
+<ol>
+  <li>Select the shapes, picking the one to line up with last, then click the tool.</li>
+</ol>
+<h3>Align left, right, top or bottom edges</h3>
+<p>Four tools that line up the shapes&rsquo; left, right, top or bottom edges with the last one picked.</p>
+<ol>
+  <li>Select the shapes, picking the one to line up with last, then click the edge to line up.</li>
+</ol>
+<h3>Space evenly left to right, or top to bottom</h3>
+<p>Spaces shapes out with equal gaps between them. The first and last shapes stay where they are.</p>
+<ol>
+  <li>Select three or more shapes, then click the direction to space them in.</li>
+</ol>
+<h2 id="guides">Guides</h2>
+<p>Construction lines for laying out a drawing. They snap, but aren&rsquo;t cut.</p>
+<h3>Offset guide <kbd>G</kbd></h3>
+<p>Adds a guide line a set distance from an edge of the material or of a shape.</p>
+<ol>
+  <li>Click the edge to measure from: a material edge or a straight edge of the drawing.</li>
+  <li>Type the distance and press <kbd>Enter</kbd>. A negative distance puts the guide on the other side.</li>
+</ol>
+<p class="note">Drawing tools snap to guides, and to the points where guides cross, which makes them handy for placing holes and parts exactly.</p>
+<h3>Remove all guides</h3>
+<p>Deletes every guide in the drawing.</p>
+<ol>
+  <li>Click <b>Remove all guides</b>. <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings them back.</li>
+</ol>
+<h3>Machine area</h3>
+<p>Shows or hides your machine&rsquo;s cutting area, to check the material and parts fit.</p>
+<ol>
+  <li>Click <b>Machine area</b>. The cutting area appears as a dashed outline, sized from 454 Control&rsquo;s machine settings, or a machine you choose.</li>
+  <li>It warns you if the material is larger than the machine can cut, or if shapes sit outside the area.</li>
+</ol>
+<h2 id="view">View and history</h2>
+<p>Getting around the drawing, measuring, and undoing.</p>
+<h3>Fit stock <kbd>Home</kbd></h3>
+<p>Zooms and moves the view so the whole material fits the window.</p>
+<ol>
+  <li>Click <b>Fit stock</b>, or press <kbd>Home</kbd>.</li>
+</ol>
+<p class="note">Scroll to zoom in and out, and drag with the right or middle mouse button to move around.</p>
+<h3>Undo <kbd>Ctrl+Z</kbd></h3>
+<p>Takes back the last change.</p>
+<ol>
+  <li>Click <b>Undo</b>, or press <kbd>Ctrl</kbd>+<kbd>Z</kbd>. Keep going to step further back.</li>
+</ol>
+<h3>Redo <kbd>Ctrl+Y</kbd></h3>
+<p>Puts back what Undo took away.</p>
+<ol>
+  <li>Click <b>Redo</b>, or press <kbd>Ctrl</kbd>+<kbd>Y</kbd>.</li>
+</ol>
+<h3>Measure <kbd>I</kbd></h3>
+<p>Measures without changing anything: the distance and angle between two points, or the gap between two shapes.</p>
+<ol>
+  <li><b>Between two points:</b> click one point, then the other.</li>
+  <li><b>The gap between two shapes:</b> Shift-click one shape, then Shift-click the other.</li>
+</ol>
+
+<footer>454 Workshop &middot; free and open source (MIT) &middot; <a href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener">source on GitHub<span class="sr"> (opens in a new tab)</span></a></footer>
+</div>
+<script>
+// follow whatever theme and accent were chosen in the apps
+(function(){
+  var ACCENTS = {gold:'#e8a33d', red:'#e0533d', blue:'#4d9be6', green:'#4cc46a', purple:'#b07fe0', teal:'#3fbfae'};
+  function hexToRgb(h){
+    h = String(h||'').replace('#','');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var v = parseInt(h,16);
+    return isFinite(v) ? {r:(v>>16)&255, g:(v>>8)&255, b:v&255} : {r:232,g:163,b:61};
+  }
+  function apply(){
+    var t = {};
+    try{ t = JSON.parse(localStorage.getItem('454-theme') || '{}') || {}; }catch(e){}
+    var hex = t.accent === 'custom' ? (t.accentHex || ACCENTS.gold) : (ACCENTS[t.accent] || ACCENTS.gold);
+    var c = hexToRgb(hex), root = document.documentElement;
+    root.setAttribute('data-theme', t.theme === 'light' ? 'light' : 'dark');
+    root.style.setProperty('--amber', hex);
+    root.style.setProperty('--accent-soft', 'rgba('+c.r+','+c.g+','+c.b+',.16)');
+    root.style.setProperty('--accent-faint', 'rgba('+c.r+','+c.g+','+c.b+',.08)');
+    var lum = (0.299*c.r + 0.587*c.g + 0.114*c.b)/255;
+    root.style.setProperty('--on-accent', lum > 0.6 ? '#14181d' : '#fff');
+  }
+  apply();
+  window.addEventListener('storage', function(e){ if (e.key === '454-theme') apply(); });
+})();
+</script>
+</body>
+</html>

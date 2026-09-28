@@ -308,6 +308,49 @@
   #tpBeta[hidden]{display:none}
   #tpBeta b{color:var(--amber)}
   #tpBeta a{color:var(--amber)}
+  #jsModal{position:fixed;inset:0;z-index:80;background:rgba(10,13,17,.82);display:flex;flex-direction:column}
+  #jsModal[hidden]{display:none}
+  .jsBar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .jsBar b{font-size:14px} .jsHint{flex:1;font-size:12px;color:var(--muted)}
+  .jsScroll{flex:1;overflow:auto;padding:24px 16px 40px}
+  #jobSheet{background:#fff;color:#1b1f24;max-width:820px;margin:0 auto;padding:34px 40px 30px;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.5);
+    font:13px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif}
+  #jobSheet h1{font-size:22px;margin:0;outline:none;border-bottom:1px dashed transparent}
+  #jobSheet h1:hover,#jobSheet h1:focus{border-bottom-color:#9aa6b2}
+  #jobSheet h2{font-size:14px;margin:22px 0 8px;padding-bottom:4px;border-bottom:2px solid #1b1f24;text-transform:none}
+  #jobSheet .jsHead{display:flex;align-items:center;gap:18px;padding-bottom:12px;border-bottom:1px solid #d5dbe1}
+  #jobSheet .jsHead svg{width:120px;height:auto;flex:none}
+  #jobSheet .jsMeta{color:#5a6673;font-size:12px;margin-top:2px}
+  #jobSheet .jsFacts{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:14px;border:1px solid #d5dbe1;border-radius:4px}
+  #jobSheet .jsFacts div{padding:8px 10px;border-left:1px solid #d5dbe1} #jobSheet .jsFacts div:first-child{border-left:0}
+  #jobSheet .jsFacts span{display:block;font-size:11px;color:#5a6673} #jobSheet .jsFacts b{font-size:14px}
+  #jobSheet .jsPic{border:1px solid #d5dbe1;border-radius:4px;padding:6px;margin-top:4px}
+  #jobSheet .jsPic svg{display:block;width:100%;height:auto}
+  #jobSheet table{width:100%;border-collapse:collapse;font-size:12px}
+  #jobSheet th{text-align:left;font-size:11px;color:#5a6673;font-weight:600;padding:5px 6px;border-bottom:1px solid #9aa6b2}
+  #jobSheet td{padding:6px;border-bottom:1px solid #e3e7eb;vertical-align:top}
+  #jobSheet tr{break-inside:avoid}
+  #jobSheet h2{break-after:avoid}
+  #jobSheet .jsKeep{break-inside:avoid}
+  #jobSheet .num{font-weight:700;white-space:nowrap} #jobSheet .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+  #jobSheet .muted{color:#5a6673} #jobSheet .jsSub{font-size:11px;color:#5a6673;margin-top:2px}
+  #jobSheet ul.jsCheck{list-style:none;margin:0;padding:0;columns:2;column-gap:28px}
+  #jobSheet ul.jsCheck li{break-inside:avoid;padding:4px 0 4px 24px;position:relative}
+  #jobSheet ul.jsCheck li::before{content:'';position:absolute;left:0;top:6px;width:13px;height:13px;border:1.5px solid #1b1f24;border-radius:2px}
+  #jobSheet .jsWarn{border-left:3px solid #d98e3f;background:#fbf3e8;padding:8px 12px;margin-top:10px;border-radius:0 4px 4px 0}
+  #jobSheet .jsWarn li{margin:2px 0}
+  #jobSheet .jsNotes{min-height:90px;border:1px solid #d5dbe1;border-radius:4px;padding:8px 10px;outline:none;
+    background:repeating-linear-gradient(#fff 0 25px,#e9edf0 25px 26px);line-height:26px}
+  #jobSheet .jsFoot{margin-top:18px;padding-top:8px;border-top:1px solid #d5dbe1;font-size:11px;color:#5a6673}
+  @media print{
+    html,body{height:auto !important;overflow:visible !important;background:#fff !important}   /* the app pins its page to the window: release it, or only one page prints */
+    body > *:not(#jsModal){display:none !important}
+    #jsModal{position:static;background:none;display:block}
+    .jsBar{display:none} .jsScroll{padding:0;overflow:visible}
+    #jobSheet{box-shadow:none;max-width:none;padding:0;border-radius:0}
+    #jobSheet h1{border:0}
+  }
+  @page{margin:12mm}
   #ctxMenu{position:fixed;z-index:60;min-width:200px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
   #ctxMenu[hidden]{display:none}
   #ctxMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--ink);padding:6px 10px;font-size:13px;border-radius:4px}
@@ -597,6 +640,11 @@
   <input type="file" id="libFile" accept=".vtdb" hidden>
 
   <div id="ctxMenu" role="menu" hidden></div>
+  <div id="jsModal" hidden role="dialog" aria-modal="true" aria-labelledby="jsTitleBar">
+    <div class="jsBar"><b id="jsTitleBar">Job sheet</b><span class="jsHint">Click the job name or Notes to edit them before printing.</span>
+      <button id="jsPrint" class="primary">Print&hellip;</button><button id="jsClose">Close</button></div>
+    <div class="jsScroll"><article id="jobSheet"></article></div>
+  </div>
   <aside id="tpPanel" aria-label="Toolpaths">
     <button id="tpStrip" aria-expanded="false" aria-controls="tpBody" title="Expand the toolpaths panel"><span class="chev">«</span><span>Toolpaths</span><span id="tpStripCount"></span></button>
     <div id="tpBody">
@@ -828,7 +876,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.89.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.90.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3815,12 +3863,11 @@ function tpDelete(id){
   persist(); renderToolpathPanel(); draw();
   toast('ok', 'Toolpath deleted', name + ' removed. The drawing is untouched.');
 }
-// G-code for every toolpath, in order, as one file
-function tpExport(){
-  if (!camReady() || !tpList().length) return;
+// Tool numbers (T1, T2...) for a job, taken in cutting order: each distinct tool gets its number from the
+// library for this machine, or the next free one. Shared by the G-code export and the job sheet, so they agree.
+function toolNumbering(){
   var mid = TOOLLIB ? libDefaultMachine() : null, nextNum = 1, numFor = {};
-  // each distinct tool gets its number from the library for this machine, or the next free one
-  function toolNumber(tp){
+  return function (tp){
     var key = tp.toolId || ('dia' + tp.dia);
     if (numFor[key]) return numFor[key];
     var t = tp.toolId ? libTool(tp.toolId) : null;
@@ -3828,7 +3875,12 @@ function tpExport(){
     if (!n2){ while (Object.keys(numFor).some(function (k) { return numFor[k] === nextNum; })) nextNum++; n2 = nextNum++; }
     numFor[key] = n2;
     return n2;
-  }
+  };
+}
+// G-code for every toolpath, in order, as one file
+function tpExport(){
+  if (!camReady() || !tpList().length) return;
+  var toolNumber = toolNumbering();              // the same numbers the job sheet shows
   var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });   // one sheet per file
   var noTool = chosen.filter(function (tp) { return !tpToolChosen(tp); });
   if (noTool.length){
@@ -4842,6 +4894,168 @@ var TP_ICONS = {
   del: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.2 4.5V3h3.6v1.5M4.4 4.5l.7 8.5h5.8l.7-8.5M6.8 7v4M9.2 7v4"/></svg>',
   regen: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg>'
 };
+// ---- the job sheet: everything about the job on one printable page ----
+// A rough cutting time from a toolpath's moves: feed moves at their programmed rate, rapids at the
+// rapid rate. No acceleration, so real jobs run somewhat longer; 454 Control's estimate is closer.
+var JS_RAPID = 5000;                                   // mm/min, a typical GRBL router's rapid rate
+function tpTimeSec(tp){
+  var x = null, y = null, z = null, sec = 0, f = tp.feed || 1000;
+  (tp.moves || []).forEach(function (m) {
+    var nx = m.x !== undefined ? m.x : x, ny = m.y !== undefined ? m.y : y, nz = m.z !== undefined ? m.z : z;
+    if (m.f) f = m.f;
+    if (x !== null && y !== null && z !== null && nx !== null && ny !== null && nz !== null){
+      var d = Math.sqrt((nx - x) * (nx - x) + (ny - y) * (ny - y) + (nz - z) * (nz - z));
+      sec += d / (m.g === 0 ? JS_RAPID : Math.max(1, f)) * 60;
+    }
+    x = nx; y = ny; z = nz;
+  });
+  return sec;
+}
+function fmtDur(sec){
+  sec = Math.round(sec); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s2 = sec % 60;
+  return h ? h + ' h ' + m + ' min' : m ? m + ' min ' + (s2 < 10 ? '0' : '') + s2 + ' s' : s2 + ' s';
+}
+function rateTxt(v){ return unitTag() === 'in' ? (v / 25.4).toFixed(1) + ' in/min' : Math.round(v) + ' mm/min'; }
+function jsEsc(t){ return String(t === undefined || t === null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+var JS_COLORS = ['#0083ff', '#e0533d', '#2e9e5b', '#b07fe0', '#d98e3f', '#1aa3a3', '#c2457a', '#6b7a1f'];
+
+function jobSheetOpen(){
+  if (!camReady()) return;
+  var list = tpList().filter(function (tp) { return !multiSheet() || tpSheetOf(tp) === DOC.activeSheet; });
+  var chosen = list.filter(function (tp) { return !tp.exclude; });
+  var left = list.filter(function (tp) { return tp.exclude; });
+  if (!chosen.length){ toast('info', 'No toolpaths to describe', 'Every toolpath is left out of the G-code; include one to make a job sheet.'); return; }
+  var recalculated = 0;
+  chosen.forEach(function (tp) { if (tpStale(tp)){ tpGenerate(tp); recalculated++; } });   // as Save G-code does
+  if (recalculated){ persist(); renderToolpathPanel(); draw(); }
+  var numberOf = toolNumbering(), u = unitTag();
+  // the tools, in the order they're first used
+  var tools = [], byKey = {}, changes = 0, lastKey = null, totalSec = 0;
+  var ext = {x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity, z0: Infinity};
+  chosen.forEach(function (tp, i) {
+    var key = tp.toolId || ('dia' + tp.dia), t = tp.toolId ? libTool(tp.toolId) : null, n = numberOf(tp);
+    if (!byKey[key]){
+      var mm = t && t.units === 'in' ? 25.4 : 1;
+      byKey[key] = {num: n, name: t ? t.name : fmtDisp(tp.dia) + ' ' + u + (tp.side === 'drill' ? ' drill' : (tp.side === 'vcarve' || tp.side === 'chamfer') ? ' ' + (tp.vAngle || 90) + '\u00b0 V-bit' : ' end mill'),
+        dia: tp.dia, kind: (tp.side === 'vcarve' || tp.side === 'chamfer') ? (tp.vAngle || 90) + '\u00b0 V-bit' + (tp.vTip > 0 ? ', ' + fmtDisp(tp.vTip) + ' ' + u + ' flat' : '') : tp.side === 'drill' ? 'drill' : 'end mill',
+        flutes: t && t.flutes ? t.flutes : '', notes: t && t.notes ? t.notes : '', rpm: {}, used: []};
+      tools.push(byKey[key]);
+    }
+    byKey[key].rpm[tp.rpm || 18000] = 1; byKey[key].used.push(i + 1);
+    if (lastKey !== null && key !== lastKey) changes++;
+    lastKey = key;
+    tp._jsSec = tpTimeSec(tp); totalSec += tp._jsSec;
+    var z = null;
+    (tp.moves || []).forEach(function (m) { if (m.z !== undefined) z = m.z;
+      if (m.g === 1 && m.x !== undefined && m.y !== undefined){ ext.x0 = Math.min(ext.x0, m.x); ext.x1 = Math.max(ext.x1, m.x); ext.y0 = Math.min(ext.y0, m.y); ext.y1 = Math.max(ext.y1, m.y); }
+      if (m.g === 1 && z !== null) ext.z0 = Math.min(ext.z0, z); });
+  });
+  var st = DOC.stock, sheetName = multiSheet() ? layerById(DOC.activeSheet).name : '';
+  var jobName = (DOC.name || UICFG.lastGcodeName || 'Untitled job').replace(/\.(nc|gcode|tap|ngc|454\.json|json)$/i, '');
+  var matName = UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? libMaterialName(UICFG.libMaterial) : '';
+  var first = tools[0];
+  var h = [];
+  // header
+  h.push('<div class="jsHead">' + (document.querySelector('header .brandLogo') || {outerHTML: ''}).outerHTML +     // the logo from the app's header
+     '<div><h1 contenteditable="true" spellcheck="false" title="Click to rename">' + jsEsc(jobName) + (sheetName ? ' \u2014 ' + jsEsc(sheetName) : '') + '</h1>' +
+    '<div class="jsMeta">Job sheet \u00b7 ' + jsEsc(new Date().toLocaleString()) + ' \u00b7 454 Design v' + DESIGN_VERSION + '</div></div></div>');
+  // key facts
+  h.push('<div class="jsFacts">' +
+    '<div><span>Material</span><b>' + fmtDisp(st.w) + ' \u00d7 ' + fmtDisp(st.h) + ' ' + u + '</b></div>' +
+    '<div><span>Thickness</span><b>' + (st.t > 0 ? fmtDisp(st.t) + ' ' + u : 'not set') + '</b></div>' +
+    '<div><span>Toolpaths</span><b>' + chosen.length + '</b></div>' +
+    '<div><span>Tools / changes</span><b>' + tools.length + ' / ' + changes + '</b></div>' +
+    '<div><span>Est. time</span><b>' + fmtDur(totalSec) + '</b></div></div>');
+  // the picture
+  h.push('<h2>The job</h2><div class="jsPic">' + jobSheetPicture(chosen, ext) + '</div>');
+  // setup
+  var ix = function (v) { return isFinite(v) ? fmtDisp(v) : '\u2014'; };
+  h.push('<div class="jsKeep"><h2>Setup</h2><ul class="jsCheck">' +
+    '<li>Material ' + fmtDisp(st.w) + ' \u00d7 ' + fmtDisp(st.h) + (st.t > 0 ? ' \u00d7 ' + fmtDisp(st.t) : '') + ' ' + u + (matName ? ' (feeds are for ' + jsEsc(matName) + ')' : '') + '</li>' +
+    '<li>Clamps clear of the cutting: X ' + ix(ext.x0) + ' to ' + ix(ext.x1) + ', Y ' + ix(ext.y0) + ' to ' + ix(ext.y1) + ' ' + u + '</li>' +
+    '<li>X and Y zero at the ' + ORIGIN_NAMES[originKey()] + ' of the material</li>' +
+    '<li>Z zero on the ' + (st.zero === 'bottom' ? 'spoilboard, under the material' : 'top of the material') + '; deepest cut Z ' + ix(ext.z0) + ' ' + u + '</li>' +
+    '<li>First tool: T' + first.num + ', ' + jsEsc(first.name) + '</li>' +
+    '<li>Preview the job in 454 Control and run it in the air first (toolpaths are in beta)</li></ul></div>');
+  // tools
+  h.push('<div class="jsKeep"><h2>Tools</h2><table><tr><th>Tool</th><th>Name</th><th>Diameter</th><th>Type</th><th>Flutes</th><th>Spindle</th><th>Used by</th></tr>' +
+    tools.map(function (t) { return '<tr><td class="num">T' + t.num + '</td><td>' + jsEsc(t.name) + (t.notes ? '<div class="jsSub">' + jsEsc(t.notes) + '</div>' : '') + '</td><td>' + fmtDisp(t.dia) + ' ' + u + '</td><td>' + jsEsc(t.kind) + '</td><td>' + jsEsc(t.flutes) + '</td><td>' +
+      Object.keys(t.rpm).map(function (r) { return r + ' rpm'; }).join(', ') + '</td><td>' + t.used.map(function (n) { return '#' + n; }).join(', ') + '</td></tr>'; }).join('') + '</table></div>');
+  // toolpaths
+  h.push('<h2>Toolpaths, in cutting order</h2><table><tr><th>#</th><th>Toolpath</th><th>Tool</th><th>Feed / plunge</th><th>Details</th><th>Time</th></tr>' +
+    chosen.map(function (tp, i) {
+      var t = byKey[tp.toolId || ('dia' + tp.dia)];
+      var rows = tpRows(tp).map(function (r) { return '<div><span class="muted">' + jsEsc(r[0]) + ':</span> ' + jsEsc(r[1]) + '</div>'; }).join('');
+      return '<tr><td class="num"><span class="sw" style="background:' + JS_COLORS[i % JS_COLORS.length] + '"></span>' + (i + 1) + '</td><td><b>' + jsEsc(tp.name) + '</b><div class="jsSub">' + jsEsc(tpKindName(tp)) + '</div></td>' +
+        '<td>T' + t.num + '<div class="jsSub">' + jsEsc(t.name) + '</div></td><td>' + rateTxt(tp.feed) + '<div class="jsSub">plunge ' + rateTxt(tp.plunge || tp.feed) + ' \u00b7 ' + (tp.rpm || 18000) + ' rpm</div></td>' +
+        '<td>' + rows + '</td><td>' + fmtDur(tp._jsSec) + '</td></tr>';
+    }).join('') + '</table>');
+  // what needs attention
+  var warn = [];
+  if (recalculated) warn.push(recalculated + (recalculated === 1 ? ' toolpath was' : ' toolpaths were') + ' out of date and recalculated for this sheet, as Save G-code does.');
+  chosen.forEach(function (tp, i) { if (tp.warning) warn.push('#' + (i + 1) + ' ' + tp.name + ': ' + tp.warning);
+    var on = tpOrderNote(tp, tpList().indexOf(tp)); if (on) warn.push('#' + (i + 1) + ' ' + tp.name + ': ' + on);
+    if (!tpToolChosen(tp)) warn.push('#' + (i + 1) + ' ' + tp.name + ': no tool chosen.'); });
+  if (!(st.t > 0)) warn.push('The material thickness isn\u2019t set, so through-cuts can\u2019t be checked.');
+  if (left.length) warn.push('Left out of the G-code, and of this sheet: ' + left.map(function (tp) { return tp.name; }).join(', ') + '.');
+  if (warn.length) h.push('<div class="jsWarn"><b>Check before cutting</b><ul>' + warn.map(function (w) { return '<li>' + jsEsc(w) + '</li>'; }).join('') + '</ul></div>');
+  // notes
+  h.push('<div class="jsKeep"><h2>Notes</h2><div class="jsNotes" contenteditable="true" spellcheck="true" aria-label="Notes"></div></div>');
+  h.push('<div class="jsFoot">Times are estimates at the programmed feeds, without acceleration: real jobs run somewhat longer, and 454 Control\u2019s estimate is closer. ' +
+    'Made with 454 Design\u2019s toolpaths, which are in beta.</div>');
+  document.getElementById('jobSheet').innerHTML = h.join('');
+  var modal = document.getElementById('jsModal');
+  if (modal.parentNode !== document.body) document.body.appendChild(modal);    // printing shows only this, so it must sit directly in the page
+  modal.hidden = false;
+  document.getElementById('jsPrint').focus();
+}
+// the job, drawn to scale: the material, the shapes, and each toolpath's cuts in its colour, numbered where it starts
+function jobSheetPicture(chosen, ext){
+  var r = stockRect(), x0 = Math.min(r.x0, ext.x0), y0 = Math.min(r.y0, ext.y0), x1 = Math.max(r.x1, ext.x1), y1 = Math.max(r.y1, ext.y1);
+  var pad = Math.max(x1 - x0, y1 - y0) * 0.04, W = 760, sc = W / (x1 - x0 + 2 * pad), H = Math.round((y1 - y0 + 2 * pad) * sc);
+  var X = function (x) { return ((x - x0 + pad) * sc).toFixed(1); }, Y = function (y) { return ((y1 - y + pad) * sc).toFixed(1); };
+  var out = ['<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The job drawn to scale">'];
+  out.push('<rect x="' + X(r.x0) + '" y="' + Y(r.y1) + '" width="' + ((r.x1 - r.x0) * sc).toFixed(1) + '" height="' + ((r.y1 - r.y0) * sc).toFixed(1) + '" fill="#f5f3ee" stroke="#9aa6b2" stroke-width="1"/>');
+  DOC.ents.forEach(function (e) {
+    if (e.tp || !entVisible(e)) return;
+    if (multiSheet() && e.layer && layerById(e.layer).sheet && e.layer !== DOC.activeSheet) return;
+    var pl = vecPolyline(e); if (!pl || pl.pts.length < 2) return;
+    out.push('<path d="M' + pl.pts.map(function (q) { return X(q[0]) + ' ' + Y(q[1]); }).join(' L') + (pl.closed ? 'Z' : '') + '" fill="none" stroke="#b9c1c9" stroke-width="1"/>');
+  });
+  var badges = [];
+  chosen.forEach(function (tp, i) {
+    var col = JS_COLORS[i % JS_COLORS.length], d = [], x = null, y = null, pen = false, start = null;
+    (tp.moves || []).forEach(function (m) {
+      var nx = m.x !== undefined ? m.x : x, ny = m.y !== undefined ? m.y : y;
+      if (m.g === 1 && nx !== null && ny !== null && x !== null){
+        if (!pen){ d.push('M' + X(x) + ' ' + Y(y)); pen = true; if (!start) start = [x, y]; }
+        if (nx !== x || ny !== y) d.push('L' + X(nx) + ' ' + Y(ny));
+      } else if (m.g === 0) pen = false;
+      x = nx; y = ny;
+    });
+    if (d.length) out.push('<path d="' + d.join('') + '" fill="none" stroke="' + col + '" stroke-width="1.1" stroke-linejoin="round" opacity=".9"/>');
+    // drilling goes straight down: mark each hole with a ring in the toolpath's colour
+    if (tp.side === 'drill'){
+      var hx = null, hy = null, rr = Math.max(3, (tp.dia || 3) / 2 * sc);
+      (tp.moves || []).forEach(function (m) {
+        if (m.x !== undefined) hx = m.x; if (m.y !== undefined) hy = m.y;
+        if (m.g === 1 && m.z !== undefined && m.x === undefined && m.y === undefined && hx !== null){
+          out.push('<circle cx="' + X(hx) + '" cy="' + Y(hy) + '" r="' + rr.toFixed(1) + '" fill="' + col + '" fill-opacity=".25" stroke="' + col + '" stroke-width="1.3"/>');
+          if (!start) start = [hx, hy];
+        }
+      });
+    }
+    if (start) badges.push('<g><circle cx="' + X(start[0]) + '" cy="' + Y(start[1]) + '" r="8" fill="' + col + '" stroke="#fff" stroke-width="1.5"/>' +
+      '<text x="' + X(start[0]) + '" y="' + (+Y(start[1]) + 3.6).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="system-ui,sans-serif">' + (i + 1) + '</text></g>');
+  });
+  out.push(badges.join(''));
+  // where X0 Y0 is
+  out.push('<g stroke="#1b1f24" stroke-width="1.2"><line x1="' + (+X(0) - 7) + '" y1="' + Y(0) + '" x2="' + (+X(0) + 7) + '" y2="' + Y(0) + '"/><line x1="' + X(0) + '" y1="' + (+Y(0) - 7) + '" x2="' + X(0) + '" y2="' + (+Y(0) + 7) + '"/></g>' +
+    '<text x="' + (+X(0) + 9) + '" y="' + (+Y(0) - 6) + '" font-size="10" fill="#1b1f24" font-family="system-ui,sans-serif">X0 Y0</text>');
+  out.push('</svg>');
+  return out.join('');
+}
+function jobSheetClose(){ document.getElementById('jsModal').hidden = true; }
 // Recalculate a toolpath from its shapes and the material as they are now, keeping its own settings.
 function tpRecalc(tp, quiet){
   tpGenerate(tp); persist(); renderToolpathPanel(); draw();
@@ -4883,6 +5097,29 @@ function ctxMenuOpen(x, y, items){
   m.style.left = Math.max(4, Math.min(x, window.innerWidth - w - 4)) + 'px';
   m.style.top = Math.max(4, Math.min(y, window.innerHeight - h - 4)) + 'px';
   var first = m.querySelector('button:not([disabled])'); if (first) first.focus();
+}
+// A toolpath described in plain words, as [label, value] rows: on its card, and on the job sheet.
+function tpRows(tp){
+  var rows = [];
+  function row(k, v){ rows.push([k, v]); }
+    var dTxt = tp.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(tp.over) + ' ' + unitTag() : fmtDisp(tpDepth(tp)) + ' ' + unitTag();
+  if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
+  else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
+  else row('Depth', dTxt + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
+  if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Settings');
+  var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
+  if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
+  else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
+  else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
+  else if (tp.side === 'pocket') row('Clearing', (tp.pocketClear === 'raster' ? 'raster at ' + (tp.rasterAngle || 0) + '\u00b0, ' : 'offset rings, ') + (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
+  else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
+  if (tp.warning) row('Note', tp.warning);
+  return rows;
+}
+// What kind of toolpath it is, in words
+function tpKindName(tp){
+  return tp.side === 'vcarve' ? 'V-carve' : tp.side === 'chamfer' ? 'Chamfer' : tp.side === 'pocket' ? 'Pocket' : tp.side === 'drill' ? 'Drilling'
+       : tp.side === 'inside' ? 'Profile, inside' : tp.side === 'on' ? 'Profile, on the line' : 'Profile, outside';
 }
 function renderMyToolpaths(){
   var box = document.getElementById('tpList');
@@ -4941,18 +5178,7 @@ function renderMyToolpaths(){
 
     var dl = document.createElement('dl'); dl.className = 'tpSet';
     function row(k, v){ var dt = document.createElement('dt'); dt.textContent = k; var dd = document.createElement('dd'); dd.textContent = v; dl.appendChild(dt); dl.appendChild(dd); }
-    var dTxt = tp.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(tp.over) + ' ' + unitTag() : fmtDisp(tpDepth(tp)) + ' ' + unitTag();
-    if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
-    else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
-    else row('Depth', dTxt + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
-    if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Settings');
-    var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
-    if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
-    else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
-    else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
-    else if (tp.side === 'pocket') row('Clearing', (tp.pocketClear === 'raster' ? 'raster at ' + (tp.rasterAngle || 0) + '\u00b0, ' : 'offset rings, ') + (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
-    else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
-    if (tp.warning) row('Note', tp.warning);
+    tpRows(tp).forEach(function (r) { row(r[0], r[1]); });          // the same description the job sheet uses
     card.appendChild(dl);
     var orderNote = tpOrderNote(tp, idx);
     if (orderNote){
@@ -5029,6 +5255,13 @@ function renderMyToolpaths(){
     ex.style.cssText = 'width:calc(100% - 20px);margin:4px 10px 10px';
     ex.addEventListener('click', tpExport);
     box.appendChild(ex);
+    var js = document.createElement('button');
+    js.textContent = 'Job sheet' + (sheetName ? ' for ' + sheetName : '') + '\u2026';
+    js.title = 'Everything about the job on one printable page: material, setup, tools, toolpaths and times';
+    js.style.cssText = 'width:calc(100% - 20px);margin:0 10px 10px';
+    js.disabled = nInc === 0;
+    js.addEventListener('click', jobSheetOpen);
+    box.appendChild(js);
   }
 }
 
@@ -10182,6 +10415,9 @@ function wire(){
   document.getElementById('tpVcConvert').addEventListener('click', vcMakeEditable);
   document.getElementById('tpSheet').addEventListener('change', function(e){ sheetShow(e.target.value); });
   document.getElementById('tpRecalcAll').addEventListener('click', tpRecalcAll);
+  document.getElementById('jsClose').addEventListener('click', jobSheetClose);
+  document.getElementById('jsPrint').addEventListener('click', function(){ window.print(); });
+  document.getElementById('jsModal').addEventListener('keydown', function(e){ if (e.key === 'Escape' && !e.target.isContentEditable){ e.stopPropagation(); jobSheetClose(); } });
   document.addEventListener('pointerdown', function (e) { var m = document.getElementById('ctxMenu'); if (!m.hidden && !m.contains(e.target)) ctxMenuClose(); }, true);
   window.addEventListener('blur', ctxMenuClose);
   window.addEventListener('resize', ctxMenuClose);

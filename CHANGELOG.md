@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.5.4
+- Design 0.90.0 (the job sheet, below), and the docs' CAM reference section about it.
+
 ### 0.5.3
 - The new docs site, bundled (see Docs, above), and its docs window.
 - Building from the repository needs the docs site installed (`npm ci --prefix docs-site`); the Windows
@@ -393,6 +396,28 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.90.0 — the job sheet
+- **Job sheet…**, under Save G-code in the Toolpaths panel: everything about the job on one printable page
+  (or a PDF), to keep at the machine.
+  - **The top:** the logo, the job name (click to rename), the date and version, and key facts: material
+    size and thickness, toolpaths, tools and tool changes, estimated time.
+  - **The job, to scale:** the material, the shapes, each toolpath's cuts in its own colour with a numbered
+    marker where it starts, drilled holes as rings, and where X0 Y0 is.
+  - **Setup checklist:** the material, how far the cutting reaches (so clamps stay clear), where to zero X
+    and Y, where Z zero goes and the deepest cut, the first tool, and the air cut.
+  - **Tools:** T number, name, diameter, type, flutes, spindle speed, and which toolpaths use each.
+  - **Toolpaths in cutting order:** tool, feed, plunge and spindle, the same description as the cards, and
+    an estimated time each.
+  - **Anything that needs attention** (notes on toolpaths, order warnings, no thickness set, toolpaths left
+    out), and a Notes area to type in before printing.
+- **It matches the G-code:** the same tool numbers (checked against a saved file: T1, T2, T3, T2 in both),
+  the same toolpaths (those left out of the G-code are left out), and out-of-date toolpaths recalculated
+  first, as Save G-code does. In a multi-sheet project, it covers the chosen sheet.
+- Prints as clean pages: only the sheet prints, sections never split from their headings, and every page
+  prints (the app's full-window layout had clipped printing to the first page).
+- The toolpath cards and the job sheet share one description of each toolpath, and the G-code export and
+  the job sheet share one tool numbering, so they can't disagree.
 
 ### 0.89.0 — CAM released, as a beta
 - **CAM loads by default**, on the website as in the desktop app; `?cam=off` still turns it off in that
