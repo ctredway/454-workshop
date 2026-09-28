@@ -32,6 +32,7 @@
   body{margin:0;background:var(--slate);color:var(--ink);font:17px/1.6 var(--sans)}
   a{color:var(--accent)}
   a:hover{color:var(--accent-hi)}
+  .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}   /* for screen readers only */
   :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
   .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
 
@@ -119,7 +120,7 @@
     <a class="mark" href="/" aria-label="454 Workshop, home"><img src="images/logo.svg" alt="" width="84" height="27">Workshop</a>
     <nav aria-label="Site">
       <a href="docs/index.html">Docs</a>
-      <a href="https://github.com/ctredway/454-workshop">GitHub</a>
+      <a href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener">GitHub<span class="sr"> (opens in a new tab)</span></a>
     </nav>
   </header>
 
@@ -132,13 +133,13 @@
           Draw your parts and make their toolpaths in 454 Design, then run the machine with 454 Control, right
           in your browser.</p>
         <div class="actions">
-          <a class="btn primary" href="design/">Open 454 Design</a>
-          <a class="btn plain" href="control/">Open 454 Control</a>
+          <a class="btn primary" href="design/" target="_blank" rel="noopener">Open 454 Design<span class="sr"> (opens in a new tab)</span></a>
+          <a class="btn plain" href="control/" target="_blank" rel="noopener">Open 454 Control<span class="sr"> (opens in a new tab)</span></a>
         </div>
         <p class="betaNote"><b>This is beta software.</b> It&rsquo;s new, and the toolpaths especially are still
           being tested. Check every job before you cut it. <a href="#beta">What that means</a></p>
         <p class="note">A desktop app for Windows and Linux is in testing, and works without an internet
-          connection. <a href="https://github.com/ctredway/454-workshop">Follow it on GitHub</a>.</p>
+          connection. <a href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener">Follow it on GitHub<span class="sr"> (opens in a new tab)</span></a>.</p>
       </div>
 
       <!-- your logo, cut as a toolpath once when the page opens -->
@@ -230,8 +231,8 @@
             the bit goes.</span></li>
           <li><b>Stay at the machine</b><span>On the real cut, keep a hand near the stop, especially for the
             first minutes and at every tool change.</span></li>
-          <li><b>Tell us when something&rsquo;s wrong</b><span><a href="https://github.com/ctredway/454-workshop/issues">Report
-            it on GitHub</a>, with the drawing or G-code file if you can. That&rsquo;s how the beta gets better.</span></li>
+          <li><b>Tell us when something&rsquo;s wrong</b><span><a href="https://github.com/ctredway/454-workshop/issues" target="_blank" rel="noopener">Report
+            it on GitHub<span class="sr"> (opens in a new tab)</span></a>, with the drawing or G-code file if you can. That&rsquo;s how the beta gets better.</span></li>
         </ol>
       </div>
     </section>
@@ -259,7 +260,7 @@
         <div>
           <h2 id="free-h">Free, for everyone</h2>
           <p>454 Workshop is free and open source under the MIT licence. There's no paid version and no account to
-            make. If it's useful to you, you can <a href="https://github.com/sponsors/ctredway">support it on GitHub</a>,
+            make. If it's useful to you, you can <a href="https://github.com/sponsors/ctredway" target="_blank" rel="noopener">support it on GitHub<span class="sr"> (opens in a new tab)</span></a>,
             and bug reports and ideas are always welcome.</p>
         </div>
         <div>
@@ -290,8 +291,8 @@
   <div class="wrap">
     <span class="grow">454 Workshop, free and open source under the MIT licence</span>
     <a href="docs/index.html">Documentation</a>
-    <a href="https://github.com/ctredway/454-workshop">GitHub</a>
-    <a href="https://github.com/ctredway/454-workshop/issues">Report a problem</a>
+    <a href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener">GitHub<span class="sr"> (opens in a new tab)</span></a>
+    <a href="https://github.com/ctredway/454-workshop/issues" target="_blank" rel="noopener">Report a problem<span class="sr"> (opens in a new tab)</span></a>
   </div>
 </footer>
 

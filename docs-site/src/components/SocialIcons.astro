@@ -1,0 +1,13 @@
+---
+// The header's links: the two apps (in a new tab, as everywhere on the site), then Starlight's own icons.
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+---
+<a class="app-link" href="/control/" target="_blank" rel="noopener">Control<span aria-hidden="true"> &#8599;</span><span class="sr-only"> (opens in a new tab)</span></a>
+<a class="app-link" href="/design/" target="_blank" rel="noopener">Design<span aria-hidden="true"> &#8599;</span><span class="sr-only"> (opens in a new tab)</span></a>
+<Default />
+<style>
+  .app-link { font-size: var(--sl-text-sm); font-weight: 600; color: var(--sl-color-gray-2); text-decoration: none;
+    padding: .3rem .65rem; border: 1px solid var(--sl-color-gray-5); border-radius: .4rem; white-space: nowrap; }
+  .app-link:hover { color: var(--sl-color-white); border-color: var(--sl-color-accent); }
+  @media (max-width: 50rem) { .app-link { display: none; } }   /* phones: the menu has room for less */
+</style>

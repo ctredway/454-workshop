@@ -1,0 +1,81 @@
+/* 454 Workshop docs: the logo's blue and the main site's slate greys, in Starlight's colour slots.
+   Contrast was checked for text: links and accents use the lighter end of the blue in dark mode, the
+   darker end in light mode. */
+
+:root {
+  --sl-font: 'Archivo Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'JetBrains Mono Variable', ui-monospace, Consolas, monospace;
+}
+
+/* dark (the default look, matching the site and the apps) */
+:root,
+::backdrop {
+  --sl-color-accent-low: #0b2848;
+  --sl-color-accent: #0083ff;
+  --sl-color-accent-high: #9fd0ff;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #dce3ea;
+  --sl-color-gray-2: #c3ccd5;
+  --sl-color-gray-3: #9aa6b2;
+  --sl-color-gray-4: #5f6b78;
+  --sl-color-gray-5: #3a4552;
+  --sl-color-gray-6: #1d232b;
+  --sl-color-black: #14181d;
+}
+
+/* light */
+:root[data-theme='light'],
+[data-theme='light'] ::backdrop {
+  --sl-color-accent-low: #cfe6ff;
+  --sl-color-accent: #0063c7;
+  --sl-color-accent-high: #003a75;
+  --sl-color-white: #14181d;
+  --sl-color-gray-1: #1d232b;
+  --sl-color-gray-2: #2f3944;
+  --sl-color-gray-3: #4f5b68;
+  --sl-color-gray-4: #7d8995;
+  --sl-color-gray-5: #c3ccd5;
+  --sl-color-gray-6: #e8edf2;
+  --sl-color-gray-7: #f4f6f8;
+  --sl-color-black: #ffffff;
+}
+
+/* headings: Archivo's wide cut, as on the main site */
+.sl-markdown-content :is(h1, h2, h3),
+h1#_top {
+  font-stretch: 112%;
+  letter-spacing: -0.005em;
+}
+
+/* keycaps */
+.sl-markdown-content kbd {
+  font-family: var(--sl-font-mono);
+  font-size: 0.8em;
+  padding: 0.1em 0.45em;
+  border: 1px solid var(--sl-color-gray-5);
+  border-bottom-width: 2px;
+  border-radius: 0.3em;
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-1);
+  white-space: nowrap;
+}
+
+/* screenshots: framed like a window, and never wider than the column */
+.sl-markdown-content img {
+  border-radius: 0.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
+
+/* callouts: tips in green (as the "same as" callouts), not Starlight's purple; notes use the brand blue,
+   cautions stay orange */
+:root {
+  --sl-color-purple-low: #1c2b1a;
+  --sl-color-purple: #7fb069;
+  --sl-color-purple-high: #cfe8c4;
+}
+:root[data-theme='light'] {
+  --sl-color-purple-low: #e3f1dc;
+  --sl-color-purple: #3f7a2c;
+  --sl-color-purple-high: #1f4a14;
+}

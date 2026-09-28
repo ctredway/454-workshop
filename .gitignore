@@ -1,6 +1,16 @@
 # installed and built: never committed
 node_modules/
+*.tsbuildinfo
+.DS_Store
+# the website, built by site/build.js into site-dist/ (upload site-dist, or its zip, to Cloudflare)
 site-dist/
+# the docs site
+docs-site/node_modules/
+docs-site/dist/
+docs-site/.astro/
+# the desktop app's build output, and its local pinned copies of the apps
 apps/desktop/app/
 apps/desktop/dist/
+apps/desktop/control/
+apps/desktop/design/
 packages/*/dist/

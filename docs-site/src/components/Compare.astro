@@ -1,0 +1,22 @@
+---
+// A labelled callout, as the old docs had: green for "works the same" (as Carbide Motion, VCarve or
+// Fusion), blue for a difference or something to watch. The title is the label.
+interface Props { kind: 'same' | 'diff'; title: string }
+const { kind, title } = Astro.props;
+---
+<aside class:list={['compare', kind]} aria-label={title}>
+  <p class="label">{title}</p>
+  <div class="body"><slot /></div>
+</aside>
+<style>
+  .compare { margin-top: 1rem; padding: .75rem 1rem .8rem; border-left: 3px solid; border-radius: 0 .4rem .4rem 0; background: var(--sl-color-gray-6); }
+  .compare.same { border-color: #7fb069; }
+  .compare.diff { border-color: var(--sl-color-accent); }
+  .label { margin: 0; font-weight: 700; font-size: var(--sl-text-sm); }
+  .same .label { color: #8cc576; }
+  .diff .label { color: var(--sl-color-accent-high); }
+  .body :global(p) { margin-top: .3rem; }
+  .body :global(p:first-child) { margin-top: .3rem; }
+  :global([data-theme='light']) .compare { background: var(--sl-color-gray-7); }
+  :global([data-theme='light']) .same .label { color: #2f6b1f; }
+</style>

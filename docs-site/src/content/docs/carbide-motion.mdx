@@ -1,0 +1,137 @@
+---
+title: "Coming from Carbide Motion"
+description: "454 Control does the same job, and most of it will feel familiar. This page is the other part: every place it behaves differently, and why."
+---
+
+import Compare from '../../components/Compare.astro';
+
+454 Control does the same job, and most of it will feel familiar. This page is the other part: every place it behaves differently, and why.
+
+## What works the same
+
+- **The BitSetter measures each tool**, so a multi-tool job needs Z zeroed only once.
+- **The BitZero sets Z0** at the top of whatever the plate sits on.
+- **Homing first**, then zero, then run.
+- **Jogging** with keyboard or buttons, in steps or continuously.
+- **The spindle waits to reach speed** before cutting. Neither app takes that from the file.
+- **Saved G-code snippets** for repetitive moves, called Quick Actions in both.
+
+## Probing
+
+<Compare kind="diff" title="The BitZero probe is two-stage">
+
+Carbide Motion lowers the tool slowly until the circuit closes. 454 Control searches down at 150 mm/min, backs off 1.5 mm, then re-probes at 40 mm/min and uses that second reading. Same accuracy, several times quicker. The first descent looks fast if you are expecting the slow creep.
+
+</Compare>
+
+<Compare kind="diff" title="A failed probe explains itself">
+
+If the tool never reaches the plate, GRBL locks the machine. 454 Control says what happened and offers to unlock, rather than leaving you with an alarm code.
+
+</Compare>
+
+## Tool changes
+
+<Compare kind="same" title="The reference is taken when you set Z zero">
+
+As in Carbide Motion, the tool that sets Z zero is measured on the BitSetter right then and becomes the reference.
+
+</Compare>
+
+<Compare kind="same" title="Every job measures its tool">
+
+With a BitSetter set up, the first tool is measured when you confirm it’s loaded, or at Start if the file has no tool change. Once, as in Carbide Motion.
+
+</Compare>
+
+<Compare kind="diff" title="A bit swapped before Start is caught">
+
+At Start, 454 Control measures the loaded tool against that reference. Same bit: no change. A different bit: its length difference is compensated, rather than silently shifting Z.
+
+</Compare>
+
+<Compare kind="diff" title="The machine goes to the front centre">
+
+Carbide Motion parks near the BitSetter. 454 Control moves to the front centre of the machine by default, worked out from the controller’s travel limits, and you can choose front left, front right, back centre, or capture any position.
+
+</Compare>
+
+<Compare kind="diff" title="The prompt is a modal">
+
+It names the tool, says whether the BitSetter will measure it, and waits. It cannot be missed behind another panel.
+
+</Compare>
+
+<Compare kind="same" title="No BitSetter: re-zero Z after each change">
+
+As in Carbide Motion, a new tool without a BitSetter needs Z zeroed again before it cuts.
+
+</Compare>
+
+<Compare kind="diff" title="…and it can’t be skipped">
+
+A job with tool changes and no BitSetter asks at Start: set up the BitSetter, or re-zero at each change. If you re-zero, the tool-change prompt offers the BitZero and jogging, and won’t continue until Z has been zeroed for the new tool. Afterwards it always lifts before moving back to the work, since the tip is down on the stock.
+
+</Compare>
+
+## Spindle
+
+<Compare kind="diff" title="Spin-up is configurable, and longer by default">
+
+Carbide Motion inserts about 2.5 seconds. 454 Control defaults to 10, because VFD spindles take longer to reach speed than trim routers. It also tells you, before the job, how high above the work the bit waits while the spindle spins up.
+
+</Compare>
+
+## Running a job
+
+<Compare kind="diff" title="Homing is required">
+
+A job will not start without it.
+
+</Compare>
+
+<Compare kind="same" title="Every job ends the Carbide Motion way">
+
+Lift, back to the job’s XY zero, then park at the back centre (or a position you capture). 454 Control does this whatever the file does or forgets to do, stopping the spindle first.
+
+</Compare>
+
+<Compare kind="diff" title="Travel stays high">
+
+With start &amp; stop high on, the machine travels at the top of Z before plunging, at the start and after each tool change, and lifts clear before every spindle stop. Lifts are skipped when the tool is already clear, and never move downwards.
+
+</Compare>
+
+<Compare kind="diff" title="The start dialog says what will happen">
+
+Cut extents, tools in order, dwells that will be inserted, where the bit waits, how the job ends, and anything the checker found — before anything moves.
+
+</Compare>
+
+## Stopping and recovering
+
+<Compare kind="diff" title="End job lifts clear before stopping">
+
+It waits for the machine to decelerate to a standstill, clears what was queued, then lifts, stops the spindle and parks, the same as a finished job. The red **STOP** is the instant halt.
+
+</Compare>
+
+<Compare kind="diff" title="Recovery reconstructs the job">
+
+Carbide Motion can restart at a line. 454 Control works out the units, motion mode, feed, spindle, tool and position for that line, approaches carefully, and lets you Hold or Stop during the approach. It also suggests the line where cutting actually stopped, rather than the last line sent, because the controller always runs behind the stream.
+
+</Compare>
+
+## The app itself
+
+|  | Carbide Motion | 454 Control |
+| --- | --- | --- |
+| Installation | Installed application | A web page; nothing to install |
+| Connection | USB | USB via Chrome or Edge |
+| Settings | In the application | In the browser, exportable to a file |
+| Firmware updates | Yes | No — keep Carbide Motion for those |
+| Machine setup wizard | Yes | No; it reads the controller’s settings and checks them |
+| G-code preview | Basic | 3D, scrubbable, with a per-toolpath breakdown |
+| Appearance | Fixed | Light or dark, with a choice of accent colour |
+
+[← Back to the quick start](control-quickstart.html)

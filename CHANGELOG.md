@@ -27,6 +27,18 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### Repository tidy-up
+- **The Windows build failed on GitHub**: the website's built files had been committed at the top of the
+  repository, so the landing page replaced Control's source (`index.html`) and the build couldn't find
+  Control. The build now recognises each app by its contents (`index.html` or `control/index.html`,
+  `design.html` or `design/index.html`), and reports which it used.
+- **The repository goes back to sources only** (`repo-sync.zip` with `tidy-repo.ps1`): Control restored as
+  `index.html` (0.31.6; the only copy left was an old 0.31.3), the rest of the docs site, the website's
+  built copies, stray images, old docs pages and the old site zip removed, and `.gitignore` fixed (it
+  was saved without its dot). The website is still built from the sources and uploaded as a zip; nothing
+  built needs committing. Checked on a copy of the repository: both builds succeed, with Control 0.31.6,
+  Design 0.90.0 and the new docs.
+
 ### 0.5.4
 - Design 0.90.0 (the job sheet, below), and the docs' CAM reference section about it.
 

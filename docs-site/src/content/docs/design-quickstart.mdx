@@ -1,0 +1,138 @@
+---
+title: "454 Design: quick start"
+description: "Drawing parts to cut, opening VCarve projects, and getting your tool library in. If you know Fusion’s sketch tools, most of this will feel familiar on purpose. For every tool in detail, see Design tools."
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Compare from '../../components/Compare.astro';
+
+Drawing parts to cut, opening VCarve projects, and getting your tool library in. If you know Fusion’s sketch tools, most of this will feel familiar on purpose. For every tool in detail, see [Design tools](design-tools.html).
+
+## 1. Open it and set up the job
+
+<Steps>
+
+1. **Open 454 Design** in any modern browser. Nothing to install, no account.
+2. **Job setup** (the material icon, top right, and it opens by itself for a new drawing): set **millimetres or inches**, the material’s **width and height**, its **thickness**, where **Z zero** will be (the top of the material or the spoilboard), and where **X0 Y0** will be: any corner, or the centre.
+3. **Match those to the machine.** Set zero in 454 Control at the same corner and height. Changing XY zero later keeps your parts where they are on the material.
+4. **Settings** (the gear) holds appearance: light or dark, and an accent colour shared with 454 Control.
+
+</Steps>
+
+<Compare kind="same" title="Same as VCarve">
+
+Job setup covers what VCarve’s does: size, thickness, Z zero and the XY datum.
+
+</Compare>
+
+### Seeing the machine’s cutting area
+
+Job setup’s **Machine** section says how big the machine’s cutting area is (read from 454 Control’s work area when both run from the same place, or pick your machine) and where the material sits on the bed: a corner, optionally some distance in from it, or the centre. Then **Guides → Machine area** shows the cutting area as a dashed outline you can’t select or move. It turns **orange** when shapes fall outside it, and **red** when the material itself doesn’t fit.
+
+## 2. Draw
+
+Pick a tool from the panel on the left, or press its key. Click to place points; type a value and press Enter for an exact size.
+
+| Key | Tool | Key | Tool |
+| --- | --- | --- | --- |
+| <kbd>L</kbd> | Line | <kbd>T</kbd> | Trim |
+| <kbd>R</kbd> | Rectangle | <kbd>E</kbd> | Extend |
+| <kbd>C</kbd> | Circle | <kbd>O</kbd> | Offset |
+| <kbd>A</kbd> | Arc | <kbd>F</kbd> | Fillet, dog-bone or T-bone (click a rounded corner to make it sharp again) |
+| <kbd>P</kbd> | Polygon | <kbd>D</kbd> | Dimension |
+| <kbd>K</kbd> | Text | <kbd>I</kbd> | Measure |
+| <kbd>X</kbd> | Construction line | <kbd>M</kbd> | Copy |
+| <kbd>N</kbd> | Edit nodes | <kbd>Shift</kbd>+<kbd>M</kbd> | Mirror |
+| <kbd>Y</kbd> | Array | <kbd>Shift</kbd>+<kbd>R</kbd> | Rotate |
+
+<Compare kind="same" title="Same as Fusion">
+
+The letter keys match Fusion’s sketch shortcuts where Fusion has one. Mirror and Offset open a small panel: pick the shapes, pick the line or distance, preview, OK.
+
+</Compare>
+
+- **Lengths accept any units:** type `25`, `1/2"`, `12 1/2` or `3mm` regardless of the document’s units.
+- **Dimensions drive the drawing.** Press <kbd>D</kbd>, click two things, and type the distance you want: the first thing you clicked moves. Double-click a dimension to change it.
+- **Construction lines** (<kbd>X</kbd>) are for reference and alignment. They are never cut.
+- **Lost the drawing?** Press <kbd>Home</kbd> to fit everything back in view.
+
+## 3. Open a VCarve project
+
+<Steps>
+
+1. **Open** a `.crv` file (or a `.dxf`). The drawing, the material size, its thickness and where Z zero is all come across.
+2. **Its toolpaths are listed** in the Toolpaths panel on the right: names, tools, depths and settings, in VCarve’s order.
+
+</Steps>
+
+<Compare kind="same" title="Same as VCarve">
+
+Lines, arcs, circles and VCarve’s smooth Bézier curves all import as the shapes you drew.
+
+</Compare>
+
+<Compare kind="diff" title="Different from VCarve">
+
+VCarve’s toolpaths show here as a read-only list. 454 Design doesn’t run them; use VCarve or your saved G-code for that, and 454 Control to cut.
+
+</Compare>
+
+## Trace an image
+
+For logos and black-and-white artwork: **drop the image** on the drawing (PNG, JPG and most other image types), or open it like any other file. The **Trace image** panel shows the outlines live over the picture:
+
+- **Threshold** — where grey becomes black. **Auto** picks it from the image, and for clean artwork it lands exactly on the edges.
+- **Invert** — for light artwork on a dark background.
+- **Smoothing** — Sharp follows every pixel; Smooth gives cleaner outlines with fewer points.
+- **Ignore specks** — dust and noise smaller than this are left out.
+- **Fit curves** (on by default) — fits true arcs and straight lines to the outlines, within the smoothing tolerance: smooth curves and far fewer nodes, with sharp corners kept. The hint shows how many pieces that makes, against the points it would take without.
+- **Width** — the real size; the height follows the image’s proportions.
+
+**Trace** adds the outlines as one group, centred on the material, on the active layer. Holes stay holes, so the inside of an “O” is its own outline. Tick **Keep the image behind the drawing** to leave it faintly visible for drawing over by hand: it goes on a layer of its own, at the bottom, which you can hide or delete like any other.
+
+## Layers
+
+The left panel has two tabs down its edge: **Tools** and **Layers**. The Layers tab lists every layer. Click one to make it **active**: new shapes go there. On each row:
+
+- **Eye** — show or hide the layer. Hidden shapes can’t be picked or snapped to.
+- **Padlock** — lock it: still visible, but can’t be selected or changed.
+- **Name** — double-click to rename.
+- **Arrow** — with shapes selected, moves them onto this layer.
+- **Bin** — deletes the layer and what’s on it, after asking. Undo brings it back.
+
+<Compare kind="same" title="Same as VCarve">
+
+Hiding a layer is only for seeing: toolpaths still cut the shapes on it.
+
+</Compare>
+
+:::caution
+**Start with a clean image.** Tracing follows what’s there: a sharp, high-contrast logo at a decent size traces well; a small, blurry or heavily compressed one gives lumpy outlines.
+:::
+
+## 4. Bring in your tool library
+
+<Steps>
+
+1. **Open the tool library** (the end-mill icon, top right) and import VCarve’s `tools.vtdb`. On Windows it lives under `C:\ProgramData\Vectric\VCarve Pro\…\ToolDatabase`.
+2. **Choose your machine and material** at the top; feeds and speeds follow them.
+
+</Steps>
+
+The library is kept in this browser and shared with 454 Control. Your VCarve file isn’t changed.
+
+## 5. Nest parts on the material
+
+Select the parts, open **Nest**, set how many of each, spacing and margin, and press Nest. Parts are rotated to whatever angle fits best; holes travel with their outlines. One undo puts everything back.
+
+## 6. Save your work
+
+- **It saves itself** in this browser as you work.
+- **Save** writes the drawing to a `.454.json` file: keep it with your G-code, back it up, or open it on another computer. It keeps everything, but only 454 Design opens it.
+- **Export DXF** writes a `.dxf` that VCarve, Fusion, laser software and most CAD programs open: circles and arcs stay true curves, your layers become DXF layers, and the units are millimetres. Construction lines go on a “Construction” layer; dimensions, guides and toolpaths stay in 454.
+
+**Opening a DXF** brings its layers in as Design layers, keeping which were hidden or locked.
+
+:::caution
+**Browser storage belongs to this browser.** Clearing site data or switching computers loses it. Save important drawings to a file.
+:::

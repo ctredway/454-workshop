@@ -1,0 +1,17 @@
+---
+// A documentation screenshot. Shots are captured at twice screen resolution (npm run shots), so they're
+// shown at half their pixel size: true to the app's scale, sharp on high-resolution screens.
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+interface Props { src: ImageMetadata; alt: string; caption?: string; }
+const { src, alt, caption } = Astro.props;
+---
+<figure class="shot">
+  <Image src={src} alt={alt} width={Math.round(src.width / 2)} densities={[1, 2]} />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+<style>
+  .shot { margin: 1.1rem 0 1.4rem; }
+  .shot :global(img) { max-width: 100%; height: auto; display: block; border-radius: .5rem; border: 1px solid var(--sl-color-gray-5); box-shadow: 0 6px 22px rgba(0, 0, 0, .35); }
+  figcaption { margin-top: .5rem; font-size: var(--sl-text-sm); color: var(--sl-color-gray-3); }
+</style>

@@ -1,0 +1,40 @@
+---
+title: "454 Workshop documentation"
+description: "454 Workshop is two apps that work together: 454 Design draws the parts, and 454 Control sends jobs to the machine. Both run in a browser, need no installation, and are free and open source."
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+454 Workshop is two apps that work together: 454 Design draws the parts, and 454 Control sends jobs to the machine. Both run in a browser, need no installation, and are free and open source.
+
+<CardGrid>
+  <LinkCard title="Control: quick start" href="control-quickstart.html" description="From opening the app to a finished cut, in order." />
+  <LinkCard title="Design: quick start" href="design-quickstart.html" description="Drawing parts, opening VCarve projects, your tool library." />
+  <LinkCard title="Design: every tool" href="design-tools.html" description="Each tool, group by group: what it does and how to use it." />
+  <LinkCard title="Toolpaths (CAM) reference, beta" href="cam-reference.html" description="Every toolpath type and setting in Design, and how to check a job." />
+  <LinkCard title="Coming from Carbide Motion" href="carbide-motion.html" description="What works the same, and every place it doesn’t." />
+</CardGrid>
+
+## What 454 Control does
+
+- Opens G-code, checks it, and shows it in 3D before anything moves.
+- Runs the job, adding the things files leave out: spindle spin-up, travelling high, tool-change handling, and a predictable ending.
+- Jogging, zeroing, BitZero probing and BitSetter tool measurement.
+- Recovers a stopped job from the line where cutting actually stopped.
+
+## What 454 Design does
+
+- 2D drawing for parts you intend to cut: lines, arcs, text, and the editing tools around them.
+- Dimensions that drive the geometry, in millimetres or inches.
+- Opens VCarve .crv files and DXFs, and lists the toolpaths a project contains.
+- Nests parts onto your material, and holds your tool library, imported from VCarve.
+
+## What you need
+
+- **Chrome or Edge on a desktop** to talk to the machine. Everything else works in any browser.
+- **A GRBL 1.1 controller**, which covers the Shapeoko and Nomad.
+- Nothing to install, and no account. Settings live in your browser and export to a file.
+
+:::caution
+**These apps move a real machine.** Keep a hand near the e-stop, and air-cut anything new before cutting material.
+:::

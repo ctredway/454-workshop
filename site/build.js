@@ -3,9 +3,12 @@
 // geom.js) and the docs, unchanged except for their links, which follow the site's layout (/control/,
 // /design/, /docs/). The apps stay the single source of truth. CAM is released as a beta.
 //
-// Cloudflare Pages: build command "node site/build.js", output directory "site-dist".
+// The docs (/docs) are the Starlight site in docs-site/, built here and copied in.
+//
+// Cloudflare: build command "npm ci --prefix docs-site && node site/build.js", output directory "site-dist".
 'use strict';
 const fs = require('fs'), path = require('path');
+const { execSync } = require('child_process');
 const repo = path.join(__dirname, '..'), out = path.join(repo, 'site-dist');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
@@ -36,18 +39,11 @@ design = swap(design, 'href="docs/cam-reference.html"', 'href="../docs/cam-refer
 write('design/index.html', design);
 for (const f of ['cam.js', 'geom.js']) fs.copyFileSync(path.join(repo, f), path.join(out, 'design', f));   // the CAM engine (beta)
 
-// the docs at /docs/
-for (const f of fs.readdirSync(path.join(repo, 'docs'))) {
-  const src = path.join(repo, 'docs', f);
-  if (f === 'images'){ fs.mkdirSync(path.join(out, 'docs', 'images'), { recursive: true });   // just the logo the docs' header uses
-    fs.copyFileSync(path.join(src, 'logo.svg'), path.join(out, 'docs', 'images', 'logo.svg')); continue; }
-  if (fs.statSync(src).isDirectory()) continue;
-  if (!f.endsWith('.html')) { fs.copyFileSync(src, path.join(out, 'docs', f)); continue; }
-  let d = fs.readFileSync(src, 'utf8');
-  if (d.includes('href="../index.html"')) d = swap(d, 'href="../index.html"', 'href="../control/"', 'docs/' + f);
-  if (d.includes('href="../design.html"')) d = swap(d, 'href="../design.html"', 'href="../design/"', 'docs/' + f);
-  write('docs/' + f, d);
-}
+// the docs at /docs/: the Starlight site in docs-site/ (its pages keep the old .html addresses)
+const docsSite = path.join(repo, 'docs-site');
+if (!fs.existsSync(path.join(docsSite, 'node_modules'))) throw new Error('site build: install the docs site first: npm ci --prefix docs-site');
+execSync('npm run build', { cwd: docsSite, stdio: 'inherit' });
+fs.cpSync(path.join(docsSite, 'dist'), path.join(out, 'docs'), { recursive: true });
 
 // check: every link on the site that points within it leads somewhere
 const missing = [];
@@ -62,7 +58,9 @@ const missing = [];
       if (/^(https?:|mailto:|data:|javascript:)/.test(u) || u.startsWith('//')) continue;
       let target = u.startsWith('/') ? path.join(out, u) : path.join(path.dirname(p), u);
       if (u.endsWith('/')) target = path.join(target, 'index.html');
-      if (!fs.existsSync(target)) missing.push(path.relative(out, p) + ' -> ' + u);
+      // the docs link to /docs/page without .html (Cloudflare serves page.html), and /docs for its index
+      const found = fs.existsSync(target) && fs.statSync(target).isFile() || fs.existsSync(target + '.html') || fs.existsSync(path.join(target, 'index.html'));
+      if (!found) missing.push(path.relative(out, p) + ' -> ' + u);
     }
   }
 })(out);

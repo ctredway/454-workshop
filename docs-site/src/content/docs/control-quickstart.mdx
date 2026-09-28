@@ -1,0 +1,175 @@
+---
+title: "454 Control: quick start"
+description: "Opening the app to a finished cut. About ten minutes the first time, once you have your machine details entered; a minute or two after that."
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Compare from '../../components/Compare.astro';
+
+Opening the app to a finished cut. About ten minutes the first time, once you have your machine details entered; a minute or two after that.
+
+:::caution
+**Before anything else.** Air-cut a new file first: set Z zero well above the material, watch it run through, and only then cut for real. Keep a hand near the e-stop.
+:::
+
+## 1. Open and connect
+
+<Steps>
+
+1. **Open 454 Control** in Chrome or Edge on a desktop. Nothing to install.
+2. **Press Connect** when it asks, and pick your controller from the browser’s list. After the first time the button says **Reconnect** and skips the picker.
+3. **Home the machine** when prompted. 454 Control asks as soon as you connect, and a job won’t start without it.
+
+</Steps>
+
+<Compare kind="diff" title="Different from Carbide Motion">
+
+Homing is required before every job, not just recommended. Without it the machine’s own coordinates mean nothing, so lifting clear, parking and the BitSetter can’t work.
+
+</Compare>
+
+## 2. Tell it about your machine
+
+Once, in **Settings** (the gear, top right). Everything saves in your browser as you change it.
+
+### Machine tab
+
+- **Work area** — filled in from the controller when you connect, or pick your machine from the list (or type a size) and it stays as you set it.
+- **Spindle** — router or VFD, and the **spin-up** wait. Default 10 seconds.
+- **Start &amp; stop high** — leave this on. It keeps the bit above clamps.
+- **Lift at tool changes and job end** — how far below the top of travel to go. Default 2 mm.
+- **Tool-change position** — front centre by default, or capture your own.
+- **Park at the end of a job** — the back centre by default, like Carbide Motion; capture a position to park somewhere else.
+- **Controller config** — the controller’s own `$` settings, read when you connect. **Check controller settings** looks them over for anything that would trip 454 Control up, and shows each axis’s range.
+
+### Accessories tab
+
+- **BitSetter** — tick it, jog the tool over the button, press **Capture position**, then **Test**: it touches off once and reports, without changing anything.
+- **BitZero** — tick it, choose v1 or v2, and enter the plate thickness you measured with calipers (15 mm for a BitZero v2).
+
+<Compare kind="same" title="Same as Carbide Motion">
+
+The BitSetter measures each new tool so you only zero Z once, and the BitZero sets Z0 at the top of whatever the plate is sitting on.
+
+</Compare>
+
+## 3. Set your zero
+
+<Steps>
+
+1. **Fit the first bit** and jog over the corner of your stock with **Jog &amp; zero**.
+2. **Set X and Y** where the job’s origin should be, matching how the file was posted.
+3. **Probe Z** with the BitZero: clip the lead to the tool, put the plate on the stock, jog the tip 2–10 mm above it, verify the circuit by touching the pin to the plate, then probe.
+4. **Paper-test it**: jog to Z0 and check the drag on a sheet of paper.
+
+</Steps>
+
+<Compare kind="diff" title="Different from Carbide Motion">
+
+The BitZero probe is two-stage: a quick search, a small back-off, then a slow re-probe that gives the reading. The first descent is faster than you may expect; the measurement is the slow one.
+
+</Compare>
+
+<Steps>
+
+1. **Say yes to the BitSetter.** If you have one set up, setting Z zero offers to measure the tool straight away. That makes it the reference every other tool is measured against. The Probe section shows the BitSetter’s status; if it’s switched on but can’t be used, it says why.
+
+</Steps>
+
+<Compare kind="same" title="Same as Carbide Motion">
+
+The tool that sets Z zero is measured as the reference, so tool changes keep your zero.
+
+</Compare>
+
+<Compare kind="same" title="Same as Carbide Motion">
+
+With a BitSetter set up, every job measures its tool: when you confirm the first tool is loaded, or at Start if the file has no tool change.
+
+</Compare>
+
+<Compare kind="diff" title="Different from Carbide Motion">
+
+That measurement is compared with the reference taken at Z zero, so if you swapped bits after zeroing, the difference is compensated instead of shifting your Z.
+
+</Compare>
+
+## 4. Load the file
+
+<Steps>
+
+1. **Open a G-code file** and look at the 3D view. Drag to orbit, scroll to zoom.
+2. **Read the Checks tab.** Anything GRBL would reject is listed there with its line.
+3. **Look at Toolpaths.** Each operation with its tool, depth, feeds and time. Click one to jump the preview to it.
+4. **Scrub the preview** to watch the cut before it happens.
+
+</Steps>
+
+## 5. Run it
+
+<Steps>
+
+1. **Press Start.** A summary appears before anything moves: extents, tools, what will be added, where the bit waits during spin-up, and how the job will end.
+2. **Read it, then press Start job.** The control bar over the preview shows progress, position, and Hold, Resume and STOP.
+3. **At a tool change** the machine lifts, stops the spindle, moves to the tool-change position and waits. Change the bit, then press **Tool changed — continue**. With a BitSetter the new tool is measured automatically.
+4. **At the end** it lifts, stops the spindle, returns to the job’s XY zero, then parks at the back centre.
+
+</Steps>
+
+### Tool changes without a BitSetter
+
+A new tool is a different length from the last one, so without a BitSetter to measure it, Z has to be zeroed again before it cuts. 454 Control won’t let that be missed:
+
+<Steps>
+
+1. **You choose at Start.** If the file changes tools after cutting has begun and the BitSetter isn’t set up, a dialog says so before anything moves. **Set up the BitSetter** opens Settings instead of starting; **Re-zero at each change** starts the job.
+2. **At each change, zero Z for the new tool.** The tool-change prompt offers **Probe with BitZero** and **Jog &amp; zero Z**. The job waits, stopped, while you do it.
+3. **Then continue.** **Tool changed — continue** stays disabled until Z has been zeroed for the new tool. When you continue, the machine lifts to the top before moving back to the work, since the tip is still down on the stock.
+
+</Steps>
+
+The first tool, loaded before anything is cut, doesn’t need re-zeroing: that’s the one you zeroed with.
+
+<Compare kind="same" title="Same as Carbide Motion">
+
+Without a BitSetter, you set Z zero again after each tool change.
+
+</Compare>
+
+<Compare kind="diff" title="Different from Carbide Motion">
+
+The choice is made at Start, before anything moves, and the job can’t continue past a tool change until Z has actually been zeroed for the new tool.
+
+</Compare>
+
+<Compare kind="same" title="Same as Carbide Motion">
+
+Every job ends by lifting, returning to the job’s XY zero, then parking at the back centre. 454 Control does this whatever the file does or forgets to do, and stops the spindle first.
+
+</Compare>
+
+## When something goes wrong
+
+| Situation | What to do |
+| --- | --- |
+| Need to pause | **Hold.** The machine stops with the spindle running; **Resume** carries on. |
+| Something is about to be hit | **STOP** (red). Immediate halt: motion and spindle stop at once. |
+| Need to end the job early | **End job.** The machine slows to a stop, then lifts clear, stops the spindle, returns to XY zero and parks, the same as a finished job. |
+| Stopped and want to carry on | The **Recover** box is filled in with the line where cutting stopped. Check it in the preview, then press Recover. |
+| Probe failed | The tool was too far from the plate. Unlock when asked, jog closer, probe again. |
+| Machine says Alarm | Home it, or unlock if you know why it alarmed. |
+
+<Compare kind="diff" title="Different from Carbide Motion">
+
+**End job** finishes the way a completed job does: it waits for the machine to stop, then lifts clear and parks. Only the red **STOP** halts instantly.
+
+</Compare>
+
+## Worth knowing
+
+- **Settings live in this browser.** Export a profile from Settings → Profile to back them up or move them to another computer.
+- **Reloading mid-job is caught** by the browser asking whether to leave. Don’t.
+- **Quick Actions** hold G-code you use often, reachable from the **Actions** button in the control bar.
+- **ⓘ icons** beside settings explain what each one does.
+
+[Every difference from Carbide Motion, in one place →](carbide-motion.html)

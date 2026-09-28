@@ -14,12 +14,19 @@ const mod = (p) => require.resolve(p, { paths: [root] });
 // in control/ and design/ here. CAM goes in only if its files (cam.js, geom.js) sit beside design.html:
 // the public repository leaves them out until CAM is released, and builds made from it have no CAM.
 const repo = path.join(root, '..', '..');
-const inRepo = fs.existsSync(path.join(repo, 'design.html')) && fs.existsSync(path.join(repo, 'index.html')) &&
-               fs.readFileSync(path.join(repo, 'index.html'), 'utf8').includes('CONTROL_VERSION');
+// Each app is recognised by its contents, not its place: at the top of the repository (index.html,
+// design.html) or where the website puts them (control/index.html, design/index.html).
+const isApp = (f, marker) => fs.existsSync(f) && fs.readFileSync(f, 'utf8').includes(marker);
+const controlAt = [path.join(repo, 'index.html'), path.join(repo, 'control', 'index.html')].find((f) => isApp(f, 'CONTROL_VERSION'));
+const designAt = [path.join(repo, 'design.html'), path.join(repo, 'design', 'index.html')].find((f) => isApp(f, 'DESIGN_VERSION'));
+const inRepo = !!(controlAt && designAt);
 const SRC = inRepo
-  ? { control: path.join(repo, 'index.html'), design: path.join(repo, 'design.html'), designDir: repo, docs: path.join(repo, 'docs'), from: 'the repository' }
+  ? { control: controlAt, design: designAt, designDir: path.dirname(designAt), docs: path.join(repo, 'docs'),
+      from: 'the repository (' + path.relative(repo, controlAt).replace(/\\/g, '/') + ', ' + path.relative(repo, designAt).replace(/\\/g, '/') + ')' }
   : { control: path.join(root, 'control', 'index.html'), design: path.join(root, 'design', 'design.html'), designDir: path.join(root, 'design'), docs: path.join(root, 'control', 'docs'), from: 'the pinned copies' };
-const CAM = ['cam.js', 'geom.js'].every((f) => fs.existsSync(path.join(SRC.designDir, f)));
+const CAM = ['cam.js', 'geom.js'].every((f) => fs.existsSync(path.join(SRC.designDir, f)) || fs.existsSync(path.join(repo, f)));
+const camFile = (f) => fs.existsSync(path.join(SRC.designDir, f)) ? path.join(SRC.designDir, f) : path.join(repo, f);
+if (!inRepo && !fs.existsSync(SRC.control)) throw new Error('build-app: 454 Control not found: expected index.html or control/index.html at the top of the repository (containing CONTROL_VERSION), or the pinned copy at ' + SRC.control);
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'vendor'), { recursive: true });
 
@@ -50,7 +57,7 @@ design = swap(design, '<script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3
 design = swap(design, "var SQLJS_BASE = 'https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/';", "var SQLJS_BASE = 'vendor/sql.js/';", 'Design\'s sql.js 1.14.2');
 design = swap(design, "var FONT_CDN = 'https://cdn.jsdelivr.net/npm/@fontsource/';", "var FONT_CDN = 'vendor/fontsource/';", 'Design\'s font address');
 fs.writeFileSync(path.join(out, 'design.html'), design);
-if (CAM) for (const f of ['cam.js', 'geom.js']) copy(path.join(SRC.designDir, f), f);
+if (CAM) for (const f of ['cam.js', 'geom.js']) copy(camFile(f), f);
 copy(mod('opentype.js/dist/opentype.min.js'), 'vendor/opentype.min.js');
 for (const f of ['sql-wasm.js', 'sql-wasm.wasm']) copy(mod('sql.js/dist/' + f), 'vendor/sql.js/' + f);
 // the Text tool's fonts: exactly the ones Design lists, at the versions it names
@@ -78,9 +85,18 @@ fs.writeFileSync(path.join(out, 'about.html'), about);
 copy(path.join(root, 'build', 'logo.svg'), 'about-logo.svg');
 
 // ---- the docs, shared by both
-if (fs.existsSync(SRC.docs)) fs.cpSync(SRC.docs, path.join(out, 'docs'), { recursive: true,
-  filter: (f) => CAM || path.basename(f) !== 'cam-reference.html' });          // no CAM, no CAM reference
+// The docs: the Starlight site (docs-site/, beside apps/ in the repository), built now so it's current.
+// Without it (not installed: npm ci --prefix docs-site), the older hand-written pages.
+const docsSite = path.join(root, '..', '..', 'docs-site');
+if (fs.existsSync(path.join(docsSite, 'node_modules'))) {
+  require('child_process').execSync('npm run build', { cwd: docsSite, stdio: ['ignore', 'ignore', 'inherit'] });
+  fs.cpSync(path.join(docsSite, 'dist'), path.join(out, 'docs'), { recursive: true });
+  SRC.docsFrom = 'the docs site';
+} else if (fs.existsSync(SRC.docs)) {
+  fs.cpSync(SRC.docs, path.join(out, 'docs'), { recursive: true, filter: (f) => CAM || path.basename(f) !== 'cam-reference.html' });
+  SRC.docsFrom = 'the older pages';
+}
 
 // what went in, for the app (whether to open Design with CAM) and for anyone checking a build
 fs.writeFileSync(path.join(out, 'build-info.json'), JSON.stringify({ cam: CAM, from: SRC.from }, null, 1));
-console.log(`app/ built from ${SRC.from}: Control, Design (${fonts.length} fonts, ${CAM ? 'with' : 'without'} CAM), docs; nothing loaded from the internet but Google Fonts, which fall back to system fonts`);
+console.log(`app/ built from ${SRC.from}: Control, Design (${fonts.length} fonts, ${CAM ? 'with' : 'without'} CAM), docs (${SRC.docsFrom || 'none'}); nothing loaded from the internet but Google Fonts, which fall back to system fonts`);

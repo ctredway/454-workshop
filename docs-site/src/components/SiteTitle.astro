@@ -1,0 +1,14 @@
+---
+// The header's title: the 454 logo, then "Workshop docs" (not "454" twice).
+import logo from '../assets/logo.svg';
+const { siteTitleHref } = Astro.locals.starlightRoute;
+---
+<a href={siteTitleHref} class="site-title">
+  <img src={logo.src} width="80" height="25" alt="454" />
+  <span>Workshop <span class="docs">docs</span></span>
+</a>
+<style>
+  .site-title { display: flex; align-items: center; gap: .55rem; text-decoration: none; color: var(--sl-color-white); font-weight: 700; font-size: var(--sl-text-h4); white-space: nowrap; }
+  .site-title img { height: 1.55rem; width: auto; }
+  .docs { color: var(--sl-color-gray-3); font-weight: 600; }
+</style>

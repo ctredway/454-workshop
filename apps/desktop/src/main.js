@@ -70,8 +70,8 @@ function route(url) {
   let u; try { u = new URL(url); } catch (e) { return; }
   if (!isAppPage(u)) return;                                  // anything else (mailto:, other schemes): ignored
   const p = u.pathname;
-  if (/\/design\.html$/.test(p)) showDesign();
-  else if (/\/(index\.html)?$/.test(p)) showControl();
+  if (['/design.html', '/design', '/design/'].includes(p)) showDesign();
+  else if (['/', '/index.html', '/control', '/control/'].includes(p)) showControl();     // the website's /control/ is Control here
   else openDocs(url);
 }
 function wire(win) {
@@ -79,6 +79,7 @@ function wire(win) {
   win.webContents.setWindowOpenHandler(({ url }) => { route(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => {
     const here = win.webContents.getURL().split('?')[0], there = url.split('?')[0].split('#')[0];
+    if (docsWindows.has(win) && isDocsPage(there)) return;            // browsing the docs: stay in this window
     if (there !== here.split('#')[0]) { e.preventDefault(); route(url); }
   });
 }
@@ -119,10 +120,14 @@ function openAbout() {
   about.on('closed', () => { aboutWin = null; });
   return about;
 }
+function isDocsPage(url) { try { const u = new URL(url); return isAppPage(u) && /^\/docs(\/|$)/.test(u.pathname); } catch (e) { return false; } }
 function openDocs(url) {
+  const open = [...docsWindows].find((d) => !d.isDestroyed());           // one docs window: reuse it
+  if (open) { open.loadURL(url); if (open.isMinimized()) open.restore(); open.focus(); return open; }
   const w = new BrowserWindow({ width: 1000, height: 820, backgroundColor: '#14181d', title: '454 Workshop docs', icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
   wire(w); w.loadURL(url); docsWindows.add(w); w.on('closed', () => docsWindows.delete(w));
+  return w;
 }
 
 function menu() {
@@ -158,6 +163,7 @@ function testHook() {
   }
   const jobs = [];
   if (process.env.P454_E2E) jobs.push({ win: () => showControl(), script: process.env.P454_E2E, out: process.env.P454_E2E_OUT, shot: process.env.P454_E2E_SHOT });
+  if (process.env.P454_E2E_DOCS) jobs.push({ win: () => openDocs(ORIGIN + (process.env.P454_E2E_DOCS_PAGE || '/docs/index.html')), script: process.env.P454_E2E_DOCS, out: process.env.P454_E2E_DOCS_OUT, shot: process.env.P454_E2E_DOCS_SHOT });
   if (process.env.P454_E2E_DESIGN) jobs.push({ win: () => showDesign(), script: process.env.P454_E2E_DESIGN, out: process.env.P454_E2E_DESIGN_OUT, shot: process.env.P454_E2E_DESIGN_SHOT });
   if (process.env.P454_E2E_ABOUT) jobs.push({ win: () => openAbout(), script: process.env.P454_E2E_ABOUT, out: process.env.P454_E2E_ABOUT_OUT, shot: true });
   if (!jobs.length) return false;
@@ -185,8 +191,11 @@ app.whenReady().then(() => {
   // app:// serves only files inside the app's own folder
   protocol.handle('app', (req) => {
     const u = new URL(req.url);
-    const file = path.normalize(path.join(APP_DIR, decodeURIComponent(u.pathname)));
-    if (!file.startsWith(APP_DIR + path.sep)) return new Response('Not found', { status: 404 });
+    let file = path.normalize(path.join(APP_DIR, decodeURIComponent(u.pathname)));
+    if (!file.startsWith(APP_DIR + path.sep) && file !== APP_DIR) return new Response('Not found', { status: 404 });
+    // the docs link to /docs/page (served from page.html) and to /docs (its index.html)
+    if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+    else if (!fs.existsSync(file) && !path.extname(file) && fs.existsSync(file + '.html')) file += '.html';
     return net.fetch(pathToFileURL(file).toString());
   });
   Menu.setApplicationMenu(menu());

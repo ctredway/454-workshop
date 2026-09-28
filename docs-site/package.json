@@ -1,0 +1,19 @@
+{
+  "name": "454-docs",
+  "private": true,
+  "type": "module",
+  "description": "The 454 Workshop documentation, at 454workshop.com/docs. Astro Starlight.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "shots": "node scripts/shots.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.4",
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "astro": "^7.3.5",
+    "sharp": "^0.35.5"
+  }
+}

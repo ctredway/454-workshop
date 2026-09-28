@@ -68,3 +68,10 @@ GitHub's Windows machines, from this repository's own `index.html`, `design.html
 CAM is included only if `cam.js` and `geom.js` are in the repository; until CAM is released they
 aren't, and the build leaves CAM out (Design opens with it off). The builds aren't code-signed yet, so
 Windows SmartScreen warns on first run ("More info", then "Run anyway").
+
+## The docs
+
+The documentation at 454workshop.com/docs is the Starlight site in `docs-site/`: see
+[docs-site/README.md](docs-site/README.md) for writing pages, previewing them, and regenerating the
+screenshots. The website build and the desktop app build both build it and include it; they need it
+installed first (`npm ci --prefix docs-site`).

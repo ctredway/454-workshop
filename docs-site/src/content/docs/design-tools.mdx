@@ -1,0 +1,494 @@
+---
+title: "454 Design: tools"
+description: "Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the Design quick start."
+---
+
+import Shot from '../../components/Shot.astro';
+import typing from '../../assets/shots/design-typing.png';
+import gFile from '../../assets/shots/design-group-file.png';
+import gCreate from '../../assets/shots/design-group-create.png';
+import gEdit from '../../assets/shots/design-group-edit.png';
+import gAlign from '../../assets/shots/design-group-align.png';
+import gGuides from '../../assets/shots/design-group-guides.png';
+import gView from '../../assets/shots/design-group-view.png';
+import selHandles from '../../assets/shots/design-select-handles.png';
+import filletHover from '../../assets/shots/design-fillet-hover.png';
+import filletBar from '../../assets/shots/design-fillet-bar.png';
+import offset from '../../assets/shots/design-offset.png';
+import textPanel from '../../assets/shots/design-text-panel.png';
+import nestPanel from '../../assets/shots/design-nest-panel.png';
+
+
+Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
+
+**Groups:** [File](#file) · [Create vectors](#create-vectors) · [Edit vectors](#edit-vectors) · [Align and nest](#align-and-nest) · [Guides](#guides) · [View and history](#view-and-history)
+
+## Before you start: typing exact values
+
+Most tools can be used with the mouse alone, but for exact work you can type values at any time: just start typing while a tool is active, and a box appears at the pointer. Press <kbd>Enter</kbd> to use the value. Values are in the drawing’s units unless you type a unit after the number (`3mm`, `0.5in`).
+
+| Type | Means | Example |
+| --- | --- | --- |
+| `x,y` | a point, measured from the drawing’s zero | `50,30` |
+| `@dx,dy` | a point relative to the last one | `@10,0` is 10 to the right |
+| `length<angle` | a distance at an angle from the last point (degrees, counter-clockwise from the right) | `50<45` |
+
+<Shot src={typing} alt="Drawing a line: a dashed line runs from the last point to the pointer, and a box beside it holds the typed value @40,0." caption="Typing @40,0 while drawing a line. The dashed line follows the pointer; press Enter and the next point goes 40 mm to the right of the last one instead." />
+
+**Snapping:** while drawing, the pointer snaps to the ends, midpoints, corners and centers of shapes, to guides and where guides cross, and to the grid. **Esc** cancels whatever you’re in the middle of, and <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes almost anything.
+
+## File
+
+Starting, saving and opening drawings, and handing them to other software.
+
+<Shot src={gFile} alt="The File group: New, Save, Load, Export DXF and Export SVG." />
+
+### New
+
+Clears all shapes and guides, to start a fresh drawing.
+
+1. Click **New**.
+2. Changed your mind? <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings everything back.
+
+### Save
+
+Saves the drawing, with its toolpaths, to a `.454.json` file you can open again later.
+
+1. Click **Save** and choose where to put the file.
+2. Keep it with the job’s G-code, or as a backup.
+
+### Load
+
+Opens a saved drawing, a VCarve project, a DXF file, or an image to trace.
+
+1. Click **Load** and pick a file, or drag the file onto Design’s window.
+2. **A saved drawing** (`.454.json`) opens as it was.
+3. **A VCarve project** (`.crv`) opens a panel: choose whether to bring in the **Drawing vectors** and the **Toolpath preview vectors**, whether to **Scale to width** or **Move to origin**, and millimetres or inches. The material size comes across too, and the project’s toolpaths can be made editable in Design afterwards.
+4. **A DXF file** comes in with its layers and true curves.
+5. **An image** (PNG, JPG, GIF, BMP or WebP) opens the **Trace image** panel: set the **Threshold** (or press **Auto**), **Invert** for light artwork on a dark background, the **Smoothing**, specks to ignore, and the traced width, then press **Trace**. **Fit curves** turns the outlines into smooth arcs and lines with far fewer points.
+
+### Export DXF
+
+Saves the drawing as a DXF file, for VCarve, Fusion, a laser, or other CAD and CAM software.
+
+1. Click **Export DXF** and choose where to save it.
+2. Shapes keep their true curves and their layers; everything is in millimetres.
+
+### Export SVG
+
+Saves the drawing as an SVG file, for laser software, vinyl cutters and Inkscape.
+
+1. Click **Export SVG** and choose where to save it.
+2. It’s true to size in millimetres, with true curves and your layers.
+
+## Create vectors
+
+Selecting, and drawing new shapes.
+
+<Shot src={gCreate} alt="The Create vectors group: Select, Line, Rectangle, Circle, Arc, Polyline and Text." />
+
+### Select / move
+
+Shortcut: <kbd>V</kbd>
+
+Picks shapes so you can move them, change them, or use another tool on them.
+
+1. **Click** a shape to select it; **Shift-click** to add or remove shapes.
+2. **Drag a box** on empty space: left to right selects shapes entirely inside it; right to left also selects any shape it touches.
+3. **Drag** a selected shape to move it, or nudge it with the arrow keys: 1 mm a press, 0.1 mm with <kbd>Shift</kbd>.
+4. **Double-click** a selected shape for handles: corners scale in proportion, sides stretch one way. Click it again for rotate handles.
+5. <kbd>Delete</kbd> removes what’s selected.
+
+:::tip
+Shapes on hidden or locked layers can’t be selected.
+:::
+
+<Shot src={selHandles} alt="A selected rectangle with square scale handles at its corners and sides, and its width and height shown; a circle beside it." caption="Double-click a selected shape for its handles: corners scale in proportion, sides stretch one way." />
+
+### Line
+
+Shortcut: <kbd>L</kbd>
+
+Draws straight lines, one after another.
+
+1. Click the first point, or type it as `x,y`.
+2. Click the next point, or type it: `x,y`, `@dx,dy` or `length<angle`. Each click adds a line from the last point.
+3. Press <kbd>Esc</kbd> when you’re done.
+
+### Rectangle
+
+Shortcut: <kbd>R</kbd>
+
+Draws a rectangle.
+
+1. Click one corner, or type it as `x,y`.
+2. Click the opposite corner, or type the size as `width,height`, such as `120,80`.
+
+### Circle
+
+Shortcut: <kbd>C</kbd>
+
+Draws a circle.
+
+1. Click the center, or type it as `x,y`.
+2. Click a point on the edge, or type the size: `D5` for a 5 mm diameter, `R2.5` for a 2.5 mm radius.
+
+### Arc
+
+Shortcut: <kbd>A</kbd>
+
+Draws an arc through a start and end point.
+
+1. Click the start point, or type it.
+2. Click the end point, or type it (`x,y`, `@dx,dy` or `length<angle`).
+3. Move the pointer to bow the arc and click to place it, or type a radius: a positive radius bows it to the left of the line from start to end, a negative one to the right.
+
+### Polyline
+
+Shortcut: <kbd>P</kbd>
+
+Draws a connected outline of straight lines, open or closed.
+
+1. Click the first point, or type it.
+2. Click each next point, or type it (`@dx,dy` and `length<angle` work too).
+3. Click the first point again to close the shape, or press <kbd>Enter</kbd> to leave it open.
+
+### Text
+
+Shortcut: <kbd>K</kbd>
+
+Adds text, in any of Design’s fonts or one from your computer.
+
+1. Click where the text should start: the bottom of the first letter.
+2. In the **Add text** panel, type the text, and choose the **Font** (or **Use font file…** for a `.ttf`, `.otf` or `.woff`), the **Letter height** and the **Align**ment.
+3. Press **Place text** to add it as text you can edit later, or **Convert to curves** to add it as ordinary shapes.
+4. To edit text later, click it with the Text tool, or double-click it twice with Select.
+
+:::tip
+For text you'll cut all the way through, choose a font from the **Stencil** group: they keep the middles of letters like O, A and R attached, so they don't fall out.
+:::
+
+<Shot src={textPanel} alt="The Add text panel: the text WORKSHOP, the font Roboto, a 10 mm letter height, left alignment, and the Convert to curves and Place text buttons." />
+
+## Edit vectors
+
+Changing shapes you’ve drawn: corners, trimming, offsets, copies, arrangement and more. Tools that act on a selection need something selected first: press <kbd>V</kbd>, pick the shapes, then choose the tool.
+
+<Shot src={gEdit} alt="The Edit vectors group: Fillet, Trim, Extend, Offset, Edit nodes, Dimension, Copy, Mirror, the flips, Rotate, Array, Group, Ungroup, Join, Explode and Convert to curves." />
+
+### Fillet
+
+Shortcut: <kbd>F</kbd>
+
+Rounds a corner, or cuts a relief into it so a square part fits a CNC-cut pocket. It can also put a rounded corner back to sharp.
+
+1. Set the size in the **Radius** box at the bottom of the drawing, or just start typing a number.
+2. Choose the corner type beside it: **Round**, **Dog-bone** (a relief at the corner, for the bit’s radius), or **T-bone** (a relief into one edge; click nearer the edge it should cut into).
+3. Move over a corner: a green check and a preview show what a click will do. Click to apply it. This works on outline and rectangle corners, and (with **Round**) where two separate lines meet.
+4. To make a rounded corner sharp again, click the rounded corner: the sharp corner that will come back is shown dashed in amber first.
+
+<Shot src={filletHover} alt="A rectangle with one corner already rounded; hovering another corner shows a green check and a preview of the fillet." caption="Hovering a sharp corner previews the fillet before you click." />
+
+<Shot src={filletBar} alt="The prompt bar: instructions, the Radius box reading 12.00 mm, and the Round, Dog-bone and T-bone buttons." caption="The Radius box and corner types, along the bottom of the drawing while Fillet is active." />
+
+### Trim
+
+Shortcut: <kbd>T</kbd>
+
+Removes a piece of a line, arc or circle, cut off where other shapes cross it.
+
+1. Click the piece you want to remove. The crossings on either side mark where it’s cut.
+
+### Extend
+
+Shortcut: <kbd>E</kbd>
+
+Lengthens a line or arc until it meets the next shape.
+
+1. Click near the end you want to lengthen. It runs out to the next shape in that direction.
+
+### Offset
+
+Shortcut: <kbd>O</kbd>
+
+Makes a copy of shapes a set distance outside or inside them, like a border.
+
+1. Select the shapes, or click them after choosing Offset.
+2. In the **Offset** panel, type the **Distance**, and click **Direction** to switch between outward and inward. A preview shows the result.
+3. Press **OK**. You can also type the distance directly: `+2` for 2 mm outward, `-1.5` for inward.
+
+:::tip
+For open shapes, such as a single line, a positive distance goes to the left of the direction it was drawn in.
+:::
+
+<Shot src={offset} alt="The Offset panel with a distance of 8 mm outward, and a dashed preview 8 mm outside the selected rectangle." caption="The dashed outline shows where the offset will go before you press OK." />
+
+### Edit nodes
+
+Shortcut: <kbd>N</kbd>
+
+Moves the individual points of an outline, or sets them exactly.
+
+1. Click an outline to show its points.
+2. **Drag** a point to move it.
+3. **Click a point** to type its exact position as `x,y`.
+4. **Click a segment** to type its length; the later point moves along the segment.
+5. Press <kbd>Esc</kbd> when you’re done.
+
+### Dimension
+
+Shortcut: <kbd>D</kbd>
+
+Sets exact distances and sizes, and keeps a dimension on the drawing that updates as things change.
+
+1. **For a distance between two shapes:** click the shape to move, then the one to measure from (that one stays put). Type the distance and press <kbd>Enter</kbd>. Start it with `E` to measure edge to edge.
+2. **For a shape’s own size:** click the shape twice, type the size, and press <kbd>Enter</kbd>; the shape resizes.
+3. To change a dimension later, click its value. To remove one, click it and press the ✕ beside the value.
+
+### Copy
+
+Shortcut: <kbd>M</kbd>
+
+Makes a copy of the selection somewhere else.
+
+1. Select the shapes first.
+2. Click a base point on them, or type the offset as `@dx,dy`.
+3. Click where the base point should go, or type it as `x,y` or `@dx,dy`.
+
+### Mirror
+
+Shortcut: <kbd>Shift+M</kbd>
+
+Makes a mirrored copy of shapes, as if seen in a mirror along a line.
+
+1. In the **Mirror** panel, click **Objects** and pick the shapes, then click **Mirror line** and pick the line to mirror across. A construction line is used as the mirror line automatically (to make a line a construction line, select it and press <kbd>X</kbd>).
+2. Or click two points to set a mirror line of your own.
+3. Press **OK** to make the mirrored copy.
+
+:::tip
+To turn shapes over where they are, without a copy, use Flip horizontal or Flip vertical.
+:::
+
+### Flip horizontal
+
+Shortcut: <kbd>Shift+H</kbd>
+
+Turns the selection over left to right, where it is.
+
+1. Select the shapes, then click **Flip horizontal**.
+
+### Flip vertical
+
+Shortcut: <kbd>Shift+V</kbd>
+
+Turns the selection over top to bottom, where it is.
+
+1. Select the shapes, then click **Flip vertical**.
+
+### Rotate
+
+Shortcut: <kbd>Shift+R</kbd>
+
+Turns the selection by an exact angle.
+
+1. Select the shapes first.
+2. Click the point to turn around, or type it as `x,y`.
+3. Type the angle in degrees and press <kbd>Enter</kbd>: positive turns counter-clockwise, negative clockwise.
+
+:::tip
+To turn shapes by eye instead, double-click them twice with Select for rotate handles.
+:::
+
+### Array
+
+Shortcut: <kbd>Y</kbd>
+
+Makes several evenly spaced copies, in a row or around a circle.
+
+1. Select the shapes first.
+2. **In a row:** type how many and the step between them as `count@dx,dy`; `5@12,0` makes 5 copies 12 mm apart to the right.
+3. **Around a circle:** click the center, then type how many and the angle between them as `count<angle`; `6<60` makes 6 copies 60° apart.
+
+### Group
+
+Shortcut: <kbd>Ctrl+G</kbd>
+
+Bundles the selected shapes so they select and move as one piece. Nothing about the shapes changes.
+
+1. Select the shapes, then click **Group**.
+
+### Ungroup
+
+Shortcut: <kbd>Ctrl+U</kbd>
+
+Breaks a group back into its separate shapes.
+
+1. Select the group, then click **Ungroup**.
+
+### Join
+
+Joins open shapes whose ends meet into one continuous outline, such as lines drawn separately into a closed shape.
+
+1. Select the open shapes, then click **Join**.
+
+:::tip
+Toolpaths that cut around a shape need a closed outline; Join is how separate pieces become one.
+:::
+
+### Explode
+
+Breaks an outline into its separate lines and arcs.
+
+1. Select the outline, then click **Explode**.
+
+### Convert to curves
+
+Turns text into ordinary shapes, so you can trim, offset or reshape the letters.
+
+1. Select the text, then click **Convert to curves**.
+
+:::tip
+Once converted, the text can no longer be edited as text.
+:::
+
+## Align and nest
+
+Arranging shapes: packing parts onto the material, centering, lining up and spacing. The tools that line shapes up use the **last one you picked** as the reference, outlined in green.
+
+<Shot src={gAlign} alt="The Align and nest group: Nest parts, the centering tools, the edge alignment tools and even spacing." />
+
+### Nest parts
+
+Packs parts onto the material as tightly as it can, to save material, with as many copies as you ask for.
+
+1. Select the parts to nest, or select nothing to nest everything.
+2. In the **Nest parts** panel, set the **Copies of each**, the **Spacing** between parts, the **Edge margin** from the material’s edges, and the **Rotation**: any angle for the tightest fit, 90° steps, or none, to keep parts as drawn.
+3. Press **Nest parts**. The parts are laid out on the material.
+
+<Shot src={nestPanel} alt="The Nest parts panel: one 60 by 40 mm part with 1 copy, spacing 4 mm, edge margin 5 mm, and rotation set to any angle." />
+
+### Center in material
+
+Shortcut: <kbd>F9</kbd>
+
+Moves the selection, as one block, to the middle of the material.
+
+1. Select the shapes, then click **Center in material**.
+
+### Center left-right in material
+
+Moves the selection sideways to the middle of the material, leaving its height as it is.
+
+1. Select the shapes, then click the tool.
+
+### Center top-bottom in material
+
+Moves the selection up or down to the middle of the material, leaving it where it is sideways.
+
+1. Select the shapes, then click the tool.
+
+### Center on last picked
+
+Centers the other selected shapes on the last one you picked.
+
+1. Select the shapes to move, then Shift-click the one to center them on last.
+2. Click **Center on last picked**.
+
+### Line up centers left-right
+
+Moves shapes sideways so their centers line up with the last one picked.
+
+1. Select the shapes, picking the one to line up with last, then click the tool.
+
+### Line up centers top-bottom
+
+Moves shapes up or down so their centers line up with the last one picked.
+
+1. Select the shapes, picking the one to line up with last, then click the tool.
+
+### Align left, right, top or bottom edges
+
+Four tools that line up the shapes’ left, right, top or bottom edges with the last one picked.
+
+1. Select the shapes, picking the one to line up with last, then click the edge to line up.
+
+### Space evenly left to right, or top to bottom
+
+Spaces shapes out with equal gaps between them. The first and last shapes stay where they are.
+
+1. Select three or more shapes, then click the direction to space them in.
+
+## Guides
+
+Construction lines for laying out a drawing. They snap, but aren’t cut.
+
+<Shot src={gGuides} alt="The Guides group: Offset guide, Remove all guides and Machine area." />
+
+### Offset guide
+
+Shortcut: <kbd>G</kbd>
+
+Adds a guide line a set distance from an edge of the material or of a shape.
+
+1. Click the edge to measure from: a material edge or a straight edge of the drawing.
+2. Type the distance and press <kbd>Enter</kbd>. A negative distance puts the guide on the other side.
+
+:::tip
+Drawing tools snap to guides, and to the points where guides cross, which makes them handy for placing holes and parts exactly.
+:::
+
+### Remove all guides
+
+Deletes every guide in the drawing.
+
+1. Click **Remove all guides**. <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings them back.
+
+### Machine area
+
+Shows or hides your machine’s cutting area, to check the material and parts fit.
+
+1. Click **Machine area**. The cutting area appears as a dashed outline, sized from 454 Control’s machine settings, or a machine you choose.
+2. It warns you if the material is larger than the machine can cut, or if shapes sit outside the area.
+
+## View and history
+
+Getting around the drawing, measuring, and undoing.
+
+<Shot src={gView} alt="The View and history group: Fit stock, Undo, Redo and Measure." />
+
+### Fit stock
+
+Shortcut: <kbd>Home</kbd>
+
+Zooms and moves the view so the whole material fits the window.
+
+1. Click **Fit stock**, or press <kbd>Home</kbd>.
+
+:::tip
+Scroll to zoom in and out, and drag with the right or middle mouse button to move around.
+:::
+
+### Undo
+
+Shortcut: <kbd>Ctrl+Z</kbd>
+
+Takes back the last change.
+
+1. Click **Undo**, or press <kbd>Ctrl</kbd>+<kbd>Z</kbd>. Keep going to step further back.
+
+### Redo
+
+Shortcut: <kbd>Ctrl+Y</kbd>
+
+Puts back what Undo took away.
+
+1. Click **Redo**, or press <kbd>Ctrl</kbd>+<kbd>Y</kbd>.
+
+### Measure
+
+Shortcut: <kbd>I</kbd>
+
+Measures without changing anything: the distance and angle between two points, or the gap between two shapes.
+
+1. **Between two points:** click one point, then the other.
+2. **The gap between two shapes:** Shift-click one shape, then Shift-click the other.
