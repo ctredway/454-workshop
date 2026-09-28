@@ -625,7 +625,7 @@
       <div class="mRow">
         <label>Spindle</label><button class="hlp" data-h="spindle" title="What is this?" aria-label="Help">ⓘ</button>
         <select id="spinType"><option value="router">Trim router</option><option value="vfd">VFD spindle</option></select>
-        <label>spin-up</label><input type="number" id="spinupSec" value="10" step="0.5" min="0" style="width:64px"><span style="color:var(--faint)">s dwell after M3</span>
+        <label>spin-up</label><input type="number" id="spinupSec" value="7" step="0.5" min="0" style="width:64px"><span style="color:var(--faint)">s dwell after M3 or M4</span>
       </div>
     </div>
 
@@ -870,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function(){
    Produces: segments (tessellated micro-moves), issues, tools
    All internal units are mm. seg.units records display units.
    ============================================================ */
-var CONTROL_VERSION = '0.31.8';
+var CONTROL_VERSION = '0.31.10';
 
 var SUPPORTED_G = {0:1,1:1,2:1,3:1,4:1,17:1,18:1,19:1,20:1,21:1,28:1,28.2:1,90:1,91:1,91.1:1,90.1:1,53:1};
 var IGNORED_G   = {40:'G40 cutter compensation off — accepted but ignored by Carbide Motion',
@@ -3415,7 +3415,7 @@ function uiConn(on){
 var PROFILE = {
   bitSetter:{enabled:false, x:null, y:null},
   bitZero:{enabled:false, version:'v2', thk:null},
-  spindle:{type:'router', spinup:10},
+  spindle:{type:'router', spinup:7},
   jog:{inc:'1', fastXY:3000, fastZ:600},
   run:{highStart:true, travelZ:5, topZ:2, parkEnd:true,
        park:{enabled:false, x:null, y:null},                 // end of job
@@ -3487,7 +3487,7 @@ var HELP_TEXT = {
   'rapid': {t:'Time estimate', b:"How long a job will take, worked out the way GRBL moves the machine.\n\nOnce the controller\u2019s settings are read, the estimate uses its own limits: maximum speed and acceleration for each axis ($110\u2013$112, $120\u2013$122), and junction deviation ($11), which sets how fast corners can be taken. Short moves and sharp corners take longer than their feed rate suggests, and the estimate allows for that.\n\nBefore the settings are read, it assumes every move runs at its feed rate and rapids at the rapid rate below, which underestimates jobs with lots of short moves.\n\nThe rapid rate here changes the estimate only; the machine\u2019s real rapid speed comes from the controller."},
   'bitsetter': {t:'BitSetter', b:'The fixed button the tool touches so the machine can measure tool length.\n\nJog the tool over the button and press Capture position; the machine coordinates are stored.\n\nWhen you set Z zero, 454 Control offers to measure that tool straight away. That makes it the reference: at Start the loaded tool is measured against it, and every new tool at each change, so the zero holds through tool changes, and swapping bits before pressing Start is caught rather than silently shifting Z.\n\nIt needs a homed machine, because the position is in machine coordinates.'},
   'bitzero': {t:'BitZero', b:"The touch plate used to set your work zero. 454 Control uses it for Z.\n\nSet the plate thickness by measuring it with calipers; the probe sets Z0 at the top of the stock, which is the plate's trigger height minus the thickness. Verify the circuit (touch the pin to the plate) before probing, and paper-test the zero before cutting."},
-  'spindle': {t:'Spindle type and spin-up', b:"Trim router or VFD spindle, and how long to wait after M3 before any cutting move.\n\nMost CAM files don't include that wait, so 454 Control inserts a dwell after each spindle start. Carbide Motion does the same thing, at about 2.5 s, which suits a router. A VFD spindle takes longer to reach speed: 10 s is the default here.\n\nToo short means the bit enters the material before it is up to speed."},
+  'spindle': {t:'Spindle type and spin-up', b:"Trim router or VFD spindle, and how long to wait after the spindle starts (M3 or M4) before any cutting move.\n\nMost CAM files don't include that wait, so 454 Control inserts a dwell after each spindle start. Carbide Motion does the same thing, at about 2.5 s, which suits a router. A VFD spindle takes longer to reach speed: 7 s is the default here.\n\nToo short means the bit enters the material before it is up to speed."},
   'highstart': {t:'Start & stop high', b:'Keeps the tool high whenever it is travelling rather than cutting.\n\nAt the start and after every tool change, the machine traverses to the next XY at the top of travel before plunging. Before every spindle stop, and at the end of the job, it lifts clear first.\n\nThis is what stops a bit dragging across clamps and stock. A lift is skipped when the tool is already higher than traverse height, so it never moves down.'},
   'travelz': {t:'Traverse height', b:'How far below the top of Z travel the machine sits when it is moving rather than cutting, in machine coordinates.\n\nUsed by start/stop-high, go-to-zero, the BitSetter moves and the end of the job. 5 mm below the top is a good default; increase it if you have tall workholding.'},
   'park': {t:'Tool-change and end-of-job positions', b:'Two separate places the machine goes when you need to reach it.\n\nTool change: it lifts to near the top of Z travel and moves here before asking for the new tool. With nothing captured it uses the front centre of the machine, worked out from the controller\u2019s travel, which is the easiest place to reach. Pick another preset or capture a position to override that.\n\nEnd of a job: as in Carbide Motion, it lifts, stops the spindle, returns to the job\u2019s XY zero, then parks. With nothing captured it parks at the back centre of the machine, out of your way; capture a position to park somewhere else.\n\nBoth use machine coordinates, so they need a homed machine.'},
@@ -3825,8 +3825,8 @@ function profileLoad(){
     }
     if (p.view)      PROFILE.view      = Object.assign(PROFILE.view, p.view);
     if (Array.isArray(p.quick)) PROFILE.quick = p.quick;
-    if (!PROFILE.spinupBumped && PROFILE.spindle.spinup < 10){   // one-time: 10 s is the new floor
-      PROFILE.spindle.spinup = 10;
+    if (!PROFILE.spinupBumped && PROFILE.spindle.spinup < 7){    // one-time, for old profiles: 7 s is the floor
+      PROFILE.spindle.spinup = 7;
     }
     PROFILE.spinupBumped = true;
     if (!PROFILE.highStartForced && PROFILE.run.highStart === false){
@@ -4051,7 +4051,7 @@ function spindleFromController(){
   if (!t || t === PROFILE.spindle.type) return;
   PROFILE.spindle.type = t;
   var el = document.getElementById('spinType'); if (el) el.value = t;
-  if (t === 'vfd' && (PROFILE.spindle.spinup || 0) < 10){ PROFILE.spindle.spinup = 10; var su = document.getElementById('spinupSec'); if (su) su.value = 10; }
+  if (t === 'vfd' && (PROFILE.spindle.spinup || 0) < 7){ PROFILE.spindle.spinup = 7; var su = document.getElementById('spinupSec'); if (su) su.value = 7; }
   profileSave();
   logC('sys', 'spindle set to ' + (t === 'vfd' ? 'VFD' : 'trim router') + ' from the controller ($30 = ' + s[30] + ')');
 }
@@ -4181,7 +4181,6 @@ function inflightBytes(){
   return n;
 }
 
-/* Pre-build the send list: cleaned lines, M6 markers, injected spin-up dwells */
 /* ---------------- job recovery ----------------
    stateAtLine: lightweight modal walk (no tessellation) reproducing the
    parser's interpretation up to — but not including — the target line. */
@@ -4255,41 +4254,68 @@ function recoverySnap(target){
   }
   return null;
 }
-function buildJobList(lines){
+// The job builder: what a job actually sends to the machine. The file's own lines, plus everything
+// 454 Control adds to make it safe: a spin-up wait after each spindle start (unless the file's own wait
+// is at least as long), a lift before each spindle stop (never downwards), and at each tool change a
+// lift to the top, a spindle stop, and a restart if the file assumes the spindle is still running. At
+// the end: lift, stop the spindle, return to the job's XY zero and park, with the file's own M2 or M30
+// kept last.
+//
+// JobBuilder.build(lines, m) is a pure function: everything it needs about the machine and the settings
+// is passed in (m), so it can be tested on its own (apps/control/test/job-builder.test.mjs). Control's
+// buildJobList(), below it, gathers m from Control's state and calls it.
+//
+//   m.homed      has the machine homed this session? (machine coordinates mean something)
+//   m.wcoZ       the work offset's Z, or null if it isn't known yet
+//   m.stopHigh   "Start & stop high" (Settings -> Job)
+//   m.spinup     the spin-up wait after the spindle starts (M3 or M4), in seconds (0: none)
+//   m.segs       the parsed job's moves ({line, x0, y0, z0, x1, y1, z1}), or null
+//   m.zMax       the top of Z travel, in machine coordinates
+//   m.travelZ    traverse height: how far below the top of travel to travel at, in mm
+//   m.topZ       how far below the top of travel to lift at tool changes and the end, in mm
+//   m.clean      a line of the file with its comments removed
+//   m.endingMoves(endXY) -> {cmds, zeroed, parked}: the moves off the part at the end (homed only)
+var JobBuilder = (function () {
+  'use strict';
+  function build(lines, m){
+  function zHighCmd(n){ return 'G53 G0 Z' + zBelowTop(n).toFixed(1); }     // absolute, below the top of travel
+  function zBelowTop(n){ return (m.zMax || 0) - n; }
+
   var list = [], injected = 0, retracts = 0;
   // "stop high": climb to traverse height before any spindle stop, so the bit
   // never spins down in (or just above) the material. Same gate as start-high.
-  var homed = (typeof SERIAL !== 'undefined') && SERIAL.homedSeen;
-  var stopHigh = PROFILE.run.highStart;
+  var homed = !!m.homed;
+  var stopHigh = m.stopHigh;
   // Where the tool will be, in the machine's own Z, when it reaches this line. Work Z plus the
   // work offset. Needed because "lift to machine Z-5" is an absolute height: if the file is
   // already higher than that, the same command would drive the tool DOWN.
-  var wcoZ = (typeof SERIAL !== 'undefined' && SERIAL.wco) ? SERIAL.wco.z : null;
+  var wcoZ = m.wcoZ === undefined ? null : m.wcoZ;
   // The highest Z the file itself ever reaches: its own idea of a safe height. If the tool is
   // already there, it is clear of the work, and lifting further only means coming back down
   // again on the file's next Z move.
   var fileTopZ = null;
-  if (typeof MODEL !== 'undefined' && MODEL && MODEL.segs){
-    for (var ft = 0; ft < MODEL.segs.length; ft++){
-      var fz = Math.max(MODEL.segs[ft].z0, MODEL.segs[ft].z1);
+  var SEGS = m.segs || null;
+  if (SEGS){
+    for (var ft = 0; ft < SEGS.length; ft++){
+      var fz = Math.max(SEGS[ft].z0, SEGS[ft].z1);
       if (fileTopZ === null || fz > fileTopZ) fileTopZ = fz;
     }
   }
   function workZAt(ln){
-    if (typeof MODEL === 'undefined' || !MODEL || !MODEL.segs || !MODEL.segs.length) return null;
+    if (!SEGS || !SEGS.length) return null;
     var z = null;
-    for (var q2 = 0; q2 < MODEL.segs.length; q2++){
-      if (MODEL.segs[q2].line > ln) break;
-      z = MODEL.segs[q2].z1;
+    for (var q2 = 0; q2 < SEGS.length; q2++){
+      if (SEGS[q2].line > ln) break;
+      z = SEGS[q2].z1;
     }
     return z;
   }
   function machineZAt(ln){
-    if (wcoZ === null || typeof MODEL === 'undefined' || !MODEL || !MODEL.segs || !MODEL.segs.length) return null;
+    if (wcoZ === null || !SEGS || !SEGS.length) return null;
     var z = null;
-    for (var q = 0; q < MODEL.segs.length; q++){
-      if (MODEL.segs[q].line > ln) break;
-      z = MODEL.segs[q].z1;
+    for (var q = 0; q < SEGS.length; q++){
+      if (SEGS[q].line > ln) break;
+      z = SEGS[q].z1;
     }
     return z === null ? null : z + wcoZ;
   }
@@ -4298,10 +4324,10 @@ function buildJobList(lines){
   // file was using, so there is room to get at the spindle.
   function retractHigh(ln){
     if (!homed){                                     // no machine coordinates: relative, up only
-      list.push({text:'G91 G0 Z' + travelZ().toFixed(1), ln:ln, syn:true});
+      list.push({text:'G91 G0 Z' + m.travelZ.toFixed(1), ln:ln, syn:true});
       list.push({text:'G90', ln:ln, syn:true});
     } else {
-      list.push({text:zHighCmd(topZ()), ln:ln, syn:true});
+      list.push({text:zHighCmd(m.topZ), ln:ln, syn:true});
     }
     atTraverse = true;
     retracts++;
@@ -4317,20 +4343,20 @@ function buildJobList(lines){
     if (fileTopZ !== null && wz >= fileTopZ - 0.01) return;   // already at the file's own safe height
     var pv = list.length ? list[list.length - 1] : null;
     if (pv && pv.text && (/^G53 G0 Z/.test(pv.text) || pv.text.indexOf('G91 G0 Z') === 0)) return; // already climbing
-    var target = zBelowTop(travelZ());
+    var target = zBelowTop(m.travelZ);
     var mz = homed ? machineZAt(ln) : null;
     if (homed && mz !== null){
       if (mz >= target - 0.01) return;                  // already at or above traverse height: a "lift" would go down
-      list.push({text:zHighCmd(travelZ()), ln:ln, syn:true});
+      list.push({text:zHighCmd(m.travelZ), ln:ln, syn:true});
       atTraverse = true;
     } else if (homed){
       // homed but the work offset isn't known yet: lift relative, which can only go up
-      list.push({text:'G91 G0 Z' + travelZ().toFixed(1), ln:ln, syn:true});
+      list.push({text:'G91 G0 Z' + m.travelZ.toFixed(1), ln:ln, syn:true});
       list.push({text:'G90', ln:ln, syn:true});
       atTraverse = true;
     } else {
       // not homed, so machine heights mean nothing: lift relative to wherever the tool is
-      list.push({text:'G91 G0 Z' + travelZ().toFixed(1), ln:ln, syn:true});
+      list.push({text:'G91 G0 Z' + m.travelZ.toFixed(1), ln:ln, syn:true});
       list.push({text:'G90', ln:ln, syn:true});
     }
     retracts++;
@@ -4338,7 +4364,7 @@ function buildJobList(lines){
   var fileSpin = {on: false, s: null, ccw: false};
   for (var i = 0; i < lines.length; i++){
     var ln = i + 1;
-    var c = cleanForSend(lines[i]);
+    var c = m.clean(lines[i]);
     if (!c || c === '%') continue;
     if (/M0*6(?![\d.])/i.test(c)){
       var tm = /T\s*(\d+)/i.exec(c);
@@ -4348,9 +4374,9 @@ function buildJobList(lines){
       if (!(prev && prev.text && /M0*5(?![\d.])/i.test(prev.text))) list.push({text:'M5', ln:ln, syn:true});
       var m6e = {m6:true, ln:ln, tool: tm ? tm[1] : '?', next:null};
       // where does the file go after this change? (first XY move beyond the M6)
-      if (typeof MODEL !== 'undefined' && MODEL && MODEL.segs){
-        for (var ni = 0; ni < MODEL.segs.length; ni++){
-          var sg = MODEL.segs[ni];
+      if (SEGS){
+        for (var ni = 0; ni < SEGS.length; ni++){
+          var sg = SEGS[ni];
           if (sg.line > ln && (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001)){
             m6e.next = {x: sg.x1, y: sg.y1};
             break;
@@ -4365,14 +4391,14 @@ function buildJobList(lines){
       if (fileSpin.on){
         var restartByFile = false;
         for (var ka = i + 1; ka < lines.length; ka++){
-          var ca = cleanForSend(lines[ka]);
+          var ca = m.clean(lines[ka]);
           if (!ca) continue;
           if (/M0*[345](?![\d.])/i.test(ca)){ restartByFile = true; break; }
           if (/[XYZ]\s*[-+.\d]/i.test(ca)) break;
         }
         if (!restartByFile){
           list.push({text:(fileSpin.ccw ? 'M4' : 'M3') + (fileSpin.s !== null ? ' S' + fileSpin.s : ''), ln:ln, syn:true});
-          if (PROFILE.spindle.spinup > 0){ list.push({text:'G4 P' + PROFILE.spindle.spinup, ln:ln, syn:true}); injected++; }
+          if (m.spinup > 0){ list.push({text:'G4 P' + m.spinup, ln:ln, syn:true}); injected++; }
         }
       }
       continue;
@@ -4385,18 +4411,18 @@ function buildJobList(lines){
     if (/M0*5(?![\d.])/i.test(c)) retractBeforeStop(ln);
     list.push({text:c, ln:ln});
     if (/Z/i.test(c)) atTraverse = false;   // the file moved Z, so the tool may be anywhere again
-    if (/M0*3(?![\d.])/i.test(c) && PROFILE.spindle.spinup > 0){
+    if (/M0*[34](?![\d.])/i.test(c) && m.spinup > 0){      // a spindle start, either direction
       var nxt = '';
       for (var k = i + 1; k < lines.length; k++){
-        var cc = cleanForSend(lines[k]);
+        var cc = m.clean(lines[k]);
         if (cc){ nxt = cc; break; }
       }
       // the file's own dwell only counts if it's at least as long as ours —
       // a token G4 P1 from the post must not suppress real spin-up time
       var nd = /G0*4(?![\d.]).*?P\s*([\d.]+)/i.exec(nxt);
       var fileDwell = nd ? parseFloat(nd[1]) : 0;
-      if (fileDwell < PROFILE.spindle.spinup){
-        list.push({text:'G4 P' + PROFILE.spindle.spinup, ln:ln, syn:true});
+      if (fileDwell < m.spinup){
+        list.push({text:'G4 P' + m.spinup, ln:ln, syn:true});
       var dz = workZAt(ln);                          // where the bit waits while the spindle spins up
       if (dz !== null && (list.dwellZ === undefined || dz < list.dwellZ)) list.dwellZ = dz;
         injected++;
@@ -4423,17 +4449,37 @@ function buildJobList(lines){
   if (spinStillOn) list.push({text:'M5', ln:lines.length, syn:true});
   // Then off the part, as Carbide Motion does: back to the job's XY zero, then park.
   var endXY = null;
-  if (typeof MODEL !== 'undefined' && MODEL && MODEL.segs && MODEL.segs.length){
-    var lastSeg = MODEL.segs[MODEL.segs.length - 1];
+  if (SEGS && SEGS.length){
+    var lastSeg = SEGS[SEGS.length - 1];
     endXY = {x:lastSeg.x1, y:lastSeg.y1};
   }
-  var em = homed ? endingMoves(endXY) : {cmds: (!endXY || Math.hypot(endXY.x, endXY.y) > 0.02) ? ['G90 G0 X0 Y0'] : [], zeroed: true, parked: null};
+  var em = homed ? m.endingMoves(endXY) : {cmds: (!endXY || Math.hypot(endXY.x, endXY.y) > 0.02) ? ['G90 G0 X0 Y0'] : [], zeroed: true, parked: null};
   em.cmds.forEach(function (c) { list.push({text: c, ln: lines.length, syn: true}); });
   list.zeroed = em.zeroed; list.parked = em.parked;
   tail.forEach(function(it){ list.push(it); });
   list.injected = injected;
   list.retracts = retracts;
   return list;
+  }
+  return { build: build };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = JobBuilder;     // for the tests, in Node
+
+// Control's job builder: its state, gathered for JobBuilder.build
+function buildJobList(lines){
+  var zr = axisRange('z');
+  return JobBuilder.build(lines, {
+    homed: (typeof SERIAL !== 'undefined') && SERIAL.homedSeen,
+    wcoZ: (typeof SERIAL !== 'undefined' && SERIAL.wco) ? SERIAL.wco.z : null,
+    stopHigh: PROFILE.run.highStart,
+    spinup: PROFILE.spindle.spinup,
+    segs: (typeof MODEL !== 'undefined' && MODEL && MODEL.segs) ? MODEL.segs : null,
+    zMax: zr ? zr.max : 0,
+    travelZ: travelZ(),
+    topZ: topZ(),
+    clean: cleanForSend,
+    endingMoves: endingMoves,
+  });
 }
 
 function jobFill(){
@@ -4655,18 +4701,18 @@ function jobStart(opts){
                           : 'BitSetter INACTIVE (' + bsErr + ') — not needed: no tool changes after cutting starts.\n';
     }
   }
-  var hasM3 = list.some(function(it){ return it.text && /M0*3(?![\d.])/i.test(it.text); });
+  var hasM3 = list.some(function(it){ return it.text && /M0*[34](?![\d.])/i.test(it.text); });   // a spindle start: M3 or M4
   if (list.injected){
-    msg += 'Spin-up: a G4 P' + PROFILE.spindle.spinup + ' s dwell will be inserted after each M3 (' +
+    msg += 'Spin-up: a G4 P' + PROFILE.spindle.spinup + ' s dwell will be inserted after each spindle start (' +
            list.injected + '\u00d7).\n';
     if (list.dwellZ !== undefined)
       msg += (list.dwellZ < 1
         ? '\u26a0 The bit waits for the spindle at Z ' + list.dwellZ.toFixed(2) + ', at or below the job zero \u2014 this file starts the spindle after descending.\n'
         : '   It waits at Z ' + list.dwellZ.toFixed(2) + ' above the job zero and only descends afterwards.\n');
   } else if (hasM3 && PROFILE.spindle.spinup > 0){
-    msg += 'Spin-up: the file already dwells \u2265 ' + PROFILE.spindle.spinup + ' s after M3 — nothing added.\n';
+    msg += 'Spin-up: the file already dwells \u2265 ' + PROFILE.spindle.spinup + ' s after the spindle starts — nothing added.\n';
   } else if (hasM3){
-    msg += '*** SPIN-UP DWELL IS 0 — motion begins immediately after M3. Set it in Machine profile. ***\n';
+    msg += '*** SPIN-UP DWELL IS 0 — motion begins immediately after the spindle starts. Set it in Machine profile. ***\n';
   }
   if (list.retracts){
     msg += 'Stop high: Z climbs clear before each spindle stop (' + list.retracts + '\u00d7).\n';
@@ -5294,10 +5340,10 @@ function wireMachine(){
   document.getElementById('spinType').addEventListener('change', function(e){
     PROFILE.spindle.typeUser = true;                     // chosen by you: connecting won't change it
     applySpindleRange();
-    if (e.target.value === 'vfd' && (parseFloat(document.getElementById('spinupSec').value) || 0) < 10){
-      document.getElementById('spinupSec').value = 10;
+    if (e.target.value === 'vfd' && (parseFloat(document.getElementById('spinupSec').value) || 0) < 7){
+      document.getElementById('spinupSec').value = 7;
       readUIToProfile();
-      logC('sys', 'spin-up dwell raised to 10 s for the VFD spindle \u2014 adjust in Settings \u2192 Machine if yours settles faster');
+      logC('sys', 'spin-up dwell raised to 7 s for the VFD spindle \u2014 adjust in Settings \u2192 Machine if yours settles faster');
     }
   });
 

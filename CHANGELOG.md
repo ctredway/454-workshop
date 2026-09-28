@@ -27,6 +27,16 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### Updates: saying what went wrong
+- **A failed update check blamed the internet connection whatever the cause.** It now says what actually
+  happened: the newest release is missing its update file (naming it), there's no published release for
+  this channel (with a pointer to the Beta channel when only pre-releases exist), GitHub is limiting
+  requests, or GitHub genuinely couldn't be reached. Found when v0.6.1-beta.1 was published with no files
+  attached, and the app said to check a connection that was fine. A test covers each case.
+- **The Windows workflow checks for, and attaches, whichever update file the build makes**: `latest.yml`,
+  or for a pre-release `beta.yml` or `alpha.yml`. The app asks for the channel's file first, then
+  `latest.yml`, so either works.
+
 ### 0.6.0 — automatic updates
 - **The installed app updates itself from GitHub Releases** (electron-updater). It checks a little while
   after starting and every few hours, and offers a new version with what's new: Download, Later, or Skip
@@ -253,6 +263,32 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.10 — spin-up: M4 too, and 7 seconds
+- **A reverse spindle start (M4) gets the spin-up wait too**, as M3 always has. Before, a file starting the
+  spindle with M4 could reach the material before the spindle was up to speed. The start summary now says
+  "after each spindle start", and the setting "s dwell after M3 or M4". A new test covers it, checked to
+  fail with the old M3-only rule.
+- **The spin-up default is 7 seconds**, down from 10: the default, the minimum when you choose a VFD or
+  Control detects one, and the floor for old profiles. A profile already saved with a longer wait keeps
+  it; change it in Settings → Accessories → Spindle. The help text and the docs say 7.
+
+### 0.31.9 — the job builder, tested (no change in behaviour)
+- **The job builder has unit tests of its own**: what a job sends to the machine beyond the file itself,
+  and the most safety-critical code in Control. 19 tests, one per rule: spin-up waits (and when a file's
+  own wait counts), lifting before a spindle stop and never downwards, relative lifts when machine heights
+  aren't known, never stopping the spindle in the material, tool changes (lift, stop, restart the spindle
+  if the file assumes it's still running), the ending (lift, stop, back to XY zero, park, the file's M2 or
+  M30 last), and the file's own lines. Run with `node --test 'apps/control/test/*.test.mjs'`; GitHub runs
+  them on every push.
+- **The tests were checked by breaking each rule on purpose.** One test passed for the wrong reason (its
+  file hit a different rule first, so the guard against lifting downwards never ran); it now uses a case
+  that reaches the guard (thick stock, work zero near the top of travel), and fails without it.
+- **To make it testable, the job builder became a pure function**, `JobBuilder.build(lines, machine)`,
+  with its logic unchanged line for line; `buildJobList()` gathers Control's state and calls it. The old
+  and new builders were run side by side in the real Control page on 488 cases (15 files, including real
+  VCarve output, each with every combination of homed, work offset, Start & stop high, spin-up and
+  parking): identical in every case. The end-to-end job test passes.
 
 ### 0.31.8 — a loaded job, from the top
 - **Loading a job animates the 3D view to the top view**, framing the whole job: the camera turns, moves

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>454 Control · G-code sender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@@include styles/control.css
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand" id="brandEl"><svg class="brandLogo" viewBox="0 0 792 250" role="img" aria-label="454"><path fill="#fff" fill-rule="evenodd" d="M359.50 224.38 C313.02 219.12 275.76 205.56 255.04 186.38 L249.42 181.17 L200.71 181.05 L152.00 180.92 L152.00 191.46 L152.00 202.00 L106.53 202.00 L61.07 202.00 L60.78 191.75 L60.50 181.50 L45.25 181.22 L30.00 180.95 L30.00 152.47 L30.00 124.00 L45.50 124.00 L61.00 124.00 L61.00 89.50 L61.00 55.00 L100.15 55.00 L139.30 55.00 L192.87 82.25 C222.33 97.24 246.90 109.62 247.47 109.76 C248.04 109.90 254.57 89.87 262.00 65.26 L275.50 20.50 L395.99 20.50 L516.47 20.50 L526.21 52.50 C531.57 70.10 535.96 85.28 535.98 86.23 C536.00 87.81 534.11 87.98 514.25 88.23 C494.32 88.48 492.84 88.62 496.50 89.88 C505.19 92.86 520.91 101.26 528.50 106.98 C532.90 110.29 536.76 113.00 537.07 113.00 C537.39 113.00 563.26 99.95 594.57 84.01 L651.50 55.01 L690.75 55.01 L730.00 55.00 L730.00 89.50 L730.00 124.00 L745.50 124.00 L761.00 124.00 L761.00 152.47 L761.00 180.95 L745.75 181.22 L730.50 181.50 L730.22 191.75 L729.93 202.00 L684.47 202.00 L639.00 202.00 L639.00 191.46 L639.00 180.93 L590.12 181.05 L541.24 181.17 L537.37 185.16 C526.29 196.59 504.56 207.91 479.20 215.45 C467.86 218.83 447.36 222.60 430.29 224.46 C412.89 226.35 376.51 226.31 359.50 224.38 Z"/><path fill="#0083ff" fill-rule="evenodd" d="M380.50 207.87 C340.57 206.21 303.58 197.04 279.63 182.87 C273.36 179.16 258.08 165.54 259.11 164.58 C259.33 164.39 276.48 163.66 297.24 162.97 L334.97 161.71 L338.89 164.43 C344.62 168.39 356.94 172.89 368.43 175.21 C381.82 177.91 407.42 178.12 420.50 175.63 C432.84 173.28 443.64 169.60 450.63 165.35 L456.50 161.78 L494.00 163.00 C514.62 163.67 531.66 164.37 531.86 164.56 C532.66 165.29 521.14 176.49 516.00 179.99 C487.23 199.54 435.56 210.17 380.50 207.87 Z M77.67 184.33 C77.30 183.97 77.00 179.02 77.00 173.33 L77.00 163.00 L62.00 163.00 L47.00 163.00 L47.00 151.50 L47.00 140.00 L62.00 140.00 L77.00 140.00 L77.00 105.50 L77.00 71.00 L106.41 71.00 L135.82 71.00 L196.91 102.13 L258.00 133.27 L258.00 148.13 L258.00 162.98 L196.75 163.24 L135.50 163.50 L135.22 174.25 L134.93 185.00 L106.63 185.00 C91.07 185.00 78.03 184.70 77.67 184.33 Z M655.78 174.27 L655.50 163.50 L594.25 163.24 L533.00 162.98 L533.00 148.13 L533.00 133.27 L594.09 102.13 L655.18 71.00 L684.59 71.00 L714.00 71.00 L714.00 105.50 L714.00 140.00 L729.00 140.00 L744.00 140.00 L744.00 151.50 L744.00 163.00 L729.03 163.00 L714.07 163.00 L713.78 173.75 L713.50 184.50 L684.78 184.77 L656.07 185.03 L655.78 174.27 Z M380.83 168.04 C368.05 165.70 357.92 161.26 354.00 156.27 C352.75 154.69 352.00 152.21 352.00 149.71 C352.00 141.99 362.16 135.49 379.00 132.43 C400.05 128.61 425.60 132.95 435.06 141.94 C444.31 150.74 437.66 160.66 418.90 166.03 C410.63 168.40 389.01 169.54 380.83 168.04 Z M200.45 139.16 C199.28 138.13 139.18 105.39 136.75 104.46 C135.12 103.83 135.00 105.06 135.00 121.89 L135.00 140.00 L168.20 140.00 C186.46 140.00 200.97 139.62 200.45 139.16 Z M656.00 121.89 C656.00 105.06 655.88 103.83 654.25 104.46 C651.82 105.39 591.72 138.13 590.55 139.16 C590.03 139.62 604.54 140.00 622.80 140.00 L656.00 140.00 L656.00 121.89 Z M292.73 134.50 C274.70 133.83 259.72 133.05 259.43 132.76 C259.03 132.36 280.06 61.34 287.12 39.25 L288.16 36.00 L396.02 36.00 L503.88 36.00 L506.51 44.75 C507.96 49.56 510.24 57.01 511.57 61.30 C512.91 65.59 514.00 69.31 514.00 69.55 C514.00 69.80 479.17 70.00 436.60 70.00 L359.20 70.00 L357.61 77.25 C356.73 81.24 355.72 86.01 355.36 87.85 L354.71 91.19 L367.11 90.35 C383.96 89.20 416.10 89.49 429.50 90.91 C461.22 94.28 490.46 102.63 510.51 114.05 C518.02 118.33 532.95 131.39 531.72 132.61 C531.40 132.94 514.35 133.81 493.84 134.55 L456.54 135.89 L452.12 132.96 C432.90 120.22 391.71 116.23 360.70 124.09 C351.57 126.40 342.92 130.06 338.37 133.53 C335.87 135.44 334.04 135.97 330.32 135.85 C327.67 135.77 310.75 135.16 292.73 134.50 Z"/></svg><span> Control</span></div>
+    <div class="sub" id="verSub">G-code sender for Shapeoko &amp; Nomad (GRBL / Carbide Motion dialect)</div>
+    <div class="spacer"></div>
+    <div id="fileName">no file loaded</div>
+    <div id="hdrMachine">
+      <button id="estopBtn" class="estop" title="EMERGENCY STOP — immediate halt, spindle off, position lost until re-homed">STOP</button>
+      <span class="stateChip" id="hdrState">offline</span>
+      <span class="stateChip" id="hdrSpindle" title="Spindle state — click to stop while running">spindle off</span>
+      <button id="hdrHold" class="danger iconBtn" title="Feed hold — decelerate and pause motion now"><svg viewBox="0 0 16 16"><line x1="6" y1="3.5" x2="6" y2="12.5"/><line x1="10" y1="3.5" x2="10" y2="12.5"/></svg></button>
+      <button id="hdrResume" class="iconBtn" title="Cycle start / resume"><svg viewBox="0 0 16 16"><path d="M5.5 3.5 L12 8 L5.5 12.5 Z"/></svg></button>
+    </div>
+    <a id="openDocs" href="docs/index.html" target="_blank" rel="noopener" title="Guides and reference, in a new tab">Docs ↗</a>
+    <a id="openDesign" href="design.html" target="_blank" rel="noopener" title="Open 454 Design (the sketcher) in a new tab">454 Design ↗</a>
+    <button id="settingsBtn" class="iconBtn" title="Settings"><svg viewBox="0 0 16 16"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="10.5" cy="4" r="1.6" fill="var(--panel)"/><circle cx="5.5" cy="8" r="1.6" fill="var(--panel)"/><circle cx="11.5" cy="12" r="1.6" fill="var(--panel)"/></svg></button>
+    <button id="sampleBtn" class="iconBtn" title="Load the sample file"><svg viewBox="0 0 16 16"><path d="M6 2 h4 M7 2 v4.2 l-3.4 5.8 a1.1 1.1 0 0 0 .95 1.7 h6.9 a1.1 1.1 0 0 0 .95 -1.7 L9 6.2 V2"/><line x1="5.2" y1="10.5" x2="10.8" y2="10.5"/></svg></button>
+    <button id="openBtn" class="iconBtn primary" title="Open a G-code file (.nc, .gcode, .tap, .ngc)"><svg viewBox="0 0 16 16"><path d="M2 4.5 h4 l1.3 1.8 H14 v6.5 a1 1 0 0 1 -1 1 H3 a1 1 0 0 1 -1 -1 z"/></svg></button>
+    <input type="file" id="fileInput" accept=".nc,.gcode,.gc,.tap,.ngc,.txt,.cnc" hidden>
+  </header>
+
+  <div id="viewportWrap">
+    <div id="viewport"></div>
+    <div id="viewHud">
+      <button id="fitBtn">Fit</button>
+    </div>
+    <div id="runBar">
+      <button id="rbEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
+      <span class="stateChip" id="rbState">offline</span>
+      <span id="rbPos" title="Work position">X <b id="rbX">0.000</b> Y <b id="rbY">0.000</b> Z <b id="rbZ">0.000</b></span>
+      <button id="rbJog" title="Open the jog and zero panel">Jog &amp; zero</button>
+      <span id="rbActionsWrap">
+        <button id="rbActions" aria-haspopup="true" aria-expanded="false" title="Run a quick action">Actions ▾</button>
+        <div id="rbMenu" hidden role="menu" aria-label="Quick actions"></div>
+      </span>
+      <span id="rbJobOnly">
+      <button id="rbHold" class="danger iconBtn" title="Feed hold — pause motion now"><svg viewBox="0 0 16 16"><line x1="6" y1="3.5" x2="6" y2="12.5"/><line x1="10" y1="3.5" x2="10" y2="12.5"/></svg></button>
+      <button id="rbResume" class="iconBtn" title="Cycle start / resume"><svg viewBox="0 0 16 16"><path d="M5.5 3.5 L12 8 L5.5 12.5 Z"/></svg></button>
+      <button id="rbDoor" title="Pause with retract — Z lifts and the spindle stops (firmware safety-door); Resume restores">Pause ⏏</button>
+      <button id="rbStop" title="End the job: slow to a stop, then lift clear and move off the part. STOP is the instant halt.">End job</button>
+      <div id="rbProg"><div id="rbFill"></div></div>
+      <span id="rbTxt">—</span>
+      <button id="rbAdjust" title="Feed / spindle / Z adjustments">Adjust</button>
+      </span>
+      <div id="ovRow">
+        <span class="ovLbl" id="ovF">F 100%</span>
+        <button data-ov="f-10">−10</button><button data-ov="f-1">−1</button><button data-ov="f0">100</button><button data-ov="f+1">+1</button><button data-ov="f+10">+10</button>
+        <span class="ovSep"></span>
+        <span class="ovLbl" id="ovS">S 100%</span>
+        <button data-ov="s-10">−10</button><button data-ov="s-1">−1</button><button data-ov="s0">100</button><button data-ov="s+1">+1</button><button data-ov="s+10">+10</button>
+        <span class="ovSep"></span>
+        <span class="ovLbl">rapid</span>
+        <button data-ov="r25">25</button><button data-ov="r50">50</button><button data-ov="r100">100</button>
+        <span class="ovSep"></span>
+        <span class="ovLbl" id="znLbl">Z +0.00</span>
+        <button data-zn="-0.1">−0.1</button><button data-zn="-0.02">−0.02</button><button data-zn="0">0</button><button data-zn="0.02">+0.02</button><button data-zn="0.1">+0.1</button>
+      </div>
+    </div>
+    <div id="legend">
+      <div class="lg"><div class="swatch" style="border-color:var(--cut-done)"></div>cut</div>
+      <div class="lg"><div class="swatch dash" style="border-color:var(--rapid-done)"></div>rapid</div>
+      <div class="lg"><div class="swatch" style="border-color:#e05656"></div>X</div>
+      <div class="lg"><div class="swatch" style="border-color:#5fae5f"></div>Y</div>
+      <div class="lg"><div class="swatch" style="border-color:#5f7fd8"></div>Z</div>
+    </div>
+    <div id="dropHint">
+      <div class="big">Drop a G-code file anywhere</div>
+      <div>.nc · .gcode · .tap · .ngc — parsed locally, nothing is uploaded</div>
+      <div>Left-drag to orbit · right-drag to pan · scroll to zoom</div>
+    </div>
+    <div id="dropOverlay">Release to load</div>
+  </div>
+
+  <aside>
+    <div id="statsBar">
+      <div class="stat"><span>X extent</span><b id="stX">—</b></div>
+      <div class="stat"><span>Y extent</span><b id="stY">—</b></div>
+      <div class="stat"><span>Z min / max</span><b id="stZ">—</b></div>
+      <div class="stat"><span>Est. run time</span><b id="stT">—</b></div>
+      <div class="stat"><span>Cut / rapid dist.</span><b id="stD">—</b></div>
+      <div class="stat"><span>Tools</span><b id="stTools">—</b></div>
+    </div>
+    <div id="tabs">
+      <button id="tabMachine" class="active">Machine</button>
+      <button id="tabCode">Code</button>
+      <button id="tabTp">Toolpaths<span class="badge" id="tpBadge">0</span></button>
+      <button id="tabChecks">Checks<span class="badge" id="checksBadge">0</span></button>
+    </div>
+
+    <div class="tabPane" id="paneCode">
+      <div id="codeScroller"><div id="codeSpacer"></div></div>
+      <div id="codeFollowRow">
+        <input type="checkbox" id="followChk" checked><label for="followChk">Follow playback</label>
+        <select id="sectionSel" style="max-width:170px;display:none"></select>
+        <div class="spacer" style="flex:1"></div>
+        <span id="codeCount"></span>
+      </div>
+    </div>
+
+    <div class="tabPane" id="paneTp">
+      <div id="tpSumWrap"><p id="tpSumHead" class="note"></p><div id="tpSum"></div></div>
+    </div>
+
+    <div class="tabPane" id="paneChecks">
+      <div id="checksList"></div>
+    </div>
+
+    <div class="tabPane active" id="paneMachine">
+      <div id="machinePane">
+        <div class="mRow">
+          <button id="connectBtn" class="primary">Connect to machine</button>
+          <button id="choosePort" class="linkBtn" hidden title="Pick a different USB port">Choose port&hellip;</button>
+          <span class="chip" id="connChip">not connected</span>
+        </div>
+        <p id="serialNote">This moves a real machine: keep a hand near the e-stop, and air-cut new files first.</p>
+
+        <div id="alarmBanner" style="display:none;background:#4d2620;border:1px solid var(--err);border-radius:5px;padding:10px;margin-bottom:12px;font-size:12.5px;line-height:1.5">
+          <b id="alarmBannerTxt">Machine is locked</b><br>
+          The controller boots in a locked state until it knows where it is. Make sure the gantry is clear, then home.
+          <div style="margin-top:8px"><button id="alarmHome" class="primary">Home now ($H)</button></div>
+        </div>
+
+        <div id="mControls" class="disabledArea">
+          <div class="mSection">
+            <h3>Machine <button class="hlp" data-h="serial" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <div class="mRow">
+              <button id="homeBtn">Home ($H)</button>
+              <button id="unlockBtn">Unlock ($X)</button>
+              <button id="resetBtn" class="danger" title="Reset the controller: stops the spindle and throws away anything queued. Use it to recover from an alarm.">Reset</button>
+            </div>
+            <div class="mRow"><span class="chip" id="mposChip">machine —</span><span class="chip" id="pinChip" style="display:none"></span></div>
+          </div>
+
+          <div class="mSection">
+            <h3>Jog &amp; zero <button class="hlp" data-h="jogpanel" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <div class="mRow">
+              <button id="jogOpen" class="primary">Open jog panel</button>
+              <span style="color:var(--faint);font-size:12px">arrow keys &amp; PgUp/PgDn work while it's open</span>
+            </div>
+          </div>
+
+          <div class="mSection">
+            <h3>Probe <button class="hlp" data-h="probepanel" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <div class="mRow">
+              <button id="bzOpen">BitZero Z zero…</button>
+            </div>
+          </div>
+
+          <div class="mSection">
+            <h3>Spindle <button class="hlp" data-h="spindlepanel" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <div class="mRow">
+              <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
+              <button id="spinOn">Start (M3)</button>
+              <button id="spinOff" class="danger" title="Turn the spindle off (M5)">Spindle off</button>
+              <span class="chip" id="spinState">stopped</span>
+            </div>
+          </div>
+
+          <div class="mSection">
+            <h3 class="qaHead">Quick actions <button class="hlp" data-h="quick" title="What is this?" aria-label="Help">ⓘ</button> <button id="qaAdd" class="qaAddBtn" title="Add a quick action">+ Add</button></h3>
+            <div id="qaList"></div>
+            <div class="mRow" id="qaRunRow" style="display:none">
+              <span id="qaStatus" style="color:var(--amber);font-size:12.5px;flex:1"></span>
+              <button id="qaCancel" class="danger" title="Stop sending the rest of the action. The current move finishes; use STOP for an immediate halt.">Cancel</button>
+            </div>
+          </div>
+
+          <div class="mSection">
+            <h3>Run job <button class="hlp" data-h="runjob" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <div id="toolBanner"><b id="toolBannerTxt">Tool change</b><br>Waiting for the tool change — the prompt is on screen.</div>
+            <div class="mRow">
+              <button id="jobRun" class="primary">Run loaded file</button>
+              <label style="margin-left:10px">from line</label>
+              <input type="number" id="recLine" min="1" style="width:76px" title="Scrub the simulator to the spot, or type a line number">
+              <button id="jobRecover" title="Resume a crashed/stopped job from a line \u2014 state is reconstructed, approach is careful">Recover</button>
+              <button id="jobHold">Hold</button>
+              <button id="jobResume">Resume</button>
+              <button id="jobStop" class="danger" title="End the job: slow to a stop, then lift clear and move off the part. The red STOP is the instant halt.">End job</button>
+            </div>
+            <div id="jobBar"><div id="jobBarFill"></div></div>
+            <div class="mRow" style="color:var(--muted);font-size:12px" id="jobStatus">no job running</div>
+          </div>
+
+          <div class="mSection" style="margin-bottom:4px">
+            <h3>Console <button class="hlp" data-h="console" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <div id="consoleLog"></div>
+            <input id="consoleIn" placeholder="type a command — Enter to send ($$, G0 X10, ?, !, ~)" autocomplete="off">
+            <div class="mRow" style="margin-top:6px"><input type="checkbox" id="verboseChk"><label for="verboseChk">Show status reports and job acks</label></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <footer>
+    <div id="dro">
+      <div class="ax"><i>X</i><b id="droX">0.000</b></div>
+      <div class="ax"><i>Y</i><b id="droY">0.000</b></div>
+      <div class="ax"><i>Z</i><b id="droZ">0.000</b></div>
+      <div class="ax"><i>F</i><b id="droF">—</b></div>
+    </div>
+    <div class="lineNoBox">line <b id="droLine">—</b> · tool <b id="droTool">—</b></div>
+    <div id="transport">
+      <button id="btnStart" title="Go to start">|&lt;</button>
+      <button id="btnStepB" title="Step back one line">&lt;</button>
+      <button id="btnPlay" title="Play / pause">▶</button>
+      <button id="btnStepF" title="Step forward one line">&gt;</button>
+      <button id="btnEnd" title="Go to end">&gt;|</button>
+      <select id="speedSel">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="5">5×</option>
+        <option value="20">20×</option>
+        <option value="100">100×</option>
+      </select>
+    </div>
+    <input type="range" id="timeSlider" min="0" max="10000" value="0" step="1">
+    <div id="timeReadout">0:00 / 0:00</div>
+  </footer>
+</div>
+
+<div id="jogModal" hidden>
+  <div id="jogPanel">
+    <div id="jogHead">
+      <button id="jogEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
+      <b style="font-size:15px">Jog &amp; zero</b>
+      <span class="stateChip" id="jmState">—</span>
+      <div style="flex:1"></div>
+      <button id="jogClose" title="Close (Esc)">✕</button>
+    </div>
+    <div id="jmDro">
+      <div class="ax"><i>X</i><b id="jmX">0.000</b></div>
+      <div class="ax"><i>Y</i><b id="jmY">0.000</b></div>
+      <div class="ax"><i>Z</i><b id="jmZ">0.000</b></div>
+    </div>
+    <div class="mRow" id="jogIncRow">
+      <label>Move</label>
+      <button data-inc="0.025">0.025</button>
+      <button data-inc="0.1">0.1</button>
+      <button data-inc="1" class="incOn">1</button>
+      <button data-inc="10">10</button>
+      <button data-inc="fast">Fast</button>
+      <span style="color:var(--faint)">mm</span>
+    </div>
+    <div class="mRow">
+      <button class="hlp" data-h="jog" title="What is this?" aria-label="Help">ⓘ</button><label>Fast XY</label><input type="number" id="jogFeedXY" value="3000" step="100">
+      <label>Fast Z</label><input type="number" id="jogFeedZ" value="600" step="50">
+      <span style="color:var(--faint)">mm/min</span>
+    </div>
+    <div style="display:flex;gap:22px;align-items:flex-start">
+      <div id="jogGrid">
+        <button data-jog="-1,1,0">↖</button><button data-jog="0,1,0">Y+</button><button data-jog="1,1,0">↗</button><span></span><button data-jog="0,0,1">Z+</button>
+        <button data-jog="-1,0,0">X−</button><span></span><button data-jog="1,0,0">X+</button><span></span><span></span>
+        <button data-jog="-1,-1,0">↙</button><button data-jog="0,-1,0">Y−</button><button data-jog="1,-1,0">↘</button><span></span><button data-jog="0,0,-1">Z−</button>
+      </div>
+      <div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:6px">Rapid position <span style="color:var(--faint)">(needs homing)</span></div>
+        <div id="rapidGrid">
+          <button data-rp="0,1" title="Back left">◰</button><button data-rp="0.5,1" title="Back center">▴</button><button data-rp="1,1" title="Back right">◳</button>
+          <button data-rp="0,0.5" title="Left center">◂</button><button data-rp="0.5,0.5" title="Table center">●</button><button data-rp="1,0.5" title="Right center">▸</button>
+          <button data-rp="0,0" title="Front left">◱</button><button data-rp="0.5,0" title="Front center">▾</button><button data-rp="1,0" title="Front right">◲</button>
+        </div>
+      </div>
+    </div>
+    <div class="mSection" style="margin:14px 0 0">
+      <h3>Work zero</h3>
+      <div class="mRow">
+        <button id="zeroX">Zero X</button><button id="zeroY">Zero Y</button><button id="zeroZ">Zero Z</button><button id="zeroAll">Zero all</button>
+      </div>
+      <div class="mRow">
+        <button id="gotoZero" title="Raises Z to 5 mm below the top of travel first (machine must be homed)">Go to XY zero</button>
+        <button id="jogZ6" title="Lift Z 6 mm from where it is now, as in Carbide Motion. Stops short at the top of travel.">Z +6 mm</button>
+        <button id="jogProbe" title="Jog over the plate, then probe — opens the BitZero panel">Probe…</button>
+      </div>
+    </div>
+    <p class="kbdHint">Keyboard: ← → = X &nbsp;·&nbsp; ↑ ↓ = Y &nbsp;·&nbsp; PgUp PgDn = Z. In Fast, hold to jog — release stops instantly. Esc closes.</p>
+  </div>
+</div>
+
+<div id="setModal" hidden>
+  <div id="setPanel">
+    <div id="setHead">
+      <b style="font-size:15px">Settings</b>
+      <div style="flex:1"></div>
+      <button id="setClose" title="Close (Esc)">✕</button>
+    </div>
+    <div id="smTabs">
+      <button data-sm="smMachine" class="active">Machine</button>
+      <button data-sm="smAcc">Accessories</button>
+      <button data-sm="smJob">Job</button>
+      <button data-sm="smProfile">Profile</button>
+    </div>
+
+    <div class="smPane active" id="smMachine">
+      <div class="mRow"><span class="chip" id="modelChip">model: connect to detect</span></div>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Display</h3>
+      <div class="mRow"><input type="checkbox" id="showRapids" checked><label for="showRapids">Show rapid moves</label></div>
+      <div class="mRow"><input type="checkbox" id="showEnvelope"><label for="showEnvelope">Show work area outline</label></div>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Work area <button class="hlp" data-h="workarea" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <div class="mRow">
+        <select id="machinePreset">
+          <option value="ctl">From the controller (automatic)</option>
+          <option value="">Custom…</option>
+          <option value="425,425">Shapeoko 3 (425 × 425)</option>
+          <option value="838,438">Shapeoko XL (838 × 438)</option>
+          <option value="838,838">Shapeoko XXL (838 × 838)</option>
+          <option value="203,203">Nomad 3 (203 × 203)</option>
+        </select>
+      </div>
+      <div class="mRow">
+        <label>Width X</label><input type="number" id="envW" value="425"> <span style="color:var(--faint)">mm</span>
+        <label style="margin-left:8px">Depth Y</label><input type="number" id="envD" value="425"> <span style="color:var(--faint)">mm</span>
+      </div>
+      <div class="mRow">
+        <label>Job zero at</label><button class="hlp" data-h="jobzero" title="What is this?" aria-label="Help">ⓘ</button>
+        <select id="originSel">
+          <option value="corner">front-left corner of stock</option>
+          <option value="center">center of stock</option>
+        </select>
+      </div>
+      <div class="mRow"><input type="checkbox" id="checkEnvelope"><label for="checkEnvelope">Flag moves outside work area</label></div>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Stock <button class="hlp" data-h="stock" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <div class="mRow">
+        <label>Thickness</label><input type="number" id="stockThk" value="0" step="0.5"> <span style="color:var(--faint)">mm</span>
+      </div>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Time estimate <button class="hlp" data-h="rapid" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <div class="mRow">
+        <label>Rapid rate</label><input type="number" id="rapidRate" value="5000" step="100"> <span style="color:var(--faint)">mm/min — auto-set from the controller</span>
+      </div>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Controller config <button class="hlp" data-h="controllercfg" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <div class="mRow"><button id="refreshCfg">Re-read ($$, $#)</button><span class="chip" id="cfgChip">read on connect</span></div>
+      <div class="mRow"><button id="cfgCheck">Check controller settings</button></div>
+      <div id="cfgTable" style="display:none;font-family:var(--mono);font-size:11.5px;line-height:18px;background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;padding:6px 8px;max-height:190px;overflow-y:auto"></div>
+    </div>
+
+    <div class="smPane" id="smAcc">
+      <div class="mRow">
+        <input type="checkbox" id="bsEnable"><label for="bsEnable">BitSetter</label><button class="hlp" data-h="bitsetter" title="What is this?" aria-label="Help">ⓘ</button>
+        <label style="margin-left:6px">machine X</label><input type="number" id="bsX" step="0.1" style="width:84px">
+        <label>Y</label><input type="number" id="bsY" step="0.1" style="width:84px">
+        <button id="bsCapture" title="Jog the tool over the BitSetter button, then store the current machine position">Capture position</button>
+        <button id="bsTest" title="Touch off once to check the position and the switch. Changes nothing: no reference is taken and no offset applied.">Test</button>
+      </div>
+      <div class="mRow">
+        <input type="checkbox" id="bzEnable"><label for="bzEnable">BitZero</label><button class="hlp" data-h="bitzero" title="What is this?" aria-label="Help">ⓘ</button>
+        <select id="bzVersion"><option value="v1">v1</option><option value="v2">v2</option></select>
+      </div>
+      <div class="mRow">
+        <label>Spindle</label><button class="hlp" data-h="spindle" title="What is this?" aria-label="Help">ⓘ</button>
+        <select id="spinType"><option value="router">Trim router</option><option value="vfd">VFD spindle</option></select>
+        <label>spin-up</label><input type="number" id="spinupSec" value="7" step="0.5" min="0" style="width:64px"><span style="color:var(--faint)">s dwell after M3 or M4</span>
+      </div>
+    </div>
+
+    <div class="smPane" id="smJob">
+      <div class="mRow">
+        <input type="checkbox" id="highStart" checked><label for="highStart">Start &amp; stop high — travel at the top before plunging, at the start and after every tool change, and lift clear before every spindle stop and at the end of the job. Leave this on: it is what keeps the bit above clamps and stock.</label><button class="hlp" data-h="highstart" title="What is this?" aria-label="Help">ⓘ</button>
+      </div>
+      <div class="mRow">
+        <label>Traverse height</label>
+        <input type="number" id="travelZIn" value="5" step="1" min="1" max="30" style="width:64px"><span class="unit" style="color:var(--faint);font-size:12px">mm below top</span>
+        <label style="margin-left:10px">Lift at tool changes and job end</label>
+        <input type="number" id="topZIn" value="2" step="0.5" min="0.5" max="20" style="width:64px"><span style="color:var(--faint);font-size:12px">mm below top</span><button class="hlp" data-h="travelz" title="What is this?" aria-label="Help">ⓘ</button>
+        <span style="color:var(--faint)">mm below Z top — used by start/stop-high, go-to-zero, and BitSetter parking</span>
+      </div>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Parking <button class="hlp" data-h="park" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <div class="mRow">
+        <input type="checkbox" id="tcEnable" checked><label for="tcEnable">Move to a tool-change position</label>
+        <label style="margin-left:6px">X</label><input type="number" id="tcX" step="0.1" style="width:76px" placeholder="auto">
+        <label>Y</label><input type="number" id="tcY" step="0.1" style="width:76px" placeholder="auto">
+        <select id="tcPreset" title="Where the machine goes for a tool change">
+          <option value="fc">Front centre</option>
+          <option value="fl">Front left</option>
+          <option value="fr">Front right</option>
+          <option value="bc">Back centre</option>
+          <option value="custom">Captured position</option>
+        </select>
+        <button id="tcCapture" title="Jog to a comfortable spot for swapping tools, then store it as the captured position">Capture</button>
+      </div>
+      <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5" id="tcAutoNote"></p>
+      <div class="mRow">
+        <input type="checkbox" id="tcEndPark" checked><label for="tcEndPark">Park at the end of a job</label>
+        <label style="margin-left:6px">machine X</label><input type="number" id="pkX" step="0.1" style="width:84px" placeholder="back centre">
+        <label>Y</label><input type="number" id="pkY" step="0.1" style="width:84px" placeholder="back centre">
+        <button id="pkCapture" title="Jog to where the machine should sit at the end of a job, then store it">Capture</button>
+      </div>
+    </div>
+
+    <div class="smPane" id="smProfile">
+      <h3 style="font-size:13px;font-weight:600;margin:6px 0 8px">Appearance</h3>
+      <div class="mRow">
+        <label for="uiTheme">Theme</label>
+        <select id="uiTheme"><option value="dark">Dark</option><option value="light">Light</option></select>
+        <label for="uiAccent" style="margin-left:10px">Accent</label>
+        <select id="uiAccent">
+          <option value="gold">Gold</option><option value="red">Red</option><option value="blue">Blue</option>
+          <option value="green">Green</option><option value="purple">Purple</option><option value="teal">Teal</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <input type="color" id="uiAccentHex" value="#e8a33d" style="width:44px;height:26px;padding:1px;background:none;border:1px solid var(--line);border-radius:4px">
+      </div>
+
+      <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5">Appearance belongs to this browser, not to a machine: it is shared with 454 Design and is not part of a profile export.</p>
+
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Machine profile</h3>
+      <div class="mRow">
+        <button id="profExport">Export profile</button>
+        <button id="profImport">Import profile / shapeoko.json</button>
+        <input type="file" id="profFile" accept=".json,application/json" hidden>
+      </div>
+      <p class="note" style="color:var(--faint);font-size:12px;line-height:1.5">All settings save automatically in this browser. Export a copy as backup — importing Carbide Motion's shapeoko.json pulls in your BitSetter position and accessory setup.</p>
+      <div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:12.5px;color:var(--muted);line-height:1.7">
+        <div>454 Control <span id="verChip" style="font-family:var(--mono)"></span> — free &amp; open source, MIT.</div>
+        <div><a id="repoLink" href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener" style="color:var(--info)">Source &amp; issues on GitHub</a>
+        &nbsp;·&nbsp; <a id="supportLink" href="https://github.com/ctredway/454-workshop?sponsor=1" target="_blank" rel="noopener" style="color:var(--amber)">Support 454 Control ♥</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toolModal" hidden>
+  <div id="toolPanel" role="dialog" aria-modal="true" aria-labelledby="toolTitle">
+    <div class="dlgHead"><b id="toolTitle">Tool change</b></div>
+    <div id="toolBody">
+      <p id="toolWhich" style="font-size:15px;color:var(--ink);margin:0 0 8px"></p>
+      <p id="toolSteps" style="font-size:12.5px;color:var(--muted);line-height:1.55;margin:0;white-space:pre-wrap"></p>
+      <div id="toolZeroRow" hidden style="margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-deep)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="toolBz">Probe with BitZero</button>
+          <button id="toolJog">Jog &amp; zero Z</button>
+        </div>
+        <p id="toolZeroState" style="margin:8px 0 0;font-size:12.5px"></p>
+      </div>
+    </div>
+    <div class="dlgBtns">
+      <button id="toolStop" class="danger">End job</button>
+      <button id="toolContinue" class="primary">Tool changed — continue</button>
+    </div>
+  </div>
+</div>
+
+<div id="dlgModal" hidden>
+  <div id="dlgPanel" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="dlgHead"><b id="dlgTitle">Confirm</b><button id="dlgX" title="Close (Esc)" aria-label="Close">✕</button></div>
+    <div id="dlgBody"></div>
+    <div class="dlgBtns"><button id="dlgCancel">Cancel</button><button id="dlgAlt" hidden></button><button id="dlgOk" class="primary">OK</button></div>
+  </div>
+</div>
+
+<div id="browserModal" hidden>
+  <div id="browserPanel" role="alertdialog" aria-modal="true" aria-labelledby="browserTitle" aria-describedby="browserWhy">
+    <div class="dlgHead"><b id="browserTitle">454 Control needs Chrome or Edge</b></div>
+    <div style="padding:14px 16px 4px">
+      <p id="browserWhy" style="font-size:13px;line-height:1.6;margin:0"></p>
+      <p style="font-size:13px;line-height:1.6;margin:10px 0 0">To run your machine, open this page in <b>Google Chrome</b> or
+        <b>Microsoft Edge</b> (or another browser built on Chromium, such as Opera) <b>on a computer</b>,
+        or use the 454 Workshop desktop app.</p>
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.55;margin:10px 0 0">You can still continue here to open and check
+        G-code files; you just can&rsquo;t connect to a machine.</p>
+      <p style="margin:14px 0 4px;display:flex;gap:14px;font-size:13px">
+        <a href="https://www.google.com/chrome/" target="_blank" rel="noopener" style="color:var(--info)">Get Chrome</a>
+        <a href="https://www.microsoft.com/edge" target="_blank" rel="noopener" style="color:var(--info)">Get Edge</a>
+      </p>
+    </div>
+    <div class="dlgBtns"><button id="browserContinue">Continue without a machine</button></div>
+  </div>
+</div>
+
+<div id="connModal" hidden>
+  <div id="connPanel" role="dialog" aria-labelledby="connTitle">
+    <div class="dlgHead"><b id="connTitle">Connect to your machine?</b><button id="connX" title="Not now (Esc)" aria-label="Close">✕</button></div>
+    <div style="padding:14px 16px">
+      <p id="connWhy" style="font-size:12.5px;color:var(--muted);line-height:1.55;margin:0">454 Control can open and check G-code on its own, but it needs a connection to jog, probe or cut.</p>
+      <p id="connNote" style="font-size:12px;color:var(--amber);line-height:1.5;margin:10px 0 0"></p>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:12px">
+        <input type="checkbox" id="connAsk" checked> Ask me when 454 Control opens
+      </label>
+    </div>
+    <div class="dlgBtns">
+      <button id="connSkip">Work offline</button>
+      <button id="connGo" class="primary">Connect</button>
+    </div>
+  </div>
+</div>
+
+<div id="homeModal" hidden>
+  <div id="homePanel" role="dialog" aria-labelledby="homeTitle">
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <b id="homeTitle" style="flex:1;font-size:15px">Home the machine?</b>
+      <button id="homeX" title="Not now (Esc)" aria-label="Close">✕</button>
+    </div>
+    <p id="homeWhy">Homing sets the machine&rsquo;s own coordinates. Until it runs, machine positions mean nothing, so the BitSetter, park moves, job recovery and anything using G53 can&rsquo;t be trusted.</p>
+    <p id="homeWarn">The machine will move to its limit switches. Check the spindle is clear and your hand is near the stop.</p>
+    <label id="homeAskRow"><input type="checkbox" id="homeAsk" checked> Ask me each time I connect</label>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button id="homeSkip">Not now</button>
+      <button id="homeGo" class="primary">Home now ($H)</button>
+    </div>
+  </div>
+</div>
+
+<div id="qaModal" hidden>
+  <div id="qaPanel" role="dialog" aria-labelledby="qaTitle">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <b id="qaTitle" style="font-size:15px">New quick action</b>
+      <div style="flex:1"></div>
+      <button id="qaClose" title="Close (Esc)">✕</button>
+    </div>
+    <label for="qaName" class="qaLbl">Name</label>
+    <input id="qaName" type="text" maxlength="40" placeholder="Move to front for a bit change" autocomplete="off">
+    <label for="qaCode" class="qaLbl">G-code, one command per line</label>
+    <textarea id="qaCode" rows="7" spellcheck="false" placeholder="G53 G0 Z-5&#10;G53 G0 X-400 Y-800"></textarea>
+    <div id="qaIssues"></div>
+    <p class="note" style="margin-top:8px">Comments in (parentheses) or after a ; are ignored. G53 moves use machine coordinates, so they go to the same place every time once the machine is homed.</p>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button id="qaDelete" class="danger">Delete</button>
+      <div style="flex:1"></div>
+      <button id="qaCancelEdit">Cancel</button>
+      <button id="qaSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="bzModal" hidden>
+  <div id="bzPanel">
+    <div id="jogHead" style="margin-bottom:8px">
+      <button id="bzEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
+      <b style="font-size:15px">BitZero — Z zero</b>
+      <div style="flex:1"></div>
+      <button id="bzClose" title="Close (Esc)">✕</button>
+    </div>
+    <p class="note" style="color:var(--muted);font-size:12.5px;line-height:1.6;margin-bottom:10px">
+      Place the plate on top of the stock. Clip the magnet to the collet nut.
+      Jog the tool tip 2–10 mm above the plate, roughly centered.
+    </p>
+    <div class="mRow"><span class="stateChip" id="bzCircuit">circuit: touch the probe pin to the plate to verify</span></div>
+    <div class="mRow">
+      <label>Plate thickness</label>
+      <input type="number" id="bzThk" step="0.01" min="1" max="30" style="width:84px">
+      <span style="color:var(--faint)">mm — caliper your plate once; saved to the profile</span>
+    </div>
+    <div class="mRow"><button id="bzStart" class="primary">Probe Z</button></div>
+    <p class="note" style="margin:4px 0 0;font-size:12px;color:var(--muted)">BitSetter: <span id="bsRefState">no reference yet</span></p>
+            <div class="mRow" id="bzStatusLine" style="color:var(--muted);font-size:12px">ready</div>
+    <p class="kbdHint">Probes down max 25 mm (fast), backs off, re-probes slow, sets work Z0 to the stock top via G10 L2, then lifts 10 mm clear. Verify with the paper test before cutting.</p>
+  </div>
+</div>
+
+<script>
+@@include js/browser-check.js
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+@@include js/parser.js
+@@include js/checks.js
+@@include js/viewer.js
+@@include js/playback.js
+@@include js/code-panel.js
+@@include js/checks-panel.js
+@@include js/job-summary.js
+@@include js/wiring.js
+@@include js/machine-state.js
+@@include js/jogging.js
+@@include js/estop.js
+@@include js/probing.js
+@@include js/bitsetter.js
+@@include js/bitzero.js
+@@include js/overrides.js
+@@include js/jog-panel.js
+@@include js/serial.js
+@@include js/status.js
+@@include js/profile-defaults.js
+@@include js/quick-actions-state.js
+@@include js/dialogs.js
+@@include js/controller-check.js
+@@include js/theme.js
+@@include js/home-prompt.js
+@@include js/quick-actions.js
+@@include js/profile.js
+@@include js/controller-config.js
+@@include js/job-streaming.js
+@@include js/recovery-state.js
+@@include js/job-builder.js
+@@include js/job-run.js
+@@include js/recovery.js
+@@include js/machine-tab.js
+</script>
+</body>
+</html>

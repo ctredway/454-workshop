@@ -254,6 +254,32 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.31.9 — the job builder, tested (no change in behaviour)
+- **The job builder has unit tests of its own**: what a job sends to the machine beyond the file itself,
+  and the most safety-critical code in Control. 19 tests, one per rule: spin-up waits (and when a file's
+  own wait counts), lifting before a spindle stop and never downwards, relative lifts when machine heights
+  aren't known, never stopping the spindle in the material, tool changes (lift, stop, restart the spindle
+  if the file assumes it's still running), the ending (lift, stop, back to XY zero, park, the file's M2 or
+  M30 last), and the file's own lines. Run with `node --test 'apps/control/test/*.test.mjs'`; GitHub runs
+  them on every push.
+- **The tests were checked by breaking each rule on purpose.** One test passed for the wrong reason (its
+  file hit a different rule first, so the guard against lifting downwards never ran); it now uses a case
+  that reaches the guard (thick stock, work zero near the top of travel), and fails without it.
+- **To make it testable, the job builder became a pure function**, `JobBuilder.build(lines, machine)`,
+  with its logic unchanged line for line; `buildJobList()` gathers Control's state and calls it. The old
+  and new builders were run side by side in the real Control page on 488 cases (15 files, including real
+  VCarve output, each with every combination of homed, work offset, Start & stop high, spin-up and
+  parking): identical in every case. The end-to-end job test passes.
+
+### 0.31.8 — a loaded job, from the top
+- **Loading a job animates the 3D view to the top view**, framing the whole job: the camera turns, moves
+  and zooms together, easing to a stop in about 0.7 s, from wherever the view was. It ends looking
+  straight down, X to the right and Y away from you, as the view cube's Top. With reduced motion turned on,
+  it goes straight there.
+- The view cube and the Fit button behave as before (Fit frames the job without changing the angle), and
+  scrolling to zoom now cancels an animation in progress, as dragging already did.
+- The first change made in Control's source files (`viewer.js`, `playback.js`, `wiring.js`).
+
 ### Source split into files (no change in behaviour)
 - **Control is now worked on as 35 source files** in `apps/control/src` (its styles, and its code by
   subject: the parser, the 3D view, playback, each panel, the machine layer, jogging, probing, the

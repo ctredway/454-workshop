@@ -4,7 +4,7 @@
    Produces: segments (tessellated micro-moves), issues, tools
    All internal units are mm. seg.units records display units.
    ============================================================ */
-var CONTROL_VERSION = '0.31.8';
+var CONTROL_VERSION = '0.31.10';
 
 var SUPPORTED_G = {0:1,1:1,2:1,3:1,4:1,17:1,18:1,19:1,20:1,21:1,28:1,28.2:1,90:1,91:1,91.1:1,90.1:1,53:1};
 var IGNORED_G   = {40:'G40 cutter compensation off — accepted but ignored by Carbide Motion',
