@@ -1,0 +1,174 @@
+// Automatic updates for 454 Workshop, from GitHub Releases (electron-updater).
+//
+// What it promises:
+//   - never during a job: nothing is shown, and nothing restarts, while 454 Control says the machine is
+//     busy (its own machineBusy(): a job, probe, quick action or jog running, the spindle on, or the
+//     machine moving); it waits until the machine is idle
+//   - never forced: an update is offered (Download, Later, Skip this version), downloads in the
+//     background, and installs when you choose to restart, or next time the app closes
+//   - stable or beta: the beta channel also offers GitHub pre-releases
+//   - honest about copies that can't update: one run from a zip, or a development build, says so
+//
+// Everything outside (the updater, the busy check, the dialogs, timers, the settings file) is passed in,
+// so the decisions here can be tested without a network or a real update (test/updater.test.mjs).
+'use strict';
+
+const HOUR = 3600e3, MINUTE = 60e3;
+
+function createUpdater(deps) {
+  const { autoUpdater, isBusy, ask, notify = () => {}, setProgress = () => {}, currentVersion, installable,
+          settingsFile, fs, timers = { setTimeout, clearTimeout }, log = () => {},
+          firstCheckAfter = 30e3, checkEvery = 6 * HOUR, idlePoll = MINUTE, onChange = () => {} } = deps;
+
+  // ---- settings: automatic checks, the channel, a skipped version
+  let settings = { auto: true, channel: 'stable', skipped: null };
+  try { settings = Object.assign(settings, JSON.parse(fs.readFileSync(settingsFile, 'utf8'))); } catch (e) { /* first run: defaults */ }
+  function save() { try { fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2)); } catch (e) { log('could not save update settings: ' + e.message); } }
+
+  const state = { phase: 'idle', available: null, downloaded: null, manual: false, timer: null, waiting: null };
+
+  function configure() {
+    autoUpdater.autoDownload = false;              // offered first, never downloaded unasked
+    autoUpdater.autoInstallOnAppQuit = true;       // "Later" installs when the app next closes
+    autoUpdater.allowPrerelease = settings.channel === 'beta';
+    autoUpdater.allowDowngrade = false;
+  }
+
+  // ---- waiting for the machine: run fn once 454 Control says it's idle
+  async function busy() { try { return !!(await isBusy()); } catch (e) { return false; } }
+  function whenIdle(fn) {
+    if (state.waiting) timers.clearTimeout(state.waiting);
+    const tryNow = async () => {
+      state.waiting = null;
+      if (await busy()) { state.waiting = timers.setTimeout(tryNow, idlePoll); return; }
+      fn();
+    };
+    tryNow();
+  }
+
+  // ---- checking
+  function schedule(ms) {
+    if (state.timer) timers.clearTimeout(state.timer);
+    state.timer = settings.auto && installable.ok ? timers.setTimeout(() => { check(false); schedule(checkEvery); }, ms) : null;
+  }
+  async function check(manual) {
+    if (!installable.ok){
+      if (manual) await ask({ type: 'info', title: 'Updates', message: 'This copy of 454 Workshop can\u2019t update itself.', detail: installable.why, buttons: ['OK'] });
+      return;
+    }
+    if (state.phase === 'checking' || state.phase === 'downloading') {
+      if (manual) await ask({ type: 'info', title: 'Updates', message: state.phase === 'checking' ? 'Already checking for updates.' : 'An update is already downloading.', buttons: ['OK'] });
+      return;
+    }
+    if (state.downloaded) { if (manual) offerRestart(); return; }
+    state.manual = manual; state.phase = 'checking'; onChange();
+    configure();
+    try { await autoUpdater.checkForUpdates(); }
+    catch (e) { onError(e); }
+  }
+
+  function notesOf(info) {
+    let n = info && info.releaseNotes;
+    if (Array.isArray(n)) n = n.map((x) => x.note || '').join('\n');
+    n = String(n || '').replace(/<\/(p|li|h\d)>/gi, '\n').replace(/<li>/gi, '\u2022 ').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, '\u2019').replace(/\n{3,}/g, '\n\n').trim();
+    return n.length > 600 ? n.slice(0, 600).replace(/\s+\S*$/, '') + '\u2026' : n;
+  }
+
+  async function onAvailable(info) {
+    const manual = state.manual;
+    state.phase = 'idle'; state.available = info; onChange();
+    if (!manual && settings.skipped === info.version) { log('update ' + info.version + ' skipped earlier'); return; }
+    whenIdle(async () => {
+      const notes = notesOf(info);
+      const choice = await ask({ type: 'info', title: 'Update available',
+        message: '454 Workshop ' + info.version + ' is available.',
+        detail: 'You have ' + currentVersion + '.' + (notes ? '\n\nWhat\u2019s new:\n' + notes : '') +
+                '\n\nIt downloads in the background, and installs when you restart 454 Workshop, whenever suits you. Nothing interrupts a job.',
+        buttons: ['Download', 'Later', 'Skip this version'], defaultId: 0, cancelId: 1 });
+      if (choice === 0) {
+        state.phase = 'downloading'; onChange();
+        try { await autoUpdater.downloadUpdate(); } catch (e) { onError(e); }
+      } else if (choice === 2) { settings.skipped = info.version; save(); onChange(); }
+    });
+  }
+  async function onNotAvailable(info) {
+    const manual = state.manual;
+    state.phase = 'idle'; onChange();
+    if (manual) await ask({ type: 'info', title: 'Updates', message: 'You have the latest version.',
+      detail: '454 Workshop ' + currentVersion + (settings.channel === 'beta' ? ', on the beta channel.' : '.'), buttons: ['OK'] });
+  }
+  function onProgress(p) { setProgress(Math.max(0, Math.min(1, (p && p.percent || 0) / 100))); }
+  function onDownloaded(info) {
+    setProgress(-1);
+    state.phase = 'ready'; state.downloaded = info; onChange();
+    notify('454 Workshop ' + info.version + ' is ready', 'It installs when you restart 454 Workshop.');
+    offerRestart();
+  }
+  function offerRestart() {
+    whenIdle(async () => {
+      const info = state.downloaded;
+      const choice = await ask({ type: 'info', title: 'Update ready',
+        message: '454 Workshop ' + info.version + ' is ready to install.',
+        detail: 'Restart now to install it, or later: it installs when you next close 454 Workshop. Restarting disconnects the machine.',
+        buttons: ['Restart now', 'Later'], defaultId: 0, cancelId: 1 });
+      if (choice !== 0) return;
+      if (await busy()) {                          // the machine got busy while the question was open
+        await ask({ type: 'warning', title: 'Update ready', message: 'The machine is busy.',
+          detail: 'The update will install when you close 454 Workshop, or offer again when the machine is idle.', buttons: ['OK'] });
+        return;
+      }
+      state.phase = 'restarting'; onChange();
+      autoUpdater.quitAndInstall(false, true);     // install, then start the new version
+    });
+  }
+  async function onError(e) {
+    const msg = String(e && e.message || e);
+    // electron-updater both emits 'error' and rejects the call that failed: handle each failure once
+    if (state.lastError && state.lastError.msg === msg && Date.now() - state.lastError.at < 5000) return;
+    state.lastError = { msg, at: Date.now() };
+    const manual = state.manual, downloading = state.phase === 'downloading';
+    setProgress(-1);
+    state.phase = 'idle'; onChange();
+    log('update error: ' + msg);
+    const why = ' (' + msg.split('\n')[0].slice(0, 200) + ')';
+    if (downloading)                               // you asked for it, so a failed download is always reported
+      await ask({ type: 'warning', title: 'Updates', message: 'The update didn\u2019t download.',
+        detail: (/checksum|sha512/i.test(msg) ? 'The downloaded file didn\u2019t match the release, so it wasn\u2019t installed.' : 'Check your internet connection.') +
+                ' It\u2019ll be offered again at the next check, or use Check for updates.' + why, buttons: ['OK'] });
+    else if (manual) await ask({ type: 'warning', title: 'Updates', message: 'Couldn\u2019t check for updates.',
+      detail: 'Check your internet connection and try again.' + why, buttons: ['OK'] });
+  }
+
+  autoUpdater.on('update-available', onAvailable);
+  autoUpdater.on('update-not-available', onNotAvailable);
+  autoUpdater.on('download-progress', onProgress);
+  autoUpdater.on('update-downloaded', onDownloaded);
+  autoUpdater.on('error', onError);
+
+  return {
+    start() { configure(); schedule(firstCheckAfter); },
+    checkNow() { return check(true); },
+    setAuto(on) { settings.auto = !!on; save(); schedule(on ? firstCheckAfter : 0); onChange(); },
+    setChannel(ch) { settings.channel = ch === 'beta' ? 'beta' : 'stable'; settings.skipped = null; save(); configure(); onChange(); },
+    get settings() { return Object.assign({}, settings); },
+    get state() { return { phase: state.phase, available: state.available && state.available.version, downloaded: state.downloaded && state.downloaded.version }; },
+    installable,
+  };
+}
+
+// Can this copy update itself? Only an installed copy: on Windows, one the installer put there (it leaves
+// an uninstaller beside the program); on Linux, an AppImage. A copy run from a zip, or a development
+// build, can't.
+function installability({ platform, isPackaged, execPath, env, fs, path, productName }) {
+  if (!isPackaged) return { ok: false, why: 'This is a development build. Updates work in the installed app.' };
+  if (platform === 'win32') {
+    const uninstaller = path.join(path.dirname(execPath), 'Uninstall ' + productName + '.exe');
+    return fs.existsSync(uninstaller) ? { ok: true } :
+      { ok: false, why: 'It was run from a zip rather than installed. To get updates, install 454 Workshop with the installer from GitHub Releases; your settings, tools and drawings carry over.' };
+  }
+  if (platform === 'linux') return env.APPIMAGE ? { ok: true } : { ok: false, why: 'Updates work in the AppImage version.' };
+  return { ok: false, why: 'Updates aren\u2019t available on this system yet.' };
+}
+
+module.exports = { createUpdater, installability };

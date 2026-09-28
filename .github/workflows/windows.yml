@@ -41,8 +41,29 @@ jobs:
       - name: Assemble the app's pages
         run: npm run build:app
 
+      - name: Check the tag matches the app's version (version tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          app=$(node -p "require('./package.json').version")
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$app" != "$tag" ]; then
+            echo "::error::The tag is v$tag but apps/desktop/package.json says $app. Automatic updates compare that version, so a release made this way would never be offered. Set the version to $tag, commit, and tag again."
+            exit 1
+          fi
+
       - name: Build the installer and zip
         run: npx electron-builder --win nsis zip --x64 --publish never
+
+      - name: Check the update files were made
+        # installed copies find a release through latest.yml (which names the installer and its checksum)
+        shell: bash
+        run: |
+          test -f dist/latest.yml || { echo "::error::dist/latest.yml is missing: installed copies couldn't find this build as an update."; exit 1; }
+          exe=$(basename "$(ls dist/*.exe | head -1)")
+          grep -q "$exe" dist/latest.yml || { echo "::error::dist/latest.yml doesn't name the installer ($exe)."; exit 1; }
+          ls dist/*.exe.blockmap > /dev/null || { echo "::error::the installer's blockmap is missing."; exit 1; }
+          echo "Update files OK:"; cat dist/latest.yml
 
       - name: Attach to this run
         uses: actions/upload-artifact@v4
@@ -51,6 +72,8 @@ jobs:
           path: |
             apps/desktop/dist/*.exe
             apps/desktop/dist/*.zip
+            apps/desktop/dist/latest.yml
+            apps/desktop/dist/*.blockmap
           if-no-files-found: error
 
       - name: Draft a release (version tags only)
@@ -58,6 +81,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
+          # a tag with a suffix (v0.6.0-beta.1) is a pre-release: only the Beta update channel offers it
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          # latest.yml and the blockmap are how installed copies find and download updates
           files: |
             apps/desktop/dist/*.exe
             apps/desktop/dist/*.zip
+            apps/desktop/dist/latest.yml
+            apps/desktop/dist/*.blockmap

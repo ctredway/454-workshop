@@ -1,0 +1,157 @@
+---
+title: "454 Design: workspace"
+description: "Everything around the drawing tools in 454 Design: job setup, layers, the tool library, the Toolpaths panel and its editor, checking the drawing, Settings, and the status bar."
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Shot from '../../components/Shot.astro';
+import overview from '../../assets/shots/design-overview.png';
+import jobSetup from '../../assets/shots/design-job-setup.png';
+import layers from '../../assets/shots/design-layers.png';
+import library from '../../assets/shots/design-tool-library.png';
+import tpPanel from '../../assets/shots/design-toolpaths-panel.png';
+import editor from '../../assets/shots/design-toolpath-editor.png';
+import check from '../../assets/shots/design-check.png';
+import settings from '../../assets/shots/design-settings.png';
+import statusBar from '../../assets/shots/design-status-bar.png';
+
+Everything in 454 Design around the drawing tools themselves: setting up the job, layers, your tools, the
+Toolpaths panel, checking the drawing, and Settings. For the drawing tools, see
+[Design tools](design-tools.html); for every toolpath type and setting, the [CAM reference](cam-reference.html).
+
+## The screen
+
+<Shot src={overview} alt="454 Design with a workshop sign drawn: the tool groups on the left, the drawing with its toolpaths in the middle, and the Toolpaths panel on the right with four toolpaths." caption="A workshop sign with four toolpaths: drilling, a pocket, a V-carve and an outside profile." />
+
+- **The header:** **Docs**, the **Tool library**, **Job setup**, **Settings**, and **454 Control**.
+- **On the left:** the **Tools** tab holds the [tool groups](design-tools.html), and the **Layers** tab the
+  [layers](#layers).
+- **In the middle:** the drawing, on the material. Scroll to zoom, drag with the right or middle mouse
+  button to move around, and press <kbd>Home</kbd> to fit the material in the window.
+- **On the right:** the [Toolpaths panel](#the-toolpaths-panel). **»** collapses it to a narrow strip;
+  click the strip to open it again.
+- **Along the bottom:** the [status bar](#the-status-bar).
+
+## Job setup
+
+The material you're cutting, and where the machine's zero will be. Everything else is measured from
+these, so it's worth setting first. Open it from the header, or **Settings → Job setup…**.
+
+<Shot src={jobSetup} alt="The Job setup panel: width 320 and height 200 in millimetres; an XY zero picker with four corners and the centre, front-left chosen; thickness 12 mm with Z zero on top of the material; and the machine's cutting area, where the material sits on it, and how far in from that corner." />
+
+- **Width, Height and units.** The units apply everywhere: the material, dimensions, typed values, the
+  measure tool and the readout. A unit typed after a number always wins, so `25mm` works in an inch
+  drawing.
+- **XY zero:** where X0 Y0 is on the material: one of the four corners, or the centre. Match it to where
+  you'll set X and Y zero on the machine in 454 Control. Changing it keeps your parts where they are on the
+  material.
+- **Thickness** and **Z zero:** the top of the material, or the spoilboard under it. The thickness is used
+  whenever something cuts right through, so measure it rather than trusting the label. Z zero must match
+  where you zero the tool in 454 Control.
+- **Machine:** the machine's cutting area (from 454 Control, a Shapeoko or Nomad size, or your own), which
+  corner the material sits against, and how far in. It's used to draw the cutting area (**Guides → Machine
+  area**), so you can see how the material and parts sit on the bed.
+
+## Layers
+
+The **Layers** tab, on the left. Layers keep a drawing organised, and let you hide or lock parts of it
+while you work on the rest.
+
+<Shot src={layers} alt="The Layers tab: three layers. Reference is hidden and locked, shown struck through; Engraving holds one shape; Outline, the active layer, holds seven and is outlined." />
+
+- **The active layer** is outlined: new shapes go on it. Click a layer to make it active.
+- **The eye** shows or hides a layer. Hidden layers are drawn struck through, and their shapes can't be
+  selected.
+- **The lock** stops a layer's shapes being selected or changed, while still showing them.
+- **The number** is how many shapes the layer holds. **Double-click** a name to rename it.
+- **With shapes selected**, a layer offers to move them onto it.
+- **The bin** deletes a layer; the last one can't be deleted. **+ Layer** adds one.
+
+A multi-sheet VCarve project brings each sheet in as its own layer; see the
+[CAM reference](cam-reference.html) for how sheets work.
+
+## The tool library
+
+Your bits, their tool numbers, and their feeds and speeds for each material. Open it from the header. It's
+shared with 454 Control.
+
+<Shot src={library} alt="The tool library: five tools in My tools (two end mills, two V-bits and a ball nose), with the 6.35 mm end mill selected, showing its diameter, flutes, notes, tool number T201, and feeds, plunge, spindle speed, stepdown and stepover for hardwood, softwood, MDF and plywood." />
+
+- **Import VCarve library…** brings in a VCarve tool database (`.vtdb`), with its folders, tool numbers,
+  and feeds and speeds for each machine and material. Or build your own: **+ Tool** adds a bit, and
+  **+ Material** a material.
+- **Machine** and **Material**, at the top, choose which feeds and speeds a new toolpath takes from a tool.
+- **Select a tool** to see its geometry, its tool number on each machine, and its feeds and speeds for each
+  material. **Edit**, **Duplicate** or **Delete** it there.
+- **Search tools** finds a bit by name. Tools you've used lately gather in a **Recently used** folder at
+  the top.
+
+## The Toolpaths panel
+
+Where a drawing becomes a job. Toolpaths are in beta: check every job in 454 Control's preview, and run it
+in the air, before cutting material.
+
+<Shot src={tpPanel} alt="The Toolpaths panel: the beta note, then four toolpath cards (Drilling, Pocket, V-carve and Outside profile), each with its tool, feed, depth and details, and buttons to reorder, recalculate, edit and delete; then Save G-code and Job sheet." />
+
+<Steps>
+
+1. Select the shapes to cut, then press **+** (New toolpath) at the top of the panel.
+2. In the editor, choose what kind of cut it is, the tool and the depth, and check the rest. A preview
+   appears on the drawing as you go.
+3. Press **Create**. The toolpath gets a card in the panel.
+4. When they're all made, press **Save G-code…** for the file to run in 454 Control, and **Job sheet…** for
+   a printable page to keep at the machine.
+
+</Steps>
+
+**The editor** holds everything about one toolpath: its shapes, the kind of cut, the tool (its diameter
+comes from the tool), the depth or **through**, the depth per pass, and the settings that kind of cut uses,
+such as the stepover and clearing pattern for a pocket, the direction, and a finishing pass. Nothing is
+guessed: **Create** stays disabled until you've chosen a tool and a depth.
+
+<Shot src={editor} alt="The toolpath editor for a pocket: 2 shapes, Pocket (clear the area), a 6.35 mm cutter, cut depth 6 mm, 1 mm per pass, 40 percent stepover, offset rings clearing, feed 800 mm/min, climb direction, and finishing, with Cancel and Update." />
+
+**Each card** shows the toolpath's number in the cutting order, its tool and feed, and a summary of its
+depth and details. On each card:
+
+- **The tick box** includes it in the G-code, or leaves it out. **The eye** shows or hides its preview.
+- **The arrows** move it earlier or later in the cutting order; you can also drag a card by its handle.
+- **Recalculate (↻)** rebuilds it from its shapes and the material as they are now. It's highlighted when
+  the toolpath is out of date. **Recalculate all**, at the top of the panel, does every toolpath.
+- **The pencil** opens it in the editor; **the bin** deletes it.
+- **Right-click** a card for the same actions in a menu.
+
+At the top of the panel: **Check** (below), **Recalculate all**, **+** for a new toolpath, and **»** to
+collapse the panel. A VCarve project with toolpaths offers to make them editable here.
+
+## Checking the drawing
+
+**Check**, at the top of the Toolpaths panel, looks the drawing over before you cut: open outlines, stray
+pieces, shapes drawn twice, outlines that cross themselves, and shapes no toolpath cuts.
+
+<Shot src={check} alt="A dialog: 2 things need a look before cutting. One shape is drawn twice, on top of another, and Delete can fix this. Two shapes are open; profiles and pockets need closed outlines. The shapes concerned are selected on the drawing. Buttons: Cancel, and Fix what can be fixed." />
+
+The shapes concerned are selected on the drawing, so you can see them. **Fix what can be fixed** does what
+it safely can, such as deleting a shape drawn twice, and says what's left for you. A drawing with nothing
+to report says so.
+
+## Settings
+
+The gear in the header.
+
+<Shot src={settings} alt="The Settings panel: Job setup; the theme set to Dark and the accent to Gold; and the colours for vectors, toolpath previews, construction lines and dimensions, with Show dimensions layer ticked." />
+
+- **Job setup…** opens [Job setup](#job-setup).
+- **Theme** and **Accent:** dark or light, and the accent colour. They're shared with 454 Control, so both
+  apps look the same.
+- **Display colours** for the drawing's vectors, toolpath previews, construction lines and dimensions, and
+  whether to show the dimensions.
+
+## The status bar
+
+<Shot src={statusBar} alt="The status bar: the pointer's position, X and Y, on the left; the current tool's instructions in the middle; and a bulb for recent messages on the right." />
+
+- **X and Y** on the left: where the pointer is on the drawing.
+- **The middle** says what the current tool wants next, and what you can type.
+- **The bulb** on the right shows recent messages: everything Design has told you, in case one disappeared
+  before you read it.

@@ -3,7 +3,7 @@
 // fetch their bundled files (fonts, the tool-database reader) and gives both one shared home for saved
 // data, so Design sees Control's work area and both share the tool library.
 'use strict';
-const { app, BrowserWindow, utilityProcess, MessageChannelMain, dialog, Menu, shell, protocol, net } = require('electron');
+const { app, BrowserWindow, utilityProcess, MessageChannelMain, dialog, Menu, shell, protocol, net, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
@@ -130,6 +130,58 @@ function openDocs(url) {
   return w;
 }
 
+// ---- automatic updates (src/updater.js): from GitHub Releases, never during a job, never forced
+const { createUpdater, installability } = require('./updater');
+let updater = null;
+function askUser(opts) {
+  // tests only: answers given in advance, and every question written down
+  if (process.env.P454_UPDATE_ANSWERS !== undefined) {
+    askUser.q = askUser.q || process.env.P454_UPDATE_ANSWERS.split(',').filter((x) => x !== '').map(Number);
+    if (process.env.P454_UPDATE_LOG) fs.appendFileSync(process.env.P454_UPDATE_LOG, JSON.stringify({ t: Date.now(), message: opts.message, buttons: opts.buttons }) + '\n');
+    return Promise.resolve(askUser.q.length ? askUser.q.shift() : (opts.cancelId !== undefined ? opts.cancelId : 0));
+  }
+  const parent = BrowserWindow.getFocusedWindow() || (design && !design.isDestroyed() ? design : null) || (control && !control.isDestroyed() ? control : null);
+  return (parent ? dialog.showMessageBox(parent, opts) : dialog.showMessageBox(opts)).then((r) => r.response);
+}
+function setupUpdates() {
+  const feed = process.env.P454_UPDATE_FEED;          // tests only: a local update server
+  const { autoUpdater } = require('electron-updater');
+  if (feed) {                                     // tests only: an unpackaged build, told where the test server is
+    const cfg = path.join(require('os').tmpdir(), 'p454-update-test.yml');
+    fs.writeFileSync(cfg, 'provider: generic\nurl: ' + feed + '\nupdaterCacheDirName: p454-update-test\n');
+    autoUpdater.forceDevUpdateConfig = true; autoUpdater.updateConfigPath = cfg;
+  }
+  updater = createUpdater({
+    autoUpdater, fs, currentVersion: app.getVersion(),
+    installable: feed ? { ok: true } : installability({ platform: process.platform, isPackaged: app.isPackaged, execPath: process.execPath,
+                                                        env: process.env, fs, path, productName: '454 Workshop' }),
+    // 454 Control's own judgement: a job, probe, quick action or jog running, the spindle on, the machine moving
+    isBusy: () => control && !control.isDestroyed()
+      ? control.webContents.executeJavaScript('typeof machineBusy === "function" ? machineBusy() : false', true) : Promise.resolve(false),
+    ask: askUser,
+    notify: (title, body) => { if (Notification.isSupported()) new Notification({ title, body }).show(); },
+    setProgress: (p) => BrowserWindow.getAllWindows().forEach((w) => { if (!w.isDestroyed()) w.setProgressBar(p); }),
+    settingsFile: path.join(app.getPath('userData'), 'updates.json'),
+    log: (m) => { console.log('[updates] ' + m); if (process.env.P454_UPDATE_LOG) fs.appendFileSync(process.env.P454_UPDATE_LOG, JSON.stringify({ log: m }) + '\n'); },
+    onChange: () => Menu.setApplicationMenu(menu()),
+    firstCheckAfter: feed ? (+process.env.P454_UPDATE_FIRST || 500) : 30e3,
+    idlePoll: feed ? 2000 : 60e3,                  // how often to look for an idle machine (quicker in tests)
+  });
+  updater.start();
+}
+function updateMenu() {
+  if (!updater) return [];
+  const s = updater.settings, st = updater.state, ok = updater.installable.ok;
+  return [
+    { label: st.downloaded ? 'Restart to update to ' + st.downloaded + '\u2026' : 'Check for updates\u2026', click: () => updater.checkNow() },
+    { label: 'Updates', submenu: [
+      { label: 'Check automatically', type: 'checkbox', checked: s.auto && ok, enabled: ok, click: (i) => updater.setAuto(i.checked) },
+      { type: 'separator' },
+      { label: 'Stable releases', type: 'radio', checked: s.channel !== 'beta', enabled: ok, click: () => updater.setChannel('stable') },
+      { label: 'Beta: pre-releases too', type: 'radio', checked: s.channel === 'beta', enabled: ok, click: () => updater.setChannel('beta') },
+    ] },
+  ];
+}
 function menu() {
   const focused = () => BrowserWindow.getFocusedWindow();
   return Menu.buildFromTemplate([
@@ -139,6 +191,7 @@ function menu() {
       { label: 'Docs', click: () => openDocs(ORIGIN + '/docs/index.html') },
       { type: 'separator' },
       { label: 'About 454 Workshop', click: openAbout },
+      ...updateMenu(),
       { type: 'separator' },
       { role: 'quit' },
     ] },
@@ -200,7 +253,9 @@ app.whenReady().then(() => {
   });
   Menu.setApplicationMenu(menu());
   startMachine();
-  if (!testHook()) showDesign();                  // Design first; Control opens from the menu (Ctrl+1) or its header button
+  const testing = testHook();                      // starts any test jobs: call it once
+  if (!testing || process.env.P454_UPDATE_FEED) setupUpdates();
+  if (!testing) showDesign();                  // Design first; Control opens from the menu (Ctrl+1) or its header button
   if (process.env.P454_LIST_WINDOWS) setTimeout(() => {          // tests only: which windows opened at launch
     fs.writeFileSync(process.env.P454_LIST_WINDOWS, JSON.stringify(BrowserWindow.getAllWindows().map((w) => w.getTitle())));
     app.isQuitting = true; app.exit(0);

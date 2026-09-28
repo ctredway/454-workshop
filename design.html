@@ -94,22 +94,24 @@
   #jobModal[hidden]{display:none}
   #jobMachCustom[hidden],#jobMOffRow[hidden]{display:none}
   #jobPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px 24px;min-width:360px;max-width:460px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
-  #stkOriginPick{position:relative;width:132px;height:84px;border:1.5px solid var(--faint);border-radius:3px;background:var(--panel-deep);margin-bottom:14px}
+  #stkOriginPick{position:relative;width:132px;height:84px;border:1.5px solid var(--faint);border-radius:3px;background:var(--panel-deep);margin:18px 18px 26px 22px}   /* its corner buttons stand 13px outside the box: leave them room */
   #stkOriginPick button{position:absolute;width:26px;height:26px;padding:0;font-size:13px;line-height:1;border-radius:4px}
   #stkOriginPick button[data-o="bl"]{left:-13px;top:-13px} #stkOriginPick button[data-o="br"]{right:-13px;top:-13px}
   #stkOriginPick button[data-o="fl"]{left:-13px;bottom:-13px} #stkOriginPick button[data-o="fr"]{right:-13px;bottom:-13px}
   #stkOriginPick button[data-o="center"]{left:53px;top:29px}
-  #stkOriginPick button[aria-checked="true"]{background:var(--accent);border-color:var(--accent);color:#1a1407}
+  #stkOriginPick button[aria-checked="true"]{background:var(--amber);border-color:var(--amber);color:#1a1407}
   #stkOriginPick .pickFront{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted)}
   #settingsModal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
   #settingsModal[hidden]{display:none}
   #settingsPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px 24px;min-width:340px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
-  #settingsPanel h3{margin:0 0 14px;font-size:16px}
-  #settingsPanel h4{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted)}
-  #settingsPanel .srow{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-  #settingsPanel .srow label{font-size:13px;color:var(--muted)}
-  #settingsPanel .srow .unit{font-size:12px;color:var(--muted)}
+  #settingsPanel h3,#jobPanel h3{margin:0 0 14px;font-size:16px}
+  #settingsPanel h4,#jobPanel h4{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted)}
+  #settingsPanel .srow,#jobPanel .srow{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  #settingsPanel .srow label,#jobPanel .srow label{font-size:13px;color:var(--muted)}
+  #settingsPanel .srow .unit,#jobPanel .srow .unit{font-size:12px;color:var(--muted)}
   #settingsPanel input[type=number]{width:70px}
+  #jobPanel .srow input[type=text]{width:84px}           /* Job setup's number boxes: text inputs, so its own rule */
+  #jobPanel .srow{flex-wrap:wrap}
   #stkW,#stkH{width:74px;font-family:var(--mono)}
   #settingsPanel input[type=color]{width:38px;height:24px;padding:0;border:1px solid var(--line);border-radius:4px;background:none;cursor:pointer}
   #nestModal{position:fixed;inset:0;background:rgba(0,0,0,0.12);display:flex;align-items:flex-start;justify-content:flex-end;padding:72px 24px 0 0;z-index:200}
@@ -142,7 +144,7 @@
   #textPanel .snote{font-size:11.5px;color:var(--muted);margin:10px 0 0;line-height:1.45}
   #textPanel .tbtns{margin-top:16px}
   #textPanel .tbtns .grow{flex:1}
-  #settingsPanel .snote{font-size:11.5px;color:var(--muted);margin:4px 0 0;line-height:1.4}
+  #settingsPanel .snote,#jobPanel .snote{font-size:11.5px;color:var(--muted);margin:4px 0 0;line-height:1.4}
   header .sub{color:var(--muted);font-size:12.5px}
   header .spacer{flex:1}
 
@@ -151,7 +153,7 @@
   .sideTab{writing-mode:vertical-rl;transform:rotate(180deg);padding:14px 0;border:0;border-radius:0;border-left:2px solid transparent;
            background:none;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer}
   .sideTab:hover{color:var(--ink)}
-  .sideTab[aria-selected="true"]{color:var(--ink);background:var(--panel);border-left-color:var(--accent)}
+  .sideTab[aria-selected="true"]{color:var(--ink);background:var(--panel);border-left-color:var(--amber)}
   .sidePane{width:176px;overflow-y:auto}
   .sidePane[hidden]{display:none}
   .sidePane .paneHead{padding:9px 10px 5px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
@@ -378,7 +380,7 @@
   #layerList{display:flex;flex-direction:column;gap:2px;padding:2px 6px}
   .layerRow{display:flex;align-items:center;gap:3px;padding:3px 4px;border-radius:4px;border:1px solid transparent;cursor:pointer;font-size:12px}
   .layerRow:hover{background:var(--panel-deep)}
-  .layerRow.active{border-color:var(--accent);background:var(--accent-faint)}
+  .layerRow.active{border-color:var(--amber);background:var(--accent-faint)}
   .layerRow .lName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .layerRow .lCount{color:var(--faint);font-size:11px;font-family:var(--mono)}
   .layerRow.hiddenL .lName{color:var(--faint);text-decoration:line-through}
@@ -876,7 +878,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.90.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.90.1'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}

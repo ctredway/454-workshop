@@ -1,0 +1,68 @@
+---
+title: "The desktop app"
+description: "454 Workshop for Windows: installing it, keeping it up to date, and the beta channel."
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+The desktop app is 454 Design, 454 Control and these docs in one program for Windows, with no browser
+needed and nothing loaded from the internet. It talks to the machine directly over USB.
+
+:::note
+The desktop app is in testing. Downloads are on the project's
+<a href="https://github.com/ctredway/454-workshop/releases" target="_blank" rel="noopener">GitHub Releases page<span class="sr-only"> (opens in a new tab)</span></a>.
+:::
+
+## Installing
+
+Each release has two downloads:
+
+- **The installer** (`.exe`): installs 454 Workshop for your user account, adds it to the Start menu, and
+  **keeps it up to date**. This is the one to use.
+- **The zip**: runs from wherever you unzip it, with nothing installed. It can't update itself, so it's best
+  kept for trying a build out.
+
+Your settings, tool library and drawings are kept separately from the program, so they carry over between
+versions, and between a zip copy and the installed one.
+
+:::tip
+Windows may warn that the installer is from an unrecognised publisher, because it isn't signed yet. Choose
+**More info**, then **Run anyway**.
+:::
+
+**Reinstalling over an older copy?** Quit 454 Workshop first, and check Task Manager that nothing called
+454 Workshop is still running. Then launch it from the **Start menu**: an old pinned shortcut may still
+point at a copy you unzipped earlier. **454 Workshop → About 454 Workshop** shows which version you're
+running.
+
+## Updates
+
+The installed app checks for updates a little while after it starts, then every few hours.
+
+<Steps>
+
+1. When there's a new version, it asks: **Download**, **Later**, or **Skip this version**. The question
+   includes what's new.
+2. **Download** fetches it in the background, with progress on the taskbar button. The download is checked
+   against the release before it's used; one that doesn't match is thrown away, and you're told.
+3. When it's ready, it asks: **Restart now**, or **Later**. Later installs it the next time you close 454
+   Workshop.
+
+</Steps>
+
+:::caution[Never during a job]
+Nothing about updates appears, and nothing restarts, while 454 Control is busy: running a job, probing,
+jogging or running a quick action, with the spindle on, or with the machine moving. Update questions wait
+until the machine is idle, and if the machine gets busy while the restart question is open, 454 Workshop
+doesn't restart.
+:::
+
+In the **454 Workshop** menu:
+
+- **Check for updates…** checks now, and tells you either way. Once an update is downloaded, it becomes
+  **Restart to update to…**.
+- **Updates → Check automatically** turns the background checks on or off.
+- **Updates → Stable releases** or **Beta: pre-releases too** chooses the channel. Beta also offers
+  pre-release versions: early, and meant for testing.
+
+A copy run from a zip explains that it can't update itself, and how to get one that can.

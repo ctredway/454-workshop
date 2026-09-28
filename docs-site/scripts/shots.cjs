@@ -28,6 +28,10 @@ const PRELUDE = `
   // a fresh drawing: material w x h, these shapes, the view fitted to it
   const drawing = (w, h, ents) => { DOC.stock = Object.assign({}, DOC.stock, { w, h, t: 12 }); DOC.ents = ents;
     DOC.toolpaths = []; DOC.guides = []; DOC.dims = []; SEL = []; setTool('select'); fit(); draw(); };
+  // the dialog on screen, as a capture rectangle
+  const openDialogBox = () => { const d = Array.from(document.querySelectorAll('[role=dialog], [role=alertdialog]'))
+    .filter((e) => e.offsetParent && e.getBoundingClientRect().width > 100).pop();
+    if (!d) throw new Error('no dialog appeared'); const r = d.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; };
   // point the mouse at a spot on the drawing (for hover previews)
   // (the pointer's snapped position too: previews like a line's rubber band are drawn to it)
   const hoverAt = (x, y) => { const s = w2s(x, y); MOUSE.mx = s.x; MOUSE.my = s.y; MOUSE.w = { x, y }; MOUSE.x = x; MOUSE.y = y; MOUSE.snap = { x, y, k: 'grid' }; };
@@ -97,10 +101,7 @@ SHOTS.push({ name: 'design-job-sheet', page: 'design.html', size: [1300, 1000],
 // Control, connected: fed the lines a real GRBL 1.1 controller sends (greeting, settings, work offset,
 // status) for a Shapeoko set up as Control recommends (homing and soft limits on), so Control draws everything itself exactly as it would with a Shapeoko on the USB port.
 // Nothing is written to a machine: writes go to a stand-in that accepts and discards them.
-const OPEN_DIALOG = `const openDialogBox = () => { const d = Array.from(document.querySelectorAll('[role=dialog], [role=alertdialog]'))
-  .filter((e) => e.offsetParent && e.getBoundingClientRect().width > 100).pop();
-  if (!d) throw new Error('no dialog appeared'); const r = d.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; };`;
-const CONTROL_CONNECTED = OPEN_DIALOG + `
+const CONTROL_CONNECTED = `
   SERIAL.writer = { write: () => Promise.resolve(), releaseLock: () => {} }; SERIAL.writeChain = Promise.resolve();
   SERIAL.connected = true; SERIAL.homedSeen = true; uiConn(true);
   handleRx("Grbl 1.1f ['$' for help]");
@@ -117,8 +118,6 @@ const withJob = (at) => `document.getElementById('sampleBtn').click(); await wai
   ['connModal', 'homeModal'].forEach((id) => { const m = document.getElementById(id); if (m) m.hidden = true; });
   document.getElementById('fitBtn').click(); await wait(300);` + (at ? ` setTime(MODEL.totalTime * ${at}); await wait(500);` : '');
 const tab = (id) => `document.getElementById('${id}').click(); await wait(300);`;
-// the dialog on screen (Control's prompts), as a capture rectangle
-
 
 SHOTS.push(
   { name: 'control-overview', page: 'index.html', size: [1400, 860],
@@ -148,6 +147,57 @@ SHOTS.push(
       return openDialogBox();` },
   { name: 'control-settings', page: 'index.html', size: [1400, 1000],
     setup: CONTROL_CONNECTED + `document.getElementById('settingsBtn').click(); await wait(400);`, capture: { selector: '#setPanel', pad: 0 } },
+);
+
+// ---- Design's workspace ----
+// a neutral sample tool library: end mills, V-bits and a ball nose, feeds for four materials
+const SAMPLE_LIBRARY = `
+  TOOLLIB = libEmptyLib(); TOOLLIB.machines[0].name = 'Shapeoko XXL';
+  TOOLLIB.materials = [{ id: 'hw', name: 'Hardwood' }, { id: 'sw', name: 'Softwood' }, { id: 'mdf', name: 'MDF' }, { id: 'ply', name: 'Plywood' }];
+  const T = (id, type, dia, extra, feed, plunge, down, over) => Object.assign({ id, fmt: '', type, typeName: TOOL_TYPES[type], units: 'mm', diameter: dia,
+    angle: null, flat: null, tipRadius: null, flutes: 2, fluteLength: null, notes: '', numbers: {}, lineWidth: null,
+    cuts: ['hw', 'sw', 'mdf', 'ply'].map((m, i) => ({ machine: 'm454', material: m, rateUnits: 1, lengthUnits: 'mm', feed: Math.round(feed * [1, 1.3, 1.4, 1.2][i]),
+      plunge: plunge, rpm: 18000, stepdown: down, stepover: over, clearStepover: over, notes: '' })) }, extra);
+  TOOLLIB.tools = [
+    T('t1', 1, 6.35, { numbers: { m454: 201 }, notes: 'Two-flute up-cut' }, 1100, 300, 1.5, 2.5),
+    T('t2', 1, 3.175, { numbers: { m454: 102 } }, 800, 250, 0.8, 1.2),
+    T('t3', 3, 12.7, { angle: 60, numbers: { m454: 302 } }, 900, 300, 1.0, 0.5),
+    T('t4', 3, 12.7, { angle: 90, numbers: { m454: 301 } }, 900, 300, 1.0, 0.5),
+    T('t5', 0, 3.175, { numbers: { m454: 111 } }, 900, 250, 0.5, 0.3),
+  ];
+  TOOLLIB.tools.forEach((t) => { t.name = libAutoName(t); });
+  TOOLLIB.tree = [{ id: '_mine', name: 'My tools', tool: null, kids: TOOLLIB.tools.map((t) => ({ id: '_m' + t.id, tool: t.id, kids: [] })) }];
+  UICFG.libMaterial = 'hw';
+`;
+const SIGN_SETUP = '{ ' + SIGN + ' } await wait(200); CUTSEL = null; renderToolpathPanel(); draw();';
+SHOTS.push(
+  { name: 'design-overview', page: 'design.html', size: [1400, 860], setup: SIGN_SETUP + ` sideTab('tools'); await wait(200);` },
+  { name: 'design-layers', page: 'design.html', size: [1400, 900],
+    setup: SIGN_SETUP + `
+      DOC.layers = [{ id: 'L1', name: 'Outline', visible: true, locked: false }, { id: 'L2', name: 'Engraving', visible: true, locked: false },
+                    { id: 'L3', name: 'Reference', visible: false, locked: true }];
+      DOC.ents.forEach((e) => { e.layer = e.t === 'text' ? 'L2' : 'L1'; });
+      DOC.ents.push({ t: 'rect', x: 10, y: 10, w: 300, h: 180, layer: 'L3' }); DOC.activeLayer = 'L1';
+      sideTab('layers'); renderLayers(); draw(); await wait(200);
+      const top = document.getElementById('paneLayers').getBoundingClientRect(), add = document.getElementById('layerAdd').getBoundingClientRect();
+      return { x: top.left, y: top.top, width: top.width, height: add.bottom - top.top + 12 };` },
+  { name: 'design-job-setup', page: 'design.html', size: [1400, 1000],
+    setup: SIGN_SETUP + ` document.getElementById('jobBtn').click(); await wait(300);`, capture: { selector: '#jobPanel', pad: 0 } },
+  { name: 'design-settings', page: 'design.html', size: [1400, 1000],
+    setup: `document.getElementById('settingsBtn').click(); await wait(300);`, capture: { selector: '#settingsPanel', pad: 0 } },
+  { name: 'design-tool-library', page: 'design.html', size: [1400, 1000],
+    setup: SAMPLE_LIBRARY + ` document.getElementById('libBtn').click(); await wait(300); LIBUI.sel = 't1'; libRender(); await wait(250);`,
+    capture: { selector: '#libPanel', pad: 0 } },
+  { name: 'design-toolpaths-panel', page: 'design.html', size: [1400, 1000], setup: SIGN_SETUP, capture: { selector: '#tpPanel', pad: 0 } },
+  { name: 'design-toolpath-editor', page: 'design.html', size: [1400, 1000],
+    setup: SIGN_SETUP + ` cutOpen(tpList()[1]); await wait(400);`, capture: { selector: '#cutPanel', pad: 0 } },
+  { name: 'design-check', page: 'design.html', size: [1400, 900],
+    setup: `drawing(200, 120, [{ t: 'rect', x: 20, y: 20, w: 60, h: 40 }, { t: 'rect', x: 20, y: 20, w: 60, h: 40 },
+        { t: 'poly', closed: false, pts: [[110, 20], [170, 20], [170, 70], [115, 70]] }, { t: 'line', x1: 30, y1: 90, x2: 30.2, y2: 90 }]);
+      vecCheckAll(); await wait(500); return openDialogBox();` },
+  { name: 'design-status-bar', page: 'design.html', size: [1400, 860],
+    setup: SIGN_SETUP + ` setTool('fillet'); hoverAt(120, 80); const s = w2s(120, 80); document.getElementById('cv').dispatchEvent(new PointerEvent('pointermove', { clientX: s.x + document.getElementById('cv').getBoundingClientRect().left, clientY: s.y + document.getElementById('cv').getBoundingClientRect().top, bubbles: true })); await wait(250);`,
+    capture: { selector: 'footer', pad: 0 } },
 );
 
 module.exports = { PRELUDE, SHOTS };

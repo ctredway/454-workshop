@@ -75,3 +75,22 @@ The documentation at 454workshop.com/docs is the Starlight site in `docs-site/`:
 [docs-site/README.md](docs-site/README.md) for writing pages, previewing them, and regenerating the
 screenshots. The website build and the desktop app build both build it and include it; they need it
 installed first (`npm ci --prefix docs-site`), and Node.js 22.12 or newer.
+
+## Releasing, and updates
+
+Installed copies of the desktop app update themselves from GitHub Releases (`apps/desktop/src/updater.js`,
+tested in `apps/desktop/test/updater.test.mjs`). A release is what delivers an update:
+
+1. Set the version in `apps/desktop/package.json` (say `0.6.1`), and commit.
+2. Tag the commit `v0.6.1` and push the tag. The Windows workflow checks the tag matches the version, builds
+   the installer and zip, checks the update files (`latest.yml` and the blockmap) were made, and drafts a
+   release with all of them attached.
+3. Look the draft over on the Releases page, then publish it. Installed copies on the stable channel are
+   offered it at their next check.
+
+**Testing an update before a public release:** tag with a suffix, such as `v0.6.1-beta.1` (with the same
+version in `package.json`). The workflow marks it a pre-release, which only copies on the **Beta** channel
+(454 Workshop → Updates) are offered. Drafts are never offered.
+
+Update settings are kept in `updates.json` in the app's data folder. For testing the updater itself against
+a local server, see `setupUpdates()` in `src/main.js` (the `P454_UPDATE_*` variables, tests only).
