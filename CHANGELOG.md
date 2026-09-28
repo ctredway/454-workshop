@@ -27,6 +27,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.4 — built only from the right files
+- **The desktop build refuses a repository whose `index.html` isn't 454 Control**, and the Windows workflow
+  checks the apps' sources before building. The website zip had been unzipped into the repository: its
+  landing page replaced Control's `index.html`, and the build fell back to the website's copies in
+  `control/` and `design/`, shipping Design 0.90.1 (without the dimension fix) and an older Control without
+  a word. That fallback is gone; the build now stops with a message saying what's wrong and how to put it
+  right.
+- Includes Control 0.31.11 and Design 0.91.0.
+
 ### Updates: saying what went wrong
 - **A failed update check blamed the internet connection whatever the cause.** It now says what actually
   happened: the newest release is missing its update file (naming it), there's no published release for
@@ -263,6 +272,21 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.11 — one G-code parser, tested
+- **The G-code parser is one file, shared by Control and the `@454/gcode` package**
+  (`packages/gcode/src/parser.cjs`). The package had kept a copy of Control's parser, and its golden tests
+  checked the copy, not the parser Control runs; the two hadn't drifted yet, which made now the time. The
+  four real job files the golden tests pin were also parsed inside Control's built page, and matched
+  every one of 28,696 moves, the times, distances, tools, issues and toolpath names.
+- **The parser has tests of its own** (18, in `apps/control/test/parser.test.mjs`): inches, relative moves,
+  line numbers, arcs (on their circle, each direction, full circles, and the arc problems GRBL rejects),
+  missing feed, spindle or motion mode, missing units, commands GRBL or Carbide Motion can't run or ignore,
+  G28 and G53, unknown words, repeated problems, VCarve's tool and toolpath comments, nested comments, and
+  the time estimate. Each was checked by breaking the parser on purpose.
+- **Fixed:** messages about ignored commands named the code twice ("M7: M7 mist coolant", likewise G40,
+  G43 and G49). They now read "M7: mist coolant".
+- Control's version is now in `apps/control/src/js/version.js`.
 
 ### 0.31.10 — spin-up: M4 too, and 7 seconds
 - **A reverse spindle start (M4) gets the spin-up wait too**, as M3 always has. Before, a file starting the
@@ -530,6 +554,28 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.91.0 — dimensions: both sides, and edges that stay put
+- **A distance on each side of a shape now sizes it.** When a shape is already held by a distance on its
+  opposite side, a new distance moves just the clicked edge, stretching it, instead of moving the whole
+  shape and breaking the first. Placing a rectangle 10 mm inside another on both sides: set one side (it
+  moves into place), then the other (it stretches to fit); changing either later keeps the other.
+  Rectangles and straight-edged outlines; a shape that would turn inside out is refused, with the reason.
+- **Dimensions remember which edges they measure, not points on the drawing.** They stored the click
+  point, which stays put when the shape moves, so after a move a dimension could quietly measure a
+  different edge (setting one side, then the other, changed the first). Now a rectangle's side, or an
+  outline's segment, and how far along it; dimensions follow their edges through moves and stretches.
+  Dimensions in drawings saved before keep measuring the edges they measure now.
+- **A rectangle's width or height can be dimensioned**: click one of its sides twice. It keeps any side a
+  distance holds; if both are held, it says so. (The docs said this worked before; for rectangles it
+  didn't.)
+- **The D key with two shapes selected** now uses the edges clicked when they were selected: before, it
+  picked the edges nearest the other shape's centre (arbitrary, for one rectangle inside another, and it
+  could even refuse them as not parallel), saved no edges, and never saved a second distance between the
+  same two shapes. It now saves each distance unless it measures the same edges as an existing one.
+- When a value can't be applied, the message says why, and no empty step is left to undo.
+- Tested in the real Design page on the case reported (both routes, each step), dragging a dimensioned
+  shape, and a dimension saved the old way.
 
 ### 0.90.1 — Job setup, and the accent colour
 - **Job setup was drawing unstyled**: its labels and fields ran together and the XY zero picker overlapped

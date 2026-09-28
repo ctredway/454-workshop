@@ -1,8 +1,8 @@
 /**
  * @454/gcode: reading G-code the way 454's machine side sees it.
  *
- * The parser itself was moved unchanged from 454 Control and is pinned by golden tests against
- * real job files; these types describe what it returns.
+ * The parser is src/parser.cjs, one file shared with 454 Control (whose build includes it into the page),
+ * pinned by golden tests against real job files; these types describe what it returns.
  */
 // @ts-ignore: the parser is still plain JavaScript while its behaviour is pinned by tests
 import { parseGcode as parseImpl, splitGcodeComments as splitImpl, cleanForSend as cleanImpl } from './parse.js';

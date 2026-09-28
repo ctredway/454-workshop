@@ -134,10 +134,22 @@ function createUpdater(deps) {
     const why = ' (' + msg.split('\n')[0].slice(0, 200) + ')';
     if (downloading)                               // you asked for it, so a failed download is always reported
       await ask({ type: 'warning', title: 'Updates', message: 'The update didn\u2019t download.',
-        detail: (/checksum|sha512/i.test(msg) ? 'The downloaded file didn\u2019t match the release, so it wasn\u2019t installed.' : 'Check your internet connection.') +
+        detail: (/checksum|sha512/i.test(msg) ? 'The downloaded file didn\u2019t match the release, so it wasn\u2019t installed.' : explain(msg)) +
                 ' It\u2019ll be offered again at the next check, or use Check for updates.' + why, buttons: ['OK'] });
-    else if (manual) await ask({ type: 'warning', title: 'Updates', message: 'Couldn\u2019t check for updates.',
-      detail: 'Check your internet connection and try again.' + why, buttons: ['OK'] });
+    else if (manual) await ask({ type: 'warning', title: 'Updates', message: 'Couldn\u2019t check for updates.', detail: explain(msg) + why, buttons: ['OK'] });
+  }
+  // What went wrong, in words: most failures aren't the connection, so don't blame it unless it is
+  function explain(msg) {
+    if (/Cannot find (\S+\.yml)|latest\.yml|beta\.yml|alpha\.yml/i.test(msg) && /cannot find|404/i.test(msg))
+      return 'The newest release on GitHub is missing its update file (' + ((/(\w+\.yml)/.exec(msg) || [])[1] || 'latest.yml') +
+             '), so it can\u2019t be offered as an update. The release needs the files the Windows build attaches to its draft.';
+    if (/Unable to find latest version|No published versions|production release exists/i.test(msg))
+      return settings.channel === 'beta' ? 'There\u2019s no published release on GitHub yet.'
+        : 'There\u2019s no published stable release on GitHub yet. Pre-releases are only offered on the Beta channel (454 Workshop \u2192 Updates).';
+    if (/rate limit|\b403\b|\b429\b/i.test(msg)) return 'GitHub is limiting requests for now. Try again in a while.';
+    if (/ERR_INTERNET_DISCONNECTED|ERR_NAME_NOT_RESOLVED|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ERR_CONNECTION|ERR_NETWORK|ERR_TIMED_OUT|ERR_PROXY/i.test(msg))
+      return 'GitHub couldn\u2019t be reached. Check your internet connection and try again.';
+    return 'Something went wrong asking GitHub for updates.';
   }
 
   autoUpdater.on('update-available', onAvailable);

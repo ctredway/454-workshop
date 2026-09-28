@@ -35,6 +35,15 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Check the apps' sources
+        # index.html must be 454 Control, matching apps/control/src; the website's files don't belong here
+        shell: bash
+        run: |
+          cd ../..
+          node apps/control/build.mjs --check || { echo "::error::index.html isn't the current 454 Control. If the website zip was unzipped into the repository, see DEVELOPING.md; the website zip goes to Cloudflare only."; exit 1; }
+          grep -q DESIGN_VERSION design.html || { echo "::error::design.html isn't 454 Design."; exit 1; }
+          for d in control design; do [ ! -e "$d/index.html" ] || echo "::warning::$d/ holds a website copy of an app; it doesn't belong in the repository (and isn't used)."; done
+
       - name: Install the docs site (bundled into the app)
         run: npm ci --prefix ../../docs-site
 
@@ -59,11 +68,14 @@ jobs:
         # installed copies find a release through latest.yml (which names the installer and its checksum)
         shell: bash
         run: |
-          test -f dist/latest.yml || { echo "::error::dist/latest.yml is missing: installed copies couldn't find this build as an update."; exit 1; }
+          # a pre-release (0.6.1-beta.1) may be described by beta.yml rather than latest.yml; the app asks
+          # for the channel's file first, then latest.yml, so either will do
+          files=$(ls dist/latest.yml dist/beta.yml dist/alpha.yml 2>/dev/null || true)
+          [ -n "$files" ] || { echo "::error::No update file (latest.yml, beta.yml or alpha.yml) in dist/: installed copies couldn't find this build as an update."; ls dist; exit 1; }
           exe=$(basename "$(ls dist/*.exe | head -1)")
-          grep -q "$exe" dist/latest.yml || { echo "::error::dist/latest.yml doesn't name the installer ($exe)."; exit 1; }
+          for f in $files; do grep -q "$exe" "$f" || { echo "::error::$f doesn't name the installer ($exe)."; exit 1; }; done
           ls dist/*.exe.blockmap > /dev/null || { echo "::error::the installer's blockmap is missing."; exit 1; }
-          echo "Update files OK:"; cat dist/latest.yml
+          for f in $files; do echo "Update file OK: $f"; cat "$f"; done
 
       - name: Attach to this run
         uses: actions/upload-artifact@v4
@@ -73,6 +85,8 @@ jobs:
             apps/desktop/dist/*.exe
             apps/desktop/dist/*.zip
             apps/desktop/dist/latest.yml
+            apps/desktop/dist/beta.yml
+            apps/desktop/dist/alpha.yml
             apps/desktop/dist/*.blockmap
           if-no-files-found: error
 
@@ -88,4 +102,6 @@ jobs:
             apps/desktop/dist/*.exe
             apps/desktop/dist/*.zip
             apps/desktop/dist/latest.yml
+            apps/desktop/dist/beta.yml
+            apps/desktop/dist/alpha.yml
             apps/desktop/dist/*.blockmap

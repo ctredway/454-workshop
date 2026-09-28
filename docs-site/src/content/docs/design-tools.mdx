@@ -241,9 +241,17 @@ Shortcut: <kbd>D</kbd>
 
 Sets exact distances and sizes, and keeps a dimension on the drawing that updates as things change.
 
-1. **For a distance between two shapes:** click the shape to move, then the one to measure from (that one stays put). Type the distance and press <kbd>Enter</kbd>. Start it with `E` to measure edge to edge.
-2. **For a shape’s own size:** click the shape twice, type the size, and press <kbd>Enter</kbd>; the shape resizes.
-3. To change a dimension later, click its value. To remove one, click it and press the ✕ beside the value.
+1. **For a distance between two shapes:** click the edge of the shape to move, then the edge to measure from (that shape stays put). Type the distance and press <kbd>Enter</kbd>. Start it with `E` to measure edge to edge.
+2. **For a shape's own size:** click a rectangle's side twice for its width or height (or a line for its length, a circle for its diameter, an arc for its radius), type the size, and press <kbd>Enter</kbd>.
+3. To change a dimension later, click its value. To remove one, click it and press the &#10005; beside the value.
+
+**A distance on each side stretches the shape.** When a shape is already held by a distance on its opposite side, a new distance moves just the edge you clicked, instead of the whole shape. So to place a rectangle 10&nbsp;mm inside another on both sides: set one side's distance, which moves it into place, then the other's, which stretches it to fit. Changing either one later keeps the other. The same works for straight-edged outlines.
+
+**Dimensions follow their edges.** A dimension remembers which edges it measures, so it keeps measuring them when shapes are moved or stretched. A rectangle's size keeps any side held by a distance where it is; if both sides are held, it says so rather than breaking one of them.
+
+:::tip
+Selecting two shapes and pressing <kbd>D</kbd> works the same way: click each shape on the edge you mean when you select it.
+:::
 
 ### Copy
 

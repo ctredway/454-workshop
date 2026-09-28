@@ -6,6 +6,14 @@ description: "Every toolpath type, setting and check in 454 Design’s CAM, by t
 import Compare from '../../components/Compare.astro';
 import Shot from '../../components/Shot.astro';
 import jobSheet from '../../assets/shots/design-job-sheet.png';
+import camProfile from '../../assets/shots/cam-profile.png';
+import camProfileEditor from '../../assets/shots/cam-profile-editor.png';
+import camPocketOffset from '../../assets/shots/cam-pocket-offset.png';
+import camPocketRaster from '../../assets/shots/cam-pocket-raster.png';
+import camDrill from '../../assets/shots/cam-drill.png';
+import camChamfer from '../../assets/shots/cam-chamfer.png';
+import camVcarve from '../../assets/shots/cam-vcarve.png';
+import camInlay from '../../assets/shots/cam-inlay.png';
 
 Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a walkthrough from drawing to G-code, see the [Design quick start](design-quickstart.html).
 
@@ -35,6 +43,8 @@ Toolpaths are made from selected vectors, listed in the order they’ll run, and
 
 Cuts along an outline. Choose **Profile, outside** (the part keeps the outline’s size), **Profile, inside** (a hole keeps its size), or **Profile, on the line** (the cutter’s centre follows the line).
 
+<Shot src={camProfile} alt="An outside profile around a rounded plate: the toolpath runs just outside the outline, with four tabs marked on it." caption="Profile, outside, cutting through, with four tabs. It's selected here, which is when its tabs are drawn." />
+
 | Setting | What it does |
 | --- | --- |
 | **Cut depth** | How deep, from Z zero. Or tick **through** to cut the material’s full thickness. |
@@ -47,6 +57,10 @@ Profiles also take [finishing, direction, leads, tabs and ramps](#finishing-dire
 ## Pocket
 
 **Pocket (clear the area)** removes everything inside an outline to a depth. **Islands are automatic**: shapes inside the pocket’s outline (a letter’s hole, a boss) are left standing.
+
+<Shot src={camPocketOffset} alt="A pocket with a round island, cleared with offset rings that follow the outline inwards and flow around the island." caption="Offset rings: each pass follows the outline's shape, working outwards from the middle to the walls; the island is left standing." />
+
+<Shot src={camPocketRaster} alt="The same pocket cleared with raster: straight lines back and forth across it, then a pass round the walls and the island." caption="Raster: straight passes back and forth, then one pass round the walls and the island." />
 
 | Setting | What it does |
 | --- | --- |
@@ -61,6 +75,8 @@ Pockets ramp into each depth, never plunge, and link passes with short feed move
 ## Drill
 
 **Drill at centres** drills at the centre of each selected circle, nearest hole next.
+
+<Shot src={camDrill} alt="Eight holes in two rows of four inside a plate, each marked with a ring and cross, joined by dashed rapid moves in drilling order." caption="Drilling: a ring at each hole, and the dashed rapids show the order, nearest hole next." />
 
 | Setting | What it does |
 | --- | --- |
@@ -77,6 +93,8 @@ GRBL has no drilling cycles (G81, G83), so drilling is written as plain moves. I
 
 **Chamfer edges (V-bit)** bevels an edge with a V-bit.
 
+<Shot src={camChamfer} alt="A rounded rectangle with its chamfer toolpath highlighted along the edge." caption="A chamfer is one pass along the edge: the V-bit's depth sets the bevel's width." />
+
 | Setting | What it does |
 | --- | --- |
 | **Bevel width** | How wide the bevel is on the top face. The depth follows from the bit’s angle. |
@@ -88,6 +106,8 @@ A bevel wider than the bit can cut is refused, with the reason in the hint.
 ## V-carve
 
 **V-carve (V-bit)** carves text, logos and artwork with a V-bit. The bit’s tip follows each shape’s centre-line, deeper where the shape is wide and rising to the surface at sharp points, so the carving’s edges land exactly on the outline and corners come out sharp. There’s no depth to set: the shape decides it.
+
+<Shot src={camVcarve} alt="The number 454 V-carved: the toolpath follows each stroke's centre-line, fanning out into the corners, with extra clearing passes in the wide part of the 5." caption="V-carving “454”: the tip follows each stroke's centre-line, reaching out into the corners." />
 
 | Setting | What it does |
 | --- | --- |
@@ -107,6 +127,8 @@ Flat depth with a clearance tool works as VCarve’s does, and clearing runs bef
 
 **Inlay (V-bit pocket or plug)** makes the two halves of a V-carve inlay from the same shapes, so they fit. Cut both with the **same V-bit**.
 
+<Shot src={camInlay} alt="On the left, a star with its inlay pocket cleared in rings. On the right, a mirrored star inside a square boundary, with the plug's V-carve along its walls and clearing between the star and the boundary." caption="The pocket in the base (left), and the plug (right), which Design makes on a mirrored copy with its boundary, on an “Inlay plug” layer beside the design." />
+
 | Setting | What it does |
 | --- | --- |
 | **Cut the** | **pocket (in the base)** or **plug (in the inlay piece)**. |
@@ -121,6 +143,11 @@ Flat depth with a clearance tool works as VCarve’s does, and clearing runs bef
 **Trim the inlay piece to the boundary before gluing.** Stock left outside it hits the base and stops the plug seating.
 
 ## Finishing, direction, leads, tabs, ramps
+
+These settings appear in the editor for the toolpath types they apply to. Here, a profile's editor with
+tabs and arc leads switched on:
+
+<Shot src={camProfileEditor} alt="The toolpath editor for an outside profile: cutting through, a 6.35 mm cutter, depth per pass, feed, direction, finishing, arc leads, and four tabs with their length and thickness." />
 
 ### Finishing
 

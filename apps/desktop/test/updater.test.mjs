@@ -92,6 +92,21 @@ describe('checking and offering', () => {
     expect(r.asked[1].message).toBe('Couldn\u2019t check for updates.');
     expect(r.asked[1].detail).toMatch(/internet connection/);
   });
+  it('says what actually went wrong, and only blames the connection when it is the connection', async () => {
+    const cases = [
+      ['Cannot find latest.yml in the latest release artifacts (https://github.com/ctredway/454-workshop/releases/download/v0.6.1-beta.1/latest.yml): HttpError: 404', /missing its update file \(latest\.yml\)/],
+      ['Unable to find latest version on GitHub (https://github.com/ctredway/454-workshop/releases/latest), please ensure a production release exists: HttpError: 404', /no published stable release.*Beta channel/],
+      ['HttpError: 403 Forbidden "API rate limit exceeded"', /limiting requests/],
+      ['net::ERR_NAME_NOT_RESOLVED', /couldn\u2019t be reached\. Check your internet connection/],
+      ['something unexpected', /Something went wrong/],
+    ];
+    for (const [msg, expected] of cases) {
+      const r = rig();
+      await r.u.checkNow(); r.au.emit('error', new Error(msg)); await settle();
+      expect(r.asked[0].detail, msg).toMatch(expected);
+      if (!/ERR_NAME/.test(msg)) expect(r.asked[0].detail, msg).not.toMatch(/internet connection/);
+    }
+  });
 });
 
 describe('downloads', () => {

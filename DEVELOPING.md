@@ -94,3 +94,22 @@ version in `package.json`). The workflow marks it a pre-release, which only copi
 
 Update settings are kept in `updates.json` in the app's data folder. For testing the updater itself against
 a local server, see `setupUpdates()` in `src/main.js` (the `P454_UPDATE_*` variables, tests only).
+
+## 454 Control's source
+
+Control's `index.html` is assembled from `apps/control/src` by `node apps/control/build.mjs`: edit the
+files there, then build, and commit both. GitHub checks they match on every push. See
+[apps/control/README.md](apps/control/README.md) for what's in each file.
+
+**Where things are:** 454 Control's version is `apps/control/src/js/version.js`. The G-code parser is
+`packages/gcode/src/parser.cjs`, used by both Control and the `@454/gcode` package; change it there, and
+run both test suites (`npm test`, and `node --test 'apps/control/test/*.test.mjs'`).
+
+## Where each download goes
+
+- **Source files** go in the repository: `index.html` (454 Control, assembled from `apps/control/src`),
+  `design.html`, `apps/`, `packages/`, `site/`, `docs-site/`.
+- **The website zip** (`454workshop-site.zip`) goes to Cloudflare only. Unzipped into the repository,
+  its landing page replaces Control's `index.html`, and its built copies (`control/`, `design/`,
+  `docs/*.html`) sit beside the sources. The Windows build now stops if that happens, rather than
+  building from the wrong files; `tidy-repo` puts it right.

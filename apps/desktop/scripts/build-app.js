@@ -14,11 +14,16 @@ const mod = (p) => require.resolve(p, { paths: [root] });
 // in control/ and design/ here. CAM goes in only if its files (cam.js, geom.js) sit beside design.html:
 // the public repository leaves them out until CAM is released, and builds made from it have no CAM.
 const repo = path.join(root, '..', '..');
-// Each app is recognised by its contents, not its place: at the top of the repository (index.html,
-// design.html) or where the website puts them (control/index.html, design/index.html).
+// In the repository, the apps are its own index.html (454 Control, assembled from apps/control/src) and
+// design.html. Nothing else is accepted: control/ and design/ are the website's built copies, which may be
+// old, and building from them once shipped an out-of-date app without a word.
 const isApp = (f, marker) => fs.existsSync(f) && fs.readFileSync(f, 'utf8').includes(marker);
-const controlAt = [path.join(repo, 'index.html'), path.join(repo, 'control', 'index.html')].find((f) => isApp(f, 'CONTROL_VERSION'));
-const designAt = [path.join(repo, 'design.html'), path.join(repo, 'design', 'index.html')].find((f) => isApp(f, 'DESIGN_VERSION'));
+const inRepoTree = fs.existsSync(path.join(repo, 'apps', 'control', 'build.mjs'));
+const controlAt = isApp(path.join(repo, 'index.html'), 'CONTROL_VERSION') ? path.join(repo, 'index.html') : null;
+const designAt = isApp(path.join(repo, 'design.html'), 'DESIGN_VERSION') ? path.join(repo, 'design.html') : null;
+if (inRepoTree && (!controlAt || !designAt))
+  throw new Error('build-app: ' + (!controlAt ? 'index.html at the top of the repository isn\u2019t 454 Control' + (fs.existsSync(path.join(repo, 'index.html')) ? ' (is it the website\u2019s landing page? The website zip goes to Cloudflare, not into the repository)' : '') : 'design.html is missing') +
+    '. Restore it from the sources: node apps/control/build.mjs writes index.html.');
 const inRepo = !!(controlAt && designAt);
 const SRC = inRepo
   ? { control: controlAt, design: designAt, designDir: path.dirname(designAt), docs: path.join(repo, 'docs'),
