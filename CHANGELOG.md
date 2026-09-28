@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### Node 22 for the builds
+- **The Windows build failed on GitHub with "Node.js v20 is not supported by Astro"**: the docs site needs
+  Node 22.12 or newer, and the workflows used Node 20. Both workflows now use Node 22; the docs site
+  declares it; and both builds check the Node version first, stopping with a plain message instead of
+  failing inside the docs build.
+
 ### Repository tidy-up
 - **The Windows build failed on GitHub**: the website's built files had been committed at the top of the
   repository, so the landing page replaced Control's source (`index.html`) and the build couldn't find

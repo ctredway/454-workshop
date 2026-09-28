@@ -74,4 +74,4 @@ Windows SmartScreen warns on first run ("More info", then "Run anyway").
 The documentation at 454workshop.com/docs is the Starlight site in `docs-site/`: see
 [docs-site/README.md](docs-site/README.md) for writing pages, previewing them, and regenerating the
 screenshots. The website build and the desktop app build both build it and include it; they need it
-installed first (`npm ci --prefix docs-site`).
+installed first (`npm ci --prefix docs-site`), and Node.js 22.12 or newer.

@@ -13,6 +13,14 @@ const repo = path.join(__dirname, '..'), out = path.join(repo, 'site-dist');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
+// The docs site (Astro) needs Node 22.12 or newer: say so plainly, before its build fails deep inside.
+function docsNodeOk() {
+  const [maj, min] = process.versions.node.split('.').map(Number);
+  if (maj > 22 || (maj === 22 && min >= 12)) return;
+  throw new Error('The docs site needs Node.js 22.12 or newer (this is ' + process.versions.node + '). Install Node 22 LTS from nodejs.org' +
+    ' (on GitHub, the workflows set node-version: 22).');
+}
+
 // every link change must find what it changes, or the build stops rather than publishing a broken link
 function swap(text, from, to, what) {
   if (!text.includes(from)) throw new Error(`site build: "${from}" not found in ${what}; the page changed, so update site/build.js`);
@@ -42,6 +50,7 @@ for (const f of ['cam.js', 'geom.js']) fs.copyFileSync(path.join(repo, f), path.
 // the docs at /docs/: the Starlight site in docs-site/ (its pages keep the old .html addresses)
 const docsSite = path.join(repo, 'docs-site');
 if (!fs.existsSync(path.join(docsSite, 'node_modules'))) throw new Error('site build: install the docs site first: npm ci --prefix docs-site');
+docsNodeOk();
 execSync('npm run build', { cwd: docsSite, stdio: 'inherit' });
 fs.cpSync(path.join(docsSite, 'dist'), path.join(out, 'docs'), { recursive: true });
 

@@ -9,6 +9,8 @@ offline, search included.
 Pages are in `src/content/docs/`, one `.mdx` file each (Markdown, plus components). The sidebar is in
 `astro.config.mjs`. Pages build as plain `.html` files, so their addresses never change.
 
+Needs Node.js 22.12 or newer.
+
 ```sh
 npm ci
 npm run dev        # live preview at http://localhost:4321/docs

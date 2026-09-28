@@ -30,6 +30,13 @@ if (!inRepo && !fs.existsSync(SRC.control)) throw new Error('build-app: 454 Cont
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'vendor'), { recursive: true });
 
+// The docs site (Astro) needs Node 22.12 or newer: say so plainly, before its build fails deep inside.
+function docsNodeOk() {
+  const [maj, min] = process.versions.node.split('.').map(Number);
+  if (maj > 22 || (maj === 22 && min >= 12)) return;
+  throw new Error('The docs site needs Node.js 22.12 or newer (this is ' + process.versions.node + '). Install Node 22 LTS from nodejs.org' +
+    ' (on GitHub, the workflows set node-version: 22).');
+}
 function csp(extraScript) {
   return '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\'' + (extraScript || '') + '; ' +
     'style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com data:; ' +
@@ -89,6 +96,7 @@ copy(path.join(root, 'build', 'logo.svg'), 'about-logo.svg');
 // Without it (not installed: npm ci --prefix docs-site), the older hand-written pages.
 const docsSite = path.join(root, '..', '..', 'docs-site');
 if (fs.existsSync(path.join(docsSite, 'node_modules'))) {
+  docsNodeOk();
   require('child_process').execSync('npm run build', { cwd: docsSite, stdio: ['ignore', 'ignore', 'inherit'] });
   fs.cpSync(path.join(docsSite, 'dist'), path.join(out, 'docs'), { recursive: true });
   SRC.docsFrom = 'the docs site';
