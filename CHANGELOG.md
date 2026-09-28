@@ -27,13 +27,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.5 — releases tag themselves
+### 0.6.2-beta.5 and beta.6 — releases tag themselves
 - **A new version in `apps/desktop/package.json`, pushed to main, is tagged, built and drafted as a
   release**: no separate tag step. A change that keeps the version builds nothing; pushing a tag by hand
   still works; a version with a suffix is a pre-release. (A workflow can't start another workflow with a tag
   it creates, so the Windows workflow does both: a first job decides the tag, and creates it.) Tested in
   each case against a scratch repository.
-- Includes Control 0.31.15 and Design 0.92.1.
+- beta.6 includes Control 0.31.15 and Design 0.93.0.
 
 ### 0.6.2-beta.4 — built only from the right files
 - **Fixed: the new source check failed on GitHub's Windows machine**, on a correct repository. Git there
@@ -609,6 +609,27 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.93.0 — adding DXF and SVG files to a drawing
+- **Importing a DXF no longer replaces the drawing.** It did: shapes, toolpaths, dimensions and guides
+  were all discarded (only Undo brought them back). The import panel now offers **Add to this drawing**
+  (the default when something's drawn), which keeps everything, or **Replace the drawing**.
+- **Where the new shapes go:** beside what's drawn (10 mm to its right, bottoms aligned), at X0 Y0, or where
+  the file has them. They come in selected, ready to drag into place.
+- **Layers merge by name**: a file's layer joins the drawing's layer of the same name; new names become new
+  layers (keeping whether they were hidden). DXF's default layer "0" goes on the active layer.
+- **SVG import, new**: sizes from the file's own units (mm, cm, in, pt, pc; px at 96 per inch) and viewBox,
+  group transforms, every path command, rectangles, circles, ellipses, lines, polylines and polygons.
+  Circular arcs stay arcs, circles stay circles and axis-aligned rectangles stay rectangles; Bezier curves
+  and elliptical arcs follow the true curve within 0.02 mm. Inkscape layers become layers (hidden ones
+  hidden); hidden elements are skipped; text, images and <use> copies are counted and reported, not
+  silently dropped. Design's own SVG export now records where its page sat, so an SVG saved by Design comes
+  back exactly where it was.
+- **Several files at once**, picked or dropped together: one panel, placed side by side.
+- Tested on SVGs with known answers (units, the Y flip, arcs, a Bezier within 0.007 mm, transforms,
+  Inkscape layers), an exact round trip through Design's own export, and the whole flow through the file
+  picker: adding beside a drawing with a toolpath, an SVG after it, a DXF and an SVG together, a layer
+  reused by name, replacing, and an empty drawing.
 
 ### 0.92.1
 - **The Shapeoko 5 / 5.1 Pro**, in all three sizes, in Job setup's cutting areas.

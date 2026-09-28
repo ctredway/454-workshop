@@ -59,12 +59,17 @@ Saves the drawing, with its toolpaths, to a `.454.json` file you can open again 
 
 ### Load
 
-Opens a saved drawing, a VCarve project, a DXF file, or an image to trace.
+Opens a saved drawing or a VCarve project, adds DXF and SVG files to the drawing, or traces an image.
 
-1. Click **Load** and pick a file, or drag the file onto Design’s window.
+1. Click **Load** and pick a file, or drag it onto Design's window. DXF and SVG files can be picked or dropped several at once.
 2. **A saved drawing** (`.454.json`) opens as it was.
-3. **A VCarve project** (`.crv`) opens a panel: choose whether to bring in the **Drawing vectors** and the **Toolpath preview vectors**, whether to **Scale to width** or **Move to origin**, and millimetres or inches. The material size comes across too, and the project’s toolpaths can be made editable in Design afterwards.
-4. **A DXF file** comes in with its layers and true curves.
+3. **A VCarve project** (`.crv`) opens a panel: choose whether to bring in the **Drawing vectors** and the **Toolpath preview vectors**, and millimetres or inches. The material size comes across too, and the project's toolpaths can be made editable in Design afterwards.
+4. **DXF and SVG files** open a panel:
+   - **Into:** **Add to this drawing** (the default when something's drawn) keeps everything that's there, toolpaths included; **Replace the drawing** starts again with just the file's shapes.
+   - **Place:** **Beside what's drawn**, **At X0 Y0**, or **Where the file has them**. Several files go side by side.
+   - **Scale to width** (one file at a time), and for a DXF, whether its numbers are millimetres or inches.
+
+   The new shapes come in **selected**, ready to drag into place. The file's layers join layers of the same name, and new names become new layers. A DXF keeps its true curves. An SVG comes in at its real size, from its own units; its curves, circles, rectangles and Inkscape layers come across, but text doesn't: convert text to paths in your editor first. An SVG saved by Design comes back exactly where it was.
 5. **An image** (PNG, JPG, GIF, BMP or WebP) opens the **Trace image** panel: set the **Threshold** (or press **Auto**), **Invert** for light artwork on a dark background, the **Smoothing**, specks to ignore, and the traced width, then press **Trace**. **Fit curves** turns the outlines into smooth arcs and lines with far fewer points.
 
 ### Export DXF
