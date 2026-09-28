@@ -1,0 +1,15 @@
+# Keep text files with \n line endings on every computer, Windows included. 454 Control is assembled and
+# checked line by line (apps/control/build.mjs), and GitHub's Windows build machine would otherwise check
+# files out with \r\n.
+* text=auto eol=lf
+
+# never converted
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
+*.woff binary
+*.ttf binary
+*.zip binary
+*.vtdb binary
+*.crv binary

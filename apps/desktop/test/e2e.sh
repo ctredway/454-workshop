@@ -11,7 +11,9 @@ setsid nohup node test/e2e-bridge.mjs $B $SIM >/tmp/p454-e2e-bridge.log 2>&1 < /
 BRIDGE=$!
 sleep 0.5
 node scripts/build-app.js >/dev/null
-P454_SERIAL_PORTS=$A P454_AUTOPICK=1 P454_E2E=test/e2e-page.js P454_E2E_OUT=$OUT P454_E2E_DESIGN=test/e2e-design.js P454_E2E_DESIGN_OUT=$DOUT \
+# P454_E2E_SCRIPT picks another Control script (default: a job, test/e2e-page.js); P454_E2E_NO_DESIGN=1 skips Design
+DESIGN_ARGS="P454_E2E_DESIGN=test/e2e-design.js P454_E2E_DESIGN_OUT=$DOUT"; [ -n "$P454_E2E_NO_DESIGN" ] && DESIGN_ARGS=""
+env P454_SERIAL_PORTS=$A P454_AUTOPICK=1 P454_E2E=${P454_E2E_SCRIPT:-test/e2e-page.js} P454_E2E_OUT=$OUT $DESIGN_ARGS \
   timeout 240 xvfb-run -a node_modules/.bin/electron . --no-sandbox --disable-gpu >/tmp/p454-e2e-electron.log 2>&1 || true
 kill -TERM $BRIDGE 2>/dev/null || true; sleep 0.5
 pkill -f "socat pty,raw,echo=0,link=$A" 2>/dev/null || true

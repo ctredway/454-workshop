@@ -14,11 +14,18 @@ function probeRun(name, steps, onResult){
   PROBE.steps = steps; PROBE.i = 0;
   PROBE.captures = {}; PROBE.pendingCapture = null;
   PROBE.onResult = onResult;
+  PROBE.skip = SERIAL.unacked || 0;                      // answers still owed to lines sent before this
   logC('sys', name + ' starting');
   probeNext();
 }
 function probeNext(){
   if (!PROBE.active) return;
+  // A probe move always reports its result ([PRB:...]) before its ok. One that finished without reporting
+  // anything hasn't told us where it stopped: don't carry on to the next step as if it had.
+  if (PROBE.pendingCapture && PROBE.captures[PROBE.pendingCapture] === undefined){
+    probeFail('the probe move finished without reporting a contact \u2014 check the BitSetter or plate and its wiring');
+    return;
+  }
   if (PROBE.i >= PROBE.steps.length){ probeFinish(); return; }
   var it = PROBE.steps[PROBE.i++];
   if (typeof it === 'string'){ PROBE.pendingCapture = null; sendLine(it); }

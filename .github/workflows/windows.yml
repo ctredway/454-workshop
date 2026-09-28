@@ -1,8 +1,10 @@
 # Builds 454 Workshop for Windows on GitHub's own Windows machines.
 #   - Run it by hand: Actions tab > "windows build" > Run workflow. The installer and zip are attached
 #     to the run as an artifact to download.
-#   - Push a version tag (e.g. v0.5.0): the same build, plus a draft release on the Releases page with
-#     the installer and zip attached, for you to review and publish.
+#   - Change the version in apps/desktop/package.json and push: the version is tagged (v0.6.3), built, and
+#     drafted as a release with the installer, zip and update files, for you to review and publish. A
+#     version with a suffix (0.6.3-beta.1) is a pre-release, offered only on the Beta update channel.
+#   - Pushing a version tag by hand (v0.6.3) does the same, as before.
 # Built from the repository's own index.html, design.html and docs/. CAM is included only if cam.js and
 # geom.js are in the repository, which they aren't until CAM is released.
 name: windows build
@@ -11,12 +13,42 @@ on:
   workflow_dispatch:
   push:
     tags: ['v*']
+    # a new version in the desktop app's package.json tags itself and builds: no separate tag step
+    branches: [main]
+    paths: ['apps/desktop/package.json']
 
 permissions:
-  contents: write          # to create the draft release on a tag
+  contents: write          # to create the tag, and the draft release
 
 jobs:
+  # Which release this run makes, if any. A pushed tag: that one. A package.json change on main: its version's
+  # tag, created here, unless it already exists (then the version didn't change, and nothing is built). By
+  # hand (Run workflow): a build to download from the run, with no release.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      build: ${{ steps.v.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: v
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then echo "tag=" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          tag="v$(node -p "require('./apps/desktop/package.json').version")"
+          if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
+            echo "::notice::$tag already exists, so the version didn't change: nothing to release."
+            echo "build=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git tag "$tag" && git push origin "$tag" || { echo "::notice::$tag was pushed by hand meanwhile: that run builds it."; echo "build=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          echo "::notice::Tagged $tag: building it and drafting its release."
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"
+
   windows:
+    needs: version
+    if: needs.version.outputs.build == 'true'
     runs-on: windows-latest
     defaults:
       run:
@@ -51,11 +83,13 @@ jobs:
         run: npm run build:app
 
       - name: Check the tag matches the app's version (version tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: needs.version.outputs.tag != ''
         shell: bash
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
           app=$(node -p "require('./package.json').version")
-          tag="${GITHUB_REF_NAME#v}"
+          tag="${TAG#v}"
           if [ "$app" != "$tag" ]; then
             echo "::error::The tag is v$tag but apps/desktop/package.json says $app. Automatic updates compare that version, so a release made this way would never be offered. Set the version to $tag, commit, and tag again."
             exit 1
@@ -91,12 +125,13 @@ jobs:
           if-no-files-found: error
 
       - name: Draft a release (version tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: needs.version.outputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           # a tag with a suffix (v0.6.0-beta.1) is a pre-release: only the Beta update channel offers it
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          tag_name: ${{ needs.version.outputs.tag }}
+          prerelease: ${{ contains(needs.version.outputs.tag, '-') }}
           # latest.yml and the blockmap are how installed copies find and download updates
           files: |
             apps/desktop/dist/*.exe

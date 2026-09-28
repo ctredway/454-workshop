@@ -196,6 +196,13 @@ A new toolpath slots into the usual cutting order: **holes, chamfers, pockets, V
 
 **Save G-code…** writes every included toolpath to one file, in order, with a tool change wherever the tool changes, numbered from your library, and each toolpath’s name so 454 Control can show which one is running. It refuses while any toolpath has no tool chosen.
 
+**Preview in 454 Control** loads exactly the G-code Save G-code would write into 454 Control, for its 3D
+preview and playback, its time estimate (with your machine's acceleration) and its checks, with no file to
+save or open. Nothing is sent to the machine. If Control is already open, the job goes to it, without
+reloading it or disconnecting the machine; in the desktop app its window comes forward, and on the website
+the job is waiting in your Control tab. If Control isn't open, it opens with the job. While a job is running
+on the machine, Control keeps its loaded file and says so.
+
 <Compare kind="same" title="Same as Carbide Motion">
 
 The G-code is plain GRBL: tool changes are M6 with a T number, which 454 Control and Carbide Motion both handle with their tool-change routine.

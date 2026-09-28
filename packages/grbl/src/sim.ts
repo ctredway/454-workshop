@@ -105,7 +105,7 @@ export class GrblSim {
   private softReset() {
     const moving = this.state === 'Run' || this.state === 'Jog' || (this.state === 'Hold' && this.t < this.holdUntil) || this.state === 'Home';
     if (this.running) this.mpos = this.currentPos();
-    this.flushMotion(); this.rx = ''; this.okAfterDwell = false;
+    this.flushMotion(); this.rx = ''; this.okAfterDwell = false; this.okAfterProbe = false;
     this.spindle = { on: false, rpm: 0 }; this.plannedSpindle = { on: false, rpm: 0 };
     this.modal = { units: 21, abs: true, motion: 0, feed: 0, plane: 17 };
     this.timeline.push(this.ev('reset', 'soft reset', this.mpos, this.mpos));
@@ -133,10 +133,11 @@ export class GrblSim {
     return /G0*4(?![\d.])/.test(c) || /M0*[2-5](?![\d.])|M30(?![\d.])/.test(c);
   }
   private okAfterDwell = false;                                       // a G4's ok waits for the dwell itself
+  private okAfterProbe = false;                                       // as GRBL: a G38's ok follows its [PRB:...] result
   /** Parse whole lines from the receive buffer while the planner has room. */
   private parseWaiting() {
     while (true) {
-      if (this.okAfterDwell) return;                                  // still dwelling: the parser is held
+      if (this.okAfterDwell || this.okAfterProbe) return;             // still dwelling or probing: the parser is held
       const nl = this.rx.indexOf('\n');
       if (nl < 0) return;
       if (this.planner.length >= 15) return;                          // full planner: the line waits, no ok yet
@@ -146,6 +147,7 @@ export class GrblSim {
       this.lineNo++;
       const r = this.execute(line.trim());
       if (r === 0 && /G0*4(?![\d.])/i.test(line) && this.planner.length){ this.okAfterDwell = true; return; }
+      if (r === 0 && /G38\.[23]/i.test(line)){ this.okAfterProbe = true; return; }   // the result, then ok
       this.send(r === 0 ? 'ok' : 'error:' + r);
       if (r !== 0) this.errors.push(`error:${r} on "${line}"`);
     }
@@ -276,6 +278,7 @@ export class GrblSim {
           this.mpos = { ...cur, z: pr.z }; this.prb = { ...this.mpos };
           const f = (v: number) => v.toFixed(3);
           this.send(`[PRB:${f(this.prb.x)},${f(this.prb.y)},${f(this.prb.z)}:1]`);
+          if (this.okAfterProbe){ this.okAfterProbe = false; this.send('ok'); }
           this.planner.shift(); this.running = null; this.plannedPos = { ...this.mpos };
           continue;
         }
@@ -288,8 +291,9 @@ export class GrblSim {
         if (b.kind === 'dwell' && this.okAfterDwell && !this.planner.length){ this.okAfterDwell = false; this.send('ok'); }
         if (b.kind === 'home') { this.homed = true; this.state = 'Idle'; this.wco = this.wco; }
         if (b.kind === 'probe') {
-          if (b.probe!.mode === '38.2') { this.flushMotion(); this.state = 'Alarm'; this.alarm = 5; this.send('ALARM:5'); }
-          else { const f = (v: number) => v.toFixed(3); this.send(`[PRB:${f(this.mpos.x)},${f(this.mpos.y)},${f(this.mpos.z)}:0]`); }
+          if (b.probe!.mode === '38.2') { this.okAfterProbe = false; this.flushMotion(); this.state = 'Alarm'; this.alarm = 5; this.send('ALARM:5'); }
+          else { const f = (v: number) => v.toFixed(3); this.send(`[PRB:${f(this.mpos.x)},${f(this.mpos.y)},${f(this.mpos.z)}:0]`);
+                 if (this.okAfterProbe){ this.okAfterProbe = false; this.send('ok'); } }
         }
         this.parseWaiting();                                          // room in the planner: waiting lines go in
       }

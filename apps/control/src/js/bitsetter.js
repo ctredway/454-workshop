@@ -74,15 +74,27 @@ function bsTest(){
     });
   });
 }
+// How fast to search down for the BitSetter. The search only has to find it: the reading comes from the
+// slow second touch. What speed costs is how far the machine coasts past the switch while it stops, which
+// depends on the Z axis's acceleration ($122, mm/s^2): coasting distance = v^2 / 2a. So: the fastest that
+// coasts at most 0.5 mm, no faster than 1000 mm/min or Z's own maximum rate ($112), and never slower than
+// the 200 mm/min it used to be. A typical Shapeoko (400 mm/s^2) gets 1000 mm/min.
+function bitSetterSeekRate(settings){
+  var a = settings && settings[122] > 0 ? settings[122] : null;          // mm/s^2
+  var vmax = settings && settings[112] > 0 ? settings[112] : 1000;        // mm/min
+  if (a === null) return 500;                                             // not read yet: a middle course
+  var v = Math.sqrt(2 * a * 0.5) * 60;                                    // mm/min that coasts 0.5 mm
+  return Math.max(200, Math.min(1000, vmax, Math.floor(v / 10) * 10));   // rounded down: the limit holds
+}
 function probeSteps(){ // BitSetter sequence (name kept: the preflight preview prints it)
   var down = Math.max(10, (SERIAL.settings[132] || 80) - travelZ() - 1);
   return [
     zHighCmd(travelZ()),
     'G53 G0 X' + PROFILE.bitSetter.x.toFixed(3) + ' Y' + PROFILE.bitSetter.y.toFixed(3),
     'G21 G91',
-    {cmd: 'G38.2 Z-' + down.toFixed(1) + ' F200', capture: 'zf'},
+    {cmd: 'G38.2 Z-' + down.toFixed(1) + ' F' + bitSetterSeekRate(SERIAL.settings), capture: 'zf'},   // find it, quickly
     'G0 Z2',
-    {cmd: 'G38.2 Z-5 F40', capture: 'z'},
+    {cmd: 'G38.2 Z-5 F40', capture: 'z'},                                                 // measure it, slowly
     'G90',
     zHighCmd(travelZ())
   ];
@@ -113,6 +125,15 @@ function probeStart(kind, onDone){ // BitSetter entry point (job code calls this
   });
 }
 
+// Before Z zero is set: cancel the controller's tool length offset (G43.1). It belongs to the old zero
+// and the old reference. Setting a new zero with it still active builds it into the zero, and the next
+// tool change, which replaces the offset, then shifts the whole job by it: a job starting with a tool
+// change once cut 20 mm too deep this way. The Z nudge belongs to the old zero too.
+function clearToolOffset(){
+  sendLine('G49');
+  PROBE.tlo = 0;
+  if (typeof ZN !== 'undefined') ZN.val = 0;
+}
 // Setting Z zero makes the tool in the spindle the one every later tool must be measured
 // against. So the reference is taken right then, with that tool, the way Carbide Motion does:
 // measuring it later (at job start) would silently use whatever bit happens to be in by then.
@@ -147,3 +168,5 @@ function bsRefNote(){
   el.textContent = PROBE.refZ === null ? 'ready, no reference yet' : 'reference taken (machine Z ' + PROBE.refZ.toFixed(3) + ')';
   el.style.color = '';
 }
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { bitSetterSeekRate: bitSetterSeekRate };   // for the tests

@@ -27,6 +27,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.5 — releases tag themselves
+- **A new version in `apps/desktop/package.json`, pushed to main, is tagged, built and drafted as a
+  release**: no separate tag step. A change that keeps the version builds nothing; pushing a tag by hand
+  still works; a version with a suffix is a pre-release. (A workflow can't start another workflow with a tag
+  it creates, so the Windows workflow does both: a first job decides the tag, and creates it.) Tested in
+  each case against a scratch repository.
+- Includes Control 0.31.14 and Design 0.92.0.
+
 ### 0.6.2-beta.4 — built only from the right files
 - **Fixed: the new source check failed on GitHub's Windows machine**, on a correct repository. Git there
   checks files out with Windows line endings (\r\n), and Control's build matched its include lines by
@@ -276,6 +284,43 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.14 — jobs from 454 Design
+- **Takes jobs from Design's new "Preview in 454 Control"** (`apps/control/src/js/handoff.js`): an open
+  Control loads the job without reloading, so a machine connection is never dropped; a Control that's just
+  opening picks it up from storage. While a job is running, the loaded file isn't replaced, and Design is
+  told why. Loading a file never runs it.
+
+### 0.31.13 — a tool offset left from an earlier job no longer shifts the next one
+- **Fixed: a job could cut far deeper than its file.** A BitSetter tool change sets a tool length offset in
+  the controller (G43.1), and nothing ever cancelled it. Setting Z zero with that old offset still active
+  built it into the new zero; the next tool change replaced the offset, and the whole job shifted by the
+  old amount. A chamfer that started with a tool change cut far deeper than the 2.4 mm in its G-code this
+  way. Now every way of setting Z zero (Zero Z, Zero all, the BitZero) cancels the old offset first (G49),
+  and resets the Z nudge, so each zero and its BitSetter reference start clean. Reproduced on the simulated
+  machine first (a 1 mm plunge landed 21 mm deep with a 20 mm leftover offset), then fixed (exactly 1 mm).
+- **An offset found on connecting is reported**: if the controller already has a tool length offset
+  Control didn't set this session, it says so, and to set Z zero again before cutting.
+- **Fixed: answers to earlier commands could move a probe on early.** Control moved a probe sequence on at
+  every ok, including oks still owed to commands sent just before it started (Zero all's two lines, for
+  one), which put it a step out of step with the controller. It now counts the lines awaiting an answer,
+  and sets aside those owed to earlier commands. Found by the test above.
+
+### 0.31.12 — a faster BitSetter
+- **The BitSetter searches down much faster**: the fastest speed that coasts at most 0.5 mm past the switch
+  while the machine stops, worked out from the Z axis's acceleration ($122), no faster than 1000 mm/min or
+  Z's own maximum ($112), and never slower than the old 200. A typical Shapeoko (400 mm/s²) searches at
+  1000 mm/min, five times faster. The measurement itself is unchanged: the slow second touch at 40 mm/min.
+  Rounded down, so the limit always holds (a test caught it rounding up). Before the controller's settings
+  are read, 500 mm/min.
+- **A probe move that reports no result stops the sequence** instead of carrying on to the next step. GRBL
+  always reports a probe's result before its ok, so this should never happen; if it does, stopping is right.
+- **When the BitSetter finds nothing**, the advice is about the BitSetter (its captured position and its
+  cable), not the BitZero's "jog closer to the plate".
+- Tested end to end: Control's own BitSetter test against the simulated machine, with a switch (found at
+  the new speed, measured, reported) and without one (stopped, with the right advice). This needed the
+  simulator fixed: it answered a probe move's ok before its result, unlike GRBL, which let the next command
+  run while the probe was still moving. It now answers as GRBL does, and `npm run build` compiles it.
 
 ### 0.31.11 — one G-code parser, tested
 - **The G-code parser is one file, shared by Control and the `@454/gcode` package**
@@ -558,6 +603,14 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.92.0 — Preview in 454 Control
+- **A "Preview in 454 Control" button** in the Toolpaths panel loads exactly the G-code Save G-code writes
+  (the same checks first) into 454 Control, for its 3D preview and playback, time estimate and checks,
+  with no file to save or open. In the desktop app, Control's window comes forward; on the website, an open
+  Control tab gets the job (a site can't bring another tab forward, so Design says where it is) and a new
+  tab opens only when there isn't one. Tested in both, with Control open (no reload, no second Control) and
+  closed (one Control opens, with the job).
 
 ### 0.91.0 — dimensions: both sides, and edges that stay put
 - **A distance on each side of a shape now sizes it.** When a shape is already held by a distance on its

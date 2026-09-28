@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsc -b packages/plugin-api packages/gcode",
+    "build": "tsc -b packages/plugin-api packages/gcode packages/grbl",
     "test": "vitest run",
     "test:watch": "vitest"
   },

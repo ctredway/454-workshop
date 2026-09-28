@@ -47,6 +47,7 @@ function bzStart(){
     probeRun('BitZero Z', bitZeroSteps(), function(cap){
       if (cap.z === undefined){ probeFail('sequence completed but no probe result was received'); return; }
       var wcoZ = cap.z - thk;
+      clearToolOffset();                                 // the new zero, with no old tool offset built in
       sendLine('G10 L2 P0 Z' + wcoZ.toFixed(3));
       markToolZeroed();
       setTimeout(bsAfterZero, 1500);                    // once the lift has finished

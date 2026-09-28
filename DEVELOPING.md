@@ -81,15 +81,15 @@ installed first (`npm ci --prefix docs-site`), and Node.js 22.12 or newer.
 Installed copies of the desktop app update themselves from GitHub Releases (`apps/desktop/src/updater.js`,
 tested in `apps/desktop/test/updater.test.mjs`). A release is what delivers an update:
 
-1. Set the version in `apps/desktop/package.json` (say `0.6.1`), and commit.
-2. Tag the commit `v0.6.1` and push the tag. The Windows workflow checks the tag matches the version, builds
-   the installer and zip, checks the update files (`latest.yml` and the blockmap) were made, and drafts a
-   release with all of them attached.
-3. Look the draft over on the Releases page, then publish it. Installed copies on the stable channel are
+1. Set the version in `apps/desktop/package.json` (say `0.6.3`), commit, and push to `main`. The Windows
+   workflow sees the new version, tags it (`v0.6.3`), builds the installer and zip, checks the update files
+   (`latest.yml` or `beta.yml`, and the blockmap) were made, and drafts a release with all of them attached.
+   (A change to package.json that keeps the version, a dependency say, builds nothing. Pushing a tag by
+   hand still works too.)
+2. Look the draft over on the Releases page, then publish it. Installed copies on the stable channel are
    offered it at their next check.
 
-**Testing an update before a public release:** tag with a suffix, such as `v0.6.1-beta.1` (with the same
-version in `package.json`). The workflow marks it a pre-release, which only copies on the **Beta** channel
+**Testing an update before a public release:** use a version with a suffix, such as `0.6.3-beta.1`. The workflow marks it a pre-release, which only copies on the **Beta** channel
 (454 Workshop → Updates) are offered. Drafts are never offered.
 
 Update settings are kept in `updates.json` in the app's data folder. For testing the updater itself against
@@ -113,3 +113,22 @@ run both test suites (`npm test`, and `node --test 'apps/control/test/*.test.mjs
   its landing page replaces Control's `index.html`, and its built copies (`control/`, `design/`,
   `docs/*.html`) sit beside the sources. The Windows build now stops if that happens, rather than
   building from the wrong files; `tidy-repo` puts it right.
+
+## Testing the BitSetter
+
+The end-to-end test can run 454 Control's BitSetter test against the simulated machine, with a probe switch
+where the BitSetter is (P454_SIM_PROBE is "x,y,z,radius", in machine coordinates):
+
+```sh
+cd apps/desktop
+P454_SIM_PROBE=-100,-50,-70,5 P454_E2E_SCRIPT=test/e2e-bitsetter.js P454_E2E_NO_DESIGN=1 sh test/e2e.sh   # finds it
+P454_E2E_SCRIPT=test/e2e-bitsetter.js P454_E2E_NO_DESIGN=1 sh test/e2e.sh                                # none: must stop
+P454_SIM_PROBE=-100,-50,-70,5 P454_E2E_SCRIPT=test/e2e-tlo.js P454_E2E_NO_DESIGN=1 sh test/e2e.sh        # a leftover offset
+```
+
+`e2e-tlo.js` leaves a 20 mm tool length offset active (as an earlier job's tool change would), sets Z zero,
+takes the BitSetter reference, and runs a job that starts with a tool change: its plunge must land exactly
+1 mm below where Z was zeroed. Before 0.31.13 it landed 21 mm below.
+
+The simulator answers a probe move as GRBL does: its [PRB:...] result, then ok; or ALARM:5 alone when it
+finds nothing. `npm run build` compiles it (packages/grbl) with the rest.

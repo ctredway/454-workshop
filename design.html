@@ -878,7 +878,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.91.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.92.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3961,7 +3961,13 @@ function toolNumbering(){
 }
 // G-code for every toolpath, in order, as one file
 function tpExport(){
-  if (!camReady() || !tpList().length) return;
+  var j = tpJob();
+  if (j) gcodeSave(j.gc, j.base + '.nc', j.said);
+}
+// The job's G-code, exactly as Save G-code writes it, after the same checks; null if something needs
+// fixing first (the checks say what).
+function tpJob(){
+  if (!camReady() || !tpList().length) return null;
   var toolNumber = toolNumbering();              // the same numbers the job sheet shows
   var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });   // one sheet per file
   var noTool = chosen.filter(function (tp) { return !tpToolChosen(tp); });
@@ -3971,7 +3977,7 @@ function tpExport(){
                     (noTool.length === 1 ? 'This toolpath has' : 'These toolpaths have') + ' no tool chosen, so the G-code would be cut for a size nobody picked. ' +
                     'Open ' + (noTool.length === 1 ? 'it' : 'each') + ' with Edit and choose the tool from the library, or type its diameter.',
               note: true});
-    return;
+    return null;
   }
   var blind = chosen.filter(function (tp) { return tp.through && !(DOC.stock.t > 0); });
   if (blind.length){
@@ -3981,11 +3987,11 @@ function tpExport(){
                     'so ' + (blind.length === 1 ? 'it' : 'they') + ' would cut only the ' + fmtDisp(blind[0].over === undefined ? 0.2 : blind[0].over) + ' ' + unitTag() + ' overcut.\n\n' +
                     'Measure the material and enter its thickness in Settings, then save again.',
               ok: 'Open Settings', cancel: 'Cancel'}).then(function (go) { if (go) openSettings(); });
-    return;
+    return null;
   }
   if (!chosen.length){
     toast('info', 'Nothing to save', 'Every toolpath is unticked. Tick the ones to include in the G-code.');
-    return;
+    return null;
   }
   var parts = chosen.map(function (tp) {
     if (tpStale(tp)) tpGenerate(tp);
@@ -4005,7 +4011,7 @@ function tpExport(){
   var total = multiSheet() ? tpList().filter(function (tp) { return tpSheetOf(tp) === DOC.activeSheet; }).length : tpList().length;
   var said = (parts.length < total ? parts.length + ' of ' + total : parts.length) +
              (parts.length === 1 && parts.length === total ? ' toolpath' : ' toolpaths') + (nt > 1 ? ' with ' + nt + ' tools' : '');
-  gcodeSave(gc, base + '.nc', said);
+  return {gc: gc, base: base, said: said};
 }
 // Save with a real Save As dialog where the browser allows it (Chrome and Edge): the person
 // picks the folder and the name, and the browser starts in the same folder next time.
@@ -5337,6 +5343,13 @@ function renderMyToolpaths(){
     ex.style.cssText = 'width:calc(100% - 20px);margin:4px 10px 10px';
     ex.addEventListener('click', tpExport);
     box.appendChild(ex);
+    var pv = document.createElement('button');
+    pv.textContent = 'Preview in 454 Control';
+    pv.title = 'Load exactly this G-code into 454 Control: its 3D preview and playback, time estimate and checks. Nothing is sent to the machine.';
+    pv.style.cssText = 'width:calc(100% - 20px);margin:0 10px 10px';
+    pv.disabled = nInc === 0;
+    pv.addEventListener('click', tpPreview);
+    box.appendChild(pv);
     var js = document.createElement('button');
     js.textContent = 'Job sheet' + (sheetName ? ' for ' + sheetName : '') + '\u2026';
     js.title = 'Everything about the job on one printable page: material, setup, tools, toolpaths and times';
@@ -5345,6 +5358,47 @@ function renderMyToolpaths(){
     js.addEventListener('click', jobSheetOpen);
     box.appendChild(js);
   }
+}
+
+// ---- Preview in 454 Control ----
+// Hands the job's G-code (exactly what Save G-code writes) to 454 Control, for its preview: the 3D view
+// and playback, the time estimate with the machine's acceleration, and the checks. Nothing is sent to the
+// machine. Control and Design are the same site (or the same desktop app), so they share a
+// BroadcastChannel and localStorage. An open Control is never reloaded (that would drop its machine
+// connection): if one answers, it has the job; if none does, the job is stored and a new Control opens,
+// which picks it up as it starts.
+var HANDOFF_KEY = '454.handoff';
+function tpPreview(){
+  var j = tpJob();
+  if (!j) return;
+  var job = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name: j.base + '.nc', text: j.gc, at: Date.now()};
+  var stored = false;
+  try { localStorage.setItem(HANDOFF_KEY, JSON.stringify(job)); stored = true; } catch (e) { /* too big for storage: an open Control can still take it */ }
+  var bc = null, answered = null;
+  try { bc = new BroadcastChannel('454-workshop'); } catch (e) {}
+  if (bc){
+    bc.onmessage = function (ev){ var m = ev.data || {}; if (m.type === 'got' && m.id === job.id && !answered) answered = m; };
+    bc.postMessage({type: 'job', job: job});
+  }
+  setTimeout(function (){
+    if (bc) bc.close();
+    if (answered){
+      // The desktop app brings its Control window forward. A website can't bring another tab forward, and
+      // opening one would make a second Control: say where the job is instead.
+      if (window.desktop454) openControl();
+      if (answered.loaded) toast('ok', 'Previewing in 454 Control', j.said + ', in ' + job.name + (window.desktop454 ? '.' : ': it\u2019s in your 454 Control tab.'));
+      else toast('warn', '454 Control didn\u2019t load it', answered.why || 'It\u2019s busy with the machine.');
+      return;
+    }
+    if (!stored){ toast('warn', 'Too big to hand over', 'Open 454 Control first, then preview again, or use Save G-code and open the file in Control.'); return; }
+    openControl();                                     // a new Control, which takes the job as it starts
+    toast('ok', 'Opening 454 Control', 'Its preview shows ' + j.said + '.');
+  }, 500);
+}
+function openControl(){
+  if (window.desktop454){ window.open('index.html'); return; }          // the desktop app: shows its Control window
+  var w = window.open('index.html', '_blank');                          // the website: a new tab, never an existing one
+  if (w) try { w.focus(); } catch (e) {}
 }
 
 // ---- sheets ----

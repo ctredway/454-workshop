@@ -868,7 +868,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.31.11';
+var CONTROL_VERSION = '0.31.14';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -2633,11 +2633,18 @@ function probeRun(name, steps, onResult){
   PROBE.steps = steps; PROBE.i = 0;
   PROBE.captures = {}; PROBE.pendingCapture = null;
   PROBE.onResult = onResult;
+  PROBE.skip = SERIAL.unacked || 0;                      // answers still owed to lines sent before this
   logC('sys', name + ' starting');
   probeNext();
 }
 function probeNext(){
   if (!PROBE.active) return;
+  // A probe move always reports its result ([PRB:...]) before its ok. One that finished without reporting
+  // anything hasn't told us where it stopped: don't carry on to the next step as if it had.
+  if (PROBE.pendingCapture && PROBE.captures[PROBE.pendingCapture] === undefined){
+    probeFail('the probe move finished without reporting a contact \u2014 check the BitSetter or plate and its wiring');
+    return;
+  }
   if (PROBE.i >= PROBE.steps.length){ probeFinish(); return; }
   var it = PROBE.steps[PROBE.i++];
   if (typeof it === 'string'){ PROBE.pendingCapture = null; sendLine(it); }
@@ -2747,15 +2754,27 @@ function bsTest(){
     });
   });
 }
+// How fast to search down for the BitSetter. The search only has to find it: the reading comes from the
+// slow second touch. What speed costs is how far the machine coasts past the switch while it stops, which
+// depends on the Z axis's acceleration ($122, mm/s^2): coasting distance = v^2 / 2a. So: the fastest that
+// coasts at most 0.5 mm, no faster than 1000 mm/min or Z's own maximum rate ($112), and never slower than
+// the 200 mm/min it used to be. A typical Shapeoko (400 mm/s^2) gets 1000 mm/min.
+function bitSetterSeekRate(settings){
+  var a = settings && settings[122] > 0 ? settings[122] : null;          // mm/s^2
+  var vmax = settings && settings[112] > 0 ? settings[112] : 1000;        // mm/min
+  if (a === null) return 500;                                             // not read yet: a middle course
+  var v = Math.sqrt(2 * a * 0.5) * 60;                                    // mm/min that coasts 0.5 mm
+  return Math.max(200, Math.min(1000, vmax, Math.floor(v / 10) * 10));   // rounded down: the limit holds
+}
 function probeSteps(){ // BitSetter sequence (name kept: the preflight preview prints it)
   var down = Math.max(10, (SERIAL.settings[132] || 80) - travelZ() - 1);
   return [
     zHighCmd(travelZ()),
     'G53 G0 X' + PROFILE.bitSetter.x.toFixed(3) + ' Y' + PROFILE.bitSetter.y.toFixed(3),
     'G21 G91',
-    {cmd: 'G38.2 Z-' + down.toFixed(1) + ' F200', capture: 'zf'},
+    {cmd: 'G38.2 Z-' + down.toFixed(1) + ' F' + bitSetterSeekRate(SERIAL.settings), capture: 'zf'},   // find it, quickly
     'G0 Z2',
-    {cmd: 'G38.2 Z-5 F40', capture: 'z'},
+    {cmd: 'G38.2 Z-5 F40', capture: 'z'},                                                 // measure it, slowly
     'G90',
     zHighCmd(travelZ())
   ];
@@ -2786,6 +2805,15 @@ function probeStart(kind, onDone){ // BitSetter entry point (job code calls this
   });
 }
 
+// Before Z zero is set: cancel the controller's tool length offset (G43.1). It belongs to the old zero
+// and the old reference. Setting a new zero with it still active builds it into the zero, and the next
+// tool change, which replaces the offset, then shifts the whole job by it: a job starting with a tool
+// change once cut 20 mm too deep this way. The Z nudge belongs to the old zero too.
+function clearToolOffset(){
+  sendLine('G49');
+  PROBE.tlo = 0;
+  if (typeof ZN !== 'undefined') ZN.val = 0;
+}
 // Setting Z zero makes the tool in the spindle the one every later tool must be measured
 // against. So the reference is taken right then, with that tool, the way Carbide Motion does:
 // measuring it later (at job start) would silently use whatever bit happens to be in by then.
@@ -2820,6 +2848,8 @@ function bsRefNote(){
   el.textContent = PROBE.refZ === null ? 'ready, no reference yet' : 'reference taken (machine Z ' + PROBE.refZ.toFixed(3) + ')';
   el.style.color = '';
 }
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { bitSetterSeekRate: bitSetterSeekRate };   // for the tests
 /* ----- BitZero (standalone Z zeroing) ----- */
 var BZ = {circuitOk:false};
 function bzStatus(t){
@@ -2869,6 +2899,7 @@ function bzStart(){
     probeRun('BitZero Z', bitZeroSteps(), function(cap){
       if (cap.z === undefined){ probeFail('sequence completed but no probe result was received'); return; }
       var wcoZ = cap.z - thk;
+      clearToolOffset();                                 // the new zero, with no old tool offset built in
       sendLine('G10 L2 P0 Z' + wcoZ.toFixed(3));
       markToolZeroed();
       setTimeout(bsAfterZero, 1500);                    // once the lift has finished
@@ -3004,7 +3035,7 @@ function toolContinueNow(){
   if (JOB.useBS) probeStart(PROBE.refZ !== null ? 'tool' : 'ref', resume);
   else resume();
 }
-function zeroZNow(){ if (requireIdle('zeroing')){ sendLine('G10 L20 P0 Z0'); markToolZeroed(); bsAfterZero(); } }
+function zeroZNow(){ if (requireIdle('zeroing')){ clearToolOffset(); sendLine('G10 L20 P0 Z0'); markToolZeroed(); bsAfterZero(); } }
 function toolJogNow(){ document.getElementById('toolModal').hidden = true; jogModalOpen(); }   // the prompt returns when the panel closes
 function toolBzNow(){ document.getElementById('toolModal').hidden = true; bzOpenModal(); }
 function markToolZeroed(){
@@ -3105,6 +3136,7 @@ function rawWrite(u8){
 }
 function sendLine(s, quiet){
   if (!SERIAL.connected) return;
+  SERIAL.unacked = (SERIAL.unacked || 0) + 1;         // each line is answered by one ok or error
   if (!quiet) logC('tx', s);
   rawWrite(new TextEncoder().encode(s + '\n'));
 }
@@ -3151,7 +3183,7 @@ async function serialConnect(pick){
     SERIAL.writeChain = Promise.resolve();
     SERIAL.connected = true;
     SERIAL.lineBuf = '';
-    SERIAL.settings = {}; SERIAL.offsets = {}; SERIAL.buildInfo = '';
+    SERIAL.settings = {}; SERIAL.offsets = {}; SERIAL.buildInfo = ''; SERIAL.tloWarned = false;
     SERIAL.queried = false; SERIAL.rateApplied = false; SERIAL.jogRateApplied = false; SERIAL.accelApplied = false;
     SERIAL.homedSeen = false; SERIAL.prevState = ''; HOME_ASKED = false;
     PROBE.active = false; PROBE.onDone = null; PROBE.refZ = null; PROBE.previewDone = false;
@@ -3220,6 +3252,16 @@ async function readLoop(){
 
 function handleRx(line){
   if (line[0] === '<'){ parseStatus(line); if (SERIAL.verbose) logC('rx', line); return; }
+  if (line === 'ok' || line.indexOf('error:') === 0){
+    if (SERIAL.unacked > 0) SERIAL.unacked--;
+    // An answer owed to a line sent before the probe started belongs to that line, not the probe: taking
+    // it as the probe's own would move the probe on a step early, out of step with the controller.
+    if (PROBE.active && PROBE.skip > 0){
+      PROBE.skip--;
+      if (line !== 'ok') logC('err', line + ' \u2014 for a command sent before the probe started');
+      return;
+    }
+  }
   if (line === 'ok'){
     if (PROBE.active){ probeNext(); return; }
     if (QA.active){ if (SERIAL.verbose) logC('ok', 'ok'); qaNext(); return; }
@@ -3264,8 +3306,11 @@ function handleRx(line){
         // A probe alarm leaves the machine locked, so say what happened and offer the way out.
         uiDialog({title:'The probe didn\u2019t finish',
                   body: atxt + '\n\n' +
-                        (a === 5 ? 'The tool never touched the plate within its search travel. Jog the tip closer \u2014 2 to 10 mm above the plate \u2014 and probe again.'
-                                 : 'The probe circuit was already closed when the move started. Check the clip is on the tool and the plate isn\u2019t touching the bit.') +
+                        (/BitSetter/i.test(PROBE.name || '')                 // advice for the device that was probing
+                          ? (a === 5 ? 'The tool went all the way down without touching the BitSetter. Check its position is captured right over the button (Settings \u2192 Accessories \u2192 BitSetter), and that its cable is plugged in.'
+                                     : 'The BitSetter\u2019s switch was already pressed when the move started. Check nothing is resting on the button, and its cable.')
+                          : (a === 5 ? 'The tool never touched the plate within its search travel. Jog the tip closer \u2014 2 to 10 mm above the plate \u2014 and probe again.'
+                                     : 'The probe circuit was already closed when the move started. Check the clip is on the tool and the plate isn\u2019t touching the bit.')) +
                         '\n\nThe machine is locked until it is unlocked or homed.',
                   ok:'Unlock ($X)', cancel:'Leave locked'}).then(function(go){
           if (go && SERIAL.connected) sendLine('$X');
@@ -3279,6 +3324,7 @@ function handleRx(line){
     return;
   }
   if (line.indexOf('Grbl') === 0){
+    SERIAL.unacked = 0;                                  // a reset: nothing sent before it will be answered
     if (QA.active) qaFinish(false, 'the controller was reset');
     logC('sys', line); doQuery(); return;
   }
@@ -3299,6 +3345,15 @@ function handleRx(line){
       if (SERIAL.settings[13] === 1) coords = coords.map(function (q) { return q * 25.4; });   // $# in inches too
       SERIAL.offsets[bm[1]] = coords;
       if (bm[1] === 'PRB') probeOnPRB(coords[2], parts2[1] === '1');
+      // A tool length offset already active when Control reads the offsets was set before this session,
+      // for a zero and reference Control knows nothing about: say so once, and what to do.
+      var ours = (PROBE.tlo || 0) + (typeof ZN !== 'undefined' ? ZN.val : 0);      // the offset Control set itself, this session
+      if (bm[1] === 'TLO' && Math.abs((coords[0] || 0) - ours) > 0.001 && !JOB.active && !PROBE.active && !SERIAL.tloWarned){
+        SERIAL.tloWarned = true;
+        logC('err', 'a tool length offset of ' + coords[0].toFixed(3) + ' mm is active in the controller, left from before');
+        uiNote('A tool length offset is still active', 'The controller has a tool length offset of ' + coords[0].toFixed(3) + ' mm, left from an earlier ' +
+               'tool change. It belongs to a Z zero set before this session, so set Z zero again before cutting: that clears it.');
+      }
     }
     logC('rx', line);
     return;
@@ -5021,6 +5076,36 @@ function updateJobUI(statusText){
   document.getElementById('ovS').textContent = 'S ' + SERIAL.ov[2] + '%';
 }
 
+// ---- jobs handed over from 454 Design ("Preview in 454 Control") ----
+// Design sends a job's G-code, exactly what its Save G-code writes, for Control's preview. Control and
+// Design are the same site (or the same desktop app), so they share a BroadcastChannel and localStorage.
+// An open Control answers on the channel, so Design never reloads it (that would drop the machine
+// connection); a Control that's just opening finds the job in storage. Loading a file never runs it.
+var HANDOFF_KEY = '454.handoff';
+function handoffTake(job){
+  if (!job || typeof job.text !== 'string') return {loaded: false, why: 'Nothing arrived.'};
+  if (typeof JOB !== 'undefined' && JOB.active)            // loadText says so on screen, too
+    return {loaded: false, why: 'A job is running on the machine, so the loaded file wasn\u2019t replaced. Preview again once it has finished.'};
+  loadText(job.text, job.name || 'from 454 Design.nc');
+  logC('sys', 'loaded ' + (job.name || 'a job') + ' from 454 Design, for preview');
+  return {loaded: true};
+}
+function handoffStart(){
+  var bc = null;
+  try { bc = new BroadcastChannel('454-workshop'); } catch (e) {}
+  if (bc) bc.onmessage = function (ev){
+    var m = ev.data || {};
+    if (m.type !== 'job' || !m.job) return;
+    try { localStorage.removeItem(HANDOFF_KEY); } catch (e) {}   // this window has it: no other should take it
+    var r = handoffTake(m.job);
+    bc.postMessage({type: 'got', id: m.job.id, loaded: r.loaded, why: r.why});
+  };
+  // opened to preview a job: it's waiting in storage (for up to a minute; older ones are left over)
+  try {
+    var j = JSON.parse(localStorage.getItem(HANDOFF_KEY) || 'null');
+    if (j){ localStorage.removeItem(HANDOFF_KEY); if (Date.now() - j.at < 60000) handoffTake(j); }
+  } catch (e) {}
+}
 /* ---------------- machine tab wiring ---------------- */
 function wireMachine(){
   document.getElementById('connectBtn').addEventListener('click', function(){ serialConnect(false); });
@@ -5253,7 +5338,7 @@ function wireMachine(){
   document.getElementById('zeroX').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 X0'); });
   document.getElementById('zeroY').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 Y0'); });
   document.getElementById('zeroZ').addEventListener('click', zeroZNow);
-  document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')){ sendLine('G10 L20 P0 X0 Y0 Z0'); markToolZeroed(); bsAfterZero(); } });
+  document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')){ clearToolOffset(); sendLine('G10 L20 P0 X0 Y0 Z0'); markToolZeroed(); bsAfterZero(); } });
   document.getElementById('jogZ6').addEventListener('click', jogLiftZ6);
   document.getElementById('gotoZero').addEventListener('click', function(){
     if (!requireIdle('go to zero')) return;
@@ -5375,6 +5460,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('brandEl').title = '454 Control v' + CONTROL_VERSION;
   document.getElementById('verSub').textContent = 'G-code sender for Shapeoko & Nomad \u2014 v' + CONTROL_VERSION;
   document.title = '454 Control v' + CONTROL_VERSION;
+  handoffStart();                                        // jobs from 454 Design's "Preview in 454 Control"
 });
 </script>
 </body>

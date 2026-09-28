@@ -230,7 +230,7 @@ function wireMachine(){
   document.getElementById('zeroX').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 X0'); });
   document.getElementById('zeroY').addEventListener('click', function(){ if (requireIdle('zeroing')) sendLine('G10 L20 P0 Y0'); });
   document.getElementById('zeroZ').addEventListener('click', zeroZNow);
-  document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')){ sendLine('G10 L20 P0 X0 Y0 Z0'); markToolZeroed(); bsAfterZero(); } });
+  document.getElementById('zeroAll').addEventListener('click', function(){ if (requireIdle('zeroing')){ clearToolOffset(); sendLine('G10 L20 P0 X0 Y0 Z0'); markToolZeroed(); bsAfterZero(); } });
   document.getElementById('jogZ6').addEventListener('click', jogLiftZ6);
   document.getElementById('gotoZero').addEventListener('click', function(){
     if (!requireIdle('go to zero')) return;
@@ -352,4 +352,5 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('brandEl').title = '454 Control v' + CONTROL_VERSION;
   document.getElementById('verSub').textContent = 'G-code sender for Shapeoko & Nomad \u2014 v' + CONTROL_VERSION;
   document.title = '454 Control v' + CONTROL_VERSION;
+  handoffStart();                                        // jobs from 454 Design's "Preview in 454 Control"
 });

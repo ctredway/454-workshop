@@ -30,7 +30,7 @@ function toolContinueNow(){
   if (JOB.useBS) probeStart(PROBE.refZ !== null ? 'tool' : 'ref', resume);
   else resume();
 }
-function zeroZNow(){ if (requireIdle('zeroing')){ sendLine('G10 L20 P0 Z0'); markToolZeroed(); bsAfterZero(); } }
+function zeroZNow(){ if (requireIdle('zeroing')){ clearToolOffset(); sendLine('G10 L20 P0 Z0'); markToolZeroed(); bsAfterZero(); } }
 function toolJogNow(){ document.getElementById('toolModal').hidden = true; jogModalOpen(); }   // the prompt returns when the panel closes
 function toolBzNow(){ document.getElementById('toolModal').hidden = true; bzOpenModal(); }
 function markToolZeroed(){

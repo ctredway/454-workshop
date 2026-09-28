@@ -16,6 +16,7 @@ function rawWrite(u8){
 }
 function sendLine(s, quiet){
   if (!SERIAL.connected) return;
+  SERIAL.unacked = (SERIAL.unacked || 0) + 1;         // each line is answered by one ok or error
   if (!quiet) logC('tx', s);
   rawWrite(new TextEncoder().encode(s + '\n'));
 }
@@ -62,7 +63,7 @@ async function serialConnect(pick){
     SERIAL.writeChain = Promise.resolve();
     SERIAL.connected = true;
     SERIAL.lineBuf = '';
-    SERIAL.settings = {}; SERIAL.offsets = {}; SERIAL.buildInfo = '';
+    SERIAL.settings = {}; SERIAL.offsets = {}; SERIAL.buildInfo = ''; SERIAL.tloWarned = false;
     SERIAL.queried = false; SERIAL.rateApplied = false; SERIAL.jogRateApplied = false; SERIAL.accelApplied = false;
     SERIAL.homedSeen = false; SERIAL.prevState = ''; HOME_ASKED = false;
     PROBE.active = false; PROBE.onDone = null; PROBE.refZ = null; PROBE.previewDone = false;
@@ -131,6 +132,16 @@ async function readLoop(){
 
 function handleRx(line){
   if (line[0] === '<'){ parseStatus(line); if (SERIAL.verbose) logC('rx', line); return; }
+  if (line === 'ok' || line.indexOf('error:') === 0){
+    if (SERIAL.unacked > 0) SERIAL.unacked--;
+    // An answer owed to a line sent before the probe started belongs to that line, not the probe: taking
+    // it as the probe's own would move the probe on a step early, out of step with the controller.
+    if (PROBE.active && PROBE.skip > 0){
+      PROBE.skip--;
+      if (line !== 'ok') logC('err', line + ' \u2014 for a command sent before the probe started');
+      return;
+    }
+  }
   if (line === 'ok'){
     if (PROBE.active){ probeNext(); return; }
     if (QA.active){ if (SERIAL.verbose) logC('ok', 'ok'); qaNext(); return; }
@@ -175,8 +186,11 @@ function handleRx(line){
         // A probe alarm leaves the machine locked, so say what happened and offer the way out.
         uiDialog({title:'The probe didn\u2019t finish',
                   body: atxt + '\n\n' +
-                        (a === 5 ? 'The tool never touched the plate within its search travel. Jog the tip closer \u2014 2 to 10 mm above the plate \u2014 and probe again.'
-                                 : 'The probe circuit was already closed when the move started. Check the clip is on the tool and the plate isn\u2019t touching the bit.') +
+                        (/BitSetter/i.test(PROBE.name || '')                 // advice for the device that was probing
+                          ? (a === 5 ? 'The tool went all the way down without touching the BitSetter. Check its position is captured right over the button (Settings \u2192 Accessories \u2192 BitSetter), and that its cable is plugged in.'
+                                     : 'The BitSetter\u2019s switch was already pressed when the move started. Check nothing is resting on the button, and its cable.')
+                          : (a === 5 ? 'The tool never touched the plate within its search travel. Jog the tip closer \u2014 2 to 10 mm above the plate \u2014 and probe again.'
+                                     : 'The probe circuit was already closed when the move started. Check the clip is on the tool and the plate isn\u2019t touching the bit.')) +
                         '\n\nThe machine is locked until it is unlocked or homed.',
                   ok:'Unlock ($X)', cancel:'Leave locked'}).then(function(go){
           if (go && SERIAL.connected) sendLine('$X');
@@ -190,6 +204,7 @@ function handleRx(line){
     return;
   }
   if (line.indexOf('Grbl') === 0){
+    SERIAL.unacked = 0;                                  // a reset: nothing sent before it will be answered
     if (QA.active) qaFinish(false, 'the controller was reset');
     logC('sys', line); doQuery(); return;
   }
@@ -210,6 +225,15 @@ function handleRx(line){
       if (SERIAL.settings[13] === 1) coords = coords.map(function (q) { return q * 25.4; });   // $# in inches too
       SERIAL.offsets[bm[1]] = coords;
       if (bm[1] === 'PRB') probeOnPRB(coords[2], parts2[1] === '1');
+      // A tool length offset already active when Control reads the offsets was set before this session,
+      // for a zero and reference Control knows nothing about: say so once, and what to do.
+      var ours = (PROBE.tlo || 0) + (typeof ZN !== 'undefined' ? ZN.val : 0);      // the offset Control set itself, this session
+      if (bm[1] === 'TLO' && Math.abs((coords[0] || 0) - ours) > 0.001 && !JOB.active && !PROBE.active && !SERIAL.tloWarned){
+        SERIAL.tloWarned = true;
+        logC('err', 'a tool length offset of ' + coords[0].toFixed(3) + ' mm is active in the controller, left from before');
+        uiNote('A tool length offset is still active', 'The controller has a tool length offset of ' + coords[0].toFixed(3) + ' mm, left from an earlier ' +
+               'tool change. It belongs to a Z zero set before this session, so set Z zero again before cutting: that clears it.');
+      }
     }
     logC('rx', line);
     return;
