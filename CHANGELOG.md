@@ -33,7 +33,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   still works; a version with a suffix is a pre-release. (A workflow can't start another workflow with a tag
   it creates, so the Windows workflow does both: a first job decides the tag, and creates it.) Tested in
   each case against a scratch repository.
-- Includes Control 0.31.14 and Design 0.92.0.
+- Includes Control 0.31.15 and Design 0.92.1.
 
 ### 0.6.2-beta.4 — built only from the right files
 - **Fixed: the new source check failed on GitHub's Windows machine**, on a correct repository. Git there
@@ -284,6 +284,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.15 — the Shapeoko 5 Pro and 5.1 Pro
+- **The Shapeoko 5 Pro and 5.1 Pro**, in all three sizes, in the work area presets (2×2, 623 × 623 mm;
+  4×2, 1237 × 623 mm; 4×4, 1237 × 1237 mm), and recognised from the controller's travel settings when
+  connecting, with its ballscrew Z (166.67 steps/mm). The 5.1 Pro is the 5 Pro with a stiffer base
+  frame, with the same travel, so one entry covers both.
 
 ### 0.31.14 — jobs from 454 Design
 - **Takes jobs from Design's new "Preview in 454 Control"** (`apps/control/src/js/handoff.js`): an open
@@ -603,6 +609,9 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.92.1
+- **The Shapeoko 5 / 5.1 Pro**, in all three sizes, in Job setup's cutting areas.
 
 ### 0.92.0 — Preview in 454 Control
 - **A "Preview in 454 Control" button** in the Toolpaths panel loads exactly the G-code Save G-code writes

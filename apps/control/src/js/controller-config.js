@@ -28,7 +28,9 @@ function detectModel(){
   var models = [
     [420,430,'Shapeoko 3'],[830,430,'Shapeoko XL'],[830,850,'Shapeoko XXL'],
     [845,850,'Shapeoko XXL'],[870,440,'Shapeoko Pro XL'],[870,850,'Shapeoko Pro XXL'],
-    [445,445,'Shapeoko 4 Standard'],[203,203,'Nomad'],[205,205,'Nomad']
+    [445,445,'Shapeoko 4 Standard'],[203,203,'Nomad'],[205,205,'Nomad'],
+    // Shapeoko 5 Pro and 5.1 Pro (the 5.1 has a stiffer base frame; the same travel, so the same here)
+    [623,623,'Shapeoko 5 Pro 2\u00d72'],[1237,623,'Shapeoko 5 Pro 4\u00d72'],[1237,1237,'Shapeoko 5 Pro 4\u00d74']
   ];
   var best = null, bd = 1e9;
   for (var i = 0; i < models.length; i++){
@@ -37,7 +39,7 @@ function detectModel(){
   }
   var name = bd <= 30 ? best[2] : 'custom machine';
   var z = s[102];
-  var zt = z === 40 ? 'belt Z' : z === 200 ? 'Z-Plus' : z === 320 ? 'HDZ' : '';
+  var zt = z === 40 ? 'belt Z' : z === 200 ? 'Z-Plus' : z === 320 ? 'HDZ' : Math.abs(z - 166.667) < 0.1 ? 'ballscrew Z' : '';
   return {name:name, zt:zt, x:x, y:y, z:s[132]};
 }
 
