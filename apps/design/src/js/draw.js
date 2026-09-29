@@ -59,7 +59,7 @@ function draw(){
   DOC.ents.forEach(function(e,i){
     if (!entVisible(e)) return;                        // hidden layer
     var isSel = SEL.indexOf(i) >= 0;
-    ctx.strokeStyle = isSel ? THEME.accentLight : (e.con ? UICFG.colors.con : (e.tp ? UICFG.colors.tp : UICFG.colors.vec));
+    ctx.strokeStyle = isSel ? THEME.accentLight : (e.con ? dispCol('con') : (e.tp ? dispCol('tp') : dispCol('vec')));
     ctx.lineWidth = isSel ? 2.5 : (e.con ? 1.2 : 1.6);
     ctx.setLineDash(e.con ? [6,4] : []);
     ctx.beginPath();
@@ -278,7 +278,7 @@ function draw(){
       });
       ctx.restore();
     }
-    var cutCol = UICFG.colors && UICFG.colors.tp ? UICFG.colors.tp : THEME.accent;
+    var cutCol = UICFG.colors && UICFG.colors.tp ? dispCol('tp') : THEME.accent;
     function drawTabs(tp, strong){
       if (!tp.tabsOn || !tp.tabPts) return;
       ctx.save();
@@ -447,8 +447,8 @@ function draw(){
       var lab = dimLabel(d), anc = dimAnchor(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);
-      ctx.strokeStyle = isSelD ? THEME.accentLight : UICFG.colors.dim;
-      ctx.fillStyle   = isSelD ? THEME.accentLight : UICFG.colors.dim;
+      ctx.strokeStyle = isSelD ? THEME.accentLight : dispCol('dim');
+      ctx.fillStyle   = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.lineWidth = 1;
       ctx.setLineDash([]);
       if (d.kind === 'pair' || d.kind === 'side'){
@@ -468,7 +468,7 @@ function draw(){
       ctx.fillStyle = 'rgba(20,24,29,0.85)';
       ctx.fillRect(lp.x - tw/2 - 4, lp.y + offY - 8, tw + 8, 16);
       ctx.restore();
-      ctx.fillStyle = isSelD ? THEME.accentLight : UICFG.colors.dim;
+      ctx.fillStyle = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.fillText(lab, lp.x, lp.y + offY);
       d._hit = {x:lp.x, y:lp.y + offY, w:tw + 8, h:16};   // for click-to-edit
     });

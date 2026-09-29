@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.16 — the light theme, readable
+- **The light theme's fixes, in the app:** the value box you type into in Design (it was black text in a
+  black box), shapes drawn dark enough to see, and Control's Fit button, legend and run bar. Also the
+  Settings panel that fits its text. Includes Control 0.31.17 and Design 0.96.2.
+
 ### 0.6.2-beta.15 — save the drawing before closing?
 - **Closing 454 Design with a drawing that isn't saved to a file asks: Save…, Don't save, or Cancel.**
   Design keeps the drawing as you work, so it's there next time, but that isn't a file, and nothing said so.
@@ -365,6 +370,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.31.17 — the light theme, readable
+- **Fixed: on the light theme, parts of the 3D view were dark boxes.** The **Fit** button, the colour
+  legend and the bar over the view while running (STOP, the state, X Y Z, Jog & zero) had dark backgrounds
+  written in, so on the light theme their text (the position, in the run bar) was dark on dark. They now take
+  the theme's panel colour. So do the Code tab's highlighted line and a chosen toolpath's card, which were a
+  dark brown.
+
 ### 0.31.16 — the update notice
 - In the desktop app, a notice in the header when there's a new version of 454 Workshop (see the desktop
   app's 0.6.2-beta.13). Nothing changes on the website.
@@ -693,6 +705,19 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.96.2 — the light theme, readable
+- **Fixed: on the light theme, what you typed into the value box couldn't be seen.** The box beside the
+  pointer (a dimension's value, a line's length) had a dark background written in, while its text follows
+  the theme, so on the light theme it was near-black text in a near-black box. The box, the prompt bar and
+  the hint above it now take the theme's own panel colour.
+- **Fixed: on the light theme, shapes were near-white on a near-white canvas.** The display colours
+  (Settings) were made for the dark theme. On the light one, a colour still at its default is now drawn in
+  a light-theme partner: shapes near-black, dimensions a deeper blue, construction lines and toolpath
+  previews a little darker. A colour you picked yourself is used as it is, on either theme, and the Settings
+  swatches show the colours as they're drawn.
+- The dark theme looks as it did (checked against the docs' screenshots). Tested (4 tests, checked by
+  breaking the rule they cover), and seen in both themes.
 
 ### 0.96.1 — Settings fits its text
 - **The Settings panel no longer stretches to fit its longest sentence.** The note under "Snap lines to 45°

@@ -400,7 +400,7 @@
   .mirVal{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink)}
   .mirHint{font-size:11.5px;color:var(--muted);line-height:1.45;margin:8px 0 0}
   .mirBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
-  #floatIn{position:absolute;z-index:8;display:flex;align-items:center;gap:5px;background:rgba(20,24,29,.96);border:1px solid var(--amber);border-radius:5px;padding:3px 6px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+  #floatIn{position:absolute;z-index:8;display:flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--amber);border-radius:5px;padding:3px 6px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
   #floatIn[hidden]{display:none}
   #floatIn input{width:96px;background:none;border:0;outline:none;color:var(--ink);font-family:var(--mono);font-size:13px;padding:2px 0}
   #floatTag{font-size:11px;color:var(--amber);font-family:var(--mono);white-space:nowrap}
@@ -408,11 +408,11 @@
   #floatDel:hover{color:#e06c5a}
   #floatDel[hidden]{display:none}
   #floatTag:empty{display:none}
-  #promptBar{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:none;align-items:center;gap:8px;background:rgba(23,28,34,.95);border:1px solid var(--amber);border-radius:6px;padding:8px 12px;z-index:5}
+  #promptBar{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:none;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--amber);border-radius:6px;padding:8px 12px;z-index:5}
   #promptBar.on{display:flex}
   #promptBar label{color:var(--muted);font-size:12.5px}
   #promptBar input{width:170px}
-  #promptHint{position:absolute;left:50%;transform:translateX(-50%);bottom:60px;color:var(--faint);font-size:12px;z-index:5;background:rgba(20,24,29,.8);padding:3px 10px;border-radius:4px;display:none}
+  #promptHint{position:absolute;left:50%;transform:translateX(-50%);bottom:60px;color:var(--muted);font-size:12px;z-index:5;background:var(--panel);padding:3px 10px;border-radius:4px;display:none}
   #promptHint.on{display:block}
 
   #impModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:70}
@@ -902,7 +902,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.96.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.96.2'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -6262,6 +6262,7 @@ function applyTheme(t){
   root.style.setProperty('--accent-faint', 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',.08)');
   var lum = (0.299*c.r + 0.587*c.g + 0.114*c.b) / 255;
   root.style.setProperty('--on-accent', lum > 0.6 ? '#14181d' : '#fff');
+  if (typeof syncColorInputs === 'function') syncColorInputs();   // the swatches show the colours as drawn
   try{ draw(); }catch(e){}
 }
 var DLG_RESOLVE = null;
@@ -7516,7 +7517,7 @@ function draw(){
   DOC.ents.forEach(function(e,i){
     if (!entVisible(e)) return;                        // hidden layer
     var isSel = SEL.indexOf(i) >= 0;
-    ctx.strokeStyle = isSel ? THEME.accentLight : (e.con ? UICFG.colors.con : (e.tp ? UICFG.colors.tp : UICFG.colors.vec));
+    ctx.strokeStyle = isSel ? THEME.accentLight : (e.con ? dispCol('con') : (e.tp ? dispCol('tp') : dispCol('vec')));
     ctx.lineWidth = isSel ? 2.5 : (e.con ? 1.2 : 1.6);
     ctx.setLineDash(e.con ? [6,4] : []);
     ctx.beginPath();
@@ -7735,7 +7736,7 @@ function draw(){
       });
       ctx.restore();
     }
-    var cutCol = UICFG.colors && UICFG.colors.tp ? UICFG.colors.tp : THEME.accent;
+    var cutCol = UICFG.colors && UICFG.colors.tp ? dispCol('tp') : THEME.accent;
     function drawTabs(tp, strong){
       if (!tp.tabsOn || !tp.tabPts) return;
       ctx.save();
@@ -7904,8 +7905,8 @@ function draw(){
       var lab = dimLabel(d), anc = dimAnchor(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);
-      ctx.strokeStyle = isSelD ? THEME.accentLight : UICFG.colors.dim;
-      ctx.fillStyle   = isSelD ? THEME.accentLight : UICFG.colors.dim;
+      ctx.strokeStyle = isSelD ? THEME.accentLight : dispCol('dim');
+      ctx.fillStyle   = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.lineWidth = 1;
       ctx.setLineDash([]);
       if (d.kind === 'pair' || d.kind === 'side'){
@@ -7925,7 +7926,7 @@ function draw(){
       ctx.fillStyle = 'rgba(20,24,29,0.85)';
       ctx.fillRect(lp.x - tw/2 - 4, lp.y + offY - 8, tw + 8, 16);
       ctx.restore();
-      ctx.fillStyle = isSelD ? THEME.accentLight : UICFG.colors.dim;
+      ctx.fillStyle = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.fillText(lab, lp.x, lp.y + offY);
       d._hit = {x:lp.x, y:lp.y + offY, w:tw + 8, h:16};   // for click-to-edit
     });
@@ -10724,7 +10725,19 @@ var PANEL_GROUPS = [
  {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}
  /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
 ];
-var UICFG = {order:null, collapsed:{}, colors:{vec:'#dce3ea', tp:'#b87f2e', con:'#6b8cae', dim:'#8fb8d8'}, filletR:3, showDims:true};
+// Display colours. The defaults suit the dark theme; on the light one, a colour still at its default is drawn
+// in its light-theme partner instead (near-white shapes on a near-white canvas couldn't be seen). A colour
+// you picked is used as it is, on either theme.
+var COL_DARK = {vec:'#dce3ea', tp:'#b87f2e', con:'#6b8cae', dim:'#8fb8d8'};
+var COL_LIGHT = {vec:'#27303a', tp:'#a8721f', con:'#5a7fa6', dim:'#2f78b3'};
+function dispCol(k){ var c = UICFG.colors[k]; return THEME.theme === 'light' && c === COL_DARK[k] ? COL_LIGHT[k] : c; }
+function syncColorInputs(){
+  [['colVec','vec'],['colTp','tp'],['colCon','con'],['colDim','dim']].forEach(function(pair){
+    var inp = document.getElementById(pair[0]);
+    if (inp) inp.value = dispCol(pair[1]);
+  });
+}
+var UICFG = {order:null, collapsed:{}, colors:{vec:COL_DARK.vec, tp:COL_DARK.tp, con:COL_DARK.con, dim:COL_DARK.dim}, filletR:3, showDims:true};
 function uiCfgLoad(){
   try{
     var c = JSON.parse(localStorage.getItem('d454DesignUI') || localStorage.getItem('kerfDesignUI') || 'null');
@@ -10732,8 +10745,8 @@ function uiCfgLoad(){
       UICFG.order = c.order || null;
       UICFG.collapsed = c.collapsed || {};
       if (c.colors && c.colors.vec && c.colors.tp) UICFG.colors = c.colors;
-      if (!UICFG.colors.con) UICFG.colors.con = '#6b8cae';
-      if (!UICFG.colors.dim) UICFG.colors.dim = '#8fb8d8';
+      if (!UICFG.colors.con) UICFG.colors.con = COL_DARK.con;
+      if (!UICFG.colors.dim) UICFG.colors.dim = COL_DARK.dim;
       if (typeof c.showDims === 'boolean') UICFG.showDims = c.showDims;
       if (c.filletR > 0) UICFG.filletR = c.filletR;
       if (c.lastFont) UICFG.lastFont = c.lastFont;
@@ -11065,7 +11078,7 @@ function wire(){
   [['colVec','vec'],['colTp','tp'],['colCon','con'],['colDim','dim']].forEach(function(pair){
     var inp = document.getElementById(pair[0]);
     if (!inp) return;
-    inp.value = UICFG.colors[pair[1]];
+    inp.value = dispCol(pair[1]);
     inp.addEventListener('input', function(){
       UICFG.colors[pair[1]] = inp.value;
       uiCfgSave();

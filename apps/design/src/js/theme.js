@@ -45,5 +45,6 @@ function applyTheme(t){
   root.style.setProperty('--accent-faint', 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',.08)');
   var lum = (0.299*c.r + 0.587*c.g + 0.114*c.b) / 255;
   root.style.setProperty('--on-accent', lum > 0.6 ? '#14181d' : '#fff');
+  if (typeof syncColorInputs === 'function') syncColorInputs();   // the swatches show the colours as drawn
   try{ draw(); }catch(e){}
 }

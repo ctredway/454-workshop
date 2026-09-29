@@ -48,8 +48,8 @@
   #dropOverlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,24,29,.85);border:2px dashed var(--amber);z-index:20;font-size:18px;font-weight:600;color:var(--amber);pointer-events:none}
   body.dragging #dropOverlay{display:flex}
   #viewHud{position:absolute;top:10px;left:10px;display:flex;gap:6px;z-index:5}
-  #viewHud button{padding:4px 10px;font-size:12px;background:rgba(29,35,43,.9)}
-  #legend{position:absolute;bottom:10px;left:10px;z-index:5;background:rgba(23,28,34,.85);border:1px solid var(--line);border-radius:5px;padding:8px 12px;font-size:12px;color:var(--muted);display:flex;gap:14px}
+  #viewHud button{padding:4px 10px;font-size:12px;background:var(--panel)}
+  #legend{position:absolute;bottom:10px;left:10px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:8px 12px;font-size:12px;color:var(--muted);display:flex;gap:14px}
   .lg{display:flex;align-items:center;gap:6px}
   .swatch{width:18px;height:0;border-top:2.5px solid}
   .swatch.dash{border-top-style:dashed}
@@ -74,7 +74,7 @@
   #tpSumHead{margin:2px 2px 8px;font-size:12px;color:var(--muted);line-height:1.45}
   .tpsCard{display:block;width:100%;text-align:left;margin:0 0 8px;padding:9px 10px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:5px;background:var(--panel-deep);color:var(--ink);cursor:pointer;font-family:var(--sans)}
   .tpsCard:hover{border-color:var(--faint);border-left-color:var(--amber)}
-  .tpsCard.on{background:#2c2417;border-color:var(--amber)}
+  .tpsCard.on{background:var(--accent-soft);border-color:var(--amber)}
   .tpsName{display:flex;align-items:baseline;gap:8px;font-weight:600;font-size:13px}
   .tpsTime{margin-left:auto;font-weight:400;font-family:var(--mono);font-size:11.5px;color:var(--amber)}
   .tpsTool{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -85,10 +85,10 @@
   #codeScroller{flex:1;overflow-y:auto;position:relative;background:var(--panel-deep);font-family:var(--mono);font-size:12px;line-height:20px}
   #codeSpacer{position:relative;width:100%}
   .cl{position:absolute;left:0;right:0;height:20px;display:flex;white-space:pre;cursor:pointer}
-  .cl:hover{background:#232b35}
+  .cl:hover{background:var(--line)}
   .cl .ln{width:52px;flex:none;text-align:right;padding-right:10px;color:var(--faint);user-select:none}
   .cl .tx{color:#b9c3ce;overflow:hidden;text-overflow:ellipsis}
-  .cl.cur{background:#2c2417}
+  .cl.cur{background:var(--accent-soft)}
   .cl.cur .ln{color:var(--amber)}
   .cl.cur::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--amber)}
   .cl.issueSel{background:#33222070;box-shadow:inset 0 0 0 1px var(--err)}
@@ -213,7 +213,7 @@
   #qaList .note{grid-column:1/-1}
   #bzPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;width:430px;box-shadow:0 14px 44px rgba(0,0,0,.55)}
   #bzCircuit.ok{background:#2b4029;color:#a9d29c}
-  #runBar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;display:none;align-items:center;gap:8px;background:rgba(23,28,34,.92);border:1px solid var(--line);border-radius:6px;padding:7px 12px}
+  #runBar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;display:none;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px}
   #runBar.on{display:flex}
   #rbPos{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
   #rbPos b{color:var(--ink);font-weight:500}

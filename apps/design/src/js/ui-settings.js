@@ -1,4 +1,16 @@
-var UICFG = {order:null, collapsed:{}, colors:{vec:'#dce3ea', tp:'#b87f2e', con:'#6b8cae', dim:'#8fb8d8'}, filletR:3, showDims:true};
+// Display colours. The defaults suit the dark theme; on the light one, a colour still at its default is drawn
+// in its light-theme partner instead (near-white shapes on a near-white canvas couldn't be seen). A colour
+// you picked is used as it is, on either theme.
+var COL_DARK = {vec:'#dce3ea', tp:'#b87f2e', con:'#6b8cae', dim:'#8fb8d8'};
+var COL_LIGHT = {vec:'#27303a', tp:'#a8721f', con:'#5a7fa6', dim:'#2f78b3'};
+function dispCol(k){ var c = UICFG.colors[k]; return THEME.theme === 'light' && c === COL_DARK[k] ? COL_LIGHT[k] : c; }
+function syncColorInputs(){
+  [['colVec','vec'],['colTp','tp'],['colCon','con'],['colDim','dim']].forEach(function(pair){
+    var inp = document.getElementById(pair[0]);
+    if (inp) inp.value = dispCol(pair[1]);
+  });
+}
+var UICFG = {order:null, collapsed:{}, colors:{vec:COL_DARK.vec, tp:COL_DARK.tp, con:COL_DARK.con, dim:COL_DARK.dim}, filletR:3, showDims:true};
 function uiCfgLoad(){
   try{
     var c = JSON.parse(localStorage.getItem('d454DesignUI') || localStorage.getItem('kerfDesignUI') || 'null');
@@ -6,8 +18,8 @@ function uiCfgLoad(){
       UICFG.order = c.order || null;
       UICFG.collapsed = c.collapsed || {};
       if (c.colors && c.colors.vec && c.colors.tp) UICFG.colors = c.colors;
-      if (!UICFG.colors.con) UICFG.colors.con = '#6b8cae';
-      if (!UICFG.colors.dim) UICFG.colors.dim = '#8fb8d8';
+      if (!UICFG.colors.con) UICFG.colors.con = COL_DARK.con;
+      if (!UICFG.colors.dim) UICFG.colors.dim = COL_DARK.dim;
       if (typeof c.showDims === 'boolean') UICFG.showDims = c.showDims;
       if (c.filletR > 0) UICFG.filletR = c.filletR;
       if (c.lastFont) UICFG.lastFont = c.lastFont;

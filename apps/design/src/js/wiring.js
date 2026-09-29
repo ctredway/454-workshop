@@ -55,7 +55,7 @@ function wire(){
   [['colVec','vec'],['colTp','tp'],['colCon','con'],['colDim','dim']].forEach(function(pair){
     var inp = document.getElementById(pair[0]);
     if (!inp) return;
-    inp.value = UICFG.colors[pair[1]];
+    inp.value = dispCol(pair[1]);
     inp.addEventListener('input', function(){
       UICFG.colors[pair[1]] = inp.value;
       uiCfgSave();
