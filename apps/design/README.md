@@ -103,5 +103,22 @@ next stage:
 - `model.js` ends with `FONTS_CACHED_READY`, which belongs with `fonts.js`.
 - `dimensions.js` ends with the canvas variables (`cv`, `ctx`), which belong with `view.js` or `draw.js`.
 
-**Next:** move the logic that doesn't touch the page (geometry, the importers and exporters, toolpath
-generation, nesting) into modules with unit tests of their own, as 454 Control's job builder and parser.
+## Tests
+
+```sh
+node --test 'apps/design/test/*.test.mjs'     # GitHub runs these on every push
+```
+
+`test/harness.mjs` loads Design's **real source files**, in the page's order, into Node, with Design's own
+markup as the page (linkedom supplies the DOM and the SVG parser), so tests exercise exactly the code Design
+runs, without rewriting it into modules first. Values Design makes come from its own context, with its own
+`Array` and `Object`, so tests compare plain copies of them.
+
+**File formats** (`test/formats.test.mjs`): reading DXF (lines, circles, arcs, polyline bulges, blocks placed
+scaled and rotated, splines, ellipses, layers that are off or locked, units, what isn't imported), writing
+DXF and reading it back, reading SVG (units, the Y flip, arcs, Bézier accuracy, transforms, Inkscape layers,
+hidden and unsupported elements), Design's own SVG coming back exactly, and adding a file to a drawing
+(layers joining by name, placement, nothing already there changing). Each was checked by breaking the code
+it covers and watching a test fail.
+
+**Next:** toolpath generation (with the CAM engine loaded too), nesting, and the geometry operations.

@@ -139,3 +139,6 @@ Design's `design.html` is assembled from `apps/design/src` by `node apps/design/
 Control's: edit the files there, then build, and commit both. GitHub checks they match. See
 [apps/design/README.md](apps/design/README.md) for what's in each file. Design's version is
 `apps/design/src/js/version.js`.
+
+**Design's tests** run on its real source files in Node: `node --test 'apps/design/test/*.test.mjs'` (after
+`npm ci`, which installs linkedom for them).

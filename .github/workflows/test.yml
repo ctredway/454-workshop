@@ -16,3 +16,5 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - name: 454 Design's tests (on its real source files; needs npm ci for linkedom)
+        run: node --test 'apps/design/test/*.test.mjs'

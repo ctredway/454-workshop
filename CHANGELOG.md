@@ -610,6 +610,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### Tests for its file formats (no change in behaviour)
+- **Design's code now has tests**, run on its **real source files** in Node (`apps/design/test/harness.mjs`
+  loads them in the page's order, with Design's own markup as the page; linkedom supplies the DOM and SVG
+  parser, as a development-only dependency). No rewriting into modules first: the tests exercise exactly
+  the code Design runs.
+- **16 tests of its file formats**: reading DXF (lines, circles, arcs, polyline bulges, blocks placed
+  scaled and rotated, splines, ellipses, layers off or locked, units, what isn't imported), writing DXF
+  and reading it back (a clockwise arc returns as the same arc drawn anticlockwise, as DXF stores arcs; a
+  rectangle as its outline), reading SVG (units, the Y flip, arc direction, Bézier accuracy, transforms,
+  Inkscape layers, hidden and unsupported elements), Design's own SVG returning exactly where it was, and
+  adding a file to a drawing. Checked by breaking the code seven ways: each break was caught.
+- GitHub runs them on every push.
+
 ### Source split into files (no change in behaviour)
 - **Design is now worked on as 67 source files** in `apps/design/src` (its styles, the CAM loader, and its
   code by subject: the model, fonts, text, dimensions, snapping, the tool manager, toolpaths and their
