@@ -6,6 +6,7 @@ function wire(){
   buildToolPanel();
   wirePanel();
   unsavedWire();
+  clipWire();
   fit();
 
   document.getElementById('stkT').addEventListener('change', function(e){
@@ -815,14 +816,7 @@ function wire(){
       deleteDim(DIMSEL); e.preventDefault(); return;
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && SEL.length){
-      pushUndo();
-      var goneIds = SEL.map(function(si){ return DOC.ents[si] && DOC.ents[si]._id; }).filter(Boolean);
-      SEL.slice().sort(function(a,b){return b-a;}).forEach(function(si){ DOC.ents.splice(si,1); });
-      // drop dimensions whose references just disappeared
-      if (DOC.dims) DOC.dims = DOC.dims.filter(function(d){
-        return goneIds.indexOf(d.a) < 0 && (d.b === undefined || goneIds.indexOf(d.b) < 0);
-      });
-      SEL=[]; persist(); draw(); return;
+      deleteSelection(); return;                 // clipboard.js: the shapes, and the dimensions that measured them
     }
     if (SEL.length && (e.key.indexOf('Arrow') === 0)){
       e.preventDefault();

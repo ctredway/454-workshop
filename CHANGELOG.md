@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.17 — copy and paste
+- **Copy, cut and paste shapes in Design, with their dimensions** (see Design 0.97.0). Includes Design 0.97.0.
+
 ### 0.6.2-beta.16 — the light theme, readable
 - **The light theme's fixes, in the app:** the value box you type into in Design (it was black text in a
   black box), shapes drawn dark enough to see, and Control's Fit button, legend and run bar. Also the
@@ -705,6 +708,23 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.97.0 — copy and paste, dimensions included
+- **Ctrl+C, Ctrl+X and Ctrl+V copy, cut and paste shapes.** Ctrl+V puts the copy centred on the pointer
+  (snapping as drawing does), or 10 mm right and down from the original if the pointer isn't over the
+  drawing; **Ctrl+Shift+V** pastes it exactly where it was copied from. The pasted shapes come in selected.
+  In the desktop app, Edit → Copy, Cut and Paste do the same. In a text box, the keys copy and paste text as
+  always.
+- **Dimensions come with the shapes.** Every dimension that measures only copied shapes (a rectangle's width,
+  the distance between two parts copied together) is pasted measuring the copies, on the same edges, so a
+  copy can be changed through its own dimensions without touching the original. A dimension to a shape that
+  wasn't copied stays with the original. Toolpaths don't come: they belong to the original shapes.
+- A copy goes on its own layer, or on the current one if its own is hidden or locked (where it couldn't be
+  seen or edited). What's copied is kept, so it can be pasted after reopening Design or in another Design
+  window.
+- Delete now shares its code with Cut (the same behaviour: the shapes go, and the dimensions on them).
+- Tested on Design's real code (11 tests, each checked by breaking what it covers), and in the desktop app
+  with real key presses and the Edit menu: each paste adds one copy, never two.
 
 ### 0.96.2 — the light theme, readable
 - **Fixed: on the light theme, what you typed into the value box couldn't be seen.** The box beside the

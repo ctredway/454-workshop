@@ -102,6 +102,8 @@ without a published release looks to them like a newest release with nothing in 
 - **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
   (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
   454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.
+- **Copy and paste bring dimensions** (`clipboard.js`): a dimension whose shapes were all copied is pasted
+  measuring the copies; one to a shape left behind stays. Ctrl+V pastes at the pointer, Ctrl+Shift+V in place.
 - **Design asks before closing an unsaved drawing** (not saved to a file since it changed; `unsaved.js`):
   the desktop app asks Save… / Don't save / Cancel, for the window, a quit and a restart to update.
   Don't save, New, or opening another drawing puts it aside; File → Recover last drawing brings it back.

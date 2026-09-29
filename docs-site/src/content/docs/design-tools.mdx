@@ -120,10 +120,35 @@ Picks shapes so you can move them, change them, or use another tool on them.
 3. **Drag** a selected shape to move it, or nudge it with the arrow keys: 1 mm a press, 0.1 mm with <kbd>Shift</kbd>.
 4. **Double-click** a selected shape for handles: corners scale in proportion, sides stretch one way. Click it again for rotate handles.
 5. <kbd>Delete</kbd> removes what’s selected.
+6. <kbd>Ctrl</kbd>+<kbd>C</kbd> copies what’s selected, <kbd>Ctrl</kbd>+<kbd>X</kbd> cuts it, and <kbd>Ctrl</kbd>+<kbd>V</kbd>
+   pastes it: see [Copy and paste](#copy-and-paste).
 
 :::tip
 Shapes on hidden or locked layers can’t be selected.
 :::
+
+### Copy and paste
+
+Copies shapes, with their dimensions, to paste somewhere else in the drawing, or into another drawing.
+
+1. Select the shapes, then press <kbd>Ctrl</kbd>+<kbd>C</kbd> to copy them, or <kbd>Ctrl</kbd>+<kbd>X</kbd> to cut them
+   (copy, then remove).
+2. Press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste: the copy lands centred on the pointer, and snaps as drawing does. If the
+   pointer isn't over the drawing, it goes 10 mm right and down from the original.
+3. Or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> to paste it exactly where it was copied from, then move it
+   precisely: type an offset with **Copy** or **Select**, or use the arrow keys.
+
+The pasted shapes come in selected. Paste again for another copy. In the desktop app, **Edit → Copy**, **Cut**
+and **Paste** do the same.
+
+- **Dimensions come along.** Every dimension that measures only copied shapes is pasted measuring the
+  copies: a rectangle's width, or the distance between two parts you copied together. Change a copy through
+  its dimension and the original stays as it was. A dimension to a shape you didn't copy stays with the
+  original.
+- **Toolpaths don't.** They belong to the original shapes: add the copies to a toolpath, or make a new one.
+- **Layers:** a copy goes on its own layer, or on the current layer if its own is hidden or locked.
+- What's copied stays available after you close 454 Design, and in another 454 Design window. In a text box,
+  the keys copy and paste text as usual.
 
 <Shot src={selHandles} alt="A selected rectangle with square scale handles at its corners and sides, and its width and height shown; a circle beside it." caption="Double-click a selected shape for its handles: corners scale in proportion, sides stretch one way." />
 
