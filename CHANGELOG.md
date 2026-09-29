@@ -27,13 +27,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.5 to beta.7 — releases tag themselves
+### 0.6.2-beta.5 to beta.8 — releases tag themselves
 - **A new version in `apps/desktop/package.json`, pushed to main, is tagged, built and drafted as a
   release**: no separate tag step. A change that keeps the version builds nothing; pushing a tag by hand
   still works; a version with a suffix is a pre-release. (A workflow can't start another workflow with a tag
   it creates, so the Windows workflow does both: a first job decides the tag, and creates it.) Tested in
   each case against a scratch repository.
-- beta.6 includes Control 0.31.15 and Design 0.93.0; beta.7, Design 0.94.0.
+- beta.6 includes Control 0.31.15 and Design 0.93.0; beta.7, Design 0.94.0; beta.8, Design 0.94.1 (the tab fix).
 
 ### 0.6.2-beta.4 — built only from the right files
 - **Fixed: the new source check failed on GitHub's Windows machine**, on a correct repository. Git there
@@ -609,6 +609,22 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.94.1 — tabs as thick as they say, and toolpaths tested
+- **Fixed: tabs on a through cut were thinner than set.** Their height was measured from the bottom of the
+  cut, which for a through cut is the overcut below the material, so a 0.5 mm tab with the usual 0.2 mm
+  overcut left only 0.3 mm of material, 40% less than the editor said. A tab's thickness is now the
+  material it leaves, measured from the bottom of the material, whenever a cut goes below it. Found by the
+  new toolpath tests. The CAM reference now says what tab thickness means.
+- **Toolpaths are tested**, made through Design's own toolpath editor with the CAM engine loaded, and
+  checked against geometry worked out independently: profiles (the cutter's centre never closer than its
+  radius, outside or inside, and at most 0.011 mm farther: the engine pads offsets by its 0.01 mm
+  simplifying tolerance, on purpose), passes, through cuts with Z zero on top or on the spoilboard, tabs,
+  a pocket with an island (never touching a wall or the island, and every point of the floor cleared),
+  drilling, chamfers, a V-carve's depth and centre line, and the job's G-code read back by 454 Control's
+  own parser. Checked by breaking the code eight ways (the tab bug among them): each was caught.
+- The test harness starts Design's page as the browser does (its own startup code), so its controls
+  listen as they do there, and its select lists and checkboxes behave as a browser's.
 
 ### Tests for its file formats (no change in behaviour)
 - **Design's code now has tests**, run on its **real source files** in Node (`apps/design/test/harness.mjs`

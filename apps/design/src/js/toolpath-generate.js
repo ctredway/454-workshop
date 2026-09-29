@@ -154,7 +154,7 @@ function tpGenerate(tp){
       stepFinal: tp.allowance || 0, finishPass: !!tp.finishPass,
       lead: tp.leadType && tp.leadType !== 'none' ? {type: tp.leadType, size: tp.leadSize > 0 ? tp.leadSize : tp.dia} : null,
       feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2), climb: tp.climb !== false, safeZ: tpSurface() + (tp.safeZ || 6),
-      tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tp.tabThk || 0.5, at: pts} : null,
+      tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), at: pts} : null,
       ramp: {length: tp.rampLen || Math.max(4, tp.dia * 4)}
     });
     if (res.warning) warn = res.warning;
@@ -169,6 +169,14 @@ function tpStale(tp){ return tp.sig !== tpSignature(tp.ents) + tpStockSig(tp); }
 // Depth is measured down from the top of the material. "Through" means the thickness plus a
 // little extra, so the part comes free. Where Z zero is decides where the top of the material
 // is in machine terms: at zero, or at the thickness when zero is the spoilboard.
+// A tab's thickness is the material it leaves. The CAM engine measures it up from the bottom of the cut, so
+// when a cut goes below the material (a through cut's overcut into the spoilboard, or a depth typed deeper
+// than the material), the part below the material is added: otherwise a 0.5 mm tab on a through cut with the
+// usual 0.2 mm overcut left only 0.3 mm of material.
+function tpTabHeight(tp){
+  var thk = tp.tabThk || 0.5, t = DOC.stock && DOC.stock.t > 0 ? DOC.stock.t : 0;
+  return thk + (t > 0 ? Math.max(0, tpDepth(tp) - t) : 0);
+}
 function tpDepth(tp){
   if (tp.side === 'chamfer') return tpChamferDepth(tp);
   if (tp.side === 'vcarve') return tp.vcDepth || 0;
