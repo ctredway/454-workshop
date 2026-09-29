@@ -584,6 +584,9 @@
       <div class="srow"><input type="color" id="colCon"><label for="colCon">Construction</label></div>
       <div class="srow"><input type="color" id="colDim"><label for="colDim">Dimensions</label></div>
       <div class="srow"><input type="checkbox" id="showDims"><label for="showDims">Show dimensions layer</label></div>
+      <h4>Drawing</h4>
+      <div class="srow"><input type="checkbox" id="angleSnapChk"><label for="angleSnapChk">Snap lines to 45° and 90°</label></div>
+      <p class="snote">Lines and polylines, vectors and construction lines alike, snap to 0°, 45°, 90° and so on as you draw. Hold Shift to lock to the nearest one.</p>
       <div class="srow" style="margin-top:14px"><button id="settingsDone" class="primary">Done</button></div>
     </div>
   </div>
@@ -891,7 +894,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.93.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.94.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1544,6 +1547,42 @@ function guideSnap(w){ // nearest point on any guide within tolerance
   });
   return best;
 }
+// ---- angle snap: lines at 0, 45, 90, 135... degrees ----
+// Drawing a line or polyline segment, the end snaps onto the nearest 45-degree line through its start when
+// the cursor is within ANGLE_SNAP_PX of it (Shift: always), at a whole grid step along it. Vectors and
+// construction lines alike: they're drawn with the same tools. Settings -> Drawing turns it off.
+var ANGLE_SNAP_PX = 10;
+function drawAnchor(){                                // the point the segment being drawn starts from
+  if (TOOL === 'line' && DRAW && DRAW.stage === 1) return {x: DRAW.x, y: DRAW.y};
+  if (TOOL === 'poly' && DRAW && DRAW.pts && DRAW.pts.length){ var l = DRAW.pts[DRAW.pts.length - 1]; return {x: l[0], y: l[1]}; }
+  return null;
+}
+function angleSnap(w){
+  if (UICFG.angleSnap === false) return null;
+  var a = drawAnchor(); if (!a) return null;
+  var dx = w.x - a.x, dy = w.y - a.y;
+  if (Math.hypot(dx, dy) * VIEW.scale < 4) return null;                 // right on the start: nothing to aim
+  var k = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)), t = k * Math.PI / 4, ux = Math.cos(t), uy = Math.sin(t);
+  if (Math.abs(ux) < 1e-12) ux = 0; if (Math.abs(uy) < 1e-12) uy = 0;
+  var along = dx*ux + dy*uy, off = Math.abs(dy*ux - dx*uy);
+  if (along <= 0) return null;
+  if (!MOUSE.shift && off * VIEW.scale > ANGLE_SNAP_PX) return null;   // not near a 45-degree line: free
+  var deg = ((k * 45) % 360 + 360) % 360;
+  // a guide at the cursor: exactly where the angle line crosses it
+  var gs = guideSnap(w);
+  if (gs){
+    var best = null;
+    DOC.guides.forEach(function (g){
+      var den = g.a*ux + g.b*uy; if (Math.abs(den) < 1e-9) return;
+      var sAlong = (g.c - g.a*a.x - g.b*a.y) / den;
+      if (sAlong > 0 && Math.abs(sAlong - along) * VIEW.scale < ANGLE_SNAP_PX * 1.5 && (!best || Math.abs(sAlong - along) < Math.abs(best - along))) best = sAlong;
+    });
+    if (best !== null) return {x: a.x + ux*best, y: a.y + uy*best, k: 'angle', deg: deg, from: a, onGuide: true};
+  }
+  var step = VIEW.scale > 8 ? 0.5 : 1;                                  // a whole grid step along the line
+  along = Math.max(step, Math.round(along / step) * step);
+  return {x: a.x + ux*along, y: a.y + uy*along, k: 'angle', deg: deg, from: a};
+}
 function resolveSnap(w){
   var tol = 9/VIEW.scale;
   var best = null;
@@ -1551,7 +1590,9 @@ function resolveSnap(w){
     var d = Math.hypot(p.x-w.x, p.y-w.y);
     if (d < tol && (!best || d < best.d)) best = {x:p.x,y:p.y,d:d,k:p.k};
   });
-  if (best) return best;
+  if (best) return best;                              // a shape's point wins: it's the more deliberate aim
+  var as = angleSnap(w);
+  if (as) return as;
   var g = guideSnap(w);
   if (g) return g;
   // grid snap 1mm (0.5 when zoomed in past 8 px/mm)
@@ -7784,6 +7825,17 @@ function draw(){
       ctx.restore();
     }
   }
+  if (MOUSE.snap && MOUSE.snap.k === 'angle' && MOUSE.snap.from){
+    var af = w2s(MOUSE.snap.from.x, MOUSE.snap.from.y), at = w2s(MOUSE.snap.x, MOUSE.snap.y);
+    var adx = at.x - af.x, ady = at.y - af.y, aL = Math.hypot(adx, ady) || 1, far = Math.max(cv.width, cv.height) * 2;
+    ctx.save();
+    ctx.strokeStyle = THEME.accent; ctx.globalAlpha = 0.45; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(af.x, af.y); ctx.lineTo(af.x + adx / aL * far, af.y + ady / aL * far); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; ctx.fillStyle = THEME.accent;
+    ctx.fillText(MOUSE.snap.deg + '\u00b0' + (MOUSE.snap.onGuide ? ' \u00b7 guide' : ''), at.x + 12, at.y + 18);
+    ctx.restore();
+  }
   if (MOUSE.snap && MOUSE.snap.k !== 'grid'){
     var sm = w2s(MOUSE.snap.x, MOUSE.snap.y);
     ctx.strokeStyle = MOUSE.snap.k==='guideX' ? '#7fb069' : THEME.accent;
@@ -10827,6 +10879,16 @@ function wire(){
     UICFG.stockUnits = e.target.value; uiCfgSave(); syncStockUI();   // same size, shown in the new units
   });
   // display colors (now in the Settings modal, wired once)
+  // Shift pressed or released while drawing a line: the preview follows at once
+  ['keydown', 'keyup'].forEach(function (ev){ window.addEventListener(ev, function (e){
+    if (e.key !== 'Shift' || MOUSE.mx == null || !drawAnchor()) return;
+    MOUSE.shift = ev === 'keydown'; MOUSE.snap = resolveSnap(s2w(MOUSE.mx, MOUSE.my)); draw();
+  }); });
+  var asn = document.getElementById('angleSnapChk');
+  if (asn){
+    asn.checked = UICFG.angleSnap !== false;
+    asn.addEventListener('change', function(){ UICFG.angleSnap = asn.checked; uiCfgSave(); });
+  }
   var sd = document.getElementById('showDims');
   if (sd){
     sd.checked = UICFG.showDims !== false;
@@ -11360,6 +11422,7 @@ function wire(){
       draw(); return;
     }
     var w = s2w(MOUSE.mx, MOUSE.my);
+    MOUSE.shift = e.shiftKey;                        // Shift locks a line to the nearest 45 degrees
     MOUSE.snap = resolveSnap(w);
     toolMgrHover(w);   // edit tools compute check/X status for the geometry under the cursor
     // transform handle drag

@@ -27,13 +27,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.5 and beta.6 — releases tag themselves
+### 0.6.2-beta.5 to beta.7 — releases tag themselves
 - **A new version in `apps/desktop/package.json`, pushed to main, is tagged, built and drafted as a
   release**: no separate tag step. A change that keeps the version builds nothing; pushing a tag by hand
   still works; a version with a suffix is a pre-release. (A workflow can't start another workflow with a tag
   it creates, so the Windows workflow does both: a first job decides the tag, and creates it.) Tested in
   each case against a scratch repository.
-- beta.6 includes Control 0.31.15 and Design 0.93.0.
+- beta.6 includes Control 0.31.15 and Design 0.93.0; beta.7, Design 0.94.0.
 
 ### 0.6.2-beta.4 — built only from the right files
 - **Fixed: the new source check failed on GitHub's Windows machine**, on a correct repository. Git there
@@ -609,6 +609,17 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.94.0 — lines snap to 45° and 90°
+- **Lines and polylines snap to 0°, 45°, 90°, 135° and so on** from their start as you draw them, vectors
+  and construction lines alike (they're drawn with the same tools). Within 10 screen pixels of one of those
+  angles, the end snaps onto it, at a whole grid step along it; holding Shift locks to the nearest angle
+  wherever the pointer is. A dashed line along the angle, and the angle beside the pointer, show when it's
+  snapped. A shape's point (an end, middle, corner or centre) still wins over the angle, and a guide along
+  the way gives the exact crossing. On unless turned off: Settings → Drawing.
+- Tested case by case in the real page (each angle, free angles, Shift, an endpoint winning, a polyline,
+  a guide crossing, switched off), and with a line drawn by pointer events: clicked 2.3 mm off level, it
+  came out exactly level, and X made it a construction line.
 
 ### 0.93.0 — adding DXF and SVG files to a drawing
 - **Importing a DXF no longer replaces the drawing.** It did: shapes, toolpaths, dimensions and guides

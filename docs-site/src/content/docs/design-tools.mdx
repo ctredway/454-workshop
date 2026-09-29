@@ -35,7 +35,7 @@ Most tools can be used with the mouse alone, but for exact work you can type val
 
 <Shot src={typing} alt="Drawing a line: a dashed line runs from the last point to the pointer, and a box beside it holds the typed value @40,0." caption="Typing @40,0 while drawing a line. The dashed line follows the pointer; press Enter and the next point goes 40 mm to the right of the last one instead." />
 
-**Snapping:** while drawing, the pointer snaps to the ends, midpoints, corners and centers of shapes, to guides and where guides cross, and to the grid. **Esc** cancels whatever you’re in the middle of, and <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes almost anything.
+**Snapping:** while drawing, the pointer snaps to the ends, midpoints, corners and centers of shapes, to guides and where guides cross, and to the grid. Lines and polylines, vectors and construction lines alike, also snap to 0°, 45°, 90° and so on from their start: a dashed line and the angle show when they do, and holding <kbd>Shift</kbd> locks to the nearest one. (A shape's point still wins over the angle.) **Esc** cancels whatever you’re in the middle of, and <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes almost anything.
 
 ## File
 
@@ -117,7 +117,7 @@ Shortcut: <kbd>L</kbd>
 Draws straight lines, one after another.
 
 1. Click the first point, or type it as `x,y`.
-2. Click the next point, or type it: `x,y`, `@dx,dy` or `length<angle`. Each click adds a line from the last point.
+2. Click the next point, or type it: `x,y`, `@dx,dy` or `length<angle`. Each click adds a line from the last point. Near 0°, 45°, 90° and so on, the line snaps to that angle; hold <kbd>Shift</kbd> to lock it to the nearest one.
 3. Press <kbd>Esc</kbd> when you’re done.
 
 ### Rectangle
