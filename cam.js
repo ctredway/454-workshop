@@ -109,7 +109,7 @@
   //   climb     true for climb milling
   //   safeZ     height for rapid moves
   //   feed, plunge  mm/min
-  //   tabs      {count, length, thickness} or null
+  //   tabs      {count, length, thickness, shape} or null; shape 'flat' (the default) or '3d' (tapered)
   //   ramp      {length} to lead into each pass, or null for a straight plunge
   function profile(opts){
     var o = Object.assign({
@@ -203,11 +203,30 @@
         var tabZ = o.tabs ? o.z0 - Math.max(0, o.depth - o.tabs.thickness) : -Infinity;
         var cutTabs = !!(o.tabs && tabAt.length && z < tabZ - 1e-9);
         var rampLen = o.ramp && o.ramp.length > 0 ? Math.min(o.ramp.length, L) : 0;
+        // 3D (tapered) tabs: a triangle, the cut's floor at a tab's ends rising to its full height at its middle.
+        // The cutter follows the higher of that and the pass depth.
+        var tri = !!(o.tabs && o.tabs.shape === '3d'), zFloor = o.z0 - o.depth;
+        function tabTopAt(dist){                        // a 3D tab's top at this distance along the path
+          if (!cutTabs) return -Infinity;
+          var best = -Infinity, half = o.tabs.length / 2;
+          for (var ti = 0; ti < tabAt.length; ti++){
+            var c = tabAt[ti], dd = Math.min(Math.abs(dist - c), Math.abs(dist - c - L), Math.abs(dist - c + L));
+            if (dd < half) best = Math.max(best, zFloor + (tabZ - zFloor) * (1 - dd / half));
+          }
+          return best;
+        }
 
         // everywhere the path has to be cut: tab edges, the end of the ramp, and enough points
         // along the ramp for it to be a ramp rather than one long move
         var extra = [];
-        if (cutTabs) tabAt.forEach(function (c) { extra.push(c - o.tabs.length / 2); extra.push(c + o.tabs.length / 2); });
+        if (cutTabs) tabAt.forEach(function (c) {
+          var half = o.tabs.length / 2;
+          extra.push(c - half); extra.push(c + half);
+          if (tri){                                     // its peak, and where this pass meets its slopes: exact
+            extra.push(c);
+            if (z > zFloor + 1e-9){ var k = half * (1 - (z - zFloor) / (tabZ - zFloor)); if (k > 1e-6){ extra.push(c - k); extra.push(c + k); } }
+          }
+        });
         if (rampLen > 0) extra.push(rampLen);
         var stations = passStations(loop, extra, rampLen > 0 ? Math.max(0.5, rampLen / 12) : 0);
 
@@ -221,14 +240,16 @@
           return false;
         }
 
-        if (rampLen === 0) moves.push({g: 1, z: z, f: o.plunge});
+        // down at the start: never into a tab that's there (to its top, and across it from there)
+        var zIn = Math.max(z, cutTabs ? (tri ? tabTopAt(0) : (inTabAt(0) ? tabZ : -Infinity)) : -Infinity);
+        if (rampLen === 0) moves.push({g: 1, z: zIn, f: o.plunge});
         if (p === 1 && leadIn && rampLen === 0)
           for (var li0 = 1; li0 < leadIn.length; li0++) moves.push({g: 1, x: leadIn[li0][0], y: leadIn[li0][1], z: z, f: o.feed});
         // Tabs: step straight up at a tab's leading edge, cross it at tab height, and straight down
         // at its trailing edge. (The height used to be attached to the END of the move crossing into
         // a tab, so the cutter climbed gradually across it: a wedge, full thickness at one end and
         // cut right through at the other.)
-        var zNow = rampLen > 0 ? prevZ : z;
+        var zNow = rampLen > 0 ? prevZ : zIn;
         function toStation(si2, zWant, feed){
           var pt2 = pointAt(loop, stations[si2]);
           if (Math.abs(zWant - zNow) > 1e-9 && !(rampLen > 0 && stations[si2] <= rampLen + 1e-9)){
@@ -245,13 +266,18 @@
             // across at tab height, and down again after it (the ramp used to ignore tabs and nick them)
             var rampZ = function (dd) { return prevZ + (z - prevZ) * (dd / rampLen); };
             var inT = cutTabs && inTabAt((stations[si] + stations[si - 1]) / 2);
-            var zStart = inT ? Math.max(rampZ(stations[si - 1]), tabZ) : rampZ(stations[si - 1]);
-            var zr = inT ? Math.max(rampZ(d0), tabZ) : rampZ(d0), pr0 = pointAt(loop, d0);
+            var zStart = tri ? Math.max(rampZ(stations[si - 1]), tabTopAt(stations[si - 1])) : inT ? Math.max(rampZ(stations[si - 1]), tabZ) : rampZ(stations[si - 1]);
+            var zr = tri ? Math.max(rampZ(d0), tabTopAt(d0)) : inT ? Math.max(rampZ(d0), tabZ) : rampZ(d0), pr0 = pointAt(loop, d0);
             if (Math.abs(zStart - zNow) > 1e-9){
               var pe = pointAt(loop, stations[si - 1]);
               moves.push({g: 1, x: pe[0], y: pe[1], z: zStart, f: zStart < zNow ? o.plunge : o.feed}); zNow = zStart;
             }
             moves.push({g: 1, x: pr0[0], y: pr0[1], z: zr, f: o.plunge}); zNow = zr;
+            continue;
+          }
+          if (tri){                                     // along a 3D tab's slope: straight to the height at the next station
+            var ptT = pointAt(loop, d0), zT = Math.max(z, tabTopAt(d0));
+            moves.push({g: 1, x: ptT[0], y: ptT[1], z: zT, f: (rampLen > 0 && d0 <= rampLen) ? o.plunge : o.feed}); zNow = zT;
             continue;
           }
           toStation(si, inTabAt((stations[si] + stations[si - 1]) / 2) ? tabZ : z, (rampLen > 0 && d0 <= rampLen) ? o.plunge : o.feed);
@@ -261,9 +287,9 @@
         if (rampLen > 0){
           var st0 = pointAt(loop, 0), trail = [[st0[0], st0[1], zNow]];      // where the recut goes, to retrace it
           for (var so = 1; so < stations.length && stations[so - 1] < rampLen - 1e-9; so++){
-            var zz2 = inTabAt((stations[so] + stations[so - 1]) / 2) ? tabZ : z;
+            var zz2 = tri ? Math.max(z, tabTopAt(stations[so])) : inTabAt((stations[so] + stations[so - 1]) / 2) ? tabZ : z;
             var pvx = pointAt(loop, stations[so - 1]), ppx = pointAt(loop, stations[so]);
-            if (Math.abs(zz2 - zNow) > 1e-9){ moves.push({g: 1, x: pvx[0], y: pvx[1], z: zz2, f: zz2 < zNow ? o.plunge : o.feed}); trail.push([pvx[0], pvx[1], zz2]); }
+            if (!tri && Math.abs(zz2 - zNow) > 1e-9){ moves.push({g: 1, x: pvx[0], y: pvx[1], z: zz2, f: zz2 < zNow ? o.plunge : o.feed}); trail.push([pvx[0], pvx[1], zz2]); }
             moves.push({g: 1, x: ppx[0], y: ppx[1], z: zz2, f: o.feed}); zNow = zz2; trail.push([ppx[0], ppx[1], zz2]);
           }
           // The recut ends past the start, and the next pass begins at the start. Going straight back

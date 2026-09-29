@@ -364,6 +364,12 @@
         <span class="mirLbl" style="margin-left:8px"><label for="cutTabThk">Thickness</label></span>
         <input id="cutTabThk" type="text" inputmode="decimal" autocomplete="off" style="width:48px">
       </div>
+      <div class="mirSlot" id="cutTabShape" style="cursor:default">
+        <span class="mirLbl"><label for="cutTabStyle">Shape</label></span>
+        <select id="cutTabStyle" title="Flat tabs step straight up and down; 3D tabs taper up to their full thickness in the middle, which makes them easier to cut free and leaves a smaller mark">
+          <option value="flat">Flat</option><option value="3d">3D (tapered)</option>
+        </select>
+      </div>
       <p class="mirHint" id="cutHint"></p>
       <div id="cutIssues"></div>
       <div class="mirBtns"><button id="cutCancel">Cancel</button><button id="cutOk" class="primary">Create</button></div>

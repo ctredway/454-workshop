@@ -141,7 +141,7 @@ function wire(){
   document.getElementById('cutDia').addEventListener('input', function(){
     if (CUT && lenIn(document.getElementById('cutDia').value) > 0){ CUT.toolChosen = true; CUT.toolId = null; }   // a typed size is a choice
   });
-  ['cutDia','cutDepth','cutStep','cutPeck','cutStepover','cutFeed','cutTabLen','cutTabThk','cutOver','cutChamW','cutVAngle','cutChamMode','cutVcAngle','cutVcMax','cutVcTip','cutClear','cutRasterAng','cutDir','cutAllow','cutFinPass','cutLead','cutLeadSize','cutInlayHalf','cutInlayD','cutInlayS','cutInlayM'].forEach(function(id){
+  ['cutDia','cutDepth','cutStep','cutPeck','cutStepover','cutFeed','cutTabLen','cutTabThk','cutTabStyle','cutOver','cutChamW','cutVAngle','cutChamMode','cutVcAngle','cutVcMax','cutVcTip','cutClear','cutRasterAng','cutDir','cutAllow','cutFinPass','cutLead','cutLeadSize','cutInlayHalf','cutInlayD','cutInlayS','cutInlayM'].forEach(function(id){
     document.getElementById(id).addEventListener('input', function(){ if (CUT){ cutFromForm(); cutRender(); } });
     document.getElementById(id).addEventListener('change', function(){ if (CUT){ cutFromForm(); cutRender(); } });   // lists and tick boxes
   });

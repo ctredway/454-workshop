@@ -49,7 +49,7 @@ export function loadDesign({ cam = false, start = true } = {}) {
     Blob: class { constructor(parts) { this.parts = parts; } },
   };
   ctx.window = ctx; ctx.self = ctx;
-  for (const k of ['Event', 'CustomEvent', 'HTMLElement', 'HTMLSelectElement', 'HTMLInputElement']) ctx[k] = window[k];
+  for (const k of ['Event', 'CustomEvent', 'HTMLElement', 'HTMLSelectElement', 'HTMLInputElement', 'MutationObserver']) ctx[k] = window[k];
   ctx.addEventListener = () => {}; ctx.removeEventListener = () => {};
   vm.createContext(ctx);
   if (cam) for (const f of ['geom.js', 'cam.js']) vm.runInContext(fs.readFileSync(path.join(repo, f), 'utf8'), ctx, { filename: f });

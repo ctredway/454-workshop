@@ -12,7 +12,7 @@ function tpRows(tp){
   else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
   else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
   else if (tp.side === 'pocket') row('Clearing', (tp.pocketClear === 'raster' ? 'raster at ' + (tp.rasterAngle || 0) + '\u00b0, ' : 'offset rings, ') + (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
-  else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
+  else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tp.tabStyle === '3d' ? ' 3D' : '') + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
   if (tp.warning) row('Note', tp.warning);
   return rows;
 }

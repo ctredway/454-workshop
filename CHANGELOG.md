@@ -27,13 +27,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.5 to beta.8 — releases tag themselves
+### 0.6.2-beta.5 to beta.9 — releases tag themselves
 - **A new version in `apps/desktop/package.json`, pushed to main, is tagged, built and drafted as a
   release**: no separate tag step. A change that keeps the version builds nothing; pushing a tag by hand
   still works; a version with a suffix is a pre-release. (A workflow can't start another workflow with a tag
   it creates, so the Windows workflow does both: a first job decides the tag, and creates it.) Tested in
   each case against a scratch repository.
-- beta.6 includes Control 0.31.15 and Design 0.93.0; beta.7, Design 0.94.0; beta.8, Design 0.94.1 (the tab fix).
+- beta.6 includes Control 0.31.15 and Design 0.93.0; beta.7, Design 0.94.0; beta.8, Design 0.94.1 (the tab fix); beta.9, Design 0.95.0 (3D tabs).
 
 ### 0.6.2-beta.4 — built only from the right files
 - **Fixed: the new source check failed on GitHub's Windows machine**, on a correct repository. Git there
@@ -609,6 +609,21 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.95.0 — 3D tabs
+- **3D (tapered) tabs, as an option**: the toolpath editor's new **Shape** choice, beside tab length and
+  thickness, is **Flat** (the default, as before) or **3D (tapered)**. A 3D tab is a triangle: the cutter
+  ramps from the cut's floor at one end of the tab up to its full thickness at the middle and back down,
+  easier to cut through when freeing the part and leaving a smaller mark. Only the passes below a tab's top
+  go over it. The path follows the tab exactly: stations at each tab's ends, its middle, and where each pass
+  meets its slopes (without the middle station, a straight move under the peak would cut 0.14 mm into it).
+  Shown on the toolpath's card ("4 3D tabs") and in the editor's hint.
+- **Fixed: a pass that starts without a ramp (a finishing pass) plunged straight to depth at its start, even
+  if a tab was there**, nicking it before rising over it. It now goes down only to the tab's top.
+- Tests: a 3D tab's peak exactly at its middle, never cut into along any move (within a micron), no
+  vertical steps, passes above the floor rising only where the tab comes through them, and a finishing pass
+  starting at a tab, flat or 3D. Checked by breaking the engine four ways: each was caught.
+- The CAM reference describes both tab shapes, and no longer says tabs are "full height along their length".
 
 ### 0.94.1 — tabs as thick as they say, and toolpaths tested
 - **Fixed: tabs on a through cut were thinner than set.** Their height was measured from the bottom of the

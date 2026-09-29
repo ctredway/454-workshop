@@ -90,6 +90,70 @@ test('tabs: the last passes rise over each tab, leaving the tab\u2019s thickness
   }
 });
 
+// Tabs on the bottom edge of RECT (y = 20): the cutter's centre runs along y = 20 - R there. A tab at x = c spans
+// c - L/2 .. c + L/2 along the path. The tab's top: for a flat tab, TOP everywhere over it; for a 3D tab, a
+// triangle from the cut's floor at its ends to TOP at its middle.
+function tabCheck(tp, centres, len, top, floor, shape) {
+  const y = 20 - R, half = len / 2, surf = (x) => { let best = -Infinity;
+    for (const c of centres) { const d = Math.abs(x - c); if (d < half) best = Math.max(best, shape === '3d' ? floor + (top - floor) * (1 - d / half) : top); } return best; };
+  const onEdge = cuts(tp).filter((c) => Math.abs(c.y0 - y) < 0.02 && Math.abs(c.y1 - y) < 0.02);
+  // along every move, not just its ends: a straight move between two points on a tab's slopes passes under
+  // its peak (the tab comes to a point), so the ends alone can look fine while the middle cuts into it
+  let lowest = Infinity;
+  for (const c of onEdge) for (let i = 0; i <= 40; i++) {
+    const t = i / 40, x = c.x0 + (c.x1 - c.x0) * t, z = c.z0 + (c.z1 - c.z0) * t, sf = surf(x);
+    if (sf > -Infinity) lowest = Math.min(lowest, z - sf);
+  }
+  return { onEdge, surf, lowest };
+}
+test('3D tabs: a triangle, up to the tab\u2019s thickness at its middle, never cut into, without steps', () => {
+  const tp = make([RECT], 'outside', { through: true, step: 4, tabs: 1 });
+  tp.tabLen = 10; tp.tabStyle = '3d'; tp.tabPts = { [tp.ents[0]]: [[70, 20]] };            // one 10 mm tab, mid bottom edge
+  D.tpGenerate(tp);
+  const floor = deepest(tp), top = -11.5, { onEdge, lowest } = tabCheck(tp, [70], 10, top, floor, '3d');
+  // within a micron: the engine places tabs by distance along its (simplified) path, so where exactly the
+  // middle falls can differ by a fraction of a micron; the failure this guards against is 0.14 mm
+  assert.ok(lowest >= -0.001, 'never below the tab: ' + lowest.toFixed(4));
+  const lastLap = onEdge.filter((c) => c.z0 <= top + 0.001 && c.z1 <= top + 0.001);   // the passes that meet the tab: at or below its top
+  const peak = lastLap.flatMap((c) => [[c.x0, c.z0], [c.x1, c.z1]]).filter(([x]) => Math.abs(x - 70) < 0.001);
+  assert.ok(peak.some(([, z]) => Math.abs(z - top) < 0.001), 'at its top, Z -11.5, at its middle (within a micron)');
+  const ends = onEdge.filter((c) => Math.abs(c.z1 - floor) < 1e-6 && (Math.abs(c.x1 - 65) < 1e-6 || Math.abs(c.x1 - 75) < 1e-6));
+  assert.ok(ends.length >= 2, 'at the floor at both ends');
+  const slope = (top - floor) / 5;
+  for (const c of onEdge) {
+    const run = Math.hypot(c.x1 - c.x0, c.y1 - c.y0), rise = Math.abs(c.z1 - c.z0);
+    if (c.x1 > 65 - 1e-6 && c.x1 < 75 + 1e-6 && c.x0 > 65 - 1e-6 && c.x0 < 75 + 1e-6 && rise > 1e-9)
+      assert.ok(run > 1e-9 && rise / run <= slope + 1e-6, 'climbs along the tab, no steeper than it: ' + (rise / (run || 1e-12)).toFixed(3));
+  }
+});
+test('3D tabs: passes above the floor rise only where the triangle comes up through them', () => {
+  const tp = make([RECT], 'outside', { through: true, step: 4, tabs: 1 });
+  tp.tabLen = 10; tp.tabStyle = '3d'; tp.tabPts = { [tp.ents[0]]: [[70, 20]] }; D.tpGenerate(tp);
+  // the pass at Z -12 (above the -12.2 floor): the triangle reaches -12 at 0.2 / 0.7 of the way up from each end
+  const floor = deepest(tp), top = -11.5, { onEdge } = tabCheck(tp, [70], 10, top, floor, '3d');
+  const k = 5 * (1 - (-12 - floor) / (top - floor));
+  const atPass = onEdge.filter((c) => Math.abs(c.z0 - -12) < 1e-6 && Math.abs(c.z1 - -12) < 1e-6).flatMap((c) => [c.x0, c.x1]);
+  assert.ok(atPass.some((x) => Math.abs(x - (70 - k)) < 1e-6) && atPass.some((x) => Math.abs(x - (70 + k)) < 1e-6), 'leaves the pass exactly where the slope meets it');
+  assert.ok(!atPass.some((x) => x > 70 - k + 1e-6 && x < 70 + k - 1e-6), 'and not over the part of the tab above it');
+});
+test('a finishing pass starting at a tab doesn\u2019t plunge into it, flat or 3D', () => {
+  for (const shape of ['flat', '3d']) {
+    const tp = make([RECT], 'outside', { through: true, step: 4, tabs: 1 });
+    tp.tabLen = 10; tp.tabStyle = shape; tp.finishPass = true; tp.allowance = 0.3;
+    // where the finishing lap starts: its first move down, after the roughing
+    D.tpGenerate(tp); const all = cuts(tp);
+    const first = tp.moves.findIndex((m, i) => i > tp.moves.length / 2 && m.g === 0 && m.x !== undefined);
+    const st = tp.moves.slice(0, first + 1).reduce((p, m) => ({ x: m.x ?? p.x, y: m.y ?? p.y }), { x: 0, y: 0 });
+    // put the tab on the outline right beside that start, and cut again
+    const onOutline = [Math.min(Math.max(st.x, 20), 120), Math.min(Math.max(st.y, 20), 70)];
+    tp.tabPts = { [tp.ents[0]]: [onOutline] }; D.tpGenerate(tp);
+    const floor = deepest(tp), top = -11.5, near = cuts(tp).filter((c) => Math.hypot(c.x1 - st.x, c.y1 - st.y) < 1e-6 && c.z1 < c.z0);
+    assert.ok(near.length, shape + ': the finishing lap goes down at its start');
+    assert.ok(near.every((c) => c.z1 >= (shape === '3d' ? floor + (top - floor) * 0.5 : top) - 0.05 || Math.hypot(st.x - onOutline[0], st.y - onOutline[1]) > 5),
+      shape + ': not into the tab: ' + near.map((c) => c.z1.toFixed(3)).join(', '));
+  }
+});
+
 // ---- pockets ----
 test('pocket with an island: never closer than the cutter\u2019s radius to a wall or the island, and all of it cleared', () => {
   const island = { t: 'circle', cx: 70, cy: 45, r: 8 };

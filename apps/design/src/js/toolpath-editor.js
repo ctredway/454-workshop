@@ -10,7 +10,7 @@ function cutOpen(existing){
   var picked = SEL.filter(function (i) { return DOC.ents[i] && !DOC.ents[i].con && !DOC.ents[i].tp; });
   // Every setting the editor shows, so a toolpath saved by an older version (missing some of these)
   // opens cleanly instead of breaking the form.
-  var CUT_DEFAULTS = {side: 'outside', depth: 3, step: 1, feed: 800, plunge: 300, tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5,
+  var CUT_DEFAULTS = {side: 'outside', depth: 3, step: 1, feed: 800, plunge: 300, tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5, tabStyle: 'flat',
                       tabPts: {}, toolId: null, stepoverPct: 40, chamW: 1, vAngle: 90, chamMode: 'edge', peck: 0, over: 0.2, through: false};
   CUT = existing
     ? Object.assign({}, CUT_DEFAULTS, existing, {ents: existing.ents.slice(), editing: existing.id})
@@ -102,6 +102,8 @@ function cutToForm(){
   document.getElementById('cutTabsOn').checked = !!CUT.tabsOn;
   document.getElementById('cutTabLen').value = fmtDisp(CUT.tabLen);
   document.getElementById('cutTabThk').value = fmtDisp(CUT.tabThk);
+  document.getElementById('cutTabStyle').value = CUT.tabStyle === '3d' ? '3d' : 'flat';
+  cutTabShapeFollows();
   document.getElementById('cutUnit').textContent = unitTag();
 }
 function cutFromForm(){
@@ -140,6 +142,7 @@ function cutFromForm(){
   var tb = parseInt(document.getElementById('cutTabs').value, 10); if (tb > 0) CUT.tabCount = Math.min(20, tb);
   var tl = lenIn(document.getElementById('cutTabLen').value); if (tl > 0) CUT.tabLen = tl;
   var tt = lenIn(document.getElementById('cutTabThk').value); if (tt > 0) CUT.tabThk = tt;
+  CUT.tabStyle = document.getElementById('cutTabStyle').value === '3d' ? '3d' : 'flat';
 }
 function cutRenderHintExtra(){
   var h = document.getElementById('cutHint');
@@ -337,7 +340,7 @@ function cutRenderInner(){
            : noThk ? '\u26a0 Set the material thickness in Settings before cutting through \u2014 until then this cuts only the overcut.'
            : (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) + ' overcut. ' : '') +
              'Passes: ' + Math.ceil(tpDepth(CUT) / CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
-             (CUT.tabsOn ? ', ' + nTabs + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
+             (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
   SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
   CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
   draw();
@@ -506,7 +509,7 @@ function cutApply(){
     vcFrom: CUT.vcFrom, side: CUT.side, ents: CUT.ents.slice(), peck: CUT.peck || 0,
     through: CUT.side === 'chamfer' || CUT.side === 'vcarve' ? false : !!CUT.through, over: CUT.over === undefined ? 0.2 : CUT.over,
     dia: CUT.dia, depth: CUT.depth, step: CUT.step, feed: CUT.feed, plunge: CUT.plunge,
-    tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk,
+    tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk, tabStyle: CUT.tabStyle === '3d' ? '3d' : 'flat',
     tabPts: JSON.parse(JSON.stringify(CUT.tabPts || {})),
     hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
@@ -537,4 +540,13 @@ function cutApply(){
   if (clearMsg) toast('info', 'Clearing for the flat areas', clearMsg);
   cutClose();
   renderToolpathPanel();
+}
+
+// The tab Shape row is shown and hidden with the Length and Thickness row, wherever that happens
+function cutTabShapeFollows(){
+  var size = document.getElementById('cutTabSize'), shape = document.getElementById('cutTabShape');
+  if (!size || !shape || shape._follows) return;
+  shape._follows = true;
+  shape.hidden = size.hidden;
+  new MutationObserver(function (){ shape.hidden = size.hidden; }).observe(size, {attributes: true, attributeFilter: ['hidden']});
 }

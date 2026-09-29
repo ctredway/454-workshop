@@ -783,6 +783,12 @@
         <span class="mirLbl" style="margin-left:8px"><label for="cutTabThk">Thickness</label></span>
         <input id="cutTabThk" type="text" inputmode="decimal" autocomplete="off" style="width:48px">
       </div>
+      <div class="mirSlot" id="cutTabShape" style="cursor:default">
+        <span class="mirLbl"><label for="cutTabStyle">Shape</label></span>
+        <select id="cutTabStyle" title="Flat tabs step straight up and down; 3D tabs taper up to their full thickness in the middle, which makes them easier to cut free and leaves a smaller mark">
+          <option value="flat">Flat</option><option value="3d">3D (tapered)</option>
+        </select>
+      </div>
       <p class="mirHint" id="cutHint"></p>
       <div id="cutIssues"></div>
       <div class="mirBtns"><button id="cutCancel">Cancel</button><button id="cutOk" class="primary">Create</button></div>
@@ -895,7 +901,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.94.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.95.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3386,7 +3392,7 @@ function tpGenerate(tp){
       stepFinal: tp.allowance || 0, finishPass: !!tp.finishPass,
       lead: tp.leadType && tp.leadType !== 'none' ? {type: tp.leadType, size: tp.leadSize > 0 ? tp.leadSize : tp.dia} : null,
       feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2), climb: tp.climb !== false, safeZ: tpSurface() + (tp.safeZ || 6),
-      tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), at: pts} : null,
+      tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), shape: tp.tabStyle === '3d' ? '3d' : 'flat', at: pts} : null,
       ramp: {length: tp.rampLen || Math.max(4, tp.dia * 4)}
     });
     if (res.warning) warn = res.warning;
@@ -3439,7 +3445,7 @@ function cutOpen(existing){
   var picked = SEL.filter(function (i) { return DOC.ents[i] && !DOC.ents[i].con && !DOC.ents[i].tp; });
   // Every setting the editor shows, so a toolpath saved by an older version (missing some of these)
   // opens cleanly instead of breaking the form.
-  var CUT_DEFAULTS = {side: 'outside', depth: 3, step: 1, feed: 800, plunge: 300, tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5,
+  var CUT_DEFAULTS = {side: 'outside', depth: 3, step: 1, feed: 800, plunge: 300, tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5, tabStyle: 'flat',
                       tabPts: {}, toolId: null, stepoverPct: 40, chamW: 1, vAngle: 90, chamMode: 'edge', peck: 0, over: 0.2, through: false};
   CUT = existing
     ? Object.assign({}, CUT_DEFAULTS, existing, {ents: existing.ents.slice(), editing: existing.id})
@@ -3531,6 +3537,8 @@ function cutToForm(){
   document.getElementById('cutTabsOn').checked = !!CUT.tabsOn;
   document.getElementById('cutTabLen').value = fmtDisp(CUT.tabLen);
   document.getElementById('cutTabThk').value = fmtDisp(CUT.tabThk);
+  document.getElementById('cutTabStyle').value = CUT.tabStyle === '3d' ? '3d' : 'flat';
+  cutTabShapeFollows();
   document.getElementById('cutUnit').textContent = unitTag();
 }
 function cutFromForm(){
@@ -3569,6 +3577,7 @@ function cutFromForm(){
   var tb = parseInt(document.getElementById('cutTabs').value, 10); if (tb > 0) CUT.tabCount = Math.min(20, tb);
   var tl = lenIn(document.getElementById('cutTabLen').value); if (tl > 0) CUT.tabLen = tl;
   var tt = lenIn(document.getElementById('cutTabThk').value); if (tt > 0) CUT.tabThk = tt;
+  CUT.tabStyle = document.getElementById('cutTabStyle').value === '3d' ? '3d' : 'flat';
 }
 function cutRenderHintExtra(){
   var h = document.getElementById('cutHint');
@@ -3766,7 +3775,7 @@ function cutRenderInner(){
            : noThk ? '\u26a0 Set the material thickness in Settings before cutting through \u2014 until then this cuts only the overcut.'
            : (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) + ' overcut. ' : '') +
              'Passes: ' + Math.ceil(tpDepth(CUT) / CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
-             (CUT.tabsOn ? ', ' + nTabs + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
+             (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
   SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
   CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
   draw();
@@ -3935,7 +3944,7 @@ function cutApply(){
     vcFrom: CUT.vcFrom, side: CUT.side, ents: CUT.ents.slice(), peck: CUT.peck || 0,
     through: CUT.side === 'chamfer' || CUT.side === 'vcarve' ? false : !!CUT.through, over: CUT.over === undefined ? 0.2 : CUT.over,
     dia: CUT.dia, depth: CUT.depth, step: CUT.step, feed: CUT.feed, plunge: CUT.plunge,
-    tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk,
+    tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk, tabStyle: CUT.tabStyle === '3d' ? '3d' : 'flat',
     tabPts: JSON.parse(JSON.stringify(CUT.tabPts || {})),
     hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
@@ -3966,6 +3975,15 @@ function cutApply(){
   if (clearMsg) toast('info', 'Clearing for the flat areas', clearMsg);
   cutClose();
   renderToolpathPanel();
+}
+
+// The tab Shape row is shown and hidden with the Length and Thickness row, wherever that happens
+function cutTabShapeFollows(){
+  var size = document.getElementById('cutTabSize'), shape = document.getElementById('cutTabShape');
+  if (!size || !shape || shape._follows) return;
+  shape._follows = true;
+  shape.hidden = size.hidden;
+  new MutationObserver(function (){ shape.hidden = size.hidden; }).observe(size, {attributes: true, attributeFilter: ['hidden']});
 }
 // Toolpaths run in the order listed. Moving one is undoable like any other edit.
 function tpMoveTo(from, to){
@@ -5263,7 +5281,7 @@ function tpRows(tp){
   else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
   else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
   else if (tp.side === 'pocket') row('Clearing', (tp.pocketClear === 'raster' ? 'raster at ' + (tp.rasterAngle || 0) + '\u00b0, ' : 'offset rings, ') + (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
-  else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
+  else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tp.tabStyle === '3d' ? ' 3D' : '') + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
   if (tp.warning) row('Note', tp.warning);
   return rows;
 }
@@ -10993,7 +11011,7 @@ function wire(){
   document.getElementById('cutDia').addEventListener('input', function(){
     if (CUT && lenIn(document.getElementById('cutDia').value) > 0){ CUT.toolChosen = true; CUT.toolId = null; }   // a typed size is a choice
   });
-  ['cutDia','cutDepth','cutStep','cutPeck','cutStepover','cutFeed','cutTabLen','cutTabThk','cutOver','cutChamW','cutVAngle','cutChamMode','cutVcAngle','cutVcMax','cutVcTip','cutClear','cutRasterAng','cutDir','cutAllow','cutFinPass','cutLead','cutLeadSize','cutInlayHalf','cutInlayD','cutInlayS','cutInlayM'].forEach(function(id){
+  ['cutDia','cutDepth','cutStep','cutPeck','cutStepover','cutFeed','cutTabLen','cutTabThk','cutTabStyle','cutOver','cutChamW','cutVAngle','cutChamMode','cutVcAngle','cutVcMax','cutVcTip','cutClear','cutRasterAng','cutDir','cutAllow','cutFinPass','cutLead','cutLeadSize','cutInlayHalf','cutInlayD','cutInlayS','cutInlayM'].forEach(function(id){
     document.getElementById(id).addEventListener('input', function(){ if (CUT){ cutFromForm(); cutRender(); } });
     document.getElementById(id).addEventListener('change', function(){ if (CUT){ cutFromForm(); cutRender(); } });   // lists and tick boxes
   });

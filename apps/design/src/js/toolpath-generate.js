@@ -154,7 +154,7 @@ function tpGenerate(tp){
       stepFinal: tp.allowance || 0, finishPass: !!tp.finishPass,
       lead: tp.leadType && tp.leadType !== 'none' ? {type: tp.leadType, size: tp.leadSize > 0 ? tp.leadSize : tp.dia} : null,
       feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2), climb: tp.climb !== false, safeZ: tpSurface() + (tp.safeZ || 6),
-      tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), at: pts} : null,
+      tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), shape: tp.tabStyle === '3d' ? '3d' : 'flat', at: pts} : null,
       ramp: {length: tp.rampLen || Math.max(4, tp.dia * 4)}
     });
     if (res.warning) warn = res.warning;
