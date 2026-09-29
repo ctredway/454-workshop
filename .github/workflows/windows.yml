@@ -21,9 +21,13 @@ permissions:
   contents: write          # to create the tag, and the draft release
 
 jobs:
-  # Which release this run makes, if any. A pushed tag: that one. A package.json change on main: its version's
-  # tag, created here, unless it already exists (then the version didn't change, and nothing is built). By
-  # hand (Run workflow): a build to download from the run, with no release.
+  # Which release this run makes, if any. A pushed tag: that one. A package.json change on main: its version,
+  # unless that version already has a tag (released) or a draft (waiting to be published): then nothing is
+  # built. By hand (Run workflow): a build to download from the run, with no release.
+  #
+  # The tag isn't created here. The draft release records this commit, and GitHub creates the tag when the
+  # draft is published: installed copies find updates through GitHub's release feed, which lists every tag,
+  # so a tag made before its release is published looks to them like a newest release with nothing in it.
   version:
     runs-on: ubuntu-latest
     outputs:
@@ -34,16 +38,21 @@ jobs:
         with: { fetch-depth: 0 }
       - id: v
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}            # to see drafts, which only the repository can
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then echo "tag=" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           tag="v$(node -p "require('./apps/desktop/package.json').version")"
           if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
-            echo "::notice::$tag already exists, so the version didn't change: nothing to release."
+            echo "::notice::$tag is already released (its tag exists), so the version didn't change: nothing to build."
             echo "build=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          git tag "$tag" && git push origin "$tag" || { echo "::notice::$tag was pushed by hand meanwhile: that run builds it."; echo "build=false" >> "$GITHUB_OUTPUT"; exit 0; }
-          echo "::notice::Tagged $tag: building it and drafting its release."
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::notice::A draft of $tag is already waiting on the Releases page: publish it (or delete it, then push again to rebuild)."
+            echo "build=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "::notice::Building $tag and drafting its release. Its tag is created when you publish the draft."
           echo "tag=$tag" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"
 
   windows:
@@ -131,6 +140,8 @@ jobs:
           draft: true
           # a tag with a suffix (v0.6.0-beta.1) is a pre-release: only the Beta update channel offers it
           tag_name: ${{ needs.version.outputs.tag }}
+          # the commit this build is from: the tag is made there when the draft is published
+          target_commitish: ${{ github.sha }}
           prerelease: ${{ contains(needs.version.outputs.tag, '-') }}
           # latest.yml and the blockmap are how installed copies find and download updates
           files: |

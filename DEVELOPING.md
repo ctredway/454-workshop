@@ -82,12 +82,18 @@ Installed copies of the desktop app update themselves from GitHub Releases (`app
 tested in `apps/desktop/test/updater.test.mjs`). A release is what delivers an update:
 
 1. Set the version in `apps/desktop/package.json` (say `0.6.3`), commit, and push to `main`. The Windows
-   workflow sees the new version, tags it (`v0.6.3`), builds the installer and zip, checks the update files
-   (`latest.yml` or `beta.yml`, and the blockmap) were made, and drafts a release with all of them attached.
-   (A change to package.json that keeps the version, a dependency say, builds nothing. Pushing a tag by
-   hand still works too.)
-2. Look the draft over on the Releases page, then publish it. Installed copies on the stable channel are
-   offered it at their next check.
+   workflow sees the new version, builds the installer and zip, checks the update files (`latest.yml` or
+   `beta.yml`, and the blockmap) were made, and drafts a release (`v0.6.3`) with all of them attached.
+   (A change to package.json that keeps the version builds nothing, and so does pushing again while that
+   version's draft is waiting. Pushing a tag by hand still works too.)
+2. Look the draft over on the Releases page, then **publish it**. Publishing creates the tag. Installed
+   copies are offered it at their next check. Don't create a release by hand for the version: publish the
+   draft, which has the files.
+
+**Why the tag waits for publishing:** installed copies find updates through GitHub's release feed, which
+lists every tag, released or not. A tag made before its release is published looks to them like a newest
+release with nothing in it, and they stop there, even with an older complete release published. (That's
+what the workflow did up to 0.6.2-beta.11: beta.8 saw beta.11's tag, and never beta.9.)
 
 **Before the first public release:** installed copies check for updates every 30 minutes, for testing
 betas. Change it back to every 6 hours: `CHECK_EVERY` in `apps/desktop/src/updater.js` (it's marked TODO),

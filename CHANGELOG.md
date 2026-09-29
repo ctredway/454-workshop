@@ -27,6 +27,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.12 — tags wait for their releases
+- **Fixed: installed copies couldn't see a new release while a newer draft was waiting.** The workflow
+  created each version's tag when its build started, but its release stayed a draft until published.
+  Installed copies find updates through GitHub's release feed, which lists every tag, so they took the
+  newest tag (beta.11, a draft) as the newest release, found nothing in it, and stopped, never seeing the
+  published beta.9. Now the workflow creates no tag: the draft records its commit, and GitHub makes the tag
+  when the draft is published, so a tag never appears without its files. Pushing again while a draft
+  waits builds nothing, and says so. Tested in each case against a scratch repository.
+
 ### 0.6.2-beta.11
 - **Checks for updates every 30 minutes** while open (30 seconds after starting, then every half hour), for
   now, while beta releases come often. To change back to every 6 hours before the first public release:
