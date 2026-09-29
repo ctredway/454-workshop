@@ -4,7 +4,8 @@
 #   - Change the version in apps/desktop/package.json and push: the version is tagged (v0.6.3), built, and
 #     drafted as a release with the installer, zip and update files, for you to review and publish. A
 #     version with a suffix (0.6.3-beta.1) is a pre-release, offered only on the Beta update channel.
-#   - Pushing a version tag by hand (v0.6.3) does the same, as before.
+#   - Pushing a version tag by hand (v0.6.3) does the same, as before. The tag GitHub makes when a draft is
+#     published builds nothing: that release already has its files.
 # Built from the repository's own index.html, design.html and docs/. CAM is included only if cam.js and
 # geom.js are in the repository, which they aren't until CAM is released.
 name: windows build
@@ -41,7 +42,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}            # to see drafts, which only the repository can
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            # Publishing a draft creates its tag, and that tag arrives here too. Its release already has its
+            # files: rebuilding would draft over a published release, so a tag with a published release
+            # builds nothing. (A tag pushed by hand, with no release yet, builds as before.)
+            draft=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null || true)
+            if [ "$draft" = false ]; then
+              echo "::notice::$GITHUB_REF_NAME is published (this tag was made by publishing its release): nothing to build."
+              echo "build=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then echo "tag=" >> "$GITHUB_OUTPUT"; echo "build=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           tag="v$(node -p "require('./apps/desktop/package.json').version")"
           if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then

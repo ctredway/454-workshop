@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### Publishing a release no longer rebuilds it
+- **Fixed: publishing a draft started a second Windows build of the same version.** Publishing creates the
+  release's tag, and the Windows build ran for every new tag: it rebuilt the version and went to draft a
+  release over the one just published (caught and cancelled for beta.12). Now a tag whose release is
+  already published builds nothing, and says so. A tag pushed by hand, with no release yet, builds as before.
+
 ### 0.6.2-beta.13 — updates show in the header
 - **A new version shows as a notice in the header of 454 Control and 454 Design, not a window.** Before,
   a background check that found an update asked about it in a window, and asked again when the download
