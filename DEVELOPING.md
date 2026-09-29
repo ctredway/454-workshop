@@ -89,6 +89,10 @@ tested in `apps/desktop/test/updater.test.mjs`). A release is what delivers an u
 2. Look the draft over on the Releases page, then publish it. Installed copies on the stable channel are
    offered it at their next check.
 
+**Before the first public release:** installed copies check for updates every 30 minutes, for testing
+betas. Change it back to every 6 hours: `CHECK_EVERY` in `apps/desktop/src/updater.js` (it's marked TODO),
+and the sentence about it on the docs' "The desktop app" page.
+
 **Testing an update before a public release:** use a version with a suffix, such as `0.6.3-beta.1`. The workflow marks it a pre-release, which only copies on the **Beta** channel
 (454 Workshop → Updates) are offered. Drafts are never offered.
 

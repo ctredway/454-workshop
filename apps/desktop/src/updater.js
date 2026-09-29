@@ -14,6 +14,10 @@
 'use strict';
 
 const HOUR = 3600e3, MINUTE = 60e3;
+// How often an installed copy checks for updates while it's open.
+// TODO: change back to 6 * HOUR before the first public release. It's every 30 minutes for now, while beta
+// releases come often and need testing. (The docs' "The desktop app" page says so too: change it there.)
+const CHECK_EVERY = 30 * MINUTE;
 
 // What a check with nothing to install says: also when the newest release can't be offered (published without
 // its update files, or none published for this channel). To the person checking, that's no new updates.
@@ -22,7 +26,7 @@ const NO_UPDATES = { type: 'info', title: 'Updates', message: 'There are no new 
 function createUpdater(deps) {
   const { autoUpdater, isBusy, ask, notify = () => {}, setProgress = () => {}, currentVersion, installable,
           settingsFile, fs, timers = { setTimeout, clearTimeout }, log = () => {},
-          firstCheckAfter = 30e3, checkEvery = 6 * HOUR, idlePoll = MINUTE, onChange = () => {} } = deps;
+          firstCheckAfter = 30e3, checkEvery = CHECK_EVERY, idlePoll = MINUTE, onChange = () => {} } = deps;
 
   // ---- settings: automatic checks, the channel, a skipped version
   let settings = { auto: true, channel: 'stable', skipped: null };

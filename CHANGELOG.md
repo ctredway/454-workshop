@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.11
+- **Checks for updates every 30 minutes** while open (30 seconds after starting, then every half hour), for
+  now, while beta releases come often. To change back to every 6 hours before the first public release:
+  `CHECK_EVERY` in `apps/desktop/src/updater.js` (marked TODO), its test, and the docs' "The desktop app"
+  page. DEVELOPING.md lists it under releasing.
+
 ### 0.6.2-beta.10
 - **Check for updates… with nothing to install says "There are no new updates available."**, and nothing
   else. That now includes a newest release that can't be installed (published without its update files, as
