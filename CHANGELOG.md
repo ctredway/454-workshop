@@ -610,6 +610,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### Source split into files (no change in behaviour)
+- **Design is now worked on as 67 source files** in `apps/design/src` (its styles, the CAM loader, and its
+  code by subject: the model, fonts, text, dimensions, snapping, the tool manager, toolpaths and their
+  editor, each import and export format, the tool library, drawing, the geometry operations, and the
+  page's wiring), assembled into the same single `design.html` by `node apps/design/build.mjs`.
+- **Proven unchanged:** the build reassembles the original byte for byte (678,709 bytes, identical
+  SHA-256); `design.html` now differs only by a note at its top. The end-to-end tests, importing, angle
+  snapping and the SVG round trip all pass on it.
+- The split names each cut by what it's at (a function, a banner, a heading), and keeps every comment
+  with its code, whole block comments included. GitHub checks `design.html` matches its sources on every
+  push, and before every Windows build. See `apps/design/README.md`.
+
 ### 0.94.0 — lines snap to 45° and 90°
 - **Lines and polylines snap to 0°, 45°, 90°, 135° and so on** from their start as you draw them, vectors
   and construction lines alike (they're drawn with the same tools). Within 10 screen pixels of one of those

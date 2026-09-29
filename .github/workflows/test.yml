@@ -9,6 +9,8 @@ jobs:
         with: { node-version: 22, cache: npm }
       - name: 454 Control's index.html matches its source files (apps/control/src)
         run: node apps/control/build.mjs --check
+      - name: 454 Design's design.html matches its source files (apps/design/src)
+        run: node apps/design/build.mjs --check
       - name: 454 Control's unit tests (the job builder)
         run: node --test 'apps/control/test/*.test.mjs'
       - run: npm ci

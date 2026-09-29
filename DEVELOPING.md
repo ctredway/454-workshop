@@ -132,3 +132,10 @@ takes the BitSetter reference, and runs a job that starts with a tool change: it
 
 The simulator answers a probe move as GRBL does: its [PRB:...] result, then ok; or ALARM:5 alone when it
 finds nothing. `npm run build` compiles it (packages/grbl) with the rest.
+
+## 454 Design's source
+
+Design's `design.html` is assembled from `apps/design/src` by `node apps/design/build.mjs`, the same way as
+Control's: edit the files there, then build, and commit both. GitHub checks they match. See
+[apps/design/README.md](apps/design/README.md) for what's in each file. Design's version is
+`apps/design/src/js/version.js`.

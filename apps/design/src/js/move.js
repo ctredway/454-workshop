@@ -1,0 +1,126 @@
+/* ---------------- entity move ---------------- */
+function moveEntity(e, dx, dy){
+  if (e.t==='line'){ e.x1+=dx; e.y1+=dy; e.x2+=dx; e.y2+=dy; }
+  else if (e.t==='rect'){ e.x+=dx; e.y+=dy; }
+  else if (e.t==='circle'){ e.cx+=dx; e.cy+=dy; }
+  else if (e.t==='arc'){ e.cx+=dx; e.cy+=dy; }
+  else if (e.t==='path'){ e.pts.forEach(function(p){ p[0]+=dx; p[1]+=dy; }); e._tess = null; }
+  else if (e.t==='poly'){ e.pts.forEach(function(p){ p[0]+=dx; p[1]+=dy; }); }
+  else if (e.t==='group'){ e.ents.forEach(function(me){ moveEntity(me, dx, dy); }); }
+  else if (e.t==='text'){ e.x+=dx; e.y+=dy; }
+}
+
+/* ---------------- configurable tool panel ----------------
+   Groups render from PANEL_GROUPS in the user's saved order; drag a group
+   header to reorder, click it to collapse. Both persist per-browser. */
+var ICON = {
+ svg:'<svg viewBox="0 0 18 18"><path d="M4.5 2h6.5l3 3v11h-9.5z"/><path d="M11 2v3h3"/><path d="M6.5 12.5c1.2-3.5 3.8-3.5 5 0"/></svg>',
+ dxf:'<svg viewBox="0 0 18 18"><path d="M4.5 2h6.5l3 3v11h-9.5z"/><path d="M11 2v3h3"/><path d="M9.25 7.5v5.5M7 10.8l2.25 2.2 2.25-2.2"/></svg>',
+ mach:'<svg viewBox="0 0 18 18"><rect x="2" y="2.5" width="14" height="13" stroke-dasharray="2.6 2"/><rect x="5" y="6" width="6.5" height="5"/></svg>',
+ sel:'<svg viewBox="0 0 18 18"><path d="M4 2 L4 13 L7.2 10.4 L9.2 15 L11.4 14 L9.4 9.6 L13.5 9.2 Z"/></svg>',
+ line:'<svg viewBox="0 0 18 18"><line x1="3.5" y1="14.5" x2="14.5" y2="3.5"/><circle cx="3.5" cy="14.5" r="1.4"/><circle cx="14.5" cy="3.5" r="1.4"/></svg>',
+ rect:'<svg viewBox="0 0 18 18"><rect x="3" y="4.5" width="12" height="9"/></svg>',
+ circ:'<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6"/></svg>',
+ poly:'<svg viewBox="0 0 18 18"><path d="M2.5 13.5 L6.5 5.5 L10.5 11 L15.5 3.5"/><circle cx="2.5" cy="13.5" r="1.2"/><circle cx="6.5" cy="5.5" r="1.2"/><circle cx="10.5" cy="11" r="1.2"/><circle cx="15.5" cy="3.5" r="1.2"/></svg>',
+ arc:'<svg viewBox="0 0 18 18"><path d="M3.5 14.5 A 11 11 0 0 1 14.5 3.5"/><circle cx="3.5" cy="14.5" r="1.3"/><circle cx="14.5" cy="3.5" r="1.3"/></svg>',
+ copy:'<svg viewBox="0 0 18 18"><rect x="3" y="3" width="8.5" height="8.5"/><path d="M7 15 h8 V7" opacity=".55"/></svg>',
+ mirror:'<svg viewBox="0 0 18 18"><line x1="9" y1="2.5" x2="9" y2="15.5" stroke-dasharray="2.6 2.2"/><path d="M6.5 5 L3 9 L6.5 13 Z"/><path d="M11.5 5 L15 9 L11.5 13 Z" fill="none"/></svg>',
+ rotate:'<svg viewBox="0 0 18 18"><path d="M14.5 9 A 5.5 5.5 0 1 1 9 3.5"/><path d="M9 1 L12.2 3.5 L9 6"/><circle cx="9" cy="9" r="1"/></svg>',
+ array:'<svg viewBox="0 0 18 18"><circle cx="4.5" cy="4.5" r="1.7"/><circle cx="11" cy="4.5" r="1.7"/><circle cx="4.5" cy="11" r="1.7"/><circle cx="11" cy="11" r="1.7" opacity=".45"/></svg>',
+ offs:'<svg viewBox="0 0 18 18"><rect x="6" y="6" width="6" height="6"/><rect x="2.5" y="2.5" width="13" height="13" opacity=".5" stroke-dasharray="2.4 2"/></svg>',
+ join:'<svg viewBox="0 0 18 18"><path d="M3 14 L8 9"/><path d="M10 7 L15 3"/><circle cx="9" cy="8" r="2.2" opacity=".6"/></svg>',
+ dim:'<svg viewBox="0 0 18 18"><path d="M2 5 V13 M16 5 V13"/><path d="M2 9 H16"/><path d="M4.5 7 L2 9 L4.5 11 M13.5 7 L16 9 L13.5 11"/></svg>',
+ flipH:'<svg viewBox="0 0 18 18"><path d="M9 2 V16" stroke-dasharray="2 2"/><path d="M7 4 L2 13 H7 Z"/><path d="M11 4 L16 13 H11 Z" opacity=".5"/></svg>',
+ flipV:'<svg viewBox="0 0 18 18"><path d="M2 9 H16" stroke-dasharray="2 2"/><path d="M4 7 L13 2 V7 Z"/><path d="M4 11 L13 16 V11 Z" opacity=".5"/></svg>',
+ nest:'<svg viewBox="0 0 18 18"><rect x="1.5" y="1.5" width="15" height="15" opacity=".45"/><path d="M3.5 3.5 H9 L9 7 L6 9.5 H3.5 Z"/><path d="M14.5 3.5 V9 L10.5 9 L12 6 L11 3.5 Z"/><path d="M3.5 12 H8.5 V14.5 H3.5 Z M10.5 11.5 H14.5 V14.5 H10.5 Z"/></svg>',
+ aMat:'<svg viewBox="0 0 18 18"><rect x="1.5" y="1.5" width="15" height="15" opacity=".45"/><rect x="6" y="6" width="6" height="6"/><path d="M9 1.5 V4 M9 14 V16.5 M1.5 9 H4 M14 9 H16.5" opacity=".75"/></svg>',
+ aMatX:'<svg viewBox="0 0 18 18"><rect x="1.5" y="1.5" width="15" height="15" opacity=".45"/><path d="M9 1.5 V16.5" stroke-dasharray="2 2"/><rect x="6" y="10" width="6" height="4"/></svg>',
+ aMatY:'<svg viewBox="0 0 18 18"><rect x="1.5" y="1.5" width="15" height="15" opacity=".45"/><path d="M1.5 9 H16.5" stroke-dasharray="2 2"/><rect x="3.5" y="6" width="4" height="6"/></svg>',
+ aCenter:'<svg viewBox="0 0 18 18"><rect x="2" y="2" width="14" height="14"/><rect x="6.5" y="6.5" width="5" height="5" opacity=".6"/></svg>',
+ aHCenter:'<svg viewBox="0 0 18 18"><path d="M9 1.5 V16.5" stroke-dasharray="2 2"/><rect x="3" y="4" width="12" height="3"/><rect x="5.5" y="11" width="7" height="3"/></svg>',
+ aVCenter:'<svg viewBox="0 0 18 18"><path d="M1.5 9 H16.5" stroke-dasharray="2 2"/><rect x="4" y="3" width="3" height="12"/><rect x="11" y="5.5" width="3" height="7"/></svg>',
+ aLeft:'<svg viewBox="0 0 18 18"><path d="M2 1.5 V16.5"/><rect x="4" y="4" width="11" height="3"/><rect x="4" y="11" width="6" height="3"/></svg>',
+ aRight:'<svg viewBox="0 0 18 18"><path d="M16 1.5 V16.5"/><rect x="3" y="4" width="11" height="3"/><rect x="8" y="11" width="6" height="3"/></svg>',
+ aTop:'<svg viewBox="0 0 18 18"><path d="M1.5 2 H16.5"/><rect x="4" y="4" width="3" height="11"/><rect x="11" y="4" width="3" height="6"/></svg>',
+ aBottom:'<svg viewBox="0 0 18 18"><path d="M1.5 16 H16.5"/><rect x="4" y="3" width="3" height="11"/><rect x="11" y="8" width="3" height="6"/></svg>',
+ aDistH:'<svg viewBox="0 0 18 18"><path d="M1.5 3 V15 M16.5 3 V15" opacity=".5"/><rect x="3.5" y="6" width="2.5" height="6"/><rect x="7.75" y="6" width="2.5" height="6"/><rect x="12" y="6" width="2.5" height="6"/></svg>',
+ aDistV:'<svg viewBox="0 0 18 18"><path d="M3 1.5 H15 M3 16.5 H15" opacity=".5"/><rect x="6" y="3.5" width="6" height="2.5"/><rect x="6" y="7.75" width="6" height="2.5"/><rect x="6" y="12" width="6" height="2.5"/></svg>',
+ measure:'<svg viewBox="0 0 18 18"><path d="M2.5 12.5 L12.5 2.5 L15.5 5.5 L5.5 15.5 Z"/><path d="M5.5 9.5 L7 11 M8 7 L9.5 8.5 M10.5 4.5 L12 6" opacity=".8"/></svg>',
+ text:'<svg viewBox="0 0 18 18"><path d="M3.5 15 L9 3 L14.5 15"/><path d="M5.6 10.6 H12.4"/></svg>',
+ curves:'<svg viewBox="0 0 18 18"><path d="M3 15 L7 4 L11 15"/><path d="M4.6 11 H9.4"/><rect x="1.5" y="13.5" width="3" height="3"/><rect x="5.5" y="2.5" width="3" height="3"/><rect x="9.5" y="13.5" width="3" height="3"/><path d="M13 5 H16.5 M14.75 3.2 V6.8" opacity=".6"/></svg>',
+ node:'<svg viewBox="0 0 18 18"><path d="M3 14 L8 6 L12 10 L15.5 4"/><rect x="1.4" y="12.4" width="3.2" height="3.2"/><rect x="6.4" y="4.4" width="3.2" height="3.2"/><rect x="10.4" y="8.4" width="3.2" height="3.2"/><rect x="13.9" y="2.4" width="3.2" height="3.2"/></svg>',
+ group:'<svg viewBox="0 0 18 18"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="9.5" y="9.5" width="6" height="6"/><rect x="1" y="1" width="16" height="16" stroke-dasharray="2.5 2" opacity=".55"/></svg>',
+ ungroup:'<svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6"/><rect x="10" y="10" width="6" height="6"/><path d="M9.5 4 L15.5 4 M12.5 1.5 L12.5 6.5" opacity=".55"/></svg>',
+ expl:'<svg viewBox="0 0 18 18"><path d="M4 12 L8 8"/><path d="M11 6 L14.5 3.5"/><path d="M12 12.5 L15 14.5"/><path d="M4.5 4 L6.5 6" opacity=".7"/></svg>',
+ fillet:'<svg viewBox="0 0 18 18"><path d="M3 15.5 V9 A 6 6 0 0 1 9 3 H15.5"/><path d="M3 6.5 V3 h3.5" opacity=".45"/></svg>',
+ trim:'<svg viewBox="0 0 18 18"><line x1="3" y1="9" x2="10" y2="9"/><line x1="12.5" y1="9" x2="15.5" y2="9" opacity=".4" stroke-dasharray="2 2"/><path d="M6 3.5 L11 13 M6 14.5 L9 9.4"/><circle cx="5" cy="15" r="1.3"/><circle cx="5" cy="3" r="1.3"/></svg>',
+ extend:'<svg viewBox="0 0 18 18"><line x1="2.5" y1="9" x2="9.5" y2="9"/><line x1="9.5" y1="9" x2="13.5" y2="9" stroke-dasharray="2 2"/><path d="M12 6.5 L15 9 L12 11.5"/><line x1="16" y1="4" x2="16" y2="14"/></svg>',
+ guide:'<svg viewBox="0 0 18 18"><line x1="2.5" y1="12" x2="15.5" y2="12" stroke-dasharray="3 2.4"/><line x1="2.5" y1="5" x2="15.5" y2="5"/></svg>',
+ gclr:'<svg viewBox="0 0 18 18"><line x1="2.5" y1="9" x2="9.5" y2="9" stroke-dasharray="3 2.4"/><line x1="11.5" y1="6" x2="16" y2="10.5"/><line x1="16" y1="6" x2="11.5" y2="10.5"/></svg>',
+ undo:'<svg viewBox="0 0 18 18"><path d="M6.5 4 L3 7.5 L6.5 11"/><path d="M3 7.5 H11 a4 4 0 0 1 0 8 H8"/></svg>',
+ redo:'<svg viewBox="0 0 18 18"><path d="M11.5 4 L15 7.5 L11.5 11"/><path d="M15 7.5 H7 a4 4 0 0 0 0 8 H10"/></svg>',
+ fit:'<svg viewBox="0 0 18 18"><path d="M3 6.5 V3 h3.5 M11.5 3 H15 v3.5 M15 11.5 V15 h-3.5 M6.5 15 H3 v-3.5"/></svg>',
+ neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/></svg>',
+ save:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
+ load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>'
+};
+var PANEL_BTNS = {
+ select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes', active:true},
+ line:  {tool:'line', icon:'line', title:'Line (L) \u2014 click points; type exact coords anytime'},
+ rect:  {tool:'rect', icon:'rect', title:'Rectangle (R) \u2014 two corners, or click then type W,H'},
+ circle:{tool:'circle', icon:'circ', title:'Circle (C) \u2014 center then radius point, or type D5 for diameter'},
+ arc:   {tool:'arc', icon:'arc', title:'Arc (A) \u2014 start point, end point, then bow it with the mouse (3-point) or type a radius; + bows left of start\u2192end, \u2212 right'},
+ poly:  {tool:'poly', icon:'poly', title:'Polyline (P) \u2014 click points, Enter ends, click start to close'},
+ measureT:{tool:'measure', icon:'measure', title:'Measure (I) \u2014 click two points for distance and angle; Shift-click two shapes for the gap between them'},
+ textT: {tool:'text', icon:'text', title:'Text (K) \u2014 click where the text starts. To edit text later, click it with this tool, or double-click it twice with Select'},
+ nestBtn:{id:'nestBtn', icon:'nest', title:'Nest parts \u2014 pack the selected parts (or everything, if nothing is selected) onto the material, with copies'},
+ alMat:{id:'alMat', icon:'aMat', title:'Center in material (F9) \u2014 moves the selection, as a block, to the middle of the material'},
+ alMatX:{id:'alMatX', icon:'aMatX', title:'Center left-right in material \u2014 moves the selection sideways only'},
+ alMatY:{id:'alMatY', icon:'aMatY', title:'Center top-bottom in material \u2014 moves the selection up or down only'},
+ alCenter:{id:'alCenter', icon:'aCenter', title:'Center on last picked \u2014 centers the other shapes on the last one you picked (outlined in green)'},
+ alHCenter:{id:'alHCenter', icon:'aHCenter', title:'Line up centers left-right \u2014 moves shapes sideways so their centers line up with the last one picked'},
+ alVCenter:{id:'alVCenter', icon:'aVCenter', title:'Line up centers top-bottom \u2014 moves shapes up or down so their centers line up with the last one picked'},
+ alLeft:{id:'alLeft', icon:'aLeft', title:'Align left edges with the last one picked'},
+ alRight:{id:'alRight', icon:'aRight', title:'Align right edges with the last one picked'},
+ alTop:{id:'alTop', icon:'aTop', title:'Align top edges with the last one picked'},
+ alBottom:{id:'alBottom', icon:'aBottom', title:'Align bottom edges with the last one picked'},
+ alDistH:{id:'alDistH', icon:'aDistH', title:'Space evenly left to right \u2014 equal gaps; the leftmost and rightmost shapes stay put'},
+ alDistV:{id:'alDistV', icon:'aDistV', title:'Space evenly top to bottom \u2014 equal gaps; the top and bottom shapes stay put'},
+ flipHBtn:{id:'flipHBtn', icon:'flipH', title:'Flip horizontal (Shift+H) \u2014 turn the selection over in place, left to right, in place'},
+ flipVBtn:{id:'flipVBtn', icon:'flipV', title:'Flip vertical (Shift+V) \u2014 turn the selection over in place, top to bottom, in place'},
+ curvesBtn:{id:'curvesBtn', icon:'curves', title:'Convert to curves \u2014 turn selected text into ordinary shapes you can trim, offset and cut'},
+ offsetT:{tool:'offset', icon:'offs', title:'Offset (O) \u2014 select or click shapes, then type the distance: + outward, \u2212 inward (open shapes: + is left of travel)'},
+ dimT:{tool:'dim', icon:'dim', title:'Dimension (D) \u2014 click a shape, then another, and type the distance: the second shape moves. Click one shape twice for its own size. Dimensions stay on the drawing and keep themselves up to date.'},
+ nodeT:{tool:'node', icon:'node', title:'Edit nodes (N) \u2014 click a polyline to show its points; drag a point to move it, click a point or segment to type exact values'},
+ groupBtn:{id:'groupBtn', icon:'group', title:'Group (Ctrl+G) \u2014 bundle the selected vectors into one object. All geometry is kept; it just selects and moves as one piece.'},
+ ungroupBtn:{id:'ungroupBtn', icon:'ungroup', title:'Ungroup (Ctrl+U) \u2014 break a group back into its separate vectors'},
+ joinBtn:{id:'joinBtn', icon:'join', title:'Join \u2014 stitch selected OPEN vectors whose ends meet into one continuous contour'},
+ explodeBtn:{id:'explodeBtn', icon:'expl', title:'Explode \u2014 break a contour into its individual lines and arcs'},
+ copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 select first (V), then click base point and destination, or type @dx,dy'},
+ mirrorT:{tool:'mirror', icon:'mirror', title:'Mirror (Shift+M) \u2014 opens the mirror panel: pick the shapes, pick the line to mirror about, then OK. Makes mirrored copy across the selection center, HH/VV to flip in place, or click 2 points for a custom axis'},
+ rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 select first; click the rotation center, then type the angle in degrees (+ CCW)'},
+ arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 select first; type N@dx,dy for a linear array, or click a center then type N<step\u00b0 for a circular one'},
+ fillet:{tool:'fillet', icon:'fillet', title:'Fillet (F) \u2014 type a radius, then click a corner: a poly/rect corner, or where two lines meet'},
+ trim:  {tool:'trim', icon:'trim', title:'Trim (T) \u2014 click the part of a line, arc, or circle to remove, bounded by crossings'},
+ extend:{tool:'extend', icon:'extend', title:'Extend (E) \u2014 click near the end of a line or arc to run it out to the next crossing'},
+ guide: {tool:'guide', icon:'guide', title:'Offset guide (G) \u2014 click an edge, type the offset. Guides and their intersections snap.'},
+ clearGuides:{id:'clearGuides', icon:'gclr', title:'Remove all guides'},
+ machArea:{id:'machAreaBtn', icon:'mach', title:'Machine area \u2014 show or hide the machine\u2019s cutting area, for laying out material and parts'},
+ undoBtn:{id:'undoBtn', icon:'undo', title:'Undo (Ctrl+Z)'},
+ redoBtn:{id:'redoBtn', icon:'redo', title:'Redo (Ctrl+Y)'},
+ fitBtn2:{id:'fitBtn2', icon:'fit', title:'Fit stock (Home)'},
+ newBtn:{id:'newBtn', icon:'neu', title:'New — clear all vectors and guides (undoable with Ctrl+Z)'},
+ saveBtn:{id:'saveBtn', icon:'save', title:'Save the drawing to a file (.454.json): keep it with your G-code, or as a backup'},
+ loadBtn:{id:'loadBtn', icon:'load', title:'Load a saved design'},
+ svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
+ dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
+};
+var PANEL_GROUPS = [
+ {id:'file',   label:'File',           btns:['newBtn','saveBtn','loadBtn','dxfBtn','svgBtn']},
+ {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','arc','poly','textT']},
+ {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','joinBtn','explodeBtn','curvesBtn']},
+ {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
+ {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},
+ {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}
+ /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
+];

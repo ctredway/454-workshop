@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>454 Design · precision 2D sketcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@@include styles/design.css
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><svg class="brandLogo" viewBox="0 0 792 250" role="img" aria-label="454"><path fill="#fff" fill-rule="evenodd" d="M359.50 224.38 C313.02 219.12 275.76 205.56 255.04 186.38 L249.42 181.17 L200.71 181.05 L152.00 180.92 L152.00 191.46 L152.00 202.00 L106.53 202.00 L61.07 202.00 L60.78 191.75 L60.50 181.50 L45.25 181.22 L30.00 180.95 L30.00 152.47 L30.00 124.00 L45.50 124.00 L61.00 124.00 L61.00 89.50 L61.00 55.00 L100.15 55.00 L139.30 55.00 L192.87 82.25 C222.33 97.24 246.90 109.62 247.47 109.76 C248.04 109.90 254.57 89.87 262.00 65.26 L275.50 20.50 L395.99 20.50 L516.47 20.50 L526.21 52.50 C531.57 70.10 535.96 85.28 535.98 86.23 C536.00 87.81 534.11 87.98 514.25 88.23 C494.32 88.48 492.84 88.62 496.50 89.88 C505.19 92.86 520.91 101.26 528.50 106.98 C532.90 110.29 536.76 113.00 537.07 113.00 C537.39 113.00 563.26 99.95 594.57 84.01 L651.50 55.01 L690.75 55.01 L730.00 55.00 L730.00 89.50 L730.00 124.00 L745.50 124.00 L761.00 124.00 L761.00 152.47 L761.00 180.95 L745.75 181.22 L730.50 181.50 L730.22 191.75 L729.93 202.00 L684.47 202.00 L639.00 202.00 L639.00 191.46 L639.00 180.93 L590.12 181.05 L541.24 181.17 L537.37 185.16 C526.29 196.59 504.56 207.91 479.20 215.45 C467.86 218.83 447.36 222.60 430.29 224.46 C412.89 226.35 376.51 226.31 359.50 224.38 Z"/><path fill="#0083ff" fill-rule="evenodd" d="M380.50 207.87 C340.57 206.21 303.58 197.04 279.63 182.87 C273.36 179.16 258.08 165.54 259.11 164.58 C259.33 164.39 276.48 163.66 297.24 162.97 L334.97 161.71 L338.89 164.43 C344.62 168.39 356.94 172.89 368.43 175.21 C381.82 177.91 407.42 178.12 420.50 175.63 C432.84 173.28 443.64 169.60 450.63 165.35 L456.50 161.78 L494.00 163.00 C514.62 163.67 531.66 164.37 531.86 164.56 C532.66 165.29 521.14 176.49 516.00 179.99 C487.23 199.54 435.56 210.17 380.50 207.87 Z M77.67 184.33 C77.30 183.97 77.00 179.02 77.00 173.33 L77.00 163.00 L62.00 163.00 L47.00 163.00 L47.00 151.50 L47.00 140.00 L62.00 140.00 L77.00 140.00 L77.00 105.50 L77.00 71.00 L106.41 71.00 L135.82 71.00 L196.91 102.13 L258.00 133.27 L258.00 148.13 L258.00 162.98 L196.75 163.24 L135.50 163.50 L135.22 174.25 L134.93 185.00 L106.63 185.00 C91.07 185.00 78.03 184.70 77.67 184.33 Z M655.78 174.27 L655.50 163.50 L594.25 163.24 L533.00 162.98 L533.00 148.13 L533.00 133.27 L594.09 102.13 L655.18 71.00 L684.59 71.00 L714.00 71.00 L714.00 105.50 L714.00 140.00 L729.00 140.00 L744.00 140.00 L744.00 151.50 L744.00 163.00 L729.03 163.00 L714.07 163.00 L713.78 173.75 L713.50 184.50 L684.78 184.77 L656.07 185.03 L655.78 174.27 Z M380.83 168.04 C368.05 165.70 357.92 161.26 354.00 156.27 C352.75 154.69 352.00 152.21 352.00 149.71 C352.00 141.99 362.16 135.49 379.00 132.43 C400.05 128.61 425.60 132.95 435.06 141.94 C444.31 150.74 437.66 160.66 418.90 166.03 C410.63 168.40 389.01 169.54 380.83 168.04 Z M200.45 139.16 C199.28 138.13 139.18 105.39 136.75 104.46 C135.12 103.83 135.00 105.06 135.00 121.89 L135.00 140.00 L168.20 140.00 C186.46 140.00 200.97 139.62 200.45 139.16 Z M656.00 121.89 C656.00 105.06 655.88 103.83 654.25 104.46 C651.82 105.39 591.72 138.13 590.55 139.16 C590.03 139.62 604.54 140.00 622.80 140.00 L656.00 140.00 L656.00 121.89 Z M292.73 134.50 C274.70 133.83 259.72 133.05 259.43 132.76 C259.03 132.36 280.06 61.34 287.12 39.25 L288.16 36.00 L396.02 36.00 L503.88 36.00 L506.51 44.75 C507.96 49.56 510.24 57.01 511.57 61.30 C512.91 65.59 514.00 69.31 514.00 69.55 C514.00 69.80 479.17 70.00 436.60 70.00 L359.20 70.00 L357.61 77.25 C356.73 81.24 355.72 86.01 355.36 87.85 L354.71 91.19 L367.11 90.35 C383.96 89.20 416.10 89.49 429.50 90.91 C461.22 94.28 490.46 102.63 510.51 114.05 C518.02 118.33 532.95 131.39 531.72 132.61 C531.40 132.94 514.35 133.81 493.84 134.55 L456.54 135.89 L452.12 132.96 C432.90 120.22 391.71 116.23 360.70 124.09 C351.57 126.40 342.92 130.06 338.37 133.53 C335.87 135.44 334.04 135.97 330.32 135.85 C327.67 135.77 310.75 135.16 292.73 134.50 Z"/></svg><span> Design</span></div>
+    <div class="sub" id="verSub">precision 2D sketcher</div>
+    <div class="spacer"></div>
+    <a id="openDocs" class="hdrIcon" href="docs/index.html" target="_blank" rel="noopener" title="Docs — guides and reference, in a new tab" aria-label="Docs"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3.5h4.5A1.8 1.8 0 0 1 9 5v9a1.5 1.5 0 0 0-1.5-1.1H3z"/><path d="M15 3.5h-4.5A1.8 1.8 0 0 0 9 5v9a1.5 1.5 0 0 1 1.5-1.1H15z"/></svg></a>
+    <button id="libBtn" class="hdrIcon" title="Tool library — your bits, tool numbers, and feeds and speeds" aria-label="Tool library"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M7 2.2h4v6.6l-2 4.4-2-4.4z"/><path d="M7 4.4h4M7 6.4h4M7 8.4h4" opacity=".75"/><path d="M9 13.2v2.6"/></svg></button>
+    <button id="jobBtn" class="hdrIcon" title="Job setup — material size and thickness, units, where X, Y and Z zero are" aria-label="Job setup"><svg viewBox="0 0 18 18" aria-hidden="true"><rect x="2" y="5" width="14" height="9" rx="1"/><path d="M2 9h14M5 5V3M13 5V3"/><circle cx="2.2" cy="14" r="1.3"/></svg></button>
+    <button id="settingsBtn" class="hdrIcon" title="Settings — appearance, display colours" aria-label="Settings"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="2.6"/><path d="M9 1.6v2.2M9 14.2v2.2M16.4 9h-2.2M3.8 9H1.6M14.2 3.8l-1.6 1.6M5.4 12.6l-1.6 1.6M14.2 14.2l-1.6-1.6M5.4 5.4 3.8 3.8"/></svg></button>
+    <a id="openControl" href="index.html" target="_blank" rel="noopener" title="Open 454 Control (the machine sender) in a new tab">454 Control ↗</a>
+    <input type="file" id="loadFile" accept=".json,.crv,.dxf,.svg,.png,.jpg,.jpeg,.gif,.bmp,.webp" multiple hidden>
+  </header>
+
+  <div id="toastWrap"></div>
+  <div id="msgPanel" hidden role="dialog" aria-label="Recent messages">
+    <div class="mhead"><b>Recent messages</b><span class="grow"></span><button id="msgClear">Clear</button></div>
+    <div id="msgList"></div>
+  </div>
+
+  <div id="nestModal" hidden>
+    <div id="nestPanel" role="dialog" aria-labelledby="nestTitle">
+      <div class="modalHead"><h3 id="nestTitle">Nest parts</h3><button class="modalX" id="nestX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <p class="snote" id="nestSummary"></p>
+      <div id="nestList"></div>
+      <div class="srow">
+        <label for="nestAll">Copies of each</label><input type="number" id="nestAll" min="0" step="1" value="1">
+        <button id="nestAllBtn">Apply to all</button>
+      </div>
+      <div class="srow">
+        <label for="nestGap">Spacing</label><input type="number" id="nestGap" min="0" step="0.5"> <span class="unit">mm</span>
+        <label for="nestMargin" style="margin-left:8px">Edge margin</label><input type="number" id="nestMargin" min="0" step="0.5"> <span class="unit">mm</span>
+      </div>
+      <div class="srow">
+        <label for="nestRot">Rotation</label>
+        <select id="nestRot"><option value="any">Any angle (tightest fit)</option><option value="90">90&deg; steps</option><option value="none">None (keep as drawn)</option></select>
+      </div>
+      <p class="snote">Make the spacing at least your bit diameter, so the cutter fits between parts. Anything already on the sheet that isn&rsquo;t being nested stays put and is avoided.</p>
+      <div class="srow" style="margin-top:16px"><span class="grow"></span><button id="nestCancel">Cancel</button><button id="nestGo" class="primary">Nest parts</button></div>
+    </div>
+  </div>
+
+  <div id="textModal" hidden>
+    <div id="textPanel" role="dialog" aria-labelledby="textTitle">
+      <div class="modalHead"><h3 id="textTitle">Add text</h3><button class="modalX" id="textX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <textarea id="txtStr" rows="3" spellcheck="false" placeholder="Type your text"></textarea>
+      <div class="srow">
+        <label for="txtFont">Font</label>
+        <select id="txtFont"></select>
+        <button id="txtLoadFont" title="Use a .ttf, .otf or .woff font from your computer">Use font file…</button>
+      </div>
+      <div class="srow">
+        <label for="txtH">Letter height</label>
+        <input type="number" id="txtH" step="0.5" min="0.1"> <span class="unit">mm</span>
+        <label for="txtAlign" style="margin-left:10px">Align</label>
+        <select id="txtAlign"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+      </div>
+      <p class="snote">Letter height is the height of a capital letter. For through-cuts, choose a font from the Stencil group: they keep the middles of letters like O, A and R attached so they don&rsquo;t fall out.</p>
+      <div class="srow tbtns">
+        <button id="txtCurves" title="Place the text as ordinary shapes instead of editable text">Convert to curves</button>
+        <span class="grow"></span>
+        <button id="txtCancel">Cancel</button>
+        <button id="txtOK" class="primary">Place text</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="fontFile" accept=".ttf,.otf,.woff" hidden>
+
+
+  <div id="jobModal" hidden>
+    <div id="jobPanel" role="dialog" aria-labelledby="jobTitle">
+      <div class="modalHead"><h3 id="jobTitle">Job setup</h3><button class="modalX" id="jobX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <p class="snote" style="margin-top:0">The material you’re cutting and where the machine’s zero will be. Everything else is measured from these.</p>
+      <div class="srow">
+        <label for="stkW">Width</label><input type="text" inputmode="decimal" id="stkW" autocomplete="off">
+        <label for="stkH" style="margin-left:10px">Height</label><input type="text" inputmode="decimal" id="stkH" autocomplete="off">
+        <select id="stkUnits" aria-label="Units"><option value="mm">mm</option><option value="in">in</option></select>
+      </div>
+      <p class="snote" id="stkEq"></p>
+      <p class="snote">Units apply everywhere: the material size, dimensions, typed values, the measure tool and the readout. A unit written after a number always wins, so 25mm works while drawing in inches, and 1/2&quot; works while drawing in mm.</p>
+      <div class="srow" style="align-items:flex-start">
+        <label style="padding-top:4px">XY zero</label>
+        <div id="stkOriginPick" role="radiogroup" aria-label="Where X0 Y0 is on the material">
+          <button type="button" data-o="bl" role="radio" title="Back-left corner">◤</button>
+          <button type="button" data-o="br" role="radio" title="Back-right corner">◥</button>
+          <button type="button" data-o="center" role="radio" title="Centre of the material">●</button>
+          <button type="button" data-o="fl" role="radio" title="Front-left corner">◣</button>
+          <button type="button" data-o="fr" role="radio" title="Front-right corner">◢</button>
+          <span class="pickFront">front</span>
+        </div>
+        <span class="snote" id="stkOriginName" style="margin:4px 0 0 4px"></span>
+      </div>
+      <p class="snote">Match this to where you set X0 Y0 on the machine in 454 Control. Changing it keeps your parts where they are on the material.</p>
+      <div class="srow">
+        <label for="stkT">Thickness</label><input type="text" inputmode="decimal" id="stkT" autocomplete="off" placeholder="not set">
+        <label for="stkZ" style="margin-left:10px">Z zero</label>
+        <select id="stkZ">
+          <option value="top">top of the material</option>
+          <option value="bottom">spoilboard (under it)</option>
+        </select>
+      </div>
+      <p class="snote">Used whenever something cuts right through the material, so measure it rather than trusting the label. Z zero must match where you zero the tool in 454 Control.</p>
+      <h4 style="margin:16px 0 6px">Machine</h4>
+      <div class="srow"><label>Cutting area</label>
+        <select id="jobMach">
+          <option value="ctl">From 454 Control</option>
+          <option value="425,425">Shapeoko 3 (425 × 425)</option>
+          <option value="838,438">Shapeoko XL (838 × 438)</option>
+          <option value="838,838">Shapeoko XXL (838 × 838)</option>
+          <option value="623,623">Shapeoko 5 / 5.1 Pro 2×2 (623 × 623)</option>
+          <option value="1237,623">Shapeoko 5 / 5.1 Pro 4×2 (1237 × 623)</option>
+          <option value="1237,1237">Shapeoko 5 / 5.1 Pro 4×4 (1237 × 1237)</option>
+          <option value="203,203">Nomad 3 (203 × 203)</option>
+          <option value="custom">Custom…</option>
+        </select></div>
+      <div class="srow" id="jobMachCustom" hidden><label>Size</label>
+        <input id="jobMW" type="text" inputmode="decimal" style="width:64px"> × <input id="jobMH" type="text" inputmode="decimal" style="width:64px"> <span class="jobMU"></span></div>
+      <p class="snote" id="jobMachNote"></p>
+      <div class="srow"><label>Material sits at the machine’s</label>
+        <select id="jobMAnchor">
+          <option value="fl">front-left corner</option><option value="fr">front-right corner</option>
+          <option value="bl">back-left corner</option><option value="br">back-right corner</option>
+          <option value="center">centre</option>
+        </select></div>
+      <div class="srow" id="jobMOffRow"><label>In from that corner</label>
+        X <input id="jobMOffX" type="text" inputmode="decimal" style="width:52px"> Y <input id="jobMOffY" type="text" inputmode="decimal" style="width:52px"> <span class="jobMU"></span></div>
+      <p class="snote">Used to draw the machine’s cutting area (Guides → Machine area), to see how the material and parts sit on the bed.</p>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px"><button id="jobDone" class="primary">Done</button></div>
+    </div>
+  </div>
+  <div id="settingsModal" hidden>
+    <div id="settingsPanel">
+      <div class="modalHead"><h3>Settings</h3><button class="modalX" id="setX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <h4>Job</h4>
+      <div class="srow"><button id="setJobBtn" type="button">Job setup…</button>
+        <span class="snote" style="margin:0">Material size, thickness, units and where X, Y and Z zero are.</span></div>
+      <h4>Appearance</h4>
+      <div class="srow">
+        <label for="uiTheme">Theme</label>
+        <select id="uiTheme"><option value="dark">Dark</option><option value="light">Light</option></select>
+        <label for="uiAccent" style="margin-left:10px">Accent</label>
+        <select id="uiAccent">
+          <option value="gold">Gold</option><option value="red">Red</option><option value="blue">Blue</option>
+          <option value="green">Green</option><option value="purple">Purple</option><option value="teal">Teal</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <input type="color" id="uiAccentHex" value="#e8a33d" style="width:44px;height:26px;padding:1px">
+      </div>
+      <p class="snote">Shared with 454 Control, so both apps look the same.</p>
+
+      <h4>Display colors</h4>
+      <div class="srow"><input type="color" id="colVec"><label for="colVec">Vectors</label></div>
+      <div class="srow"><input type="color" id="colTp"><label for="colTp">Toolpath previews</label></div>
+      <div class="srow"><input type="color" id="colCon"><label for="colCon">Construction</label></div>
+      <div class="srow"><input type="color" id="colDim"><label for="colDim">Dimensions</label></div>
+      <div class="srow"><input type="checkbox" id="showDims"><label for="showDims">Show dimensions layer</label></div>
+      <h4>Drawing</h4>
+      <div class="srow"><input type="checkbox" id="angleSnapChk"><label for="angleSnapChk">Snap lines to 45° and 90°</label></div>
+      <p class="snote">Lines and polylines, vectors and construction lines alike, snap to 0°, 45°, 90° and so on as you draw. Hold Shift to lock to the nearest one.</p>
+      <div class="srow" style="margin-top:14px"><button id="settingsDone" class="primary">Done</button></div>
+    </div>
+  </div>
+
+  <div id="toolPanel"></div>
+
+  <div id="dlgModal" hidden>
+    <div id="dlgPanel" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+      <div class="dlgHead"><b id="dlgTitle">Confirm</b><button class="modalX" id="dlgX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <div id="dlgBody"></div>
+      <div class="dlgBtns"><button id="dlgCancel">Cancel</button><button id="dlgOk" class="primary">OK</button></div>
+    </div>
+  </div>
+
+  <div id="toolModal" hidden>
+    <div id="toolPanel2" role="dialog" aria-labelledby="tdTitle">
+      <div class="tdHead"><div style="flex:1"><h3 id="tdTitle">Tool</h3><div id="tdSub"></div></div><button id="tdClose" title="Close (Esc)">✕</button></div>
+      <div id="tdBody"></div>
+      <div class="tdFoot"><button id="tdLib">Open in tool library</button><button id="tdDone" class="primary">Close</button></div>
+    </div>
+  </div>
+
+  <div id="libModal" hidden>
+    <div id="libPanel" role="dialog" aria-labelledby="libTitle">
+      <div class="libHead">
+        <h3 id="libTitle">Tool library</h3><span id="libSource"></span><span class="grow"></span>
+        <button id="libRemove" title="Remove the library from this browser">Remove</button>
+        <button id="libImport" class="primary" title="Import VCarve's tools.vtdb">Import VCarve library…</button>
+        <button id="libClose" title="Close (Esc)">✕</button>
+      </div>
+      <div class="libBar" id="libBar">
+        <label for="libMachine">Machine <select id="libMachine"></select></label>
+        <label for="libMaterial">Material <select id="libMaterial"></select></label>
+        <input id="libSearch" type="search" placeholder="Search tools" aria-label="Search tools">
+        <span class="grow" style="flex:1"></span>
+        <button id="libNewTool" title="Add a tool to the library">+ Tool</button>
+        <button id="libNewMat" title="Add a material, to give tools feeds and speeds for it">+ Material</button>
+        <input id="libNewMatName" type="text" placeholder="Material name" aria-label="New material name" hidden style="width:140px">
+      </div>
+      <div class="libBody" id="libBody"><div id="libTree" role="tree" aria-label="Tools"></div><div id="libDetail"></div></div>
+      <div id="libPickBar" hidden>
+        <span id="libPickNote">Pick a tool, then Select — or double-click it.</span>
+        <span class="grow"></span>
+        <button id="libPickCancel">Cancel</button>
+        <button id="libPickGo" class="primary" disabled>Select</button>
+      </div>
+      <div id="libEmpty" hidden>
+        <b>No tool library yet.</b> Import your VCarve library and 454 will read every bit, its tool numbers and its feeds and speeds, just as VCarve stores them.
+        <ol>
+          <li>In VCarve, open the <b>File</b> menu and choose <b>Open Application Data Folder</b>.</li>
+          <li>Open the <b>ToolDatabase</b> folder. Close VCarve, then copy <b>tools.vtdb</b> somewhere handy.</li>
+          <li>Press <b>Import VCarve library…</b> above and pick that copy.</li>
+        </ol>
+        <p>No VCarve? <button id="libStartEmpty">Start an empty library</button> and add your tools yourself.</p>
+        <p style="color:var(--muted);margin-top:12px">The library stays in this browser and is shared with 454 Control and 454 CAM.</p>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="libFile" accept=".vtdb" hidden>
+
+  <div id="ctxMenu" role="menu" hidden></div>
+  <div id="jsModal" hidden role="dialog" aria-modal="true" aria-labelledby="jsTitleBar">
+    <div class="jsBar"><b id="jsTitleBar">Job sheet</b><span class="jsHint">Click the job name or Notes to edit them before printing.</span>
+      <button id="jsPrint" class="primary">Print&hellip;</button><button id="jsClose">Close</button></div>
+    <div class="jsScroll"><article id="jobSheet"></article></div>
+  </div>
+  <aside id="tpPanel" aria-label="Toolpaths">
+    <button id="tpStrip" aria-expanded="false" aria-controls="tpBody" title="Expand the toolpaths panel"><span class="chev">«</span><span>Toolpaths</span><span id="tpStripCount"></span></button>
+    <div id="tpBody">
+    <div class="tpHead"><b>Toolpaths</b>
+      <button id="tpCheck" class="tpIcon" hidden aria-label="Check the drawing" title="Check: look over the drawing before cutting — open shapes, pieces, doubles, crossings, and shapes no toolpath cuts"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2l3.3 3.3M5.3 7l1.2 1.2 2.3-2.4"/></svg></button>
+      <button id="tpRecalcAll" class="tpIcon" hidden aria-label="Recalculate all toolpaths" title="Recalculate all: rebuild every toolpath from its shapes and the material as they are now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg></button>
+      <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
+      <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+    <div id="tpCount" class="tpCountLine"></div>
+    <p id="tpBeta" hidden><b>Beta.</b> Toolpaths are new and still being tested. Check every job in 454 Control&rsquo;s
+      preview and run it in the air before cutting material. <a href="docs/cam-reference.html" target="_blank" rel="noopener">What to check</a></p>
+    <p class="tpNote" id="tpEmpty">No toolpaths yet. Open a VCarve project (.crv) that has toolpaths, and they&rsquo;ll be listed here.</p>
+    <p class="tpNote" id="tpSrcNote">Read from the VCarve project, in the order VCarve lists them. They show how the job was set up; 454 Design can&rsquo;t cut them yet, and editing the drawing doesn&rsquo;t update them.</p>
+    <p class="tpNote" id="tpCamMissing" hidden style="color:var(--amber)">The toolpath tools didn’t load: <code>geom.js</code> and <code>cam.js</code> need to be in the same folder as this <code>design.html</code>.</p>
+    <p class="tpNote" id="tpLibNote"></p>
+    <div id="tpVcBar" hidden style="padding:0 10px 8px"><button id="tpVcConvert" class="primary" style="width:100%"
+      title="Turn VCarve's toolpaths into 454 toolpaths you can edit, reorder and save as G-code">Make these editable</button></div>
+    <div id="tpSheetBar" hidden>
+      <label for="tpSheet">Sheet</label>
+      <select id="tpSheet" style="flex:1" title="Each sheet is its own job: its own toolpaths and its own G-code"></select></div>
+    <div id="tpList"></div>
+    <a id="tpDocs" href="docs/cam-reference.html" target="_blank" rel="noopener" style="display:block;padding:10px 12px;font-size:12px;color:var(--muted)">CAM reference &#8599;</a>
+    </div>
+  </aside>
+
+  <div id="canvasWrap">
+    <canvas id="cv"></canvas>
+    <div id="promptHint"></div>
+    <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
+      <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="cutShapes"><span class="mirLbl">Shapes</span><span class="mirVal" id="cutShapesVal">none</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutType">Cut</label></span>
+        <select id="cutType" style="margin-left:auto">
+          <option value="outside">Profile, outside</option>
+          <option value="inside">Profile, inside</option>
+          <option value="on">Profile, on the line</option>
+          <option value="pocket">Pocket (clear the area)</option>
+          <option value="drill">Drill at centres</option>
+          <option value="chamfer">Chamfer edges (V-bit)</option>
+          <option value="vcarve">V-carve (V-bit)</option>
+          <option value="inlay">Inlay (V-bit pocket or plug)</option>
+        </select></div>
+      <button class="mirSlot" id="cutTool" title="Choose from your tool library"><span class="mirLbl">Tool</span>
+        <span class="mirVal" id="cutToolName" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Choose…</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutDia">Diameter</label></span>
+        <input id="cutDia" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal" id="cutUnit">mm</span></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutDepth">Cut depth</label></span>
+        <label id="cutThroughLbl" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-left:auto">
+          <input type="checkbox" id="cutThrough"> through</label>
+        <input id="cutDepth" type="text" inputmode="decimal" autocomplete="off" style="margin-left:6px"></div>
+      <div class="mirSlot" id="cutOverRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutOver">Overcut</label></span>
+        <input id="cutOver" type="text" inputmode="decimal" autocomplete="off" title="How far past the bottom of the material to cut, so parts come free cleanly"></div>
+      <div class="mirSlot" id="cutStepRow" style="cursor:default"><span class="mirLbl"><label for="cutStep">Per pass</label></span>
+        <input id="cutStep" type="text" inputmode="decimal" autocomplete="off"></div>
+      <div class="mirSlot" id="cutChamRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutChamW">Bevel width</label></span>
+        <input id="cutChamW" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How wide the bevel is on the top face">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutVAngle">Bit</label></span>
+        <input id="cutVAngle" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The V-bit's included angle">
+        <span class="mirVal">°</span>
+      </div>
+      <div class="mirSlot" id="cutVcRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutVcAngle">Bit</label></span>
+        <input id="cutVcAngle" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The V-bit's included angle">
+        <span class="mirVal">°</span>
+        <span class="mirLbl" style="margin-left:10px" id="cutVcMaxLbl"><label for="cutVcMax">Max depth</label></span>
+        <input id="cutVcMax" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="none" title="Optional: deeper than this, the carving gets a flat floor and the middle is left for a clearing toolpath">
+        <span class="mirLbl" style="margin-left:10px"><label for="cutVcTip">Tip</label></span>
+        <input id="cutVcTip" type="text" inputmode="decimal" autocomplete="off" style="width:40px" title="The width of the bit's flat tip, if it has one (engraving bits usually do)">
+      </div>
+      <div class="mirSlot" id="cutInlayRow" hidden style="cursor:default;flex-wrap:wrap;row-gap:6px">
+        <span class="mirLbl"><label for="cutInlayHalf">Cut the</label></span>
+        <select id="cutInlayHalf" title="The pocket goes in the base; the plug is cut from the inlay piece, mirrored, then flipped and glued in">
+          <option value="pocket">pocket (in the base)</option><option value="plug">plug (in the inlay piece)</option></select>
+        <span style="flex-basis:100%;height:0"></span>
+        <span class="mirLbl"><label for="cutInlayD" id="cutInlayDLbl">Pocket depth</label></span>
+        <input id="cutInlayD" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the pocket's flat floor is">
+        <span id="cutInlayPlugBits"><span class="mirLbl" style="margin-left:8px"><label for="cutInlayS">Start depth</label></span>
+        <input id="cutInlayS" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the plug's walls begin; the plug seats this deep in the pocket, leaving (pocket depth - start depth) for glue underneath">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutInlayM">Plug depth</label></span>
+        <input id="cutInlayM" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the plug is carved; more than the start depth, so it stands proud to be planed off"></span>
+      </div>
+      <div class="mirSlot" id="cutChamModeRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutChamMode">The line is</label></span>
+        <select id="cutChamMode" style="margin-left:auto;max-width:150px" title="Where the drawn line sits on the finished bevel">
+          <option value="edge">the part’s edge (tip on it)</option>
+          <option value="in">the bevel’s top, going inside</option>
+          <option value="out">the bevel’s top, going outside</option>
+        </select>
+      </div>
+      <div class="mirSlot" id="cutOverlapRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutStepover">Stepover</label></span>
+        <input id="cutStepover" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How far apart the clearing passes are, as a share of the cutter diameter">
+        <span class="mirVal">% of the cutter</span></div>
+      <div class="mirSlot" id="cutClearRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutClear">Clearing</label></span>
+        <select id="cutClear" title="Offset rings work outwards from the middle; raster runs back and forth in straight lines, then round the walls">
+          <option value="offset">Offset rings</option><option value="raster">Raster</option></select>
+        <span id="cutRasterBits"><label for="cutRasterAng" style="margin-left:8px;color:var(--muted)">at</label>
+        <input id="cutRasterAng" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The angle of the raster lines: 0 runs left to right, 90 front to back"> °</span></div>
+      <div class="mirSlot" id="cutPeckRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutPeck">Peck</label></span>
+        <input id="cutPeck" type="text" inputmode="decimal" autocomplete="off" title="How far to drill before lifting to clear chips. 0 drills in one plunge."></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutFeed" id="cutFeedLbl">Feed</label></span>
+        <input id="cutFeed" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal">mm/min</span></div>
+      <div class="mirSlot" id="cutDirRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutDir">Direction</label></span>
+        <select id="cutDir" title="Climb milling usually leaves the better finish on a rigid machine; conventional can suit flexible setups or brittle material">
+          <option value="climb">Climb</option><option value="conv">Conventional</option></select></div>
+      <div class="mirSlot" id="cutFinRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutAllow">Finishing</label></span>
+        leave <input id="cutAllow" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="0" title="Material left on the walls by the roughing passes"> <span class="mirVal" id="cutAllowU"></span>
+        <label style="display:flex;align-items:center;gap:4px;margin-left:6px;font-size:12px;color:var(--muted)"><input type="checkbox" id="cutFinPass"> then finish it</label></div>
+      <div class="mirSlot" id="cutLeadRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutLead">Lead in/out</label></span>
+        <select id="cutLead" title="Sweep onto the line from the waste side and off it again, so no pass starts or stops on the finished wall">
+          <option value="none">None</option><option value="arc">Arc</option><option value="line">Line</option></select>
+        <input id="cutLeadSize" type="text" inputmode="decimal" autocomplete="off" style="width:44px;margin-left:6px" title="How far the lead reaches: the arc's radius, or the line's length"> <span class="mirVal" id="cutLeadU"></span></div>
+      <div class="mirSlot" id="cutTabRow" style="cursor:default">
+        <input type="checkbox" id="cutTabsOn"><label for="cutTabsOn" class="mirLbl" style="color:var(--ink)">Add tabs</label>
+        <span class="mirVal" id="cutTabCount" style="margin-left:auto"></span>
+        <button id="cutTabPlace" title="Click the outline to add a tab, click a tab to remove it" aria-pressed="false" style="font-size:11.5px;padding:2px 7px">Edit tabs</button>
+      </div>
+      <div class="mirSlot" id="cutTabTools" hidden style="cursor:default">
+        <span class="mirLbl">Add evenly</span>
+        <input id="cutTabs" type="number" min="1" max="20" step="1" value="4" style="width:40px" title="How many to add, spread evenly round each shape">
+        <button id="cutTabSpread" style="font-size:11.5px;padding:2px 7px" title="Add this many, spaced evenly, to every shape">Add</button>
+        <button id="cutTabClear" style="font-size:11.5px;padding:2px 7px;margin-left:auto" title="Remove every tab">Clear</button>
+      </div>
+      <div class="mirSlot" id="cutTabSize" style="cursor:default">
+        <span class="mirLbl"><label for="cutTabLen">Length</label></span>
+        <input id="cutTabLen" type="text" inputmode="decimal" autocomplete="off" style="width:48px">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutTabThk">Thickness</label></span>
+        <input id="cutTabThk" type="text" inputmode="decimal" autocomplete="off" style="width:48px">
+      </div>
+      <p class="mirHint" id="cutHint"></p>
+      <div id="cutIssues"></div>
+      <div class="mirBtns"><button id="cutCancel">Cancel</button><button id="cutOk" class="primary">Create</button></div>
+    </div>
+
+    <div id="offPanel" hidden role="dialog" aria-label="Offset">
+      <div class="modalHead"><h3>Offset</h3><button class="modalX" id="offX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="offObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="offObjsVal">none</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="offDist">Distance</label></span><input id="offDist" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal" id="offUnit">mm</span></div>
+      <button class="mirSlot" id="offFlip"><span class="mirLbl">Direction</span><span class="mirVal" id="offDir">outward</span></button>
+      <p class="mirHint" id="offHint"></p>
+      <div class="mirBtns"><button id="offCancel">Cancel</button><button id="offOk" class="primary">OK</button></div>
+    </div>
+    <div id="tracePanel" hidden role="dialog" aria-labelledby="traceTitle">
+      <div class="mirHead"><b id="traceTitle">Trace image</b><button id="traceX" class="modalX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <div class="trRow"><label for="trThr">Threshold</label><input type="range" id="trThr" min="1" max="254" value="128">
+        <button id="trAuto" title="Pick the threshold from the image">Auto</button></div>
+      <div class="trRow"><input type="checkbox" id="trInv"><label for="trInv">Invert (light artwork on dark)</label></div>
+      <div class="trRow"><label for="trSmooth">Smoothing</label>
+        <select id="trSmooth"><option value="0">Sharp</option><option value="1" selected>Balanced</option><option value="2">Smooth</option></select></div>
+      <div class="trRow"><label for="trSpeck">Ignore specks under</label><input id="trSpeck" type="text" inputmode="decimal" style="width:52px"><span class="trUnit"></span></div>
+      <div class="trRow"><label for="trW">Width</label><input id="trW" type="text" inputmode="decimal" style="width:64px"><span class="trUnit"></span>
+        <span id="trH" style="color:var(--muted);font-size:12px"></span></div>
+      <div class="trRow"><input type="checkbox" id="trFit" checked><label for="trFit" title="Fit arcs and straight lines to the outlines, within the smoothing tolerance: smooth curves, far fewer nodes, sharp corners kept">Fit curves (far fewer nodes)</label></div>
+      <div class="trRow"><input type="checkbox" id="trBg" checked><label for="trBg">Keep the image behind the drawing</label></div>
+      <p id="trHint" class="mirHint"></p>
+      <div style="display:flex;gap:6px;justify-content:flex-end"><button id="trCancel">Cancel</button><button id="trOk" class="primary">Trace</button></div>
+    </div>
+    <div id="mirPanel" hidden role="dialog" aria-label="Mirror">
+      <div class="modalHead"><h3>Mirror</h3><button class="modalX" id="mirX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="mirObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="mirObjsVal">none</span></button>
+      <button class="mirSlot" id="mirLine"><span class="mirLbl">Mirror line</span><span class="mirVal" id="mirLineVal">none</span></button>
+      <p class="mirHint" id="mirHint"></p>
+      <div class="mirBtns"><button id="mirCancel">Cancel</button><button id="mirOk" class="primary">OK</button></div>
+    </div>
+    <div id="floatIn" hidden><span id="floatTag"></span><input id="promptIn" autocomplete="off" spellcheck="false"><button id="floatDel" hidden title="Delete this dimension">✕</button></div>
+    <div id="promptBar">
+      <label id="promptLbl">value</label>
+      <label id="filletRBox" hidden title="The fillet radius. Type a new one here, or just start typing a number while the Fillet tool is active">Radius
+        <input id="filletR" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"> <span id="filletRU"></span></label>
+      <span id="filletTypes" hidden role="group" aria-label="Corner type">
+        <button data-ft="round">Round</button><button data-ft="dogbone">Dog-bone</button><button data-ft="tbone">T-bone</button>
+      </span>
+    </div>
+  </div>
+
+  <div id="impModal" hidden>
+    <div id="impPanel">
+      <div class="modalHead"><h3 id="impTitle">Import VCarve file</h3><button class="modalX" id="impX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <div class="row"><span id="impStock" style="color:var(--muted);white-space:pre-line"></span></div>
+      <div class="row impCrvRow"><input type="checkbox" id="impDrawing" checked><label for="impDrawing" id="impDrawingLbl">Drawing vectors</label></div>
+      <div class="row impCrvRow"><input type="checkbox" id="impPreview"><label for="impPreview" id="impPreviewLbl">Toolpath preview vectors</label></div>
+      <div class="row impDxfRow" hidden>
+        <label>Scale to width</label><input type="number" id="impWidth" style="width:80px" step="0.1" placeholder="1:1">
+        <span style="color:var(--faint)">mm (blank = no scaling)</span>
+      </div>
+      <div class="row impVecRow" id="impIntoRow" hidden><span style="color:var(--muted)">Into</span>
+        <input type="radio" name="impInto" id="impAdd" checked><label for="impAdd">Add to this drawing</label>
+        <input type="radio" name="impInto" id="impReplace"><label for="impReplace">Replace the drawing</label>
+      </div>
+      <div class="row impVecRow" hidden><label for="impPlace">Place</label>
+        <select id="impPlace">
+          <option value="beside">Beside what’s drawn</option>
+          <option value="origin">At X0 Y0 (their bottom-left corner)</option>
+          <option value="file">Where the file has them</option>
+        </select>
+      </div>
+      <div class="row" id="impUnitsRow" style="margin-top:6px">
+        <span style="color:var(--muted)">Job units:</span>
+        <input type="radio" name="impUnits" id="impMM" checked><label for="impMM">mm</label>
+        <input type="radio" name="impUnits" id="impIN"><label for="impIN">inches (converted)</label>
+      </div>
+      <p class="note impCrvRow">Toolpath previews are the cutter-offset ghosts VCarve draws for calculated toolpaths. Usually you want the drawing only.</p>
+      <div class="row" style="margin-top:12px">
+        <button id="impGo" class="primary">Import</button>
+        <button id="impCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>X <b id="fx">0.00</b></span>
+    <span>Y <b id="fy">0.00</b></span>
+    <span id="fdim"></span>
+    <span class="spacer" style="flex:1"></span>
+    <span id="hint">Type numbers while drawing: "50,30" absolute · "@10,0" relative · "D5" circle diameter · click an edge with Guide then type the offset</span>
+    <button id="msgBulb" hidden aria-expanded="false" aria-controls="msgPanel" title="Recent messages">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.6 11.2 C5.6 9.6 3.5 8.6 3.5 6 A4.5 4.5 0 0 1 12.5 6 C12.5 8.6 10.4 9.6 10.4 11.2 Z"/><path d="M6 13 H10 M6.6 14.8 H9.4"/></svg>
+      <span id="msgCount">0</span>
+    </button>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+<!-- The CAM engine is optional: without it 454 Design works exactly as before. It's released as a
+     beta and loads by default; ?cam=off turns it off in that browser (?cam turns it back on). -->
+<script>
+@@include js/cam-loader.js
+</script>
+<script>
+@@include js/version.js
+@@include js/model.js
+@@include js/fonts.js
+@@include js/text.js
+@@include js/dimensions.js
+@@include js/view.js
+@@include js/snapping.js
+@@include js/picking.js
+@@include js/undo.js
+@@include js/typed-input.js
+@@include js/tool-manager.js
+@@include js/tool-click.js
+@@include js/tool-typing.js
+@@include js/prompt.js
+@@include js/vcarve-read.js
+@@include js/toolpaths.js
+@@include js/vector-check.js
+@@include js/toolpath-generate.js
+@@include js/toolpath-editor.js
+@@include js/toolpath-order.js
+@@include js/gcode-export.js
+@@include js/dxf-export.js
+@@include js/svg-export.js
+@@include js/machine-area.js
+@@include js/layers.js
+@@include js/image-trace.js
+@@include js/vcarve-toolpaths.js
+@@include js/job-sheet.js
+@@include js/context-menu.js
+@@include js/toolpath-cards.js
+@@include js/preview-in-control.js
+@@include js/sheets.js
+@@include js/toolpath-panel.js
+@@include js/tool-library.js
+@@include js/tool-library-dialog.js
+@@include js/theme.js
+@@include js/dialogs.js
+@@include js/tool-details.js
+@@include js/crv-import.js
+@@include js/dxf-import.js
+@@include js/svg-import.js
+@@include js/vector-import.js
+@@include js/messages.js
+@@include js/persist-units.js
+@@include js/draw.js
+@@include js/offset-mirror-panels.js
+@@include js/edit-previews.js
+@@include js/geometry.js
+@@include js/trim-extend.js
+@@include js/fillet-paths.js
+@@include js/nesting.js
+@@include js/measuring.js
+@@include js/fillets.js
+@@include js/transforms.js
+@@include js/alignment.js
+@@include js/offset.js
+@@include js/join-explode.js
+@@include js/readout.js
+@@include js/relations.js
+@@include js/dimension-apply.js
+@@include js/move.js
+@@include js/ui-settings.js
+@@include js/tool-panel.js
+@@include js/panel-wiring.js
+@@include js/wiring.js
+</script>
+</body>
+</html>

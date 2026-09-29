@@ -73,7 +73,7 @@ jobs:
         run: |
           cd ../..
           node apps/control/build.mjs --check || { echo "::error::index.html isn't the current 454 Control. If the website zip was unzipped into the repository, see DEVELOPING.md; the website zip goes to Cloudflare only."; exit 1; }
-          grep -q DESIGN_VERSION design.html || { echo "::error::design.html isn't 454 Design."; exit 1; }
+          node apps/design/build.mjs --check || { echo "::error::design.html isn't the current 454 Design: it must match apps/design/src."; exit 1; }
           for d in control design; do [ ! -e "$d/index.html" ] || echo "::warning::$d/ holds a website copy of an app; it doesn't belong in the repository (and isn't used)."; done
 
       - name: Install the docs site (bundled into the app)
