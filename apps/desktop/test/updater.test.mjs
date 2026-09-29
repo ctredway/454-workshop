@@ -26,6 +26,7 @@ function rig(opts = {}) {
     autoUpdater: au, fs, timers, settingsFile: '/u.json', currentVersion: '0.6.0',
     installable: opts.installable || { ok: true },
     isBusy: async () => machine.busy,
+    beforeRestart: opts.beforeRestart,
     ask: async (o) => { asked.push(o); return answers.length ? answers.shift() : (o.cancelId !== undefined ? o.cancelId : 0); },
   });
   const runTimers = async () => { const now = pending.splice(0); for (const t of now) t.fn(); await settle(); };
@@ -259,6 +260,46 @@ describe('never during a job', () => {
     r.au.emit('update-downloaded', release('0.6.1')); await settle();
     expect(r.au.calls).not.toContain('quitAndInstall');
     expect(r.au.autoInstallOnAppQuit).toBe(true);
+  });
+});
+
+describe('an unsaved drawing in 454 Design', () => {
+  async function downloaded(r) {
+    r.u.start(); await r.runTimers();
+    r.au.emit('update-available', release('0.6.1')); await settle();
+    r.u.download(); await settle();
+    r.au.emit('update-downloaded', release('0.6.1')); await settle();
+  }
+  it('Restart to update asks Design first, and Cancel there stops the restart', async () => {
+    const asked = [];
+    const r = rig({ beforeRestart: async () => { asked.push('design'); return false; } });
+    await downloaded(r);
+    expect(await r.u.restart()).toEqual({ ok: false, cancelled: true });
+    expect(asked).toEqual(['design']);
+    expect(r.au.calls).not.toContain('quitAndInstall');
+    expect(r.u.view.phase).toBe('ready');                   // still offered
+  });
+  it('once Design is settled (saved, or put aside), it restarts', async () => {
+    const r = rig({ beforeRestart: async () => true });
+    await downloaded(r);
+    expect(await r.u.restart()).toEqual({ ok: true });
+    expect(r.au.calls).toContain('quitAndInstall');
+  });
+  it('the menu’s Restart now asks Design too', async () => {
+    const r = rig({ beforeRestart: async () => false, answers: [0] });
+    r.u.start();
+    r.au.emit('update-downloaded', release('0.6.1')); await settle();
+    r.u.checkNow(); await settle();
+    expect(r.asked[0].message).toBe('454 Workshop 0.6.1 is ready to install.');
+    expect(r.au.calls).not.toContain('quitAndInstall');
+  });
+  it('the machine is checked first: a busy machine refuses before Design is asked', async () => {
+    const asked = [];
+    const r = rig({ beforeRestart: async () => { asked.push('design'); return true; } });
+    await downloaded(r);
+    r.machine.busy = true;
+    expect(await r.u.restart()).toEqual({ ok: false, busy: true });
+    expect(asked).toEqual([]);
   });
 });
 

@@ -62,7 +62,8 @@ var ICON = {
  fit:'<svg viewBox="0 0 18 18"><path d="M3 6.5 V3 h3.5 M11.5 3 H15 v3.5 M15 11.5 V15 h-3.5 M6.5 15 H3 v-3.5"/></svg>',
  neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/></svg>',
  save:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
- load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>'
+ load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
+ recover:'<svg viewBox="0 0 18 18"><path d="M4 9 A5.5 5.5 0 1 0 5.6 5.1"/><path d="M5.6 2.2 V5.1 H2.7"/><path d="M9 6.2 V9.2 L11 10.6"/></svg>'
 };
 var PANEL_BTNS = {
  select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes', active:true},
@@ -112,11 +113,12 @@ var PANEL_BTNS = {
  newBtn:{id:'newBtn', icon:'neu', title:'New — clear all vectors and guides (undoable with Ctrl+Z)'},
  saveBtn:{id:'saveBtn', icon:'save', title:'Save the drawing to a file (.454.json): keep it with your G-code, or as a backup'},
  loadBtn:{id:'loadBtn', icon:'load', title:'Load a saved design'},
+ recoverBtn:{id:'recoverBtn', icon:'recover', title:'Recover last drawing'},
  svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
 var PANEL_GROUPS = [
- {id:'file',   label:'File',           btns:['newBtn','saveBtn','loadBtn','dxfBtn','svgBtn']},
+ {id:'file',   label:'File',           btns:['newBtn','saveBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','joinBtn','explodeBtn','curvesBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},

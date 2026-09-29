@@ -28,7 +28,8 @@ const NO_UPDATES = { type: 'info', title: 'Updates', message: 'There are no new 
 function createUpdater(deps) {
   const { autoUpdater, isBusy, ask, setProgress = () => {}, currentVersion, installable,
           settingsFile, fs, timers = { setTimeout, clearTimeout }, log = () => {},
-          firstCheckAfter = 30e3, checkEvery = CHECK_EVERY, idlePoll = MINUTE, busyPoll = 3e3, onChange = () => {} } = deps;
+          firstCheckAfter = 30e3, checkEvery = CHECK_EVERY, idlePoll = MINUTE, busyPoll = 3e3, onChange = () => {},
+          beforeRestart = async () => true } = deps;     // false: something asked to stay open (Design's unsaved drawing)
 
   // ---- settings: automatic checks, the channel, a skipped version
   let settings = { auto: true, channel: 'stable', skipped: null };
@@ -137,6 +138,9 @@ function createUpdater(deps) {
     look();
   }
 
+  // Anything that must be settled before closing (Design asks about an unsaved drawing): Cancel there stops the restart.
+  async function ready() { try { return (await beforeRestart()) !== false; } catch (e) { log('before restart: ' + e.message); return false; } }
+
   // ---- what the header's notice does, each only when it's clicked
   async function download() {
     if (!state.available || state.downloaded || state.phase === 'downloading' || state.phase === 'checking') return;
@@ -150,6 +154,7 @@ function createUpdater(deps) {
   async function restart() {
     if (!state.downloaded || state.phase === 'restarting') return { ok: false };
     if (await busy()) { state.busy = true; onChange(); return { ok: false, busy: true }; }
+    if (!(await ready())) return { ok: false, cancelled: true };
     state.phase = 'restarting'; onChange();
     autoUpdater.quitAndInstall(false, true);       // install, then start the new version
     return { ok: true };
@@ -167,6 +172,7 @@ function createUpdater(deps) {
           detail: 'The update will install when you close 454 Workshop, or offer again when the machine is idle.', buttons: ['OK'] });
         return;
       }
+      if (!(await ready())) return;
       state.phase = 'restarting'; onChange();
       autoUpdater.quitAndInstall(false, true);     // install, then start the new version
     });

@@ -902,7 +902,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.95.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.96.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -7222,6 +7222,7 @@ function persist(){
     persist.layerQueued = true;
     setTimeout(function(){ persist.layerQueued = false; renderLayers(); }, 0);
   }
+  markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
   try{ localStorage.setItem('d454Design', docForStorage()); }
   catch(e){                                             // say so: losing work quietly is the worst outcome
     if (!persist.warned){ persist.warned = true;
@@ -7297,6 +7298,163 @@ function restore(){ // startup ONLY: pulls the persisted doc. Never call after s
   tpRebuildAll();                                     // toolpaths come back as settings only
 }
 
+/* ---------------- unsaved drawings ----------------
+   Design keeps the drawing in the browser's storage as you work (persist()), so it's there next time. That
+   isn't a file. This tracks whether the drawing has been saved to a file since it last changed, and asks
+   before closing one that hasn't: the desktop app asks Save, Don't save or Cancel (apps/desktop/src/main.js
+   calls designCloseSave() and designCloseDiscard() below); a browser shows its own warning.
+
+   A drawing that's put aside unsaved (Don't save on closing, New, or opening another drawing) is kept, one
+   at a time: File > Recover last drawing brings it back. Recovering swaps it with the drawing that's open,
+   if that one is unsaved too, so nothing is lost either way. */
+var UNSAVED_KEY = 'd454DesignUnsaved', ASIDE_KEY = 'd454DesignAside', NAME_KEY = 'd454DesignName';
+var UNSAVED = null;               // this session's answer; null until something changes (then storage's is used)
+var CLOSE_ANYWAY = false;         // Don't save couldn't put the drawing aside: close, and keep it as it is
+
+function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v){ try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} }
+
+// Something worth saving: an empty drawing has nothing to lose.
+function docHasWork(d){
+  d = d || DOC;
+  return !!((d.ents && d.ents.length) || (d.guides && d.guides.length) || (d.dims && d.dims.length) ||
+            (d.toolpaths && d.toolpaths.length) || (d.images && d.images.length));
+}
+function drawingUnsaved(){
+  var u = UNSAVED !== null ? UNSAVED : lsGet(UNSAVED_KEY) === '1';
+  return u && docHasWork();
+}
+function markUnsaved(){ UNSAVED = true; lsSet(UNSAVED_KEY, '1'); }
+// Saved to a file (name: the file's), or nothing left to save (no name: the drawing's file is forgotten).
+function markSaved(name){
+  UNSAVED = false; lsDel(UNSAVED_KEY);
+  if (name) lsSet(NAME_KEY, name); else lsDel(NAME_KEY);
+}
+function drawingFileName(){ return lsGet(NAME_KEY) || 'design.454.json'; }
+
+// ---- the drawing put aside
+function asideRead(){
+  try { var a = JSON.parse(lsGet(ASIDE_KEY) || 'null'); return a && a.doc && a.doc.stock ? a : null; } catch (e) { return null; }
+}
+// What to put aside if the drawing that's open is about to be replaced: only an unsaved one (a saved one is in
+// its file). Taken before the drawing changes; kept with asideKeep() after, once the storage it used is free.
+function asideTake(){
+  return drawingUnsaved() ? JSON.stringify({ at: Date.now(), name: lsGet(NAME_KEY), doc: JSON.parse(docForStorage()) }) : null;
+}
+function asideKeep(taken){
+  if (!taken) return true;
+  var ok = lsSet(ASIDE_KEY, taken);
+  syncRecoverBtn();
+  return ok;
+}
+function asideWhen(a){
+  var d = new Date(a.at);
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ', ' +
+         d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+function syncRecoverBtn(){
+  var b = document.getElementById('recoverBtn');
+  if (!b) return;
+  var a = asideRead();
+  b.disabled = !a;
+  b.title = a ? 'Recover last drawing — bring back the drawing put aside unsaved on ' + asideWhen(a) +
+                (a.name ? ' (' + a.name + ')' : '') + '. If the drawing open now is unsaved, the two swap places.'
+              : 'Recover last drawing — nothing to recover. A drawing closed without saving (Don’t save), cleared with New, or replaced by opening another is kept here.';
+}
+
+// A drawing that isn't this one: New's empty drawing (the material and job setup stay), or one from a file.
+function clearDrawing(){
+  DOC.ents = [];
+  DOC.guides = [];
+  DOC.dims = [];
+  DOC.vcToolpaths = [];
+  DOC.vcConverted = false; DOC.vcPreview = [];
+  DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
+  DOC.toolpaths = [];
+  CUTSEL = null;
+  renderToolpathPanel();
+  SEL.length = 0;
+}
+function newDrawing(){
+  if (!docHasWork()) return;
+  var aside = asideTake();
+  pushUndo();
+  clearDrawing();
+  setTool('select');
+  persist();
+  markSaved(null);
+  if (!asideKeep(aside)) toast('warn', 'The last drawing couldn’t be kept for Recover', 'The browser’s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
+  fit();
+  jobOpen();                                          // a new drawing starts by saying what it's for
+}
+function openDrawing(d, name){
+  var aside = asideTake();
+  pushUndo(); DOC = d; syncStockUI(); persist(); markSaved(name);
+  if (!asideKeep(aside)) toast('warn', 'The last drawing couldn’t be kept for Recover', 'The browser’s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
+  fit();
+}
+function recoverDrawing(){
+  var a = asideRead();
+  if (!a) return;
+  var swap = asideTake();                             // the open drawing takes its place, if it's unsaved
+  pushUndo();
+  DOC = a.doc; SEL.length = 0; CUTSEL = null;
+  if (swap) lsSet(ASIDE_KEY, swap); else lsDel(ASIDE_KEY);
+  if (a.name) lsSet(NAME_KEY, a.name); else lsDel(NAME_KEY);
+  syncStockUI(); tpRebuildAll(); renderToolpathPanel(); renderLayers();
+  persist();                                          // it was put aside unsaved, so it's unsaved again
+  syncRecoverBtn(); fit(); draw();
+  toast('ok', 'Drawing recovered', 'Put aside on ' + asideWhen(a) + '.' + (swap ? ' The drawing that was open is kept in its place: Recover again swaps them back.' : ''));
+}
+
+// ---- saving to a file: a real Save As where there is one, so a cancelled save isn't taken for a saved one
+function saveDrawing(){
+  var text = docForStorage(true), name = drawingFileName();
+  if (window.showSaveFilePicker){
+    return window.showSaveFilePicker({ id: 'design', suggestedName: name,
+      types: [{ description: '454 Design drawing', accept: { 'application/json': ['.json'] } }] })
+      .then(function (h){
+        return h.createWritable()
+          .then(function (w){ return w.write(text).then(function (){ return w.close(); }); })
+          .then(function (){ markSaved(h.name); toast('ok', 'Drawing saved', h.name); return true; });
+      })
+      .catch(function (e){
+        if (e && e.name === 'AbortError') return false;          // Cancel in the Save As window
+        toast('err', 'The drawing wasn’t saved', (e && e.message) || String(e));
+        return false;
+      });
+  }
+  // browsers without a Save As for pages (Firefox, Safari): a download, which they keep in Downloads
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  a.click();
+  markSaved(name);
+  return Promise.resolve(true);
+}
+
+// ---- closing (the desktop app asks; these are its answers)
+// Save…: true once it's saved, false if the Save As was cancelled (then the window stays open).
+function designCloseSave(){ return saveDrawing(); }
+// Don't save: put the drawing aside and start the next session empty. If it can't be put aside (storage
+// full), it's kept as it is instead, and comes back next time: never lost. Always lets the window close.
+function designCloseDiscard(){
+  CLOSE_ANYWAY = true;
+  if (!drawingUnsaved()) return true;
+  var aside = asideTake(), before = docForStorage();
+  clearDrawing(); persist(); markSaved(null);
+  if (!asideKeep(aside)){ DOC = JSON.parse(before); persist(); markUnsaved(); }
+  return true;
+}
+function unsavedWire(){
+  // A browser shows its own "Leave site?" warning; the desktop app shows Save, Don't save, Cancel instead.
+  window.addEventListener('beforeunload', function (e){
+    if (CLOSE_ANYWAY || !drawingUnsaved()) return;
+    e.preventDefault(); e.returnValue = '';
+  });
+  syncRecoverBtn();
+}
 /* ---------------- rendering ---------------- */
 function draw(){
   var w = cv.width = cv.clientWidth * (window.devicePixelRatio||1);
@@ -10502,7 +10660,8 @@ var ICON = {
  fit:'<svg viewBox="0 0 18 18"><path d="M3 6.5 V3 h3.5 M11.5 3 H15 v3.5 M15 11.5 V15 h-3.5 M6.5 15 H3 v-3.5"/></svg>',
  neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/></svg>',
  save:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
- load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>'
+ load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
+ recover:'<svg viewBox="0 0 18 18"><path d="M4 9 A5.5 5.5 0 1 0 5.6 5.1"/><path d="M5.6 2.2 V5.1 H2.7"/><path d="M9 6.2 V9.2 L11 10.6"/></svg>'
 };
 var PANEL_BTNS = {
  select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes', active:true},
@@ -10552,11 +10711,12 @@ var PANEL_BTNS = {
  newBtn:{id:'newBtn', icon:'neu', title:'New — clear all vectors and guides (undoable with Ctrl+Z)'},
  saveBtn:{id:'saveBtn', icon:'save', title:'Save the drawing to a file (.454.json): keep it with your G-code, or as a backup'},
  loadBtn:{id:'loadBtn', icon:'load', title:'Load a saved design'},
+ recoverBtn:{id:'recoverBtn', icon:'recover', title:'Recover last drawing'},
  svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
 var PANEL_GROUPS = [
- {id:'file',   label:'File',           btns:['newBtn','saveBtn','loadBtn','dxfBtn','svgBtn']},
+ {id:'file',   label:'File',           btns:['newBtn','saveBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','joinBtn','explodeBtn','curvesBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
@@ -10839,31 +10999,10 @@ function wirePanel(){
   document.getElementById('trCancel').addEventListener('click', traceClose);
   document.getElementById('traceX').addEventListener('click', traceClose);
   document.getElementById('layerList') && null;
-  document.getElementById('newBtn').addEventListener('click', function(){
-    if (!DOC.ents.length && !DOC.guides.length) return;
-    pushUndo();
-    DOC.ents = [];
-    DOC.guides = [];
-    DOC.dims = [];
-    DOC.vcToolpaths = [];
-    DOC.vcConverted = false; DOC.vcPreview = [];
-    DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
-    DOC.toolpaths = [];
-    CUTSEL = null;
-    renderToolpathPanel();
-    SEL.length = 0;
-    setTool('select');
-    persist();
-    fit();
-    jobOpen();                                          // a new drawing starts by saying what it's for
-  });
-  document.getElementById('saveBtn').addEventListener('click', function(){
-    var blob = new Blob([docForStorage(true)], {type:'application/json'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'design.454.json';
-    a.click();
-  });
+  document.getElementById('newBtn').addEventListener('click', newDrawing);         // unsaved.js
+  document.getElementById('saveBtn').addEventListener('click', function(){ saveDrawing(); });
+  document.getElementById('recoverBtn').addEventListener('click', recoverDrawing);
+  syncRecoverBtn();
   document.getElementById('loadBtn').addEventListener('click', function(){
     document.getElementById('loadFile').click();
   });
@@ -10876,6 +11015,7 @@ function wire(){
   uiCfgLoad();
   buildToolPanel();
   wirePanel();
+  unsavedWire();
   fit();
 
   document.getElementById('stkT').addEventListener('change', function(e){
@@ -11387,7 +11527,7 @@ function wire(){
       if (vec){ vecDialog([vec]); return; }
       try{
         var d = JSON.parse(txt2);
-        if (d && d.stock && d.ents){ pushUndo(); DOC = d; syncStockUI(); persist(); fit(); }
+        if (d && d.stock && d.ents) openDrawing(d, f.name);          // unsaved.js: puts an unsaved drawing aside
         else toast('err', 'Not a 454 Design file', 'This looks like JSON, but not a drawing 454 Design saved.');
       }catch(err2){ toast('err', 'Unknown file type', 'Open a 454 Design drawing or a VCarve .crv, or import a .dxf or .svg.'); }
     };

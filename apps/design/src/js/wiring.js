@@ -5,6 +5,7 @@ function wire(){
   uiCfgLoad();
   buildToolPanel();
   wirePanel();
+  unsavedWire();
   fit();
 
   document.getElementById('stkT').addEventListener('change', function(e){
@@ -516,7 +517,7 @@ function wire(){
       if (vec){ vecDialog([vec]); return; }
       try{
         var d = JSON.parse(txt2);
-        if (d && d.stock && d.ents){ pushUndo(); DOC = d; syncStockUI(); persist(); fit(); }
+        if (d && d.stock && d.ents) openDrawing(d, f.name);          // unsaved.js: puts an unsaved drawing aside
         else toast('err', 'Not a 454 Design file', 'This looks like JSON, but not a drawing 454 Design saved.');
       }catch(err2){ toast('err', 'Unknown file type', 'Open a 454 Design drawing or a VCarve .crv, or import a .dxf or .svg.'); }
     };

@@ -131,31 +131,10 @@ function wirePanel(){
   document.getElementById('trCancel').addEventListener('click', traceClose);
   document.getElementById('traceX').addEventListener('click', traceClose);
   document.getElementById('layerList') && null;
-  document.getElementById('newBtn').addEventListener('click', function(){
-    if (!DOC.ents.length && !DOC.guides.length) return;
-    pushUndo();
-    DOC.ents = [];
-    DOC.guides = [];
-    DOC.dims = [];
-    DOC.vcToolpaths = [];
-    DOC.vcConverted = false; DOC.vcPreview = [];
-    DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
-    DOC.toolpaths = [];
-    CUTSEL = null;
-    renderToolpathPanel();
-    SEL.length = 0;
-    setTool('select');
-    persist();
-    fit();
-    jobOpen();                                          // a new drawing starts by saying what it's for
-  });
-  document.getElementById('saveBtn').addEventListener('click', function(){
-    var blob = new Blob([docForStorage(true)], {type:'application/json'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'design.454.json';
-    a.click();
-  });
+  document.getElementById('newBtn').addEventListener('click', newDrawing);         // unsaved.js
+  document.getElementById('saveBtn').addEventListener('click', function(){ saveDrawing(); });
+  document.getElementById('recoverBtn').addEventListener('click', recoverDrawing);
+  syncRecoverBtn();
   document.getElementById('loadBtn').addEventListener('click', function(){
     document.getElementById('loadFile').click();
   });

@@ -102,6 +102,9 @@ without a published release looks to them like a newest release with nothing in 
 - **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
   (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
   454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.
+- **Design asks before closing an unsaved drawing** (not saved to a file since it changed; `unsaved.js`):
+  the desktop app asks Save… / Don't save / Cancel, for the window, a quit and a restart to update.
+  Don't save, New, or opening another drawing puts it aside; File → Recover last drawing brings it back.
 - **The job builder** (`apps/control/src/js/job-builder.js`, tested) adds: a spin-up wait after every M3 **or
   M4** (default 7 s; a saved setting is never lowered), a lift before a spindle stop (never downwards), at a
   tool change a lift, a stop, and a restart if the file assumes the spindle is running, and at the end lift,

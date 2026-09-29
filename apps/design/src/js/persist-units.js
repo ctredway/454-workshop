@@ -4,6 +4,7 @@ function persist(){
     persist.layerQueued = true;
     setTimeout(function(){ persist.layerQueued = false; renderLayers(); }, 0);
   }
+  markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
   try{ localStorage.setItem('d454Design', docForStorage()); }
   catch(e){                                             // say so: losing work quietly is the worst outcome
     if (!persist.warned){ persist.warned = true;

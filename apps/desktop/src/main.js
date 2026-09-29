@@ -52,6 +52,16 @@ function guardClose(win) {
   // A page blocks closing while something is in progress (Control: the machine is busy). In a browser
   // that shows the browser's own prompt; here it needs a real one.
   win.webContents.on('will-prevent-unload', (e) => {
+    // Design holds closing for a drawing not saved to a file: ask Save, Don't save or Cancel, and carry on
+    // with the close (or the quit) once it's settled. Not calling e.preventDefault() keeps it open meanwhile.
+    if (win === design) {
+      const quitting = !!app.isQuitting;
+      settleDrawing().then((ok) => {
+        if (!ok) { app.isQuitting = false; return; }                  // cancelled: nothing closes
+        if (quitting) app.quit(); else if (!win.isDestroyed()) win.close();
+      });
+      return;
+    }
     const isControl = win === control;
     const choice = dialog.showMessageBoxSync(win, {
       type: 'warning', buttons: ['Keep it open', 'Close anyway'], defaultId: 0, cancelId: 0,
@@ -62,6 +72,30 @@ function guardClose(win) {
     });
     if (choice === 1) e.preventDefault();
   });
+}
+// Before Design closes (the window, a quit, or a restart to update): if its drawing isn't saved to a file, ask.
+// Save… opens Design's Save As (true once saved; cancelling it keeps the window open); Don't save puts the
+// drawing aside for File > Recover last drawing (apps/design/src/js/unsaved.js). True: Design may close now.
+let settling = null;
+function settleDrawing() {
+  if (settling) return settling;                  // one question at a time, however many ways closing started
+  settling = (async () => {
+    const win = design;
+    if (!win || win.isDestroyed()) return true;
+    const run = (js) => win.webContents.executeJavaScript(js, true);   // true: as if clicked, so Save As may open
+    let unsaved = false;
+    try { unsaved = await run('typeof drawingUnsaved === "function" && drawingUnsaved()'); } catch (e) { return true; }
+    if (!unsaved) return true;
+    if (!win.isFocused()) win.focus();                              // ask over Design, where the drawing is
+    const response = await askUser({
+      type: 'question', buttons: ['Save…', 'Don’t save', 'Cancel'], defaultId: 0, cancelId: 2, noLink: true,
+      title: '454 Design', message: 'Save the drawing before closing?',
+      detail: 'It hasn’t been saved to a file since it last changed. Don’t save puts it aside: File → Recover last drawing brings it back next time.',
+    });
+    if (response === 2) return false;
+    try { return !!(await run(response === 0 ? 'designCloseSave()' : 'designCloseDiscard()')); } catch (e) { return false; }
+  })().finally(() => { settling = null; });
+  return settling;
 }
 function route(url) {
   if (process.env.P454_E2E_OUT) fs.appendFileSync(process.env.P454_E2E_OUT + '.routes', url + '\n');
@@ -163,6 +197,7 @@ function setupUpdates() {
     settingsFile: path.join(app.getPath('userData'), 'updates.json'),
     log: (m) => { console.log('[updates] ' + m); if (process.env.P454_UPDATE_LOG) fs.appendFileSync(process.env.P454_UPDATE_LOG, JSON.stringify({ log: m }) + '\n'); },
     onChange: () => { Menu.setApplicationMenu(menu()); showUpdateInPages(); },
+    beforeRestart: settleDrawing,                  // Design's unsaved drawing: Save, Don't save, or Cancel (stays open)
     firstCheckAfter: feed ? (+process.env.P454_UPDATE_FIRST || 500) : 30e3,
     idlePoll: feed ? 2000 : 60e3,                  // how often to look for an idle machine (quicker in tests)
   });

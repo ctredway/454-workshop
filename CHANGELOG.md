@@ -27,7 +27,18 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.14 — a test release
+### 0.6.2-beta.15 — save the drawing before closing?
+- **Closing 454 Design with a drawing that isn't saved to a file asks: Save…, Don't save, or Cancel.**
+  Design keeps the drawing as you work, so it's there next time, but that isn't a file, and nothing said so.
+  Now closing the window asks, and so do quitting 454 Workshop and **Restart to update**. **Save…** opens
+  Design's Save As; cancelling that keeps the window open. **Don't save** puts the drawing aside (see Design
+  0.96.0): Design opens empty next time, and File → Recover last drawing brings it back. **Cancel** keeps
+  everything open, and stops a quit or a restart to update.
+- Tested in the real app: Don't save, then reopening (empty, and Recover brought the drawing back), Cancel
+  (the window stayed open), Save (saved, closed, and not asked again), and quitting with Don't save and with
+  Cancel.
+- Includes Design 0.96.0.
+
 - **No changes to the app.** A release to see the new update notice working for real: copies on beta.13
   are offered it in the header. Also the first release whose tag is made after the fix below, so publishing
   it should build nothing.
@@ -673,7 +684,23 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
-### 0.95.1 — the update notice
+### 0.96.0 — save the drawing before closing?
+- **Design knows whether the drawing is saved to a file.** Any change makes it unsaved; saving it, or
+  opening a saved drawing, makes it saved. That's remembered, so a drawing that comes back next time
+  unsaved is still unsaved. An empty drawing has nothing to save. Exports (DXF, SVG, G-code) don't count.
+- **Closing with an unsaved drawing asks first.** In the desktop app: Save…, Don't save or Cancel. In a
+  browser, the browser's own "Leave site?" warning, the only kind a page may show.
+- **Save uses a real Save As window** where the browser has one (Chrome, Edge, the desktop app), suggesting
+  the name the drawing was last saved or opened as, so a cancelled save is never taken for a saved one.
+  Other browsers download the file, as before.
+- **File → Recover last drawing (new).** A drawing put aside unsaved (Don't save on closing, New, or opening
+  another drawing) is kept, the most recent one: Recover brings it back. If the drawing open then is unsaved
+  too, the two swap places, so neither is lost. Ctrl+Z undoes it. If the browser's storage is too full to
+  keep it, Don't save keeps the drawing as it is instead, so it's never lost.
+- New and opening a drawing work as before (and can still be undone), besides putting an unsaved drawing
+  aside.
+- Tested on Design's real code (12 tests, each checked by breaking what it covers), and in the desktop app.
+
 - In the desktop app, a notice in the header when there's a new version of 454 Workshop (see the desktop
   app's 0.6.2-beta.13). Nothing changes on the website.
 

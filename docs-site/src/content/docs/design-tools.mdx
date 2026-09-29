@@ -41,21 +41,28 @@ Most tools can be used with the mouse alone, but for exact work you can type val
 
 Starting, saving and opening drawings, and handing them to other software.
 
-<Shot src={gFile} alt="The File group: New, Save, Load, Export DXF and Export SVG." />
+<Shot src={gFile} alt="The File group: New, Save, Load, Recover last drawing, Export DXF and Export SVG." />
 
 ### New
 
 Clears all shapes and guides, to start a fresh drawing.
 
 1. Click **New**.
-2. Changed your mind? <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings everything back.
+2. Changed your mind? <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings everything back. If the drawing hadn't been saved
+   to a file, **Recover last drawing** can bring it back later too.
 
 ### Save
 
 Saves the drawing, with its toolpaths, to a `.454.json` file you can open again later.
 
-1. Click **Save** and choose where to put the file.
+1. Click **Save** and choose where to put the file. It suggests the name the drawing was last saved or opened
+   as.
 2. Keep it with the job’s G-code, or as a backup.
+
+Design also keeps the drawing in the browser (or the desktop app) as you work, so it's there when you come
+back. That isn't a file, though: when you close Design with a drawing that hasn't been saved to a file since
+it last changed, it asks first. The desktop app asks **Save…**, **Don't save** or **Cancel**; a browser
+shows its own "Leave site?" warning. Exporting a DXF or SVG doesn't count as saving the drawing.
 
 ### Load
 
@@ -71,6 +78,16 @@ Opens a saved drawing or a VCarve project, adds DXF and SVG files to the drawing
 
    The new shapes come in **selected**, ready to drag into place. The file's layers join layers of the same name, and new names become new layers. A DXF keeps its true curves. An SVG comes in at its real size, from its own units; its curves, circles, rectangles and Inkscape layers come across, but text doesn't: convert text to paths in your editor first. An SVG saved by Design comes back exactly where it was.
 5. **An image** (PNG, JPG, GIF, BMP or WebP) opens the **Trace image** panel: set the **Threshold** (or press **Auto**), **Invert** for light artwork on a dark background, the **Smoothing**, specks to ignore, and the traced width, then press **Trace**. **Fit curves** turns the outlines into smooth arcs and lines with far fewer points.
+
+### Recover last drawing
+
+Brings back the last drawing that was put aside without being saved to a file: one closed with **Don't
+save**, cleared with **New**, or replaced by opening another drawing. One is kept at a time, the most recent.
+
+1. Click **Recover last drawing**. Pointing at it shows when that drawing was put aside. It's greyed out
+   when there's nothing to recover.
+2. If the drawing that's open hasn't been saved either, the two swap places, so neither is lost: Recover
+   again swaps them back. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes a recover.
 
 ### Export DXF
 
