@@ -87,15 +87,27 @@ describe('checking and offering', () => {
   it('checking by hand says so either way', async () => {
     const r = rig();
     await r.u.checkNow(); r.au.emit('update-not-available', { version: '0.6.0' }); await settle();
-    expect(r.asked[0].message).toBe('You have the latest version.');
+    expect(r.asked[0].message).toBe('There are no new updates available.');
+    expect(r.asked[0].detail).toBeUndefined();
     await r.u.checkNow(); r.au.emit('error', new Error('net::ERR_INTERNET_DISCONNECTED')); await settle();
     expect(r.asked[1].message).toBe('Couldn\u2019t check for updates.');
     expect(r.asked[1].detail).toMatch(/internet connection/);
   });
-  it('says what actually went wrong, and only blames the connection when it is the connection', async () => {
+  it('a release that can\u2019t be installed is simply no new updates, not an error', async () => {
+    for (const msg of [
+      'Cannot find latest.yml in the latest release artifacts (https://github.com/ctredway/454-workshop/releases/download/v0.6.2-beta.9/latest.yml): HttpError: 404',
+      'Unable to find latest version on GitHub (https://github.com/ctredway/454-workshop/releases/latest), please ensure a production release exists: HttpError: 404',
+      'No published versions on GitHub',
+    ]) {
+      const r = rig();
+      await r.u.checkNow(); r.au.emit('error', new Error(msg)); await settle();
+      expect(r.asked.length, msg).toBe(1);
+      expect(r.asked[0].message, msg).toBe('There are no new updates available.');
+      expect(r.asked[0].type, msg).toBe('info');
+    }
+  });
+  it('real problems still say what went wrong, and only blame the connection when it is the connection', async () => {
     const cases = [
-      ['Cannot find latest.yml in the latest release artifacts (https://github.com/ctredway/454-workshop/releases/download/v0.6.1-beta.1/latest.yml): HttpError: 404', /missing its update file \(latest\.yml\)/],
-      ['Unable to find latest version on GitHub (https://github.com/ctredway/454-workshop/releases/latest), please ensure a production release exists: HttpError: 404', /no published stable release.*Beta channel/],
       ['HttpError: 403 Forbidden "API rate limit exceeded"', /limiting requests/],
       ['net::ERR_NAME_NOT_RESOLVED', /couldn\u2019t be reached\. Check your internet connection/],
       ['something unexpected', /Something went wrong/],
@@ -103,6 +115,7 @@ describe('checking and offering', () => {
     for (const [msg, expected] of cases) {
       const r = rig();
       await r.u.checkNow(); r.au.emit('error', new Error(msg)); await settle();
+      expect(r.asked[0].message, msg).toBe('Couldn\u2019t check for updates.');
       expect(r.asked[0].detail, msg).toMatch(expected);
       if (!/ERR_NAME/.test(msg)) expect(r.asked[0].detail, msg).not.toMatch(/internet connection/);
     }

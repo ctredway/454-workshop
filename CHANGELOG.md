@@ -27,6 +27,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.10
+- **Check for updates… with nothing to install says "There are no new updates available."**, and nothing
+  else. That now includes a newest release that can't be installed (published without its update files, as
+  happens when a release is made by hand rather than by publishing the Windows build's draft) and no
+  published release for the channel: before, both showed a "Couldn't check for updates" error. Real
+  problems still show as errors: no connection, GitHub limiting requests, or a download that failed.
+
 ### 0.6.2-beta.5 to beta.9 — releases tag themselves
 - **A new version in `apps/desktop/package.json`, pushed to main, is tagged, built and drafted as a
   release**: no separate tag step. A change that keeps the version builds nothing; pushing a tag by hand

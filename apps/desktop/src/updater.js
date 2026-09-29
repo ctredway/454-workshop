@@ -15,6 +15,10 @@
 
 const HOUR = 3600e3, MINUTE = 60e3;
 
+// What a check with nothing to install says: also when the newest release can't be offered (published without
+// its update files, or none published for this channel). To the person checking, that's no new updates.
+const NO_UPDATES = { type: 'info', title: 'Updates', message: 'There are no new updates available.', buttons: ['OK'] };
+
 function createUpdater(deps) {
   const { autoUpdater, isBusy, ask, notify = () => {}, setProgress = () => {}, currentVersion, installable,
           settingsFile, fs, timers = { setTimeout, clearTimeout }, log = () => {},
@@ -95,8 +99,7 @@ function createUpdater(deps) {
   async function onNotAvailable(info) {
     const manual = state.manual;
     state.phase = 'idle'; onChange();
-    if (manual) await ask({ type: 'info', title: 'Updates', message: 'You have the latest version.',
-      detail: '454 Workshop ' + currentVersion + (settings.channel === 'beta' ? ', on the beta channel.' : '.'), buttons: ['OK'] });
+    if (manual) await ask(NO_UPDATES);
   }
   function onProgress(p) { setProgress(Math.max(0, Math.min(1, (p && p.percent || 0) / 100))); }
   function onDownloaded(info) {
@@ -136,7 +139,16 @@ function createUpdater(deps) {
       await ask({ type: 'warning', title: 'Updates', message: 'The update didn\u2019t download.',
         detail: (/checksum|sha512/i.test(msg) ? 'The downloaded file didn\u2019t match the release, so it wasn\u2019t installed.' : explain(msg)) +
                 ' It\u2019ll be offered again at the next check, or use Check for updates.' + why, buttons: ['OK'] });
-    else if (manual) await ask({ type: 'warning', title: 'Updates', message: 'Couldn\u2019t check for updates.', detail: explain(msg) + why, buttons: ['OK'] });
+    else if (manual){
+      if (nothingToOffer(msg)) await ask(NO_UPDATES);    // a release that can't be installed isn't an update
+      else await ask({ type: 'warning', title: 'Updates', message: 'Couldn\u2019t check for updates.', detail: explain(msg) + why, buttons: ['OK'] });
+    }
+  }
+  // The newest release has nothing the app can install: published without its update files (the release was
+  // made by hand rather than by publishing the Windows build's draft), or no release for this channel yet.
+  function nothingToOffer(msg) {
+    return (/cannot find (\S+\.yml)|\b(latest|beta|alpha)\.yml\b.*404/i.test(msg) && /cannot find|404/i.test(msg)) ||
+           /Unable to find latest version|No published versions|production release exists/i.test(msg);
   }
   // What went wrong, in words: most failures aren't the connection, so don't blame it unless it is
   function explain(msg) {
