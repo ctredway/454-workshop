@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.18 — Ramp in
+- **Profiles and pockets: Ramp in, Ramp or Plunge, and how far** (see Design 0.98.0). Includes Design 0.98.0.
+
 ### 0.6.2-beta.17 — copy and paste
 - **Copy, cut and paste shapes in Design, with their dimensions** (see Design 0.97.0). Includes Design 0.97.0.
 
@@ -708,6 +711,22 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.98.0 — Ramp in, for profiles and pockets
+- **Ramp in: Ramp or Plunge, and how far (new).** Profiles and pockets always ramped into each pass, over 4
+  times the cutter's diameter (at least 4 mm), but nothing showed it or let you change it; only a converted
+  VCarve toolpath could set another length, and there was no way to plunge. The toolpath editor now has a
+  **Ramp in** row: **Ramp** (the default, cutting exactly as before) with its length (empty for the
+  automatic length, which follows the cutter; or type your own), or **Plunge**, straight down at the plunge
+  rate. A profile that plunges uses its lead-in, if it has one; one that ramps uses only the lead-out, as
+  before.
+- The toolpath's card and the job sheet show it (**Entry**: "ramps in over 25.40 mm" or "straight plunge"),
+  and the hint under the settings says what each pass will do.
+- **(machine)** Unchanged for existing toolpaths: one saved before this ramps as it always did (checked
+  move for move).
+- Tested through Design's own editor with the CAM engine (9 tests: the default, a typed length, Plunge,
+  inside, outside and on-the-line profiles, offset and raster pockets, never deeper than the depth), each
+  checked by breaking what it covers.
 
 ### 0.97.0 — copy and paste, dimensions included
 - **Ctrl+C, Ctrl+X and Ctrl+V copy, cut and paste shapes.** Ctrl+V puts the copy centred on the pointer

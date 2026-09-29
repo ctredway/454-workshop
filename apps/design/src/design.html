@@ -344,6 +344,10 @@
       <div class="mirSlot" id="cutFinRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutAllow">Finishing</label></span>
         leave <input id="cutAllow" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="0" title="Material left on the walls by the roughing passes"> <span class="mirVal" id="cutAllowU"></span>
         <label style="display:flex;align-items:center;gap:4px;margin-left:6px;font-size:12px;color:var(--muted)"><input type="checkbox" id="cutFinPass"> then finish it</label></div>
+      <div class="mirSlot" id="cutRampRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutRamp">Ramp in</label></span>
+        <select id="cutRamp" title="Ramp: each pass slopes down into the material along the cut, instead of plunging straight down. Gentler on the cutter and the machine.">
+          <option value="on">Ramp</option><option value="off">Plunge</option></select>
+        <input id="cutRampLen" type="text" inputmode="decimal" autocomplete="off" style="width:52px;margin-left:6px" title="How far along the cut each pass slopes down. Leave it empty for 4 times the cutter's diameter (at least 4 mm)."> <span class="mirVal" id="cutRampU"></span></div>
       <div class="mirSlot" id="cutLeadRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutLead">Lead in/out</label></span>
         <select id="cutLead" title="Sweep onto the line from the waste side and off it again, so no pass starts or stops on the finished wall">
           <option value="none">None</option><option value="arc">Arc</option><option value="line">Line</option></select>

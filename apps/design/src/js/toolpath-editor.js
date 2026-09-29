@@ -83,6 +83,8 @@ function cutToForm(){
   document.getElementById('cutClear').value = CUT.pocketClear === 'raster' ? 'raster' : 'offset';
   document.getElementById('cutDir').value = CUT.climb === false ? 'conv' : 'climb';
   document.getElementById('cutLead').value = CUT.leadType || 'none';
+  document.getElementById('cutRamp').value = CUT.rampOff ? 'off' : 'on';
+  document.getElementById('cutRampLen').value = CUT.rampLen > 0 ? fmtDisp(CUT.rampLen) : '';
   document.getElementById('cutLeadSize').value = fmtDisp(CUT.leadSize > 0 ? CUT.leadSize : (CUT.dia > 0 ? CUT.dia : 3));
   document.getElementById('cutAllow').value = CUT.allowance > 0 ? fmtDisp(CUT.allowance) : '';
   document.getElementById('cutFinPass').checked = CUT.allowance > 0 ? !!CUT.finishPass : true;
@@ -120,6 +122,9 @@ function cutFromForm(){
   CUT.pocketClear = document.getElementById('cutClear').value;
   CUT.climb = document.getElementById('cutDir').value !== 'conv';
   CUT.leadType = document.getElementById('cutLead').value;
+  CUT.rampOff = document.getElementById('cutRamp').value === 'off';
+  var rl = document.getElementById('cutRampLen').value.trim();       // empty: automatic, following the cutter
+  CUT.rampLen = rl === '' ? null : (lenIn(rl) > 0 ? lenIn(rl) : CUT.rampLen);
   var lsz = lenIn(document.getElementById('cutLeadSize').value); if (lsz > 0) CUT.leadSize = lsz;
   var al = document.getElementById('cutAllow').value.trim(); CUT.allowance = al === '' ? 0 : Math.max(0, lenIn(al) || 0);
   CUT.finishPass = document.getElementById('cutFinPass').checked;
@@ -163,6 +168,12 @@ function cutRenderInner(){
   document.getElementById('cutDirRow').hidden = drilling || vcarving;
   document.getElementById('cutFinRow').hidden = !(pocketing || CUT.side === 'inside' || CUT.side === 'outside');
   document.getElementById('cutLeadRow').hidden = !(CUT.side === 'inside' || CUT.side === 'outside');
+  var ramps = pocketing || CUT.side === 'inside' || CUT.side === 'outside' || CUT.side === 'on';
+  document.getElementById('cutRampRow').hidden = !ramps;
+  document.getElementById('cutRampU').textContent = unitTag();
+  document.getElementById('cutRampLen').placeholder = fmtDisp(tpRampDefault(CUT));   // the automatic length, until one's typed
+  document.getElementById('cutRampLen').style.display = CUT.rampOff ? 'none' : '';
+  document.getElementById('cutRampU').style.display = CUT.rampOff ? 'none' : '';
   document.getElementById('cutLeadU').textContent = unitTag();
   document.getElementById('cutLeadSize').style.display = CUT.leadType && CUT.leadType !== 'none' ? '' : 'none';
   document.getElementById('cutLeadU').style.display = CUT.leadType && CUT.leadType !== 'none' ? '' : 'none';
@@ -196,9 +207,13 @@ function cutRenderInner(){
                       : ' Leaves ' + fmtDisp(CUT.allowance) + ' ' + unitTag() + ' on the walls, for finishing with another toolpath.')
     : '';
   if (CUT.climb === false && !drilling && !vcarving) cutRender.extra += ' Conventional milling.';
+  if (pocketing || CUT.side === 'inside' || CUT.side === 'outside' || CUT.side === 'on')
+    cutRender.extra += CUT.rampOff ? ' Each pass plunges straight down, at the plunge rate.'
+      : ' Each pass ramps in over ' + fmtDisp(tpRamp(CUT)) + ' ' + unitTag() + ', at the plunge rate.';
   if ((CUT.side === 'inside' || CUT.side === 'outside') && CUT.leadType && CUT.leadType !== 'none')
     cutRender.extra += (CUT.allowance > 0 && CUT.finishPass)
-      ? ' The finishing pass leads onto and off the line (' + (CUT.leadType === 'arc' ? 'arc' : 'line') + '); roughing passes ramp in and lead off.'
+      ? ' The finishing pass leads onto and off the line (' + (CUT.leadType === 'arc' ? 'arc' : 'line') + ')' + (CUT.rampOff ? '; the roughing passes too.' : '; roughing passes ramp in and lead off.')
+      : CUT.rampOff ? ' ' + (CUT.leadType === 'arc' ? 'Arc' : 'Line') + ' lead onto the line at the start and off it at the end.'
       : ' ' + (CUT.leadType === 'arc' ? 'Arc' : 'Line') + ' lead off the line at the end; the passes ramp in, so they need no lead-in.';
   document.getElementById('cutOk').disabled = !ok;
   if (CUT.dia > 0 && CUT.toolChosen && !depthSet){
@@ -504,7 +519,7 @@ function cutApply(){
     vcMax: CUT.vcMax || 0, vTip: CUT.vTip || 0,
     chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge', toolChosen: !!CUT.toolChosen,
     pocketClear: CUT.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: CUT.rasterAngle || 0,
-    rampLen: CUT.rampLen, allowance: CUT.allowance || 0, climb: CUT.climb !== false, finishPass: !!(CUT.allowance > 0 && CUT.finishPass),
+    rampLen: CUT.rampLen > 0 ? CUT.rampLen : null, rampOff: !!CUT.rampOff, allowance: CUT.allowance || 0, climb: CUT.climb !== false, finishPass: !!(CUT.allowance > 0 && CUT.finishPass),
     leadType: CUT.leadType || 'none', leadSize: CUT.leadSize || 0,
     vcFrom: CUT.vcFrom, side: CUT.side, ents: CUT.ents.slice(), peck: CUT.peck || 0,
     through: CUT.side === 'chamfer' || CUT.side === 'vcarve' ? false : !!CUT.through, over: CUT.over === undefined ? 0.2 : CUT.over,

@@ -59,6 +59,12 @@ function tpTabTotal(tp){
   return n;
 }
 
+// How a profile or pocket enters the material on each pass: a ramp, sloping down along the cut over this
+// length, or 0 for a straight plunge (Ramp off). No length set means 4 times the cutter's diameter, at least
+// 4 mm, and follows the cutter. Toolpaths saved before the setting existed ramp, as they always did.
+function tpRampDefault(tp){ return Math.max(4, (tp.dia || 0) * 4); }
+function tpRamp(tp){ return tp.rampOff ? 0 : (tp.rampLen > 0 ? tp.rampLen : tpRampDefault(tp)); }
+
 // Build (or rebuild) the moves for one toolpath.
 function tpGenerate(tp){
   if (!camReady()) return tp;
@@ -71,7 +77,7 @@ function tpGenerate(tp){
                            strategy: tp.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: tp.rasterAngle || 0,
                            allowance: tp.allowance || 0, finishPass: !!tp.finishPass,
                            z0: zs, safeZ: zs + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
-                           climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, tp.dia * 4)}});
+                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}});
       if (pr.warning) warnP = pr.warning;
       rings += pr.rings || 0; tp.rasterLines = (tp.rasterLines || 0) + (pr.rasterLines || 0);
       pr.moves.forEach(function (m) { pm.push(m); });
@@ -155,7 +161,7 @@ function tpGenerate(tp){
       lead: tp.leadType && tp.leadType !== 'none' ? {type: tp.leadType, size: tp.leadSize > 0 ? tp.leadSize : tp.dia} : null,
       feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2), climb: tp.climb !== false, safeZ: tpSurface() + (tp.safeZ || 6),
       tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), shape: tp.tabStyle === '3d' ? '3d' : 'flat', at: pts} : null,
-      ramp: {length: tp.rampLen || Math.max(4, tp.dia * 4)}
+      ramp: {length: tpRamp(tp)}
     });
     if (res.warning) warn = res.warning;
     res.moves.forEach(function (m) { moves.push(m); });

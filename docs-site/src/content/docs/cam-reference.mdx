@@ -68,7 +68,7 @@ Profiles also take [finishing, direction, leads, tabs and ramps](#finishing-dire
 | **Stepover** | How far apart the clearing passes are, as a share of the cutter’s diameter. 40% is the default. |
 | **Clearing** | **Offset rings** work outwards from the middle, following the pocket’s shape. **Raster** runs back and forth in straight lines **at** the angle you set (0° left to right, 90° front to back), then once round the walls. Raster is often quicker on long or rectangular pockets. |
 
-Pockets ramp into each depth, never plunge, and link passes with short feed moves only where the cutter stays inside the pocket; otherwise it lifts, moves and ramps back in. Pockets also take [finishing and direction](#finishing-direction-leads-tabs-ramps).
+Pockets ramp into each depth by default (see [Ramps](#ramps)), and link passes with short feed moves only where the cutter stays inside the pocket; otherwise it lifts, moves and ramps back in. Pockets also take [finishing and direction](#finishing-direction-leads-tabs-ramps).
 
 **If the cutter is too big** for part of a pocket, that part is left and the hint says so. A narrow strip the cutter can’t reach needs a smaller tool.
 
@@ -161,7 +161,8 @@ Profiles, pockets and chamfers: **Climb** (the default) usually leaves the bette
 
 Inside and outside profiles: **Arc** (a quarter circle that meets the line tangentially) or **Line** (at 45°), sized by the box beside it (the cutter’s diameter by default). The cutter sweeps onto the line from the waste side and off it again, so no pass starts or stops on the finished wall, and the path starts mid-way along the longest straight edge.
 
-- **Passes that ramp in** get only the lead-out; a **finishing pass**, which drops straight in, gets both.
+- **Passes that ramp in** get only the lead-out: the ramp is already a gentle way in. Passes that plunge (**Ramp in** set to
+  **Plunge**), and a **finishing pass**, which drops straight into the roughed slot, get both.
 - **In a tight hole** the lead shrinks to fit, and is left out if even a small one would touch the wall.
 
 ### Tabs
@@ -175,7 +176,20 @@ Either way, only the passes below a tab's top go over it, and tabs are kept on f
 
 ### Ramps
 
-Profiles ramp into each pass rather than plunging, over four cutter diameters (at least 4 mm), then recut the ramped stretch at full depth, so a through-cut never leaves a sloping web holding the part. Pockets ramp along their rings. Converted VCarve toolpaths keep VCarve’s ramp length.
+Profiles and pockets: **Ramp in** sets how each pass goes down into the material.
+
+- **Ramp** (the default): the cutter slopes down along the cut, at the plunge rate, over the length in the box
+  beside it. Leave the box empty for four cutter diameters (at least 4 mm), which follows the cutter if you
+  change it; type a length to set your own. A profile then recuts the ramped stretch at full depth, so a
+  through-cut never leaves a sloping web holding the part. Pockets ramp along their rings, or back and forth
+  along a line when rastering. Converted VCarve toolpaths keep VCarve’s ramp length.
+- **Plunge**: the cutter goes straight down at the plunge rate, then cuts. Use it with a cutter that can
+  plunge (a centre-cutting end mill), and a plunge rate to suit.
+
+Ramping is easier on the cutter and the machine than plunging, especially in hardwood and with small
+cutters. On a profile, a ramp is different from a [lead](#lead-inout): a ramp comes down along the line; a
+lead comes onto the line from the side, at depth. The toolpath's card and the job sheet show which it does
+(**Entry**), and the hint under the settings says how far it ramps.
 
 ## Tools and materials
 

@@ -102,6 +102,9 @@ without a published release looks to them like a newest release with nothing in 
 - **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
   (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
   454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.
+- **Profiles and pockets ramp in by default** (4× the cutter's diameter, at least 4 mm, or a set length);
+  **Ramp in: Plunge** goes straight down. A profile that ramps uses only its lead-out. (`tpRamp` in
+  `toolpath-generate.js`; the CAM engine takes ramp length 0 as a plunge.)
 - **Copy and paste bring dimensions** (`clipboard.js`): a dimension whose shapes were all copied is pasted
   measuring the copies; one to a shape left behind stays. Ctrl+V pastes at the pointer, Ctrl+Shift+V in place.
 - **Design asks before closing an unsaved drawing** (not saved to a file since it changed; `unsaved.js`):
