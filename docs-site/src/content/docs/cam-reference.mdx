@@ -180,8 +180,10 @@ Profiles and pockets: **Ramp in** sets how each pass goes down into the material
 
 - **Ramp** (the default): the cutter slopes down along the cut, at the plunge rate, over the length in the box
   beside it. Leave the box empty for four cutter diameters (at least 4 mm), which follows the cutter if you
-  change it; type a length to set your own. A profile then recuts the ramped stretch at full depth, so a
-  through-cut never leaves a sloping web holding the part. Pockets ramp along their rings, or back and forth
+  change it; type a length to set your own. On a profile the passes run into each other without stopping:
+  each lap ends back at the start and the cutter carries straight on, ramping down to the next depth as it
+  goes. After the last pass it carries on past the start and cuts the ramped stretch again at full depth, so
+  a through-cut never leaves a sloping web holding the part. Pockets ramp along their rings, or back and forth
   along a line when rastering. Converted VCarve toolpaths keep VCarve’s ramp length.
 - **Plunge**: the cutter goes straight down at the plunge rate, then cuts. Use it with a cutter that can
   plunge (a centre-cutting end mill), and a plunge rate to suit.

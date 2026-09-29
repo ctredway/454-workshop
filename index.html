@@ -872,7 +872,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.31.18';
+var CONTROL_VERSION = '0.31.19';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -4540,7 +4540,22 @@ var JobBuilder = (function () {
   list.retracts = retracts;
   return list;
   }
-  return { build: build };
+  // "Start high": where to go, high up, before the job begins: the file's first XY point, so the file's first
+  // move down lands on the work. Not when the file changes tools before it moves anywhere: the tool change
+  // lifts to the top and goes to the tool-change position itself (or stays put, if none is set), and after it
+  // Control traverses high to the first cut. Going to the first cut before the change was a wasted trip over
+  // the work, straight back to the tool change. list: what build() made; segs: the file's moves.
+  function startHighTarget(list, segs){
+    var p0 = null;
+    for (var si = 0; si < (segs || []).length; si++){
+      var sg = segs[si];
+      if (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001){ p0 = {x: sg.x1, y: sg.y1, line: sg.line}; break; }
+    }
+    if (!p0) return null;
+    for (var li = 0; li < list.length; li++) if (list[li].m6 && list[li].ln <= p0.line) return null;
+    return {x: p0.x, y: p0.y};
+  }
+  return { build: build, startHighTarget: startHighTarget };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = JobBuilder;     // for the tests, in Node
 
@@ -4684,14 +4699,10 @@ function jobStart(opts){
     if (!SERIAL.homedSeen){
       highStartNote = 'Start high: skipped — not homed (preview only).\n';
     } else {
-      var p0 = null;
-      for (var si = 0; si < MODEL.segs.length; si++){
-        var sg = MODEL.segs[si];
-        if (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001){
-          p0 = {x: sg.x1, y: sg.y1};
-          break;
-        }
-      }
+      var p0 = JobBuilder.startHighTarget(list, MODEL.segs);   // none when the file changes tools first
+      if (!p0 && list.some(function (it){ return it.m6; }))
+        highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.
+';
       if (p0){
         list.unshift({text: 'G0 X' + p0.x.toFixed(3) + ' Y' + p0.y.toFixed(3), ln: 0, syn: true});
         list.unshift({text: 'G21 G90', ln: 0, syn: true});

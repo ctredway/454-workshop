@@ -208,7 +208,9 @@ The gear in the header. Settings are saved as you change them, in your machine p
   check it, changing nothing), the **BitZero** (v1 or v2, and the plate thickness), and the **spindle**
   (trim router or VFD, and the spin-up wait after each start: about 2.5 s suits a router, 7 s a VFD; the default is 7).
 - **Job:** **Start & stop high**, which keeps the bit above clamps and stock whenever it's travelling (leave
-  it on); the traverse height; how far to lift at tool changes and the end; and where to change tools and
+  it on): at the start of a job it lifts and travels high to the first cut, and after each tool change too.
+  If the file starts with a tool change, the machine goes to the tool change first, and to the first cut
+  after it; the traverse height; how far to lift at tool changes and the end; and where to change tools and
   where to park at the end of a job.
 - **Profile:** the theme (dark or light) and accent colour, and exporting or importing your machine profile,
   including a Carbide Motion `shapeoko.json`.

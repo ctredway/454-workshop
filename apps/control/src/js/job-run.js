@@ -121,14 +121,10 @@ function jobStart(opts){
     if (!SERIAL.homedSeen){
       highStartNote = 'Start high: skipped — not homed (preview only).\n';
     } else {
-      var p0 = null;
-      for (var si = 0; si < MODEL.segs.length; si++){
-        var sg = MODEL.segs[si];
-        if (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001){
-          p0 = {x: sg.x1, y: sg.y1};
-          break;
-        }
-      }
+      var p0 = JobBuilder.startHighTarget(list, MODEL.segs);   // none when the file changes tools first
+      if (!p0 && list.some(function (it){ return it.m6; }))
+        highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.
+';
       if (p0){
         list.unshift({text: 'G0 X' + p0.x.toFixed(3) + ' Y' + p0.y.toFixed(3), ln: 0, syn: true});
         list.unshift({text: 'G21 G90', ln: 0, syn: true});

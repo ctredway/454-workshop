@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.20 — three fixes from testing
+- Includes Control 0.31.19 (a job that starts with a tool change goes straight to it) and Design 0.99.1
+  (ramped profiles without the back-and-forth; an opened drawing's toolpaths show straight away).
+
 ### 0.6.2-beta.19 — the usual keyboard shortcuts
 - **Ctrl+W closes the window and Ctrl+Q quits**, through each window's own check (Control asks while the
   machine is busy; Design, about an unsaved drawing). Includes Control 0.31.18 and Design 0.99.0 (Ctrl+S,
@@ -382,6 +386,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.31.19 — straight to the tool change
+- **(machine) Fixed: a job that starts with a tool change went to the first cut, then to the tool change.**
+  "Start & stop high" travelled high to the file's first cut before anything else, even when the file's first
+  line is a tool change (T1 M6), so the machine crossed the work and came straight back to the tool-change
+  position. Now, when the file changes tools before it moves, the job goes to the tool change first: it
+  lifts to the top and goes to the tool-change position, or, with none set, changes tools where the spindle
+  is. After the change it travels high to the first cut, as it always has. Files that cut before their first
+  tool change start as before (checked on 40 files side by side). The start dialog says which it will do.
+
 ### 0.31.18 — Ctrl+O and F1
 - **Ctrl+O opens a G-code file** (refused while a job is running, as the Open button is), and **F1** opens the
   docs. Nothing on the keyboard outside the jog panel moves the machine. Checked in the desktop app.
@@ -721,6 +734,20 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.99.1 — ramps without the back-and-forth; opened toolpaths show
+- **(machine) Fixed: a ramped profile went forward, back and forward again at the start of every pass.** After
+  each pass it re-cut its ramped stretch at full depth, then drove back along it to the start before ramping
+  into the next pass. Only the last pass needs that re-cut (the next pass's ramp cuts deeper through the
+  stretch anyway), so now the passes run straight into each other: each lap ends at the start and the
+  cutter carries on, ramping down as it goes, and only after the last pass does it go round past the start
+  to cut the ramped stretch at full depth (so a through-cut still leaves no sloping web). On an 80 x 50 mm
+  outline in three passes: no reversals instead of four, 102 mm less travel. Tested: the cutter never
+  doubles back, every pass is a full lap at its depth, and the last pass cuts the whole outline at full
+  depth; the old engine fails the first.
+- **Fixed: opening a drawing didn't show its toolpaths** until the Toolpaths panel's refresh button was
+  pressed. Opening now builds them and shows them, and the layers, straight away. Tested, and checked in
+  the desktop app through Design's own file reading.
 
 ### 0.99.0 — the usual keyboard shortcuts
 - **Ctrl+S saves** (new). The first time it asks where; after that it saves straight to the same file, for as

@@ -119,3 +119,42 @@ test('opening a toolpath again shows its ramp as it was set', () => {
   assert.equal(D.document.getElementById('cutRampLen').value, '12.00');
   D.cutClose();
 });
+
+// ---- how the passes join: forward all the way round, no back-and-forth ----
+// the cutting moves across the material, as direction vectors
+function across(tp) {
+  let x = 0, y = 0, z = 0; const out = [];
+  for (const m of tp.moves) {
+    const nx = m.x ?? x, ny = m.y ?? y, nz = m.z ?? z;
+    const len = Math.hypot(nx - x, ny - y);
+    if (m.g === 1 && len > 1e-6) out.push({ dx: (nx - x) / len, dy: (ny - y) / len, len, z0: z, z1: nz });
+    x = nx; y = ny; z = nz;
+  }
+  return out;
+}
+test('a ramped profile never goes back along the cut: each pass carries straight on into the next', () => {
+  for (const passesOf of [{ depth: 3, step: 1 }, { depth: 12.2, step: 1.5 }]) {
+    D.DOC.toolpaths = [];
+    const { tp } = make('outside');
+    tp.depth = passesOf.depth; tp.step = passesOf.step; D.tpGenerate(tp);
+    const a = across(tp);
+    const reversals = a.slice(1).filter((s, i) => s.dx * a[i].dx + s.dy * a[i].dy < -0.5);
+    assert.equal(reversals.length, 0, 'no move doubles back (it used to drive back to the start after every pass)');
+    const lifts = tp.moves.filter((m) => m.g === 0);
+    assert.equal(lifts.length, 3, 'up and over to the start, and up at the end: no lifting between passes');
+  }
+});
+test('the last pass cuts the whole outline at full depth, so a through-cut leaves no sloping web', () => {
+  const { tp } = make('outside');
+  const r = 6.35 / 2, perimeter = 2 * (80 + 50) + 2 * Math.PI * r;   // the cutter's centre round the rectangle
+  const atDepth = across(tp).filter((s) => Math.abs(s.z0 - -3) < 1e-6 && Math.abs(s.z1 - -3) < 1e-6).reduce((t, s) => t + s.len, 0);
+  assert.ok(atDepth >= perimeter - 0.05, 'full depth all the way round: ' + atDepth.toFixed(2) + ' of ' + perimeter.toFixed(2) + ' mm');
+});
+test('every pass but the last is a full lap at its own depth once past the ramp: nothing left for the next ramp to hit', () => {
+  const { tp } = make('outside');
+  for (const zp of [-1, -2]) {
+    const flat = across(tp).filter((s) => Math.abs(s.z0 - zp) < 1e-6 && Math.abs(s.z1 - zp) < 1e-6).reduce((t, s) => t + s.len, 0);
+    const r = 6.35 / 2, perimeter = 2 * (80 + 50) + 2 * Math.PI * r;
+    assert.ok(Math.abs(flat - (perimeter - 25.4)) < 0.05, 'pass at ' + zp + ': ' + flat.toFixed(2) + ' flat, then the next ramp');
+  }
+});

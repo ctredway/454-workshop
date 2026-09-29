@@ -154,3 +154,34 @@ test('everything added is marked as added, so progress still follows the file\u2
   for (const it of L) if (!it.m6) assert.ok(it.syn || !/^(G53|G91|G4 P10)/.test(it.text), 'unmarked: ' + it.text);
   assert.ok(L.every((it) => Number.isInteger(it.ln)));
 });
+
+// ---- start high: where the job goes first ----
+const startAt = (text) => { const L = build(text); return JobBuilder.startHighTarget(L, movesOf(text)); };
+test('start high goes to the first cut when the file doesn’t change tools first', () => {
+  assert.deepEqual(startAt(job('M3 S18000', 'G0 Z5', 'G0 X12 Y34', 'G1 Z-1 F300', 'M5', 'M30')), { x: 12, y: 34 });
+});
+test('a file that changes tools before it moves: no trip to the first cut before the tool change', () => {
+  // (it used to go to X12 Y34, then straight to the tool-change position)
+  assert.equal(startAt(job('T1 M6', 'M3 S18000', 'G0 Z5', 'G0 X12 Y34', 'G1 Z-1 F300', 'M5', 'M30')), null);
+  assert.equal(startAt(job('(VCarve header)', 'T1 M06 (End Mill {6 mm})', 'G0 X12 Y34 Z5', 'G1 Z-1', 'M30')), null, 'written M06, with a comment, and XY and Z on one move');
+});
+test('a tool change after the first move doesn’t stop start high', () => {
+  assert.deepEqual(startAt(job('M3 S18000', 'G0 X5 Y6', 'G1 Z-1 F300', 'T2 M6', 'G0 X50 Y60', 'M30')), { x: 5, y: 6 });
+});
+test('a file with no XY moves: nowhere to go', () => {
+  assert.equal(startAt(job('M3 S18000', 'G1 Z-1 F300', 'M5', 'M30')), null);
+});
+test('start high is unchanged for files without a first tool change (old and new side by side)', () => {
+  const old = (segs) => { for (const sg of segs) if (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001) return { x: sg.x1, y: sg.y1 }; return null; };
+  const files = [];
+  for (let a = 0; a < 40; a++) {
+    const lines = ['M3 S' + (8000 + a * 100)];
+    if (a % 3 === 0) lines.push('G0 Z' + (a % 7));
+    lines.push('G0 X' + (a * 1.5).toFixed(3) + ' Y' + (a % 5 === 0 ? 0 : (a * 2.25).toFixed(3)));
+    lines.push('G1 Z-' + (1 + a % 4) + ' F300', 'G1 X' + (a + 10) + ' Y' + (a + 20));
+    if (a % 4 === 1) lines.push('T2 M6', 'G0 X90 Y90');
+    lines.push('M5', 'M30');
+    files.push(job(...lines));
+  }
+  for (const f of files) assert.deepEqual(startAt(f), old(movesOf(f)), f);
+});

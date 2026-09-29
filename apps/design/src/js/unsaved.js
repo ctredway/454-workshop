@@ -98,6 +98,10 @@ function openDrawing(d, name){
   pushUndo(); DOC = d; syncStockUI(); persist(); markSaved(name);
   SAVE_HANDLE = OPEN_HANDLE && OPEN_HANDLE.name === name ? OPEN_HANDLE : null;   // opened through Open: Save writes it back
   OPEN_HANDLE = null;
+  // its toolpaths come saved as settings only: build them, and show them and its layers now (they used to
+  // wait for the Toolpaths panel's refresh button)
+  SEL.length = 0; CUTSEL = null;
+  tpRebuildAll(); renderToolpathPanel(); renderLayers();
   if (!asideKeep(aside)) toast('warn', 'The last drawing couldn’t be kept for Recover', 'The browser’s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
   fit();
 }

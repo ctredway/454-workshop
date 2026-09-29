@@ -205,7 +205,22 @@ var JobBuilder = (function () {
   list.retracts = retracts;
   return list;
   }
-  return { build: build };
+  // "Start high": where to go, high up, before the job begins: the file's first XY point, so the file's first
+  // move down lands on the work. Not when the file changes tools before it moves anywhere: the tool change
+  // lifts to the top and goes to the tool-change position itself (or stays put, if none is set), and after it
+  // Control traverses high to the first cut. Going to the first cut before the change was a wasted trip over
+  // the work, straight back to the tool change. list: what build() made; segs: the file's moves.
+  function startHighTarget(list, segs){
+    var p0 = null;
+    for (var si = 0; si < (segs || []).length; si++){
+      var sg = segs[si];
+      if (Math.abs(sg.x1 - sg.x0) > 0.001 || Math.abs(sg.y1 - sg.y0) > 0.001){ p0 = {x: sg.x1, y: sg.y1, line: sg.line}; break; }
+    }
+    if (!p0) return null;
+    for (var li = 0; li < list.length; li++) if (list[li].m6 && list[li].ln <= p0.line) return null;
+    return {x: p0.x, y: p0.y};
+  }
+  return { build: build, startHighTarget: startHighTarget };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = JobBuilder;     // for the tests, in Node
 

@@ -282,24 +282,18 @@
           }
           toStation(si, inTabAt((stations[si] + stations[si - 1]) / 2) ? tabZ : z, (rampLen > 0 && d0 <= rampLen) ? o.plunge : o.feed);
         }
-        // The ramp cut its stretch on a slope, so go round past the start and cut that stretch
-        // again at full depth. Without this a through-cut leaves a sloping web holding the part.
-        if (rampLen > 0){
-          var st0 = pointAt(loop, 0), trail = [[st0[0], st0[1], zNow]];      // where the recut goes, to retrace it
+        // Between passes the cutter keeps going: the lap ends back at the start at this pass's depth, and the
+        // next pass ramps down from there as it carries on round, through the stretch this pass ramped (so
+        // that stretch is cut deeper anyway). Only the last pass leaves its ramp on a slope, so only the last
+        // pass goes round past the start and cuts that stretch again at full depth: without it a through-cut
+        // leaves a sloping web holding the part. (Every pass used to recut it and then drive back along it to
+        // the start, so the cutter went forward, back and forward again at each pass.)
+        if (rampLen > 0 && p === passes){
           for (var so = 1; so < stations.length && stations[so - 1] < rampLen - 1e-9; so++){
             var zz2 = tri ? Math.max(z, tabTopAt(stations[so])) : inTabAt((stations[so] + stations[so - 1]) / 2) ? tabZ : z;
             var pvx = pointAt(loop, stations[so - 1]), ppx = pointAt(loop, stations[so]);
-            if (!tri && Math.abs(zz2 - zNow) > 1e-9){ moves.push({g: 1, x: pvx[0], y: pvx[1], z: zz2, f: zz2 < zNow ? o.plunge : o.feed}); trail.push([pvx[0], pvx[1], zz2]); }
-            moves.push({g: 1, x: ppx[0], y: ppx[1], z: zz2, f: o.feed}); zNow = zz2; trail.push([ppx[0], ppx[1], zz2]);
-          }
-          // The recut ends past the start, and the next pass begins at the start. Going straight back
-          // cut a chord at depth across the path just cut, into the part on a curved outline. Retrace
-          // the recut instead: it's all inside the kerf at this depth, and rises over tabs as it did.
-          if (p < passes){
-            for (var tr = trail.length - 2; tr >= 0; tr--){
-              var tq = trail[tr];
-              moves.push({g: 1, x: tq[0], y: tq[1], z: tq[2], f: tq[2] < zNow ? o.plunge : o.feed}); zNow = tq[2];
-            }
+            if (!tri && Math.abs(zz2 - zNow) > 1e-9) moves.push({g: 1, x: pvx[0], y: pvx[1], z: zz2, f: zz2 < zNow ? o.plunge : o.feed});
+            moves.push({g: 1, x: ppx[0], y: ppx[1], z: zz2, f: o.feed}); zNow = zz2;
           }
         }
       }
