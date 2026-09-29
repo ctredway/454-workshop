@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.14 — a test release
+- **No changes to the app.** A release to see the new update notice working for real: copies on beta.13
+  are offered it in the header. Also the first release whose tag is made after the fix below, so publishing
+  it should build nothing.
+
 ### Publishing a release no longer rebuilds it
 - **Fixed: publishing a draft started a second Windows build of the same version.** Publishing creates the
   release's tag, and the Windows build ran for every new tag: it rebuilt the version and went to draft a
