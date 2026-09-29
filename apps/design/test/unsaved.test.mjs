@@ -62,11 +62,11 @@ test('Save uses a Save As window with the drawing’s name, writes the whole dra
   assert.equal(D.drawingUnsaved(), false);
   drawLine(D);
   assert.equal(D.drawingUnsaved(), true, 'changed after saving');
-  const second = saveAs(D);
-  await D.saveDrawing();
+  const second = saveAs(D);                                       // Save As (Ctrl+Shift+S): asks, suggesting its name
+  await D.saveDrawing(true);
   assert.equal(second.opts.suggestedName, 'sign.454.json', 'suggests the name it was saved as');
   assert.equal(D.localStorage.getItem('d454DesignName'), 'shelf.454.json');
-  const again = saveAs(D); drawLine(D); await D.saveDrawing();
+  const again = saveAs(D); drawLine(D); await D.saveDrawing(true);
   assert.equal(again.opts.suggestedName, 'shelf.454.json', 'suggests the name it was last saved as');
 });
 test('a cancelled Save As leaves it unsaved; a failed one says so and leaves it unsaved', async () => {

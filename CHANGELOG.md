@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.19 — the usual keyboard shortcuts
+- **Ctrl+W closes the window and Ctrl+Q quits**, through each window's own check (Control asks while the
+  machine is busy; Design, about an unsaved drawing). Includes Control 0.31.18 and Design 0.99.0 (Ctrl+S,
+  Ctrl+Shift+S, Ctrl+O, Ctrl+N, Ctrl+A, Ctrl+D, F1, and Ctrl+Shift+Z redoing). The docs have a new
+  **Keyboard shortcuts** page listing every one.
+
 ### 0.6.2-beta.18 — Ramp in
 - **Profiles and pockets: Ramp in, Ramp or Plunge, and how far** (see Design 0.98.0). Includes Design 0.98.0.
 
@@ -376,6 +382,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.31.18 — Ctrl+O and F1
+- **Ctrl+O opens a G-code file** (refused while a job is running, as the Open button is), and **F1** opens the
+  docs. Nothing on the keyboard outside the jog panel moves the machine. Checked in the desktop app.
+
 ### 0.31.17 — the light theme, readable
 - **Fixed: on the light theme, parts of the 3D view were dark boxes.** The **Fit** button, the colour
   legend and the bar over the view while running (STOP, the state, X Y Z, Jog & zero) had dark backgrounds
@@ -711,6 +721,22 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.99.0 — the usual keyboard shortcuts
+- **Ctrl+S saves** (new). The first time it asks where; after that it saves straight to the same file, for as
+  long as Design stays open (a page can't keep hold of a file between sessions). **Ctrl+Shift+S** is Save as:
+  it always asks. The Save button does the same as Ctrl+S. Before, Save always asked, and Ctrl+S did nothing
+  (or, in a browser, saved the web page).
+- **Ctrl+O opens**, through the browser's own Open window where there is one (Chrome, Edge, the desktop app),
+  so a drawing opened that way saves back to its own file with Ctrl+S. If Design isn't allowed to write to
+  it after all, Save asks where instead. Other browsers open files as before.
+- **Ctrl+N** new drawing, **Ctrl+A** select all (not what's on hidden or locked layers), **Ctrl+D** duplicate
+  (with its dimensions, 10 mm right and down, leaving what Ctrl+C copied alone), **F1** the docs.
+- **Fixed: Ctrl+Shift+Z undid** instead of redoing, as it does in most programs. Now it redoes, like Ctrl+Y.
+- In a text box, Ctrl+A and Ctrl+D are left to the box; Ctrl+S saves from anywhere. While a dialog is open,
+  it keeps the keyboard. Tooltips name the shortcuts.
+- Tested on Design's real code (11 tests, each checked by breaking what it covers), and in the desktop app
+  with real key presses: each shortcut did its one thing once.
 
 ### 0.98.0 — Ramp in, for profiles and pockets
 - **Ramp in: Ramp or Plunge, and how far (new).** Profiles and pockets always ramped into each pass, over 4

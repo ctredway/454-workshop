@@ -135,8 +135,6 @@ function wirePanel(){
   document.getElementById('saveBtn').addEventListener('click', function(){ saveDrawing(); });
   document.getElementById('recoverBtn').addEventListener('click', recoverDrawing);
   syncRecoverBtn();
-  document.getElementById('loadBtn').addEventListener('click', function(){
-    document.getElementById('loadFile').click();
-  });
+  document.getElementById('loadBtn').addEventListener('click', function(){ openFiles(); });   // unsaved.js
 }
 

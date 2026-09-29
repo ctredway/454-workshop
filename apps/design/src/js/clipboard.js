@@ -31,17 +31,22 @@ function clipBBox(ents){
 function clipRead(){
   try { var c = JSON.parse(localStorage.getItem(CLIP_KEY) || 'null'); return c && c.ents && c.ents.length ? c : null; } catch (e) { return null; }
 }
-// Copy the selection: the shapes (each remembering which shape it was, for the dimensions), and the
-// dimensions that measure only copied shapes.
-function clipCopy(){
-  if (!SEL.length) return false;
+// The selection, as something to paste: the shapes (each remembering which shape it was, for the dimensions),
+// and the dimensions that measure only copied shapes.
+function clipBuild(){
+  if (!SEL.length) return null;
   var src = SEL.map(function (i){ return DOC.ents[i]; }).filter(Boolean);
   var ids = src.map(function (e){ return entId(e); });
   var ents = src.map(function (e, k){ var c = cloneEnt(e); c._src = ids[k]; return c; });
   var dims = (DOC.dims || []).filter(function (d){
     return ids.indexOf(d.a) >= 0 && (d.b === undefined || ids.indexOf(d.b) >= 0);
   }).map(function (d){ return JSON.parse(JSON.stringify(d)); });
-  var clip = {v: 1, ents: ents, dims: dims, box: clipBBox(src)};
+  return {v: 1, ents: ents, dims: dims, box: clipBBox(src)};
+}
+function clipCopy(){
+  var clip = clipBuild();
+  if (!clip) return false;
+  var ents = clip.ents, dims = clip.dims;
   try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); }
   catch (e){ toast('err', 'Couldn’t copy', 'The browser’s storage is full. Save the drawing to a file, then try again.'); return false; }
   clipSay('Copied ' + clipSays(ents.length, dims.length) + '. Ctrl+V pastes at the pointer, Ctrl+Shift+V in place.');
@@ -77,6 +82,17 @@ function clipPaste(inPlace){
       dx = p.x - (b.x0 + b.x1) / 2; dy = p.y - (b.y0 + b.y1) / 2;
     } else { dx = 10; dy = -10; }
   }
+  return clipInsert(clip, dx, dy, 'Pasted ');
+}
+// Duplicate (Ctrl+D): a copy of the selection, dimensions included, 10 mm right and down, without touching
+// what Ctrl+C copied.
+function clipDuplicate(){
+  var clip = clipBuild();
+  if (!clip) return false;
+  return clipInsert(clip, 10, -10, 'Duplicated ');
+}
+// Put a copy into the drawing, moved by dx, dy, with its dimensions measuring the new shapes; select it.
+function clipInsert(clip, dx, dy, said){
   pushUndo();
   layersInit();
   var newId = {}, sel = [];
@@ -100,7 +116,7 @@ function clipPaste(inPlace){
   SEL = sel;
   if (TOOL !== 'select') setTool('select');
   persist(); draw(); if (typeof updateReadout === 'function') updateReadout();
-  clipSay('Pasted ' + clipSays(sel.length, nd) + '.');
+  clipSay(said + clipSays(sel.length, nd) + '.');
   return true;
 }
 

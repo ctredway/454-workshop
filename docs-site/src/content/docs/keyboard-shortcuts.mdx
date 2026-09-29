@@ -1,0 +1,90 @@
+---
+title: "Keyboard shortcuts"
+description: "Every keyboard shortcut in 454 Design, 454 Control and the desktop app."
+---
+
+The usual ones work as they do in most programs: save, open, new, undo, copy and paste, select all. Nothing on
+the keyboard starts the machine moving, except the arrow keys and Page Up and Page Down while the jog panel
+is open.
+
+While a dialog is open, it has the keyboard: <kbd>Enter</kbd> to accept, <kbd>Esc</kbd> to cancel. In a text
+box, <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>C</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd> and the rest work on the
+text, as always.
+
+## 454 Design
+
+### File
+
+| Keys | What it does |
+| --- | --- |
+| <kbd>Ctrl</kbd>+<kbd>S</kbd> | **Save.** The first time, it asks where. After that, it saves straight to the same file, for as long as 454 Design stays open. A drawing opened with <kbd>Ctrl</kbd>+<kbd>O</kbd> saves back to its own file. Works while typing in a box too. |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> | **Save as**: always asks, to save a copy under another name. Save then goes to the new file. |
+| <kbd>Ctrl</kbd>+<kbd>O</kbd> | **Open** a drawing, a VCarve project, DXF or SVG files, or an image to trace. |
+| <kbd>Ctrl</kbd>+<kbd>N</kbd> | **New** drawing. An unsaved drawing is put aside: **Recover last drawing** brings it back. (In a browser, <kbd>Ctrl</kbd>+<kbd>N</kbd> opens a new browser window instead: use the **New** button.) |
+
+### Edit
+
+| Keys | What it does |
+| --- | --- |
+| <kbd>Ctrl</kbd>+<kbd>Z</kbd> | Undo |
+| <kbd>Ctrl</kbd>+<kbd>Y</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> | Redo |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd>, <kbd>Ctrl</kbd>+<kbd>X</kbd> | Copy or cut the selection, with its dimensions ([Copy and paste](/design-tools#copy-and-paste)) |
+| <kbd>Ctrl</kbd>+<kbd>V</kbd> | Paste, centred on the pointer |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> | Paste in place, exactly where it was copied from |
+| <kbd>Ctrl</kbd>+<kbd>D</kbd> | Duplicate the selection, with its dimensions, 10 mm right and down (what you copied stays as it was) |
+| <kbd>Ctrl</kbd>+<kbd>A</kbd> | Select all (not shapes on hidden or locked layers) |
+| <kbd>Delete</kbd> | Delete the selection, or the selected dimension |
+| Arrow keys | Nudge the selection 1 mm; with <kbd>Shift</kbd>, 0.1 mm |
+| <kbd>Ctrl</kbd>+<kbd>G</kbd> | Group the selection |
+| <kbd>Ctrl</kbd>+<kbd>U</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> | Ungroup |
+| <kbd>X</kbd> | Turn the selection into construction lines, or back |
+| <kbd>F9</kbd> | Center the selection in the material |
+| <kbd>Esc</kbd> | Cancel what you're in the middle of; then back to Select; then clear the selection |
+
+### Tools
+
+| Key | Tool | Key | Tool |
+| --- | --- | --- | --- |
+| <kbd>V</kbd> | Select | <kbd>F</kbd> | Fillet |
+| <kbd>L</kbd> | Line | <kbd>T</kbd> | Trim |
+| <kbd>R</kbd> | Rectangle | <kbd>E</kbd> | Extend |
+| <kbd>C</kbd> | Circle | <kbd>O</kbd> | Offset |
+| <kbd>A</kbd> | Arc | <kbd>N</kbd> | Node edit |
+| <kbd>P</kbd> | Polyline | <kbd>D</kbd> | Dimension |
+| <kbd>K</kbd> | Text | <kbd>M</kbd> | Copy (to a point) |
+| <kbd>G</kbd> | Offset guide | <kbd>Shift</kbd>+<kbd>M</kbd> | Mirror |
+| <kbd>I</kbd> | Measure | <kbd>Shift</kbd>+<kbd>R</kbd> | Rotate |
+| <kbd>Y</kbd> | Array | | |
+
+While a tool is waiting for a value, letters are part of what you type (`R2.5`, `D5`), and <kbd>Enter</kbd>
+takes it. With one shape selected, <kbd>D</kbd> sets its size; with two, the distance between them.
+
+### View and help
+
+| Keys | What it does |
+| --- | --- |
+| <kbd>Home</kbd> | Fit the material in the window |
+| Mouse wheel | Zoom at the pointer; right or middle drag to pan |
+| <kbd>F1</kbd> | These docs |
+
+## 454 Control
+
+| Keys | What it does |
+| --- | --- |
+| <kbd>Ctrl</kbd>+<kbd>O</kbd> | Open a G-code file. Refused while a job is running, as the Open button is. |
+| <kbd>Space</kbd> | Play or pause the **preview** (it doesn't move the machine) |
+| <kbd>←</kbd> <kbd>→</kbd> | Step the preview back or forward a line |
+| <kbd>F1</kbd> | These docs |
+
+**In the jog panel** (open it with **Open jog panel**): the arrow keys jog X and Y, <kbd>Page Up</kbd> and
+<kbd>Page Down</kbd> jog Z, and <kbd>Esc</kbd> closes the panel. These move the machine.
+
+## The desktop app
+
+| Keys | What it does |
+| --- | --- |
+| <kbd>Ctrl</kbd>+<kbd>1</kbd>, <kbd>Ctrl</kbd>+<kbd>2</kbd> | 454 Control, 454 Design |
+| <kbd>Ctrl</kbd>+<kbd>W</kbd> | Close the window. Control asks first while the machine is busy; Design, if the drawing isn't saved. |
+| <kbd>Ctrl</kbd>+<kbd>Q</kbd> | Quit 454 Workshop, with the same questions |
+| <kbd>Ctrl</kbd>+<kbd>Plus</kbd>, <kbd>Ctrl</kbd>+<kbd>Minus</kbd>, <kbd>Ctrl</kbd>+<kbd>0</kbd> | Make everything larger, smaller, or back to normal |
+| <kbd>F11</kbd> | Full screen |

@@ -7,6 +7,7 @@ function wire(){
   wirePanel();
   unsavedWire();
   clipWire();
+  keysWire();
   fit();
 
   document.getElementById('stkT').addEventListener('change', function(e){
@@ -409,6 +410,7 @@ function wire(){
     return null;                                    // neither
   }
   // several files at once: the DXFs and SVGs among them, into one dialog
+  DESIGN_IMPORT = importFiles;                        // for Open (unsaved.js)
   function importFiles(files){
     files = Array.prototype.slice.call(files || []);
     if (files.length <= 1){ if (files[0]) importFile(files[0]); return; }
@@ -751,7 +753,7 @@ function wire(){
     // and regardless of whether a tool is mid-operation.
     if (e.ctrlKey && !e.altKey){
       var ck = e.key.toLowerCase();
-      if (ck === 'z'){ e.preventDefault(); doUndo(); return; }
+      if (ck === 'z'){ e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); return; }   // Ctrl+Shift+Z: redo, as most programs
       if (ck === 'y'){ e.preventDefault(); doRedo(); return; }
       if (ck === 'g' && SEL.length){ e.preventDefault(); if (e.shiftKey) doUngroupSelectionRef(); else doGroupSelectionRef(); return; }
       if (ck === 'u' && SEL.length){ e.preventDefault(); doUngroupSelectionRef(); return; }

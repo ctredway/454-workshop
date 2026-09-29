@@ -26,6 +26,7 @@ export default defineConfig({
           { label: 'Design quick start', link: '/design-quickstart' },
           { label: 'Coming from Carbide Motion', link: '/carbide-motion' },
           { label: 'The desktop app', link: '/desktop-app' },
+          { label: 'Keyboard shortcuts', link: '/keyboard-shortcuts' },
         ] },
         { label: '454 Control', items: [
           { label: 'Reference', link: '/control-reference' },

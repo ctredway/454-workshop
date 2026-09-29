@@ -242,7 +242,10 @@ function menu() {
       { label: 'About 454 Workshop', click: openAbout },
       ...updateMenu(),
       { type: 'separator' },
-      { role: 'quit' },
+      // closing goes through each window's own check: Control asks while the machine is busy, Design about an
+      // unsaved drawing
+      { label: 'Close window', accelerator: 'CmdOrCtrl+W', click: () => { const w = focused(); if (w) w.close(); } },
+      { role: 'quit', accelerator: 'CmdOrCtrl+Q' },
     ] },
     { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     { label: 'View', submenu: [
