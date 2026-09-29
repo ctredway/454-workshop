@@ -104,7 +104,7 @@
   #stkOriginPick .pickFront{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted)}
   #settingsModal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
   #settingsModal[hidden]{display:none}
-  #settingsPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px 24px;min-width:340px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+  #settingsPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px 24px;min-width:340px;max-width:480px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
   #settingsPanel h3,#jobPanel h3{margin:0 0 14px;font-size:16px}
   #settingsPanel h4,#jobPanel h4{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted)}
   #settingsPanel .srow,#jobPanel .srow{display:flex;align-items:center;gap:6px;margin-bottom:8px}
@@ -902,7 +902,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.96.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.96.1'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}

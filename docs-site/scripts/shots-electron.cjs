@@ -28,10 +28,17 @@ function serve() {
 
 async function shoot(port, shot, i) {
   const ses = session.fromPartition('shot-' + i + '-' + Date.now());       // fresh storage: no settings from earlier shots
+  // The page is laid out at the shot's size, at twice the resolution, by Chromium's device emulation rather
+  // than by the window's size: Windows shrinks a window to fit the screen, and at twice the resolution most
+  // shots are taller than a 1080-pixel screen (they came out cut short). The window is shown (a hidden one
+  // never paints, and the capture waits for it forever); its own size no longer matters.
   const win = new BrowserWindow({ width: shot.size[0], height: shot.size[1], show: true, useContentSize: true,
-    webPreferences: { session: ses, contextIsolation: true, sandbox: true } });
+    webPreferences: { session: ses, contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   const url = 'http://127.0.0.1:' + port + '/' + shot.page + (shot.page === 'design.html' ? '?cam' : '');
   await win.loadURL(url);
+  const cdp = win.webContents.debugger;
+  cdp.attach('1.3');
+  await cdp.sendCommand('Emulation.setDeviceMetricsOverride', { width: shot.size[0], height: shot.size[1], deviceScaleFactor: 2, mobile: false });
   // ready: the app has drawn its panel (Design) or its tabs (Control)
   await win.webContents.executeJavaScript(`new Promise((ok, fail) => { const t0 = Date.now(); (function poll(){
     if (typeof DOC !== 'undefined' && document.querySelector('#toolPanel .tGroup')) return ok();
@@ -55,9 +62,11 @@ async function shoot(port, shot, i) {
   }
   await new Promise((r) => setTimeout(r, 250));
   const clip = rect ? { x: Math.max(0, Math.round(rect.x)), y: Math.max(0, Math.round(rect.y)), width: Math.round(rect.width), height: Math.round(rect.height) } : undefined;
-  const img = await win.webContents.capturePage(clip);
-  fs.writeFileSync(path.join(OUT_DIR, shot.name + '.png'), img.toPNG());
-  const sz = img.getSize();
+  const shotPng = await cdp.sendCommand('Page.captureScreenshot', clip ? { format: 'png', clip: { ...clip, scale: 1 } } : { format: 'png' });
+  const png = Buffer.from(shotPng.data, 'base64');
+  fs.writeFileSync(path.join(OUT_DIR, shot.name + '.png'), png);
+  const sz = { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };     // from the PNG's header
+  cdp.detach();
   win.destroy();
   return sz;
 }

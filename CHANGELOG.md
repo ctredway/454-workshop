@@ -191,6 +191,16 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## Docs
 
+### Every screenshot retaken (2026-09-29)
+- **All 41 screenshots now match the current apps.** Several were out of date: Control's start dialog still
+  said "a G4 P10 s dwell after each M3" (it's now a 7 s wait after every M3 or M4), the toolpath editor had no
+  tab **Shape** row, Design's Settings had no Drawing section, and the File group had no Recover button. The
+  text is in the apps' own typefaces now, where older shots showed a stand-in font.
+- **Screenshots can be taken on Windows.** `npm run shots` set each window's size, and Windows shrinks a window
+  to fit the screen: at twice the resolution most shots are taller than a 1080-pixel screen, so they came out
+  cut short. The page is now laid out at the shot's size by Chromium's device emulation instead, whatever the
+  screen (`docs-site/scripts/shots-electron.cjs`).
+
 ### Toolpath screenshots in the CAM reference
 - **Each toolpath type pictured on a real drawing**, made through the editor as a user makes it: a profile
   with tabs, a pocket with an island in both clearing styles (offset rings and raster), drilling, a
@@ -683,6 +693,10 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.96.1 — Settings fits its text
+- **The Settings panel no longer stretches to fit its longest sentence.** The note under "Snap lines to 45°
+  and 90°" made it about half as wide again; it now wraps, as the panel's other notes do.
 
 ### 0.96.0 — save the drawing before closing?
 - **Design knows whether the drawing is saved to a file.** Any change makes it unsaved; saving it, or
