@@ -99,7 +99,9 @@ without a published release looks to them like a newest release with nothing in 
 
 ## How it behaves, on purpose
 
-- **Nothing interrupts a job.** Update prompts wait until 454 Control's `machineBusy()` is false.
+- **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
+  (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
+  454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.
 - **The job builder** (`apps/control/src/js/job-builder.js`, tested) adds: a spin-up wait after every M3 **or
   M4** (default 7 s; a saved setting is never lowered), a lift before a spindle stop (never downwards), at a
   tool change a lift, a stop, and a restart if the file assumes the spindle is running, and at the end lift,

@@ -65,21 +65,48 @@ describe('checking and offering', () => {
     expect(r.au.calls).toEqual(['check']);
     expect(r.pending.map((t) => t.ms)).toEqual([30 * 60e3]);
   });
-  it('checks a little while after starting, offers the update with its notes, and downloads only when asked', async () => {
-    const r = rig({ answers: [0] });
+  it('an update found in the background shows in the header, asks nothing, and downloads only when clicked', async () => {
+    const r = rig();
     r.u.start();
     expect(r.pending.length).toBe(1);                       // the first check is scheduled, not immediate
     await r.runTimers();
     expect(r.au.calls).toEqual(['check']);
     expect(r.au.autoDownload).toBe(false);
     r.au.emit('update-available', release('0.6.1')); await settle();
+    expect(r.asked.length).toBe(0);                         // no window
+    const v = r.u.view;
+    expect(v.phase).toBe('available');
+    expect(v.version).toBe('0.6.1');
+    expect(v.current).toBe('0.6.0');
+    expect(v.notes).toMatch(/automatic updates/);           // release notes, without their HTML
+    expect(v.notes).not.toMatch(/<b>|<li>/);
+    expect(r.au.calls).toEqual(['check']);                  // nothing downloaded unasked
+    r.u.download(); await settle();
+    expect(r.au.calls).toEqual(['check', 'download']);
+    expect(r.u.view.phase).toBe('downloading');
+  });
+  it('the header shows the download’s progress, then Restart to update, and no window appears', async () => {
+    const r = rig();
+    r.u.start(); await r.runTimers();
+    r.au.emit('update-available', release('0.6.1')); await settle();
+    r.u.download(); await settle();
+    r.au.emit('download-progress', { percent: 42.7 }); await settle();
+    expect(r.u.view.progress).toBeCloseTo(0.427);
+    r.au.emit('update-downloaded', release('0.6.1')); await settle();
+    expect(r.u.view).toMatchObject({ phase: 'ready', version: '0.6.1', busy: false });
+    expect(r.asked.length).toBe(0);
+    expect(r.au.calls).not.toContain('quitAndInstall');
+  });
+  it('checking by hand still asks, and Download there shows its progress in the header', async () => {
+    const r = rig({ answers: [0] });
+    await r.u.checkNow(); r.au.emit('update-available', release('0.6.1')); await settle();
     expect(r.asked.length).toBe(1);
     expect(r.asked[0].message).toBe('454 Workshop 0.6.1 is available.');
     expect(r.asked[0].buttons).toEqual(['Download', 'Later', 'Skip this version']);
     expect(r.asked[0].detail).toMatch(/You have 0\.6\.0/);
-    expect(r.asked[0].detail).toMatch(/automatic updates/);    // release notes, without their HTML
-    expect(r.asked[0].detail).not.toMatch(/<b>|<li>/);
+    expect(r.asked[0].detail).toMatch(/automatic updates/);
     expect(r.au.calls).toEqual(['check', 'download']);
+    expect(r.u.view.phase).toBe('downloading');
   });
   it('Later downloads nothing', async () => {
     const r = rig({ answers: [1] });
@@ -132,22 +159,67 @@ describe('checking and offering', () => {
 });
 
 describe('downloads', () => {
-  it('a download you asked for that fails is always reported, even from a background check, and only once', async () => {
-    const r = rig({ answers: [0] });
+  it('a download that fails is reported in the header, not in a window, once, with the reason; Try again downloads again', async () => {
+    const r = rig();
     r.u.start(); await r.runTimers();                      // a background check...
-    r.au.emit('update-available', release('0.6.1')); await settle();   // ...you choose Download...
+    r.au.emit('update-available', release('0.6.1')); await settle();
+    r.u.download(); await settle();                        // ...you click Download...
     const err = new Error('sha512 checksum mismatch, expected abc, got def');
     r.au.emit('error', err); await settle();
     r.au.emit('error', err); await settle();               // the library reports it twice
-    const reports = r.asked.filter((q) => q.message === 'The update didn\u2019t download.');
-    expect(reports.length).toBe(1);
-    expect(reports[0].detail).toMatch(/didn\u2019t match the release/);
+    expect(r.asked.length).toBe(0);                        // no window: one could pop up in the middle of a job
+    const v = r.u.view;
+    expect(v.phase).toBe('failed');
+    expect(v.error).toMatch(/didn’t match the release/);
     expect(r.au.calls).not.toContain('quitAndInstall');
+    r.u.download(); await settle();                        // Try again
+    expect(r.au.calls.filter((c) => c === 'download').length).toBe(2);
+    expect(r.u.view.phase).toBe('downloading');
+  });
+  it('a newer check with nothing to offer clears the notice', async () => {
+    const r = rig();
+    r.u.start(); await r.runTimers();
+    r.au.emit('update-available', release('0.6.1')); await settle();
+    await r.runTimers();
+    r.au.emit('update-not-available', { version: '0.6.0' }); await settle();
+    expect(r.u.view.phase).toBe('none');
   });
 });
 
 describe('never during a job', () => {
-  it('an update found while the machine is busy waits, and is offered once it\u2019s idle', async () => {
+  it('Restart to update is refused while the machine is busy, and works once it’s idle', async () => {
+    const r = rig();
+    r.u.start(); await r.runTimers();
+    r.au.emit('update-available', release('0.6.1')); await settle();
+    r.u.download(); await settle();
+    r.au.emit('update-downloaded', release('0.6.1')); await settle();
+    r.machine.busy = true;
+    expect(await r.u.restart()).toEqual({ ok: false, busy: true });
+    expect(r.au.calls).not.toContain('quitAndInstall');
+    expect(r.u.view.busy).toBe(true);
+    r.machine.busy = false;
+    expect(await r.u.restart()).toEqual({ ok: true });
+    expect(r.au.calls).toContain('quitAndInstall');
+    expect(r.u.view.phase).toBe('restarting');
+  });
+  it('while an update waits, the header is kept told whether the machine is busy', async () => {
+    const r = rig();
+    r.u.start(); await r.runTimers();
+    r.au.emit('update-available', release('0.6.1')); await settle();
+    r.u.download(); await settle();
+    r.au.emit('update-downloaded', release('0.6.1')); await settle();
+    expect(r.u.view.busy).toBe(false);
+    r.machine.busy = true; await r.runTimers();
+    expect(r.u.view.busy).toBe(true);
+    r.machine.busy = false; await r.runTimers();
+    expect(r.u.view.busy).toBe(false);
+  });
+  it('Restart only works for a downloaded update', async () => {
+    const r = rig();
+    expect(await r.u.restart()).toEqual({ ok: false });
+    expect(r.au.calls).not.toContain('quitAndInstall');
+  });
+  it('an update Check for updates finds while the machine is busy waits, and is offered once it’s idle', async () => {
     const r = rig({ busy: true, answers: [1] });
     await r.u.checkNow(); r.au.emit('update-available', release('0.6.1')); await settle();
     expect(r.asked.length).toBe(0);                         // nothing shown mid-job
@@ -157,30 +229,32 @@ describe('never during a job', () => {
     expect(r.asked.length).toBe(1);
     expect(r.asked[0].message).toMatch(/0\.6\.1 is available/);
   });
-  it('the restart question waits for an idle machine too, and installs only if it\u2019s still idle', async () => {
-    const r = rig({ answers: [0] });
-    await r.u.checkNow(); r.au.emit('update-available', release('0.6.1')); await settle();
-    r.machine.busy = true;
+  it('Restart to update… in the menu asks, waits for an idle machine, and installs only if it’s still idle', async () => {
+    const r = rig();
+    r.u.start();
     r.au.emit('update-downloaded', release('0.6.1')); await settle();
-    expect(r.asked.length).toBe(1);                         // only the first question so far
+    r.machine.busy = true;
+    r.u.checkNow(); await settle();
+    expect(r.asked.length).toBe(0);                         // waiting for the machine
     r.machine.busy = false; r.answers.push(0);
     await r.runTimers();
-    expect(r.asked[1].message).toBe('454 Workshop 0.6.1 is ready to install.');
-    expect(r.asked[1].buttons).toEqual(['Restart now', 'Later']);
+    expect(r.asked[0].message).toBe('454 Workshop 0.6.1 is ready to install.');
+    expect(r.asked[0].buttons).toEqual(['Restart now', 'Later']);
     expect(r.au.calls).toContain('quitAndInstall');
   });
-  it('if the machine gets busy while the restart question is open, it doesn\u2019t restart', async () => {
+  it('if the machine gets busy while the menu’s restart question is open, it doesn’t restart', async () => {
     const r = rig();
-    r.u.checkNow(); await settle();
+    r.u.start();
+    r.au.emit('update-downloaded', release('0.6.1')); await settle();
     r.answers.push(0);                                      // Restart now...
     const realAsk = r.asked.push.bind(r.asked);
     r.asked.push = (o) => { if (o.message && /ready to install/.test(o.message)) r.machine.busy = true; return realAsk(o); };   // ...as a job starts
-    r.au.emit('update-downloaded', release('0.6.1')); await settle();
+    r.u.checkNow(); await settle();
     expect(r.au.calls).not.toContain('quitAndInstall');
     expect(r.asked[r.asked.length - 1].message).toBe('The machine is busy.');
   });
-  it('Later on the restart question installs nothing now, and leaves it to install when the app closes', async () => {
-    const r = rig({ answers: [1] });
+  it('an update that isn’t restarted for installs when the app closes', async () => {
+    const r = rig();
     r.u.start();
     r.au.emit('update-downloaded', release('0.6.1')); await settle();
     expect(r.au.calls).not.toContain('quitAndInstall');
@@ -199,6 +273,26 @@ describe('skipping, channels and settings', () => {
     expect(r.asked.length).toBe(2);
     r.au.emit('update-available', release('0.6.2')); await settle();   // a newer one is offered again
     expect(r.asked.length).toBe(3);
+  });
+  it('Skip this version in the header hides it, and remembers', async () => {
+    const r = rig();
+    r.u.start(); await r.runTimers();
+    r.au.emit('update-available', release('0.6.1')); await settle();
+    r.u.skip();
+    expect(r.u.view.phase).toBe('none');
+    expect(JSON.parse(r.files['/u.json']).skipped).toBe('0.6.1');
+    await r.runTimers(); r.au.emit('update-available', release('0.6.1')); await settle();
+    expect(r.u.view.phase).toBe('none');
+    await r.runTimers(); r.au.emit('update-available', release('0.6.2')); await settle();
+    expect(r.u.view.phase).toBe('available');               // a newer one shows again
+    expect(r.asked.length).toBe(0);
+  });
+  it('changing channel clears what the other channel found', async () => {
+    const r = rig({ saved: { channel: 'beta' } });
+    r.u.start(); await r.runTimers();
+    r.au.emit('update-available', release('0.6.1-beta.3')); await settle();
+    r.u.setChannel('stable');
+    expect(r.u.view.phase).toBe('none');
   });
   it('the beta channel includes pre-releases, and is remembered', async () => {
     const r = rig();

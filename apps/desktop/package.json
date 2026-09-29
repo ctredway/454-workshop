@@ -1,7 +1,7 @@
 {
   "name": "454-desktop",
   "productName": "454 Workshop",
-  "version": "0.6.2-beta.12",
+  "version": "0.6.2-beta.13",
   "description": "454 Workshop",
   "license": "MIT",
   "main": "src/main.js",

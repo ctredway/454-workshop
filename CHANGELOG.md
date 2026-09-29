@@ -27,6 +27,32 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.13 — updates show in the header
+- **A new version shows as a notice in the header of 454 Control and 454 Design, not a window.** Before,
+  a background check that found an update asked about it in a window, and asked again when the download
+  finished. Both waited until the machine was idle, but a window still got in the way of whatever you were
+  doing. Now a notice appears beside Docs, and nothing happens until you click it: **Update available**
+  (what's new, **Download** or **Skip this version**), then **Downloading update** with how far it has
+  got, then **Restart to update** (**Restart now**, or leave it and it installs when you next close the
+  app). The same notice shows in both windows. It's shown only in the desktop app, never on the website.
+- **(machine)** **Restart to update is refused while the machine is busy**, however it's reached: the
+  notice turns grey and **Restart now** can't be pressed during a job, probe, jog or quick action, with the
+  spindle on, or with the machine moving. The app checks again when it's pressed, so a job that starts
+  just before is never cut off. Restarting disconnects the machine, and the notice says so.
+- **A download that fails shows in the notice** (**Update didn't download**, with why and **Try again**)
+  instead of a window, which could otherwise have popped up in the middle of a job.
+- **The Windows notification when a download finished is gone**: the notice replaces it.
+- **Check for updates…** in the menu still answers in a window, since you asked. What it finds shows in
+  the notice as well.
+- Changing channel clears an update found on the other one; a newer check that finds nothing clears the
+  notice.
+- Tested: the updater's decisions (28 tests), and the notice in each page's real header (22 tests,
+  including release notes shown as text, never as page code). Each test was checked by breaking the code
+  it covers. Also run in the real app against a local update server: the notice appeared in Design and
+  Control, counted the download from 0 to 100%, became Restart to update, and with the machine reported
+  busy, refused to restart and turned grey.
+- Includes Control 0.31.16 and Design 0.95.1, which carry the notice.
+
 ### 0.6.2-beta.12 — tags wait for their releases
 - **Fixed: installed copies couldn't see a new release while a newer draft was waiting.** The workflow
   created each version's tag when its build started, but its release stayed a draft until published.
@@ -306,6 +332,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.16 — the update notice
+- In the desktop app, a notice in the header when there's a new version of 454 Workshop (see the desktop
+  app's 0.6.2-beta.13). Nothing changes on the website.
 
 ### 0.31.15 — the Shapeoko 5 Pro and 5.1 Pro
 - **The Shapeoko 5 Pro and 5.1 Pro**, in all three sizes, in the work area presets (2×2, 623 × 623 mm;
@@ -631,6 +661,10 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.95.1 — the update notice
+- In the desktop app, a notice in the header when there's a new version of 454 Workshop (see the desktop
+  app's 0.6.2-beta.13). Nothing changes on the website.
 
 ### 0.95.0 — 3D tabs
 - **3D (tapered) tabs, as an option**: the toolpath editor's new **Shape** choice, beside tab length and

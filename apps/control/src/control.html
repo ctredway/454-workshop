@@ -24,6 +24,7 @@
       <button id="hdrHold" class="danger iconBtn" title="Feed hold — decelerate and pause motion now"><svg viewBox="0 0 16 16"><line x1="6" y1="3.5" x2="6" y2="12.5"/><line x1="10" y1="3.5" x2="10" y2="12.5"/></svg></button>
       <button id="hdrResume" class="iconBtn" title="Cycle start / resume"><svg viewBox="0 0 16 16"><path d="M5.5 3.5 L12 8 L5.5 12.5 Z"/></svg></button>
     </div>
+    <button id="updateBadge" type="button" hidden></button>
     <a id="openDocs" href="docs/index.html" target="_blank" rel="noopener" title="Guides and reference, in a new tab">Docs ↗</a>
     <a id="openDesign" href="design.html" target="_blank" rel="noopener" title="Open 454 Design (the sketcher) in a new tab">454 Design ↗</a>
     <button id="settingsBtn" class="iconBtn" title="Settings"><svg viewBox="0 0 16 16"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="10.5" cy="4" r="1.6" fill="var(--panel)"/><circle cx="5.5" cy="8" r="1.6" fill="var(--panel)"/><circle cx="11.5" cy="12" r="1.6" fill="var(--panel)"/></svg></button>
@@ -603,6 +604,10 @@
 @@include js/recovery.js
 @@include js/handoff.js
 @@include js/machine-tab.js
+</script>
+<!-- the desktop app's update notice (only in the app: in a browser it shows nothing) -->
+<script>
+@@include ../../desktop/src/renderer/update-badge.js
 </script>
 </body>
 </html>

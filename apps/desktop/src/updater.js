@@ -1,11 +1,13 @@
 // Automatic updates for 454 Workshop, from GitHub Releases (electron-updater).
 //
 // What it promises:
-//   - never during a job: nothing is shown, and nothing restarts, while 454 Control says the machine is
-//     busy (its own machineBusy(): a job, probe, quick action or jog running, the spindle on, or the
-//     machine moving); it waits until the machine is idle
-//   - never forced: an update is offered (Download, Later, Skip this version), downloads in the
-//     background, and installs when you choose to restart, or next time the app closes
+//   - never in the way: a check in the background shows what it found in the header of 454 Control and
+//     454 Design (src/renderer/update-badge.js), and nothing more; nothing happens until you click it
+//   - never during a job: Restart to update is refused while 454 Control says the machine is busy (its own
+//     machineBusy(): a job, probe, quick action or jog running, the spindle on, or the machine moving), and
+//     the questions Check for updates asks wait until the machine is idle
+//   - never forced: an update is offered (Download, or Skip this version), downloads in the background, and
+//     installs when you choose to restart, or next time the app closes
 //   - stable or beta: the beta channel also offers GitHub pre-releases
 //   - honest about copies that can't update: one run from a zip, or a development build, says so
 //
@@ -24,16 +26,19 @@ const CHECK_EVERY = 30 * MINUTE;
 const NO_UPDATES = { type: 'info', title: 'Updates', message: 'There are no new updates available.', buttons: ['OK'] };
 
 function createUpdater(deps) {
-  const { autoUpdater, isBusy, ask, notify = () => {}, setProgress = () => {}, currentVersion, installable,
+  const { autoUpdater, isBusy, ask, setProgress = () => {}, currentVersion, installable,
           settingsFile, fs, timers = { setTimeout, clearTimeout }, log = () => {},
-          firstCheckAfter = 30e3, checkEvery = CHECK_EVERY, idlePoll = MINUTE, onChange = () => {} } = deps;
+          firstCheckAfter = 30e3, checkEvery = CHECK_EVERY, idlePoll = MINUTE, busyPoll = 3e3, onChange = () => {} } = deps;
 
   // ---- settings: automatic checks, the channel, a skipped version
   let settings = { auto: true, channel: 'stable', skipped: null };
   try { settings = Object.assign(settings, JSON.parse(fs.readFileSync(settingsFile, 'utf8'))); } catch (e) { /* first run: defaults */ }
   function save() { try { fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2)); } catch (e) { log('could not save update settings: ' + e.message); } }
 
-  const state = { phase: 'idle', available: null, downloaded: null, manual: false, timer: null, waiting: null };
+  // failed: why the last download didn't finish (shown in the header); busy: the machine, as last seen
+  // while an update waits to be installed
+  const state = { phase: 'idle', available: null, downloaded: null, manual: false, timer: null, waiting: null,
+                  progress: 0, failed: null, busy: false, busyTimer: null };
 
   function configure() {
     autoUpdater.autoDownload = false;              // offered first, never downloaded unasked
@@ -85,8 +90,9 @@ function createUpdater(deps) {
 
   async function onAvailable(info) {
     const manual = state.manual;
-    state.phase = 'idle'; state.available = info; onChange();
-    if (!manual && settings.skipped === info.version) { log('update ' + info.version + ' skipped earlier'); return; }
+    state.phase = 'idle'; state.available = info; state.failed = null; onChange();
+    // found in the background: the header shows it (unless it was skipped), and nothing else
+    if (!manual) { log('update ' + info.version + (settings.skipped === info.version ? ' skipped earlier' : ' available: shown in the header')); return; }
     whenIdle(async () => {
       const notes = notesOf(info);
       const choice = await ask({ type: 'info', title: 'Update available',
@@ -94,23 +100,59 @@ function createUpdater(deps) {
         detail: 'You have ' + currentVersion + '.' + (notes ? '\n\nWhat\u2019s new:\n' + notes : '') +
                 '\n\nIt downloads in the background, and installs when you restart 454 Workshop, whenever suits you. Nothing interrupts a job.',
         buttons: ['Download', 'Later', 'Skip this version'], defaultId: 0, cancelId: 1 });
-      if (choice === 0) {
-        state.phase = 'downloading'; onChange();
-        try { await autoUpdater.downloadUpdate(); } catch (e) { onError(e); }
-      } else if (choice === 2) { settings.skipped = info.version; save(); onChange(); }
+      if (choice === 0) download();
+      else if (choice === 2) skip();
     });
   }
   async function onNotAvailable(info) {
     const manual = state.manual;
-    state.phase = 'idle'; onChange();
+    state.phase = 'idle'; state.available = null; state.failed = null; onChange();
     if (manual) await ask(NO_UPDATES);
   }
-  function onProgress(p) { setProgress(Math.max(0, Math.min(1, (p && p.percent || 0) / 100))); }
+  function onProgress(p) {
+    const f = Math.max(0, Math.min(1, (p && p.percent || 0) / 100));
+    setProgress(f);
+    const whole = Math.floor(f * 100) !== Math.floor(state.progress * 100);   // the header shows whole percents
+    state.progress = f;
+    if (whole) onChange();
+  }
+  // Downloaded: the header's notice becomes Restart to update, and nothing else appears.
   function onDownloaded(info) {
     setProgress(-1);
-    state.phase = 'ready'; state.downloaded = info; onChange();
-    notify('454 Workshop ' + info.version + ' is ready', 'It installs when you restart 454 Workshop.');
-    offerRestart();
+    state.phase = 'ready'; state.downloaded = info; state.progress = 1; state.failed = null; onChange();
+    log('update ' + info.version + ' downloaded: Restart to update in the header');
+    watchBusy();
+  }
+  // While an update waits, keep the header told whether the machine is busy, so Restart to update is
+  // plainly unavailable during a job (restart() checks again when it's clicked).
+  function watchBusy() {
+    if (state.busyTimer) timers.clearTimeout(state.busyTimer);
+    const look = async () => {
+      state.busyTimer = null;
+      if (!state.downloaded || state.phase === 'restarting') return;
+      const b = await busy();
+      if (b !== state.busy) { state.busy = b; onChange(); }
+      state.busyTimer = timers.setTimeout(look, busyPoll);
+    };
+    look();
+  }
+
+  // ---- what the header's notice does, each only when it's clicked
+  async function download() {
+    if (!state.available || state.downloaded || state.phase === 'downloading' || state.phase === 'checking') return;
+    state.phase = 'downloading'; state.progress = 0; state.failed = null; onChange();
+    try { await autoUpdater.downloadUpdate(); } catch (e) { onError(e); }
+  }
+  function skip() {
+    if (!state.available || state.downloaded) return;
+    settings.skipped = state.available.version; save(); onChange();
+  }
+  async function restart() {
+    if (!state.downloaded || state.phase === 'restarting') return { ok: false };
+    if (await busy()) { state.busy = true; onChange(); return { ok: false, busy: true }; }
+    state.phase = 'restarting'; onChange();
+    autoUpdater.quitAndInstall(false, true);       // install, then start the new version
+    return { ok: true };
   }
   function offerRestart() {
     whenIdle(async () => {
@@ -136,14 +178,14 @@ function createUpdater(deps) {
     state.lastError = { msg, at: Date.now() };
     const manual = state.manual, downloading = state.phase === 'downloading';
     setProgress(-1);
+    const why = ' (' + msg.split('\n')[0].slice(0, 200) + ')';
+    // you asked for it, so a failed download is always reported: in the header, with Try again, where
+    // it can't get in the way of a job as a window could
+    if (downloading) state.failed = (/checksum|sha512/i.test(msg) ? 'The downloaded file didn\u2019t match the release, so it wasn\u2019t installed.' : explain(msg)) + why;
     state.phase = 'idle'; onChange();
     log('update error: ' + msg);
-    const why = ' (' + msg.split('\n')[0].slice(0, 200) + ')';
-    if (downloading)                               // you asked for it, so a failed download is always reported
-      await ask({ type: 'warning', title: 'Updates', message: 'The update didn\u2019t download.',
-        detail: (/checksum|sha512/i.test(msg) ? 'The downloaded file didn\u2019t match the release, so it wasn\u2019t installed.' : explain(msg)) +
-                ' It\u2019ll be offered again at the next check, or use Check for updates.' + why, buttons: ['OK'] });
-    else if (manual){
+    if (downloading) return;
+    if (manual){
       if (nothingToOffer(msg)) await ask(NO_UPDATES);    // a release that can't be installed isn't an update
       else await ask({ type: 'warning', title: 'Updates', message: 'Couldn\u2019t check for updates.', detail: explain(msg) + why, buttons: ['OK'] });
     }
@@ -177,10 +219,27 @@ function createUpdater(deps) {
   return {
     start() { configure(); schedule(firstCheckAfter); },
     checkNow() { return check(true); },
+    download, skip, restart,
     setAuto(on) { settings.auto = !!on; save(); schedule(on ? firstCheckAfter : 0); onChange(); },
-    setChannel(ch) { settings.channel = ch === 'beta' ? 'beta' : 'stable'; settings.skipped = null; save(); configure(); onChange(); },
+    setChannel(ch) {
+      settings.channel = ch === 'beta' ? 'beta' : 'stable'; settings.skipped = null; save(); configure();
+      if (!state.downloaded && state.phase !== 'downloading') { state.available = null; state.failed = null; }   // found on the other channel
+      onChange();
+    },
     get settings() { return Object.assign({}, settings); },
     get state() { return { phase: state.phase, available: state.available && state.available.version, downloaded: state.downloaded && state.downloaded.version }; },
+    // What the header's notice shows (src/renderer/update-badge.js). phase: none, available, downloading,
+    // failed, ready or restarting.
+    get view() {
+      const base = { current: currentVersion, busy: state.busy };
+      const version = state.downloaded ? state.downloaded.version : state.available && state.available.version;
+      if (state.phase === 'restarting') return { ...base, phase: 'restarting', version };
+      if (state.downloaded) return { ...base, phase: 'ready', version };
+      if (state.phase === 'downloading') return { ...base, phase: 'downloading', version, progress: state.progress };
+      if (state.failed && state.available) return { ...base, phase: 'failed', version, error: state.failed };
+      if (state.available && state.available.version !== settings.skipped) return { ...base, phase: 'available', version, notes: notesOf(state.available) };
+      return { ...base, phase: 'none' };
+    },
     installable,
   };
 }

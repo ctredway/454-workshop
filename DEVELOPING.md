@@ -79,7 +79,11 @@ installed first (`npm ci --prefix docs-site`), and Node.js 22.12 or newer.
 ## Releasing, and updates
 
 Installed copies of the desktop app update themselves from GitHub Releases (`apps/desktop/src/updater.js`,
-tested in `apps/desktop/test/updater.test.mjs`). A release is what delivers an update:
+tested in `apps/desktop/test/updater.test.mjs`). What a background check finds shows as a notice in the
+headers of 454 Control and 454 Design: `apps/desktop/src/renderer/update-badge.js`, which both pages'
+builds include (so a change to it means rebuilding both pages), talking to the app through `preload.js`,
+and tested in `apps/desktop/test/update-badge.test.mjs`. In a browser it shows nothing. A release is what
+delivers an update:
 
 1. Set the version in `apps/desktop/package.json` (say `0.6.3`), commit, and push to `main`. The Windows
    workflow sees the new version, builds the installer and zip, checks the update files (`latest.yml` or
@@ -103,7 +107,17 @@ and the sentence about it on the docs' "The desktop app" page.
 (454 Workshop → Updates) are offered. Drafts are never offered.
 
 Update settings are kept in `updates.json` in the app's data folder. For testing the updater itself against
-a local server, see `setupUpdates()` in `src/main.js` (the `P454_UPDATE_*` variables, tests only).
+a local server, see `setupUpdates()` in `src/main.js` (the `P454_UPDATE_*` variables, tests only). Running it
+that way on Windows:
+
+- A terminal inside VS Code sets `ELECTRON_RUN_AS_NODE=1`, which makes Electron start as plain Node
+  ("Cannot find module 'electron'"). Clear it for the run: `env -u ELECTRON_RUN_AS_NODE …`.
+- The app's data folder (`%APPDATA%\454`) is the installed copy's too: its drawing, tool library and update
+  settings. To keep a test away from them, start the app from a small script that sends `userData`
+  elsewhere before requiring `src/main.js`, with a `package.json` beside it giving the version to test from.
+- Serve a file that isn't a program as the "installer". An update that's downloaded installs when the app
+  quits, test runs included; a stand-in just fails to start. Its download is cached in
+  `%LOCALAPPDATA%\p454-update-test`: delete that afterwards.
 
 ## 454 Control's source
 

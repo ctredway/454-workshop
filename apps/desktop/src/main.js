@@ -3,7 +3,7 @@
 // fetch their bundled files (fonts, the tool-database reader) and gives both one shared home for saved
 // data, so Design sees Control's work area and both share the tool library.
 'use strict';
-const { app, BrowserWindow, utilityProcess, MessageChannelMain, dialog, Menu, shell, protocol, net, Notification } = require('electron');
+const { app, BrowserWindow, utilityProcess, MessageChannelMain, dialog, Menu, shell, protocol, net, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
@@ -159,16 +159,30 @@ function setupUpdates() {
     isBusy: () => control && !control.isDestroyed()
       ? control.webContents.executeJavaScript('typeof machineBusy === "function" ? machineBusy() : false', true) : Promise.resolve(false),
     ask: askUser,
-    notify: (title, body) => { if (Notification.isSupported()) new Notification({ title, body }).show(); },
     setProgress: (p) => BrowserWindow.getAllWindows().forEach((w) => { if (!w.isDestroyed()) w.setProgressBar(p); }),
     settingsFile: path.join(app.getPath('userData'), 'updates.json'),
     log: (m) => { console.log('[updates] ' + m); if (process.env.P454_UPDATE_LOG) fs.appendFileSync(process.env.P454_UPDATE_LOG, JSON.stringify({ log: m }) + '\n'); },
-    onChange: () => Menu.setApplicationMenu(menu()),
+    onChange: () => { Menu.setApplicationMenu(menu()); showUpdateInPages(); },
     firstCheckAfter: feed ? (+process.env.P454_UPDATE_FIRST || 500) : 30e3,
     idlePoll: feed ? 2000 : 60e3,                  // how often to look for an idle machine (quicker in tests)
   });
   updater.start();
 }
+// The notice in Control's and Design's headers (src/renderer/update-badge.js, through preload.js): what the
+// updater has found, sent to every window, and what the notice asks for when it's clicked.
+function showUpdateInPages() {
+  const view = updater.view;
+  for (const w of [control, design]) if (w && !w.isDestroyed()) w.webContents.send('updates:view', view);
+}
+function fromAppPage(e) { try { return isAppPage(new URL(e.senderFrame.url)); } catch (err) { return false; } }
+ipcMain.handle('updates:view', (e) => (updater && fromAppPage(e) ? updater.view : null));
+ipcMain.handle('updates:do', async (e, action) => {
+  if (!updater || !fromAppPage(e)) return { ok: false };
+  if (action === 'download') { updater.download(); return { ok: true }; }        // it reports its progress as it goes
+  if (action === 'skip') { updater.skip(); return { ok: true }; }
+  if (action === 'restart') return updater.restart();                          // refused while the machine is busy
+  return { ok: false };
+});
 function updateMenu() {
   if (!updater) return [];
   const s = updater.settings, st = updater.state, ok = updater.installable.ok;
