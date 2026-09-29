@@ -15,6 +15,10 @@ in `DEVELOPING.md`, `apps/control/README.md`, `apps/design/README.md` and `CHANG
   itself from GitHub Releases.
 - **Website**: https://454workshop.com, with the docs at /docs (Cloudflare).
 - **Repository**: https://github.com/ctredway/454-workshop (`main`).
+- **Working folder**: `C:\projects\454-workshop`, cloned fresh on 2026-09-29. Two old folders are left over
+  and hold nothing GitHub doesn't: `C:\projects\kerf-repo` (the previous clone, from when the repository
+  was named `kerf-repo`) and `C:\projects\454-workshop-old` (an unzipped website build mixed with older
+  copies of project files). Don't work in either; they can be deleted.
 
 The owner is Clint Tredway, who runs a Shapeoko XXL (VFD spindle, BitSetter, BitZero v2) and is getting a
 Shapeoko 5.1 Pro. He's a woodworker, not a git expert: explain git and GitHub steps plainly, and offer to run
