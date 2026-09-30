@@ -770,6 +770,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.108.0 — one G-code file per bit
+- **Save G-code can save one file per bit.** For a job with more than one bit, it asks: **One file** (as
+  before: Control stops at each bit change) or **One file per bit**, which saves a file for each stretch cut
+  with one bit, into a folder you pick, named in cutting order ("Sign - 2 of 3 - T2 60° V-bit.nc"). For
+  machines or senders that can't change bits mid-file, or to run the bits on different days.
+- A bit used again later gets another file, so nothing is cut out of order. Each file starts with a note of
+  which file it is, of how many, and to run them in order. It asks before replacing files in the folder. In a
+  browser that can't pick a folder, each file is downloaded.
+- Tested (7 tests): the files together cut exactly what the one file cuts, move for move, read back by 454
+  Control's parser; one bit per file; names Windows accepts; the question, the folder, and replacing. Each
+  checked by breaking it on purpose (7 ways).
+
 ### 0.107.0 — tabs as long as you ask, and remembered
 - **A tab's Length is now the wood it leaves**, along the middle of the cut, whatever the bit. It used to be
   measured along the bit's path, so the bit's round ends cut into both ends of every tab: a 4 mm tab with a

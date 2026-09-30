@@ -10,6 +10,8 @@ function uiDialog(o){
     ok.classList.toggle('danger', !!o.danger);
     ok.classList.toggle('primary', !o.danger);
     cancel.style.display = o.note ? 'none' : '';
+    var alt = document.getElementById('dlgAlt');           // a second choice, besides OK: resolves 'alt'
+    alt.hidden = !o.alt; alt.textContent = o.alt || '';
     document.getElementById('dlgModal').hidden = false;
     ok.focus();
   });

@@ -262,6 +262,14 @@ with the machine's own limits.
 
 **Save G-code…** writes every included toolpath to one file, in order, with a tool change wherever the tool changes, numbered from your library, and each toolpath’s name so 454 Control can show which one is running. It refuses while any toolpath has no tool chosen.
 
+**One file per bit:** when a job uses more than one bit, Save G-code asks whether to save **One file** (454 Control
+stops at each bit change and says which bit to fit) or **One file per bit**. Per bit, you pick a folder and it
+saves a file for each stretch of the job cut with one bit, in cutting order, named so they sort in order:
+`Sign - 1 of 3 - T1 6.35 mm cutter.nc`, `Sign - 2 of 3 - T2 60° V-bit.nc`, and so on. A bit used again later
+gets another file rather than moving its cuts earlier, so nothing is cut out of order (a profile that frees a
+part never comes before the carving on it). Each file says at the top which file it is. Run them in order,
+and keep Z zero and XY zero the same between them. It asks before replacing files already in the folder.
+
 **Preview in 454 Control** loads exactly the G-code Save G-code would write into 454 Control, for its 3D
 preview and playback, its time estimate (with your machine's acceleration) and its checks, with no file to
 save or open. Nothing is sent to the machine. If Control is already open, the job goes to it, without

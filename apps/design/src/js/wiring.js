@@ -186,6 +186,7 @@ function wire(){
   });
   document.getElementById('dlgOk').addEventListener('click', function(){ dlgEnd(true); });
   document.getElementById('dlgCancel').addEventListener('click', function(){ dlgEnd(false); });
+  document.getElementById('dlgAlt').addEventListener('click', function(){ dlgEnd('alt'); });
   document.getElementById('dlgX').addEventListener('click', function(){ dlgEnd(false); });
   document.getElementById('dlgModal').addEventListener('pointerdown', function(e){ if (e.target.id === 'dlgModal') dlgEnd(false); });
   document.getElementById('dlgPanel').addEventListener('keydown', function(e){

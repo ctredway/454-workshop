@@ -1,7 +1,36 @@
-// G-code for every toolpath, in order, as one file
+// G-code for every toolpath, in order: one file, or, for a job with more than one bit, one file per bit if asked
 function tpExport(){
   var j = tpJob();
-  if (j) gcodeSave(j.gc, j.base + '.nc', j.said);
+  if (!j) return;
+  var files = tpBitFiles(j);
+  if (files.length < 2){ gcodeSave(j.gc, j.base + '.nc', j.said); return; }
+  uiDialog({title: 'One file, or one per bit?',
+            body: 'This job uses more than one bit. Save it as:\n\n' +
+                  '• One file: 454 Control stops at each bit change and tells you which bit to fit.\n' +
+                  '• One file per bit, ' + files.length + ' files, run in this order:\n' +
+                  files.map(function (f) { return '    ' + f.name; }).join('\n'),
+            ok: 'One file', alt: 'One file per bit'}).then(function (v) {
+    if (v === 'alt') gcodeSaveMany(files, j.said);
+    else if (v) gcodeSave(j.gc, j.base + '.nc', j.said);
+  });
+}
+// The job split where the bit changes, in cutting order: a bit used again later gets another file, so nothing is
+// cut out of order (a profile that frees a part mustn't move ahead of carving on it). Each file is a whole job
+// for its bit, and its notes say which file of how many it is. Named "<job> - 2 of 3 - T2 <bit>.nc".
+function tpBitFiles(j){
+  var runs = [];
+  j.parts.forEach(function (p) {
+    var last = runs[runs.length - 1];
+    if (last && last.tool === p.tool) last.parts.push(p); else runs.push({tool: p.tool, toolName: p.toolName, parts: [p]});
+  });
+  if (runs.length < 2) return [{name: j.base + '.nc', gc: j.gc}];
+  var safe = function (s) { return String(s).replace(/[\\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim(); };   // what Windows allows in a name
+  return runs.map(function (r, i) {
+    var said = 'File ' + (i + 1) + ' of ' + runs.length + ': T' + r.tool + ', ' + r.toolName + ' (' + r.parts.map(function (p) { return p.name; }).join(', ') + '). Run the files in order.';
+    return {name: safe(j.base + ' - ' + (i + 1) + ' of ' + runs.length + ' - T' + r.tool + ' ' + r.toolName) + '.nc', tool: r.tool, toolName: r.toolName,
+            toolpaths: r.parts.map(function (p) { return p.name; }),
+            gc: Cam.toGcodeJob(r.parts, {safeZ: j.safeZ, notes: [j.notes[0], said].concat(j.notes.slice(1))})};
+  });
 }
 // The job's G-code, exactly as Save G-code writes it, after the same checks; null if something needs
 // fixing first (the checks say what).
@@ -42,7 +71,7 @@ function tpJob(){
   if (DOC.stock.t > 0) notes.push('Material: ' + DOC.stock.t.toFixed(2) + ' mm thick');
   notes.push('Z zero: ' + (DOC.stock.zero === 'bottom' ? 'spoilboard, under the material' : 'top of the material'));
   notes.push('XY zero: ' + ORIGIN_NAMES[originKey()] + ' of the material');
-  var gc = Cam.toGcodeJob(parts, {safeZ: tpSurface() + 6, notes: notes});
+  var safeZ = tpSurface() + 6, gc = Cam.toGcodeJob(parts, {safeZ: safeZ, notes: notes});
   var base = (DOC.name || UICFG.lastGcodeName || 'toolpaths').replace(/\.(nc|gcode|tap|ngc)$/i, '');
   if (multiSheet()) base += ' - ' + layerById(DOC.activeSheet).name;       // one file per sheet, named for it
   var tools = {}; parts.forEach(function (p) { tools[p.tool] = 1; });
@@ -50,7 +79,7 @@ function tpJob(){
   var total = multiSheet() ? tpList().filter(function (tp) { return tpSheetOf(tp) === DOC.activeSheet; }).length : tpList().length;
   var said = (parts.length < total ? parts.length + ' of ' + total : parts.length) +
              (parts.length === 1 && parts.length === total ? ' toolpath' : ' toolpaths') + (nt > 1 ? ' with ' + nt + ' tools' : '');
-  return {gc: gc, base: base, said: said};
+  return {gc: gc, base: base, said: said, parts: parts, notes: notes, safeZ: safeZ};
 }
 // Save with a real Save As dialog where the browser allows it (Chrome and Edge): the person
 // picks the folder and the name, and the browser starts in the same folder next time.
@@ -81,6 +110,46 @@ function gcodeSave(text, suggested, said){
   a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   toast('ok', 'G-code downloaded', said + ' saved as ' + suggested + ' in your downloads folder. Chrome or Edge would let you choose where.');
+}
+// Several files into one folder the person picks, asking before replacing any already there. Where the browser
+// can't pick a folder, each is downloaded.
+function gcodeSaveMany(files, said){
+  if (window.showDirectoryPicker){
+    var dir;
+    window.showDirectoryPicker({id: 'gcode', mode: 'readwrite'}).then(function (d) {
+      dir = d;
+      return Promise.all(files.map(function (f) {
+        return dir.getFileHandle(f.name).then(function () { return f.name; }, function () { return null; });   // already there?
+      }));
+    }).then(function (there) {
+      there = there.filter(Boolean);
+      if (!there.length) return true;
+      return uiDialog({title: 'Replace ' + (there.length === 1 ? 'a file' : there.length + ' files') + '?',
+                       body: 'This folder already has:\n\n' + there.map(function (n) { return '• ' + n; }).join('\n') + '\n\nReplace ' + (there.length === 1 ? 'it' : 'them') + ' with the new G-code?',
+                       ok: 'Replace', danger: true});
+    }).then(function (go) {
+      if (!go) return;
+      return files.reduce(function (p, f) {
+        return p.then(function () { return dir.getFileHandle(f.name, {create: true}); })
+                .then(function (h) { return h.createWritable(); })
+                .then(function (w) { return w.write(f.gc).then(function () { return w.close(); }); });
+      }, Promise.resolve()).then(function () {
+        toast('ok', files.length + ' G-code files saved', said + ', one file per bit, in ' + dir.name + '. Run them in order: ' + files[0].name + ' first.');
+      });
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') return;
+      toast('err', 'Couldn’t save the G-code', (err && err.message) || 'The browser refused to write the files.');
+    });
+    return;
+  }
+  files.forEach(function (f, i) {
+    setTimeout(function () {
+      var a = document.createElement('a'), blob = new Blob([f.gc], {type: 'text/plain'});
+      a.href = URL.createObjectURL(blob); a.download = f.name; a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }, i * 400);                                               // one at a time: browsers drop downloads started together
+  });
+  toast('ok', files.length + ' G-code files downloaded', said + ', one file per bit, in your downloads folder. If the browser asks, allow it to download several files.');
 }
 
 
