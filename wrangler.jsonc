@@ -1,0 +1,7 @@
+// Cloudflare: the website (454workshop.com) is the Worker "454-workshop", serving the files that
+// node site/build.js puts in site-dist/ (build command: npm ci --prefix docs-site && node site/build.js).
+{
+  "name": "454-workshop",
+  "compatibility_date": "2026-09-01",
+  "assets": { "directory": "./site-dist" }
+}
