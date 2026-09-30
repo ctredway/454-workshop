@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.26 — one file per bit, templates, start points
+- Includes Design 0.108.0 to 0.110.0: Save G-code can save one file per bit; toolpath templates (Save template…,
+  Apply template…, matched by layer name); Set start chooses where a profile's cut begins. Also fixes the toolpath
+  editor showing Clean up after for every kind of toolpath.
+
 ### 0.6.2-beta.25 — tabs as long as you ask
 - Includes Design 0.107.0: a tab's Length is the wood it leaves, whatever the bit (a 4 mm tab with a 1/4" bit
   used to leave two slivers); new toolpaths start with the tabs you used last, 1.5 mm thick the first time.
