@@ -14,6 +14,16 @@ var CLOSE_ANYWAY = false;         // Don't save couldn't put the drawing aside: 
 // (Save As, or Open, in Chrome, Edge and the desktop app). Save (Ctrl+S) then saves straight to it. Only for
 // as long as Design is open: a page can't keep hold of a file between sessions.
 var SAVE_HANDLE = null, OPEN_HANDLE = null;
+// In the desktop app, better: files are opened and saved by their path (apps/desktop/src/design-files.js), and
+// the drawing's file is remembered, so Save goes back to it even after Design is closed and opened again.
+var PATH_KEY = 'd454DesignPath', OPEN_PATH = null;
+function desktopFiles(){ return window.desktop454 && window.desktop454.files ? window.desktop454.files : null; }
+function baseName(p){                                  // the file's name, from a Windows or other path
+  var s = String(p || ''), cut = Math.max(s.lastIndexOf('/'), s.lastIndexOf(String.fromCharCode(92)));
+  return s.slice(cut + 1);
+}
+// a different drawing from here on: Save doesn't go to the last one's file
+function forgetFile(){ SAVE_HANDLE = null; lsDel(PATH_KEY); }
 var DESIGN_IMPORT = null;          // Design's own file reading (set up in wire()): drawings, VCarve, DXF, SVG, images
 
 function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -88,7 +98,7 @@ function newDrawing(){
   clearDrawing();
   setTool('select');
   persist();
-  markSaved(null); SAVE_HANDLE = null;
+  markSaved(null); forgetFile();
   if (!asideKeep(aside)) toast('warn', 'The last drawing couldn’t be kept for Recover', 'The browser’s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
   fit();
   jobOpen();                                          // a new drawing starts by saying what it's for
@@ -98,6 +108,8 @@ function openDrawing(d, name){
   pushUndo(); DOC = d; syncStockUI(); persist(); markSaved(name);
   SAVE_HANDLE = OPEN_HANDLE && OPEN_HANDLE.name === name ? OPEN_HANDLE : null;   // opened through Open: Save writes it back
   OPEN_HANDLE = null;
+  if (OPEN_PATH && baseName(OPEN_PATH) === name) lsSet(PATH_KEY, OPEN_PATH); else lsDel(PATH_KEY);   // the desktop app: by path
+  OPEN_PATH = null;
   // its toolpaths come saved as settings only: build them, and show them and its layers now (they used to
   // wait for the Toolpaths panel's refresh button)
   SEL.length = 0; CUTSEL = null;
@@ -113,7 +125,7 @@ function recoverDrawing(){
   DOC = a.doc; SEL.length = 0; CUTSEL = null;
   if (swap) lsSet(ASIDE_KEY, swap); else lsDel(ASIDE_KEY);
   if (a.name) lsSet(NAME_KEY, a.name); else lsDel(NAME_KEY);
-  SAVE_HANDLE = null;                                 // a different drawing: its file isn't the one open before
+  forgetFile();                                       // a different drawing: its file isn't the one open before
   syncStockUI(); tpRebuildAll(); renderToolpathPanel(); renderLayers();
   persist();                                          // it was put aside unsaved, so it's unsaved again
   syncRecoverBtn(); fit(); draw();
@@ -125,6 +137,23 @@ function recoverDrawing(){
 // asNew (Ctrl+Shift+S): always Save As. True once saved.
 function saveDrawing(asNew){
   var text = docForStorage(true), name = drawingFileName();
+  var DF = desktopFiles();
+  if (DF){                                            // the desktop app: by path
+    var sp = lsGet(PATH_KEY);
+    var saveAs = function (){
+      return DF.saveAs(text, sp || name).then(function (r){
+        if (!r) return false;                         // Cancel in the Save window
+        lsSet(PATH_KEY, r.path); markSaved(r.name); toast('ok', 'Drawing saved', r.name); return true;
+      }, function (e){ toast('err', 'The drawing wasn’t saved', (e && e.message) || String(e)); return false; });
+    };
+    if (!asNew && sp){
+      return DF.save(sp, text).then(function (r){
+        if (r && r.ok){ markSaved(r.name); toast('ok', 'Drawing saved', r.name); return true; }
+        lsDel(PATH_KEY); return saveAs();             // moved, deleted, or not one it may write: ask where
+      }, function (){ lsDel(PATH_KEY); return saveAs(); });
+    }
+    return saveAs();
+  }
   if (!asNew && SAVE_HANDLE){
     var h0 = SAVE_HANDLE;
     return h0.createWritable()
@@ -164,6 +193,15 @@ function saveDrawing(asNew){
 var OPEN_TYPES = [{ description: 'Drawings, VCarve projects, DXF, SVG and images',
   accept: { 'application/octet-stream': ['.json', '.crv', '.dxf', '.svg'], 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'] } }];
 function openFiles(){
+  var DF = desktopFiles();
+  if (DF){                                            // the desktop app: by path, so Save can go back to it
+    return DF.open().then(function (items){
+      if (!items || !items.length) return false;
+      OPEN_PATH = items.length === 1 && /\.json$/i.test(items[0].name) ? items[0].path : null;   // kept if it turns out to be a drawing
+      DESIGN_IMPORT(items.map(function (it){ return new File([it.data], it.name); }));
+      return true;
+    }, function (e){ toast('err', 'Couldn’t open that', (e && e.message) || String(e)); return false; });
+  }
   if (!window.showOpenFilePicker){ document.getElementById('loadFile').click(); return Promise.resolve(false); }
   return window.showOpenFilePicker({ id: 'design', multiple: true, types: OPEN_TYPES })
     .then(function (hs){
@@ -176,6 +214,12 @@ function openFiles(){
     .catch(function (e){ if (!(e && e.name === 'AbortError')) toast('err', 'Couldn’t open that', (e && e.message) || String(e)); return false; });
 }
 
+// A drawing dropped on the window, in the desktop app: remember where it is, so Save goes back to it.
+function droppedFiles(files){
+  var DF = desktopFiles();
+  OPEN_PATH = DF && files && files.length === 1 && /\.json$/i.test(files[0].name) ? (DF.pathOf(files[0]) || null) : null;
+}
+
 // ---- closing (the desktop app asks; these are its answers)
 // Save…: true once it's saved, false if the Save As was cancelled (then the window stays open).
 function designCloseSave(){ return saveDrawing(); }
@@ -185,7 +229,7 @@ function designCloseDiscard(){
   CLOSE_ANYWAY = true;
   if (!drawingUnsaved()) return true;
   var aside = asideTake(), before = docForStorage();
-  clearDrawing(); persist(); markSaved(null); SAVE_HANDLE = null;
+  clearDrawing(); persist(); markSaved(null); forgetFile();
   if (!asideKeep(aside)){ DOC = JSON.parse(before); persist(); markUnsaved(); }
   return true;
 }

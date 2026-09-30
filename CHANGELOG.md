@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.21 — Save back to the file; tools named at tool changes
+- **Design's files are opened and saved by path** (src/design-files.js), so Save goes back to the file a
+  drawing came from, even after a restart. Includes Design 0.99.3 (that, and Save as) and 0.99.2 (its G-code
+  names each tool number, so Control's tool-change prompt says which bit to put in).
+
 ### 0.6.2-beta.20 — three fixes from testing
 - Includes Control 0.31.19 (a job that starts with a tool change goes straight to it) and Design 0.99.1
   (ramped profiles without the back-and-forth; an opened drawing's toolpaths show straight away).
@@ -734,6 +739,30 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.99.3 — Save goes back to the file; Save as
+- **In the desktop app, Save (Ctrl+S) goes straight back to the file a drawing came from, and keeps doing so
+  after Design is closed and opened again.** Files are now opened and saved by their path, by the app
+  (apps/desktop/src/design-files.js), rather than through the browser's file access: that couldn't keep hold
+  of a file between sessions, and could need Windows' permission to write back to a file it opened. It works
+  for a drawing opened with Load or Ctrl+O, or dropped on the window. If the file has been moved or deleted,
+  Save asks where instead. The app only writes to a .json file you picked in its Open or Save window, or to an
+  existing 454 drawing, and writes a temporary file first and swaps it in, so a power cut part-way can't
+  leave half a drawing.
+- **Save as, as a button** in the File group (beside Save), as well as Ctrl+Shift+S. It starts at the
+  drawing's own file.
+- In a browser, Save still goes back to the file while the page stays open (Chrome, Edge), as before.
+- Tested: the app's file rules on real files (8 tests), Design's side (5 tests), each checked by breaking what
+  it covers; and in the desktop app, with real key presses, across restarts: Ctrl+O then Ctrl+S saved to the
+  file with no question, again after restarting, and after Save as, to the copy and not the original.
+
+### 0.99.2 — G-code that names its tools
+- **Design's G-code lists which bit each tool number is**, at the top, as VCarve does (`;Tools used in this
+  file:` then `;1 = 3.17 mm cutter`, and so on, from the tool library's names). 454 Control reads it, so the
+  start dialog and each tool-change prompt name the bit ("Insert T2: 6.35 mm cutter"), as they already did
+  for VCarve files. Before, Control knew each toolpath's name and tool but not what each tool number was.
+  Written as semicolon comments, so a tool name with brackets in it can't break the line. Tested: read back
+  by Control's own parser (the test fails without the list).
 
 ### 0.99.1 — ramps without the back-and-forth; opened toolpaths show
 - **(machine) Fixed: a ramped profile went forward, back and forward again at the start of every pass.** After

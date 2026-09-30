@@ -727,6 +727,14 @@
     }
     out.push('(454 CAM)');
     (o.notes || []).forEach(function (t) { out.push(';' + t); });   // assumptions worth seeing at the machine
+    // Which bit each tool number is, as VCarve lists them: 454 Control reads this and names the bit at the start
+    // and at each tool change ("Insert T2: 6.35 mm cutter"). Semicolon comments: a tool's name may have brackets.
+    var listed = {}, toolList = [];
+    parts.forEach(function (part) { if (part.tool !== undefined && !listed[part.tool]){ listed[part.tool] = 1; toolList.push(part); } });
+    if (toolList.length){
+      out.push(';Tools used in this file:');
+      toolList.forEach(function (part) { out.push(';' + part.tool + ' = ' + (part.toolName || 'tool ' + part.tool)); });
+    }
     out.push('G21');                                    // millimetres
     out.push('G90');                                    // absolute
     out.push('G17');

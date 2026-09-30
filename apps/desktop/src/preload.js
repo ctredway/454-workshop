@@ -1,7 +1,7 @@
 // Runs before the page, in its own isolated world: the page gets a narrow message link to the
-// machine process, the update notice's few calls, and nothing else from Node or Electron.
+// machine process, the update notice's few calls, Design's file calls, and nothing else from Node or Electron.
 'use strict';
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 let port = null, queue = [];
 const listeners = [];
@@ -22,6 +22,13 @@ contextBridge.exposeInMainWorld('desktop454', {
     view: () => ipcRenderer.invoke('updates:view'),
     do: (action) => ipcRenderer.invoke('updates:do', String(action)),
     onChange: (f) => { ipcRenderer.on('updates:view', (_e, v) => { try { f(v); } catch (err) { console.error(err); } }); },
+  },
+  // Design's files, by path (src/design-files.js), so Save goes back to the file a drawing came from
+  files: {
+    open: () => ipcRenderer.invoke('files:open'),                                   // [{path, name, data}]
+    saveAs: (text, suggested) => ipcRenderer.invoke('files:saveAs', String(text), suggested || ''),   // {path, name} or null
+    save: (p, text) => ipcRenderer.invoke('files:save', String(p), String(text)),    // {ok, name} or {ok: false, why}
+    pathOf: (file) => { try { return webUtils.getPathForFile(file) || ''; } catch (e) { return ''; } },
   },
   platform: process.platform,
   autopick: process.env.P454_AUTOPICK === '1',       // tests: choose the first port without asking

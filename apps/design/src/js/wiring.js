@@ -535,7 +535,7 @@ function wire(){
   window.addEventListener('dragover', function(e){ e.preventDefault(); });
   window.addEventListener('drop', function(e){
     e.preventDefault();
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) importFiles(e.dataTransfer.files);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){ droppedFiles(e.dataTransfer.files); importFiles(e.dataTransfer.files); }   // droppedFiles: unsaved.js
   });
 
   // canvas interactions

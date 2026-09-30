@@ -210,6 +210,26 @@ function showUpdateInPages() {
   for (const w of [control, design]) if (w && !w.isDestroyed()) w.webContents.send('updates:view', view);
 }
 function fromAppPage(e) { try { return isAppPage(new URL(e.senderFrame.url)); } catch (err) { return false; } }
+
+// ---- 454 Design's files, by path (src/design-files.js): Save goes back to the file a drawing came from
+const { createDesignFiles } = require('./design-files');
+let designFiles = null;
+function files() {
+  if (designFiles) return designFiles;
+  // tests only: the Open and Save windows answered in advance (P454_FILE_OPEN: paths, | between; P454_FILE_SAVEAS: a path)
+  const testDialog = {
+    showOpenDialog: async () => ({ canceled: !process.env.P454_FILE_OPEN, filePaths: (process.env.P454_FILE_OPEN || '').split('|').filter(Boolean) }),
+    showSaveDialog: async () => ({ canceled: !process.env.P454_FILE_SAVEAS, filePath: process.env.P454_FILE_SAVEAS }),
+  };
+  const useTest = process.env.P454_FILE_OPEN !== undefined || process.env.P454_FILE_SAVEAS !== undefined;
+  designFiles = createDesignFiles({ fs, path, dialog: useTest ? testDialog : dialog,
+    listFile: path.join(app.getPath('userData'), 'design-files.json'), log: (m) => console.log('[files] ' + m) });
+  return designFiles;
+}
+ipcMain.handle('files:open', (e) => (fromAppPage(e) ? files().open(BrowserWindow.fromWebContents(e.sender)) : []));
+ipcMain.handle('files:saveAs', (e, text, suggested) => (fromAppPage(e) ? files().saveAs(BrowserWindow.fromWebContents(e.sender), String(text), suggested ? String(suggested) : '') : null));
+ipcMain.handle('files:save', (e, p, text) => (fromAppPage(e) ? files().save(String(p), String(text)) : { ok: false, why: 'not allowed' }));
+
 ipcMain.handle('updates:view', (e) => (updater && fromAppPage(e) ? updater.view : null));
 ipcMain.handle('updates:do', async (e, action) => {
   if (!updater || !fromAppPage(e)) return { ok: false };

@@ -41,7 +41,7 @@ Most tools can be used with the mouse alone, but for exact work you can type val
 
 Starting, saving and opening drawings, and handing them to other software.
 
-<Shot src={gFile} alt="The File group: New, Save, Load, Recover last drawing, Export DXF and Export SVG." />
+<Shot src={gFile} alt="The File group: New, Save, Save as, Load, Recover last drawing, Export DXF and Export SVG." />
 
 ### New
 
@@ -55,9 +55,17 @@ Clears all shapes and guides, to start a fresh drawing.
 
 Saves the drawing, with its toolpaths, to a `.454.json` file you can open again later.
 
-1. Click **Save** and choose where to put the file. It suggests the name the drawing was last saved or opened
-   as.
-2. Keep it with the job’s G-code, or as a backup.
+1. Click **Save** (<kbd>Ctrl</kbd>+<kbd>S</kbd>). The first time, choose where to put the file. After that, Save
+   saves straight back to the same file, without asking.
+2. **Save as** (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>) always asks: to save a copy under another name, or
+   somewhere else. Save then goes to the new file.
+3. Keep it with the job’s G-code, or as a backup.
+
+**In the desktop app**, a drawing you open (with **Load**, <kbd>Ctrl</kbd>+<kbd>O</kbd>, or by dropping it on the
+window) saves back to its own file, and 454 Design remembers which file it is: <kbd>Ctrl</kbd>+<kbd>S</kbd> still
+saves there after you close 454 Design and open it again. If the file has been moved or deleted, Save asks
+where instead. **In a browser**, Save goes back to the file for as long as the page stays open (Chrome and
+Edge; other browsers download the file each time).
 
 Design also keeps the drawing in the browser (or the desktop app) as you work, so it's there when you come
 back. That isn't a file, though: when you close Design with a drawing that hasn't been saved to a file since

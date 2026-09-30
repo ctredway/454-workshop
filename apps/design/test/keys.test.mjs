@@ -147,3 +147,74 @@ test('F1 opens the docs; while a dialog is open, it has the keyboard', () => {
   assert.equal(opened, 1);
   assert.deepEqual(plain(D.run('SEL')), []);
 });
+
+// ---- in the desktop app: files by path, so Save goes back to the file a drawing came from ----
+function desktop(D, { savesOk = true } = {}) {
+  const calls = [];
+  D.File = class { constructor(parts, name) { this.parts = parts; this.name = name; } };
+  D.desktop454 = { files: {
+    open: async () => { calls.push('open'); return [{ path: 'C:/Jobs/bench.454.json', name: 'bench.454.json', data: new Uint8Array([123, 125]) }]; },
+    save: async (p, text) => { calls.push('save ' + p); return savesOk ? { ok: true, path: p, name: p.split('/').pop() } : { ok: false, why: 'gone' }; },
+    saveAs: async (text, suggested) => { calls.push('saveAs ' + suggested); return { path: 'C:/Jobs/copy.454.json', name: 'copy.454.json' }; },
+    pathOf: () => 'C:/Drops/dropped.454.json',
+  } };
+  D.run('DESIGN_IMPORT = function (files){ DESIGN_IMPORT.got = files; }; 1');
+  return calls;
+}
+// open bench.454.json the way the app does: the Open window, then Design reads it as a drawing
+async function openBench(D) {
+  D.press('o', { ctrl: true }); await flush();
+  const d = JSON.parse(D.run('docForStorage()'));
+  D.openDrawing(D.run(`(${JSON.stringify(d)})`), D.run('DESIGN_IMPORT.got[0].name'));
+}
+test('desktop: a drawing opened with Ctrl+O saves straight back to its file with Ctrl+S', async () => {
+  const D = fresh(), calls = desktop(D);
+  await openBench(D);
+  D.run(`DOC.ents[0].w = 45; persist(); 1`);
+  D.press('s', { ctrl: true }); await flush();
+  assert.deepEqual(calls, ['open', 'save C:/Jobs/bench.454.json'], 'no Save window');
+  assert.equal(D.drawingUnsaved(), false);
+});
+test('desktop: and still does after Design is closed and opened again', async () => {
+  const A = fresh(); desktop(A); await openBench(A);
+  const B = loadDesign({ start: false });
+  for (const k of ['d454Design', 'd454DesignPath', 'd454DesignName']) { const v = A.localStorage.getItem(k); if (v !== null) B.localStorage.setItem(k, v); }
+  const keydown = []; B.addEventListener = (t, f) => { if (t === 'keydown') keydown.push(f); };
+  B.wire(); B.run = (c) => vm.runInContext(c, B);
+  const calls = desktop(B);
+  B.run(`DOC.ents[0].w = 47; persist(); 1`);
+  keydown.forEach((f) => f({ key: 's', ctrlKey: true, shiftKey: false, altKey: false, metaKey: false, target: B.document.body, preventDefault() {} }));
+  await flush();
+  assert.deepEqual(calls, ['save C:/Jobs/bench.454.json']);
+});
+test('desktop: Ctrl+Shift+S and the Save as button ask, starting at the file; Save then goes to the new one', async () => {
+  const D = fresh(), calls = desktop(D);
+  await openBench(D);
+  D.press('S', { ctrl: true, shift: true }); await flush();
+  assert.equal(calls.at(-1), 'saveAs C:/Jobs/bench.454.json');
+  D.press('s', { ctrl: true }); await flush();
+  assert.equal(calls.at(-1), 'save C:/Jobs/copy.454.json');
+  D.document.getElementById('saveAsBtn').click(); await flush();
+  assert.equal(calls.at(-1), 'saveAs C:/Jobs/copy.454.json');
+});
+test('desktop: if the file can\u2019t be written (moved, deleted), Save asks where instead', async () => {
+  const D = fresh(), calls = desktop(D, { savesOk: false });
+  await openBench(D);
+  D.press('s', { ctrl: true }); await flush();
+  assert.deepEqual(calls.slice(1), ['save C:/Jobs/bench.454.json', 'saveAs C:/Jobs/bench.454.json']);
+});
+test('desktop: New forgets the file (Save asks); a dropped drawing is remembered', async () => {
+  const D = fresh(), calls = desktop(D);
+  await openBench(D);
+  D.press('n', { ctrl: true });
+  D.document.getElementById('jobModal').hidden = true;             // New opens Job setup: close it, as you would
+  D.run(`DOC.ents.push({t:'line', x1:0, y1:0, x2:5, y2:5}); persist(); 1`);
+  D.press('s', { ctrl: true }); await flush();
+  assert.equal(calls.at(-1), 'saveAs design.454.json');
+  D.droppedFiles([{ name: 'dropped.454.json' }]);
+  const d = JSON.parse(D.run('docForStorage()'));
+  D.openDrawing(D.run(`(${JSON.stringify(d)})`), 'dropped.454.json');
+  D.run(`DOC.ents[0].x2 = 9; persist(); 1`);
+  D.press('s', { ctrl: true }); await flush();
+  assert.equal(calls.at(-1), 'save C:/Drops/dropped.454.json');
+});

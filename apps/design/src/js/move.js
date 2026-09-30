@@ -62,6 +62,7 @@ var ICON = {
  fit:'<svg viewBox="0 0 18 18"><path d="M3 6.5 V3 h3.5 M11.5 3 H15 v3.5 M15 11.5 V15 h-3.5 M6.5 15 H3 v-3.5"/></svg>',
  neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/></svg>',
  save:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
+ saveas:'<svg viewBox="0 0 18 18"><path d="M7 2.5 V10 M4 7.5 L7 10.5 L10 7.5"/><path d="M2.5 12.5 V15 h7.5"/><path d="M11.5 15.5 l0.4 -2 l4 -4 l1.6 1.6 l-4 4 z"/></svg>',
  load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
  recover:'<svg viewBox="0 0 18 18"><path d="M4 9 A5.5 5.5 0 1 0 5.6 5.1"/><path d="M5.6 2.2 V5.1 H2.7"/><path d="M9 6.2 V9.2 L11 10.6"/></svg>'
 };
@@ -112,13 +113,14 @@ var PANEL_BTNS = {
  fitBtn2:{id:'fitBtn2', icon:'fit', title:'Fit stock (Home)'},
  newBtn:{id:'newBtn', icon:'neu', title:'New (Ctrl+N) — clear all vectors and guides (undoable with Ctrl+Z)'},
  saveBtn:{id:'saveBtn', icon:'save', title:'Save (Ctrl+S) — the drawing to a file (.454.json), keep it with your G-code or as a backup. Once saved, Save saves to the same file; Ctrl+Shift+S saves a copy under another name.'},
+ saveAsBtn:{id:'saveAsBtn', icon:'saveas', title:'Save as (Ctrl+Shift+S) — save the drawing to a new file, or a copy under another name. Save then goes to the new file.'},
  loadBtn:{id:'loadBtn', icon:'load', title:'Open (Ctrl+O) — a saved drawing, a VCarve project, DXF or SVG files, or an image to trace'},
  recoverBtn:{id:'recoverBtn', icon:'recover', title:'Recover last drawing'},
  svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
 var PANEL_GROUPS = [
- {id:'file',   label:'File',           btns:['newBtn','saveBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
+ {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','joinBtn','explodeBtn','curvesBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},

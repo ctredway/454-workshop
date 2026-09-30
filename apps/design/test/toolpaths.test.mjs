@@ -217,4 +217,11 @@ test('the G-code, read by 454 Control\u2019s own parser: nothing wrong, the same
   assert.ok(Math.abs(Math.min(...r.segs.map((s) => s.z1)) - -12.2) < 1e-6, 'through: -12.2');
   const pocketSegs = r.segs.filter((s) => !s.rapid && s.tool === r.tools[0].tool);
   assert.ok(Math.abs(Math.min(...pocketSegs.map((s) => s.z1)) - deepest(pocket)) < 1e-6, 'the pocket\u2019s depth, as generated');
+  // each tool number named, as VCarve lists them, so Control can say which bit to put in at each change
+  const byNumber = Object.fromEntries(r.tools.map((t) => [t.tool, (r.toolInfo[t.tool] || {}).desc]));
+  assert.deepEqual(Object.values(byNumber), ['6.35 mm cutter', '3.17 mm cutter']);
+  const lines = job.gc.split('\n');
+  assert.ok(lines.indexOf(';Tools used in this file:') >= 0, 'the list is there');
+  assert.ok(lines.indexOf(';Tools used in this file:') < lines.findIndex((l) => /^M6/.test(l)), 'before the first tool change');
+  assert.equal(r.sections.map((s) => s.tool).join(', '), '6.35 mm cutter, 3.17 mm cutter', 'and each toolpath names its tool, as before');
 });

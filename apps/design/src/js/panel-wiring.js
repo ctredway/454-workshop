@@ -133,6 +133,7 @@ function wirePanel(){
   document.getElementById('layerList') && null;
   document.getElementById('newBtn').addEventListener('click', newDrawing);         // unsaved.js
   document.getElementById('saveBtn').addEventListener('click', function(){ saveDrawing(); });
+  document.getElementById('saveAsBtn').addEventListener('click', function(){ saveDrawing(true); });
   document.getElementById('recoverBtn').addEventListener('click', recoverDrawing);
   syncRecoverBtn();
   document.getElementById('loadBtn').addEventListener('click', function(){ openFiles(); });   // unsaved.js
