@@ -123,8 +123,7 @@ function jobStart(opts){
     } else {
       var p0 = JobBuilder.startHighTarget(list, MODEL.segs);   // none when the file changes tools first
       if (!p0 && list.some(function (it){ return it.m6; }))
-        highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.
-';
+        highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.\n';
       if (p0){
         list.unshift({text: 'G0 X' + p0.x.toFixed(3) + ' Y' + p0.y.toFixed(3), ln: 0, syn: true});
         list.unshift({text: 'G21 G90', ln: 0, syn: true});

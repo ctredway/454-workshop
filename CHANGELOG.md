@@ -28,6 +28,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ## 454 Workshop (the desktop app, in testing)
 
 ### Next beta (not released yet)
+- **Control starts again** (Control 0.31.20): beta.20 to beta.22 shipped a Control that wouldn't open.
 - **Report a problem…** in the 454 Workshop menu opens a form on GitHub (`.github/ISSUE_TEMPLATE/problem.yml`) with
   this build's version and the computer already filled in (`src/report.js`). The form asks, in plain words, which part,
   whether the machine moved or cut in a way it shouldn't (those come first), what happened, how to make it happen
@@ -401,6 +402,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.20 — Control starts again
+- **Fixed: 454 Control didn't start at all in 0.31.19** (desktop beta.20 to beta.22). A message added in 0.31.19,
+  for a job that starts with a tool change, had a line break in the middle of its text, which JavaScript can't
+  read, so the whole page stopped before it began. It failed safe (nothing could move the machine), but nothing
+  else worked either. The unit tests load only some of Control's files, so they didn't notice; it was found
+  while retaking the docs' screenshots.
+- **A new test reads every script in both pages as built** (`apps/control/test/pages-parse.test.mjs`), so a page
+  that can't start can't pass the tests again. Checked: it fails on 0.31.19's page and passes now.
 
 ### 0.31.19 — straight to the tool change
 - **(machine) Fixed: a job that starts with a tool change went to the first cut, then to the tool change.**
