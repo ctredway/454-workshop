@@ -56,6 +56,10 @@
   .btn.plain{color:var(--accent)}
   .btn.plain:hover{background:rgba(0,131,255,.12)}
   .note{margin-top:18px;font-size:15px;color:var(--muted)}
+  .desk{margin-top:26px;padding-top:18px;border-top:1px solid var(--grid)}
+  .desk p{margin:0 0 12px;font-size:16px}
+  .desk .note{margin-top:12px;font-size:14px}
+  .dlVer{margin-left:10px;font-size:14px;color:var(--muted)}
   .plate{width:100%;max-width:560px;justify-self:end;display:block}
   #solid{transition:opacity .9s ease}
   #cut,#vectors{transition:opacity .9s ease}
@@ -138,8 +142,15 @@
         </div>
         <p class="betaNote"><b>This is beta software.</b> It&rsquo;s new, and the toolpaths especially are still
           being tested. Check every job before you cut it. <a href="#beta">What that means</a></p>
-        <p class="note">A desktop app for Windows and Linux is in testing, and works without an internet
-          connection. <a href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener">Follow it on GitHub<span class="sr"> (opens in a new tab)</span></a>.</p>
+        <div class="desk">
+          <p><b>Or get the desktop app for Windows:</b> 454 Design, 454 Control and the docs in one program. It
+            connects to the machine over USB, works without an internet connection, and updates itself.</p>
+          <a class="btn plain" id="dlBtn" href="https://github.com/ctredway/454-workshop/releases">Download for Windows</a>
+          <span class="dlVer" id="dlVer"></span>
+          <p class="note">Windows may warn that the installer is from an unrecognised publisher, as it isn&rsquo;t
+            signed yet: choose <b>More info</b>, then <b>Run anyway</b>. <a href="docs/desktop-app.html">Installing
+            and updating</a></p>
+        </div>
       </div>
 
       <!-- your logo, cut as a toolpath once when the page opens -->
@@ -297,6 +308,25 @@
 </footer>
 
 <script>
+// Download for Windows: straight to the newest published release's installer, found on GitHub when the page
+// opens. Every release is a beta for now, and GitHub's "latest release" link skips those, so it takes the newest
+// published one, beta or not. If GitHub can't be reached, the button stays a link to the Releases page.
+(function () {
+  var btn = document.getElementById('dlBtn'), ver = document.getElementById('dlVer');
+  if (!btn || !window.fetch) return;
+  fetch('https://api.github.com/repos/ctredway/454-workshop/releases?per_page=10', {headers: {Accept: 'application/vnd.github+json'}})
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (list) {
+      var rel = (list || []).filter(function (x) { return !x.draft; })[0];
+      if (!rel) return;
+      var exe = (rel.assets || []).filter(function (a) { return /-win-x64\.exe$/i.test(a.name); })[0];
+      if (!exe) return;
+      btn.href = exe.browser_download_url;
+      ver.textContent = 'Version ' + String(rel.tag_name || '').replace(/^v/, '') + (rel.prerelease ? ' (beta)' : '') + ', ' + Math.round(exe.size / 1048576) + ' MB';
+    })
+    .catch(function () {});
+})();
+
 // Cut the logo once: each piece in turn, the cutter riding along it, then the finished logo fills in.
 // Still (and finished) for reduced motion.
 (function () {

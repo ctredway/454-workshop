@@ -23,7 +23,7 @@ function rig(opts = {}) {
   const pending = [];                                       // fake timers: run by hand
   const timers = { setTimeout: (fn, ms) => { const t = { fn, ms }; pending.push(t); return t; }, clearTimeout: (t) => { const i = pending.indexOf(t); if (i >= 0) pending.splice(i, 1); } };
   const u = createUpdater({
-    autoUpdater: au, fs, timers, settingsFile: '/u.json', currentVersion: '0.6.0',
+    autoUpdater: au, fs, timers, settingsFile: '/u.json', currentVersion: opts.version || '0.6.0',
     installable: opts.installable || { ok: true },
     isBusy: async () => machine.busy,
     beforeRestart: opts.beforeRestart,
@@ -342,6 +342,23 @@ describe('skipping, channels and settings', () => {
     expect(JSON.parse(r.files['/u.json']).channel).toBe('beta');
     const again = rig({ saved: { channel: 'beta' } }); again.u.start();
     expect(again.au.allowPrerelease).toBe(true);
+  });
+  it('a beta copy starts on the Beta channel, a stable copy on Stable, until one is chosen', async () => {
+    const beta = rig({ version: '0.6.2-beta.26' }); beta.u.start();
+    expect(beta.au.allowPrerelease).toBe(true);
+    expect(beta.u.settings.channel).toBe('beta');           // what the menu shows ticked
+    const stable = rig({ version: '1.0.0' }); stable.u.start();
+    expect(stable.au.allowPrerelease).toBe(false);
+    expect(stable.u.settings.channel).toBe('stable');
+    // chosen in the menu: kept, whatever the copy is
+    const chose = rig({ version: '0.6.2-beta.27', saved: { channel: 'stable' } }); chose.u.start();
+    expect(chose.au.allowPrerelease).toBe(false);
+    const chose2 = rig({ version: '1.0.0', saved: { channel: 'beta' } }); chose2.u.start();
+    expect(chose2.au.allowPrerelease).toBe(true);
+    // settings saved for something else (skipping a version) don't lose a beta copy its channel
+    const skip = rig({ version: '0.6.2-beta.26', answers: [2] });
+    await skip.u.checkNow(); skip.au.emit('update-available', release('0.6.2-beta.27')); await settle();
+    expect(JSON.parse(skip.files['/u.json']).channel).toBe('beta');
   });
   it('turning automatic checks off stops them', async () => {
     const r = rig(); r.u.start(); r.u.setAuto(false);

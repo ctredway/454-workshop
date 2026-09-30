@@ -32,8 +32,12 @@ function createUpdater(deps) {
           beforeRestart = async () => true } = deps;     // false: something asked to stay open (Design's unsaved drawing)
 
   // ---- settings: automatic checks, the channel, a skipped version
-  let settings = { auto: true, channel: 'stable', skipped: null };
+  let settings = { auto: true, channel: null, skipped: null };
   try { settings = Object.assign(settings, JSON.parse(fs.readFileSync(settingsFile, 'utf8'))); } catch (e) { /* first run: defaults */ }
+  // Until a channel is chosen, a beta copy (a version like 0.6.2-beta.26) is on the Beta channel: someone who
+  // installed a beta wants the next beta, and on Stable they'd never be offered one while every release is a
+  // pre-release. A stable copy starts on Stable. A channel chosen in the menu is kept either way.
+  if (settings.channel !== 'beta' && settings.channel !== 'stable') settings.channel = /-/.test(String(currentVersion || '')) ? 'beta' : 'stable';
   function save() { try { fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2)); } catch (e) { log('could not save update settings: ' + e.message); } }
 
   // failed: why the last download didn't finish (shown in the header); busy: the machine, as last seen

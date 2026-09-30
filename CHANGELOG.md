@@ -27,6 +27,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.27 — a beta copy gets the next beta
+- **A beta version starts on the Beta update channel.** Every copy used to start on Stable, and while every
+  release is a pre-release, Stable offers nothing: someone who installed a beta would never have been offered
+  the next one unless they found **Updates → Beta** in the menu. Now a copy whose version is a beta (like
+  0.6.2-beta.27) starts on Beta, and a stable version on Stable. A channel chosen in the menu is kept.
+  Copies that already saved a channel keep it: if you're a tester on Stable, switch to Beta once.
+- Tested (the channel for beta and stable copies, a chosen channel kept, and kept after saving other
+  settings); checked by breaking it on purpose (2 ways).
+
 ### 0.6.2-beta.26 — one file per bit, templates, start points
 - Includes Design 0.108.0 to 0.110.0: Save G-code can save one file per bit; toolpath templates (Save template…,
   Apply template…, matched by layer name); Set start chooses where a profile's cut begins. Also fixes the toolpath
@@ -243,6 +252,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## Docs
 
+- **The desktop app page** points to the front page's Download button, names the installer file to pick from
+  a release's Assets, and says a beta version starts on the Beta update channel.
+
 ### Every screenshot retaken (2026-09-29)
 - **All 41 screenshots now match the current apps.** Several were out of date: Control's start dialog still
   said "a G4 P10 s dwell after each M3" (it's now a 7 s wait after every M3 or M4), the toolpath editor had no
@@ -309,6 +321,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 - The docs' footer said "454 Werks", an old name; it now says 454 Workshop.
 
 ## 454workshop.com
+- **Download for Windows** on the front page: straight to the newest release's installer, with its version
+  and size, found on GitHub when the page opens (GitHub's own "latest release" link skips betas, and every
+  release is a beta for now). If GitHub can't be reached, it opens the Releases page. With it, what to do
+  about Windows' unrecognised-publisher warning, and a link to installing and updating. The front page no
+  longer says there's a Linux version: there isn't one yet.
 - **The links to Design, Control and GitHub open in a new tab** on every page: the front page and all
   the docs (Control's and Design's own headers already did). Screen readers are told so; nothing changes
   on screen.
