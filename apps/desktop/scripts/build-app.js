@@ -68,6 +68,7 @@ design = swap(design, /<head>/i, '<head>\n' + csp(' \'wasm-unsafe-eval\''), 'Des
 design = swap(design, '<script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>', '<script src="vendor/opentype.min.js"></script>', 'Design\'s opentype.js 1.3.4');
 design = swap(design, "var SQLJS_BASE = 'https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/';", "var SQLJS_BASE = 'vendor/sql.js/';", 'Design\'s sql.js 1.14.2');
 design = swap(design, "var FONT_CDN = 'https://cdn.jsdelivr.net/npm/@fontsource/';", "var FONT_CDN = 'vendor/fontsource/';", 'Design\'s font address');
+design = swap(design, "var WOOD_THREE_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';", "var WOOD_THREE_SRC = 'vendor/three.min.js';", 'Design\'s three.js r128 (Preview in wood)');
 fs.writeFileSync(path.join(out, 'design.html'), design);
 if (CAM) for (const f of ['cam.js', 'geom.js']) copy(camFile(f), f);
 copy(mod('opentype.js/dist/opentype.min.js'), 'vendor/opentype.min.js');

@@ -100,10 +100,11 @@
   <div id="woodModal" hidden>
     <div id="woodPanel" role="dialog" aria-labelledby="woodTitle">
       <div class="modalHead"><h3 id="woodTitle">Preview in wood</h3><button class="modalX" id="woodX" title="Close (Esc)" aria-label="Close">&#10005;</button></div>
-      <div id="woodView"><canvas id="woodCv" aria-label="The material after the toolpaths, shaded"></canvas></div>
+      <div id="woodView"><canvas id="woodCv" aria-label="The material after the toolpaths, shaded"></canvas><div id="wood3d" hidden aria-label="The material after the toolpaths, in 3D: drag to turn it"></div></div>
       <p class="snote" id="woodWarn" hidden></p>
       <p class="snote" id="woodNote"></p>
-      <div class="srow tbtns"><span class="grow"></span><button id="woodClose" class="primary">Close</button></div>
+      <div class="srow tbtns"><span id="woodViews" hidden><button data-v="angled">Angled</button><button data-v="top">Top</button><button data-v="front">Front</button></span>
+        <span class="snote" id="woodHow"></span><span class="grow"></span><button id="woodClose" class="primary">Close</button></div>
     </div>
   </div>
 
@@ -550,6 +551,7 @@
 @@include js/toolpath-cards.js
 @@include js/preview-in-control.js
 @@include js/wood-preview.js
+@@include js/wood-3d.js
 @@include js/sheets.js
 @@include js/toolpath-panel.js
 @@include js/tool-library.js

@@ -169,7 +169,13 @@
   #woodView{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#2a2f36;border-radius:6px;padding:10px;overflow:hidden}
   #woodCv{max-width:100%;max-height:calc(100vh - 230px);image-rendering:auto;box-shadow:0 2px 12px rgba(0,0,0,.4)}
   #woodWarn{color:var(--err);font-weight:600}
-  #woodPanel .srow{display:flex;justify-content:flex-end;margin-top:4px}
+  #woodPanel .srow{display:flex;align-items:center;gap:8px;margin-top:4px}
+  #woodPanel .srow .grow{flex:1}
+  #woodViews{display:flex;gap:6px}
+  #woodViews[hidden],#wood3d[hidden],#woodCv[hidden]{display:none}
+  #woodHow{margin:0}
+  #wood3d{width:100%;height:calc(100vh - 260px);min-height:320px;border-radius:4px;overflow:hidden;cursor:grab}
+  #wood3d:active{cursor:grabbing}
   #dlgModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:230}
   #dlgModal[hidden]{display:none}
   #dlgPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;width:min(480px,94vw);box-shadow:0 14px 48px rgba(0,0,0,.55)}

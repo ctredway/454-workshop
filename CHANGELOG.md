@@ -761,6 +761,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.106.0 — Preview in wood, in 3D
+- **Preview in wood is a 3D view now**: the material as a block of wood with every cut in it, its edges, and the
+  spoilboard showing through through-cuts. Drag to turn it and look from any side, right-drag (or Shift+drag)
+  to move it, scroll to zoom; Angled, Top and Front put it back square.
+- Built from the same simulation as before (`wood-3d.js`). A big job is thinned to about half a million points
+  for smooth turning, each taking the deepest cell in its patch, so thinning never hides a cut. three.js is
+  loaded the first time the preview opens (the desktop app has its own copy, so it works offline); without it,
+  or on a computer that can't show 3D, the flat picture from above is shown, and it says why.
+- Tested (5 tests): the block matches the simulation point for point, the edges reach the board's bottom, a
+  single deep cell among a million survives thinning, and the fallback works. Each checked by breaking it on
+  purpose (4 ways). Tried in the desktop app on a sign, from four angles.
+
 ### 0.105.0 — clean up after a larger bit
 - **Pockets can clean up after a larger bit.** Make the pocket with a large bit as usual, then a second pocket on
   the same shapes with a small bit, and under **Clean up after** choose the first. The small bit then cuts only

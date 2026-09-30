@@ -155,6 +155,18 @@ function woodPreviewOpen(){
       ' into wood at full speed. Don’t cut this: check the toolpaths’ safe height and the material setup.' : '';
     warn.hidden = !sim.rapidsIn;
     woodPreviewOpen.last = sim;
+    // in 3D where it can be (wood-3d.js); otherwise the flat picture from above
+    woodThree(function (ok){
+      var host = document.getElementById('wood3d');
+      host.hidden = false; cv.hidden = true;
+      var in3d = !!(ok && woodShow3D(sim));
+      if (!in3d){ host.hidden = true; cv.hidden = false; }
+      document.getElementById('woodViews').hidden = !in3d;
+      document.getElementById('woodHow').textContent = in3d ? 'Drag to turn it, right-drag to move it, scroll to zoom.'
+        : ok ? 'The view from above: this computer can’t show it in 3D.'
+        : 'The view from above: the 3D view needs a library that didn’t load (check the internet connection).';
+      woodPreviewOpen.in3d = in3d;
+    });
   }, 30);
 }
 function woodPreviewClose(){ document.getElementById('woodModal').hidden = true; }
@@ -164,5 +176,8 @@ function woodWire(){
   document.getElementById('woodX').addEventListener('click', woodPreviewClose);
   document.getElementById('woodClose').addEventListener('click', woodPreviewClose);
   m.addEventListener('click', function (e){ if (e.target === m) woodPreviewClose(); });
+  Array.prototype.forEach.call(document.querySelectorAll('#woodViews button'), function (b){
+    b.addEventListener('click', function (){ woodView(b.dataset.v); });
+  });
   document.getElementById('woodPanel').addEventListener('keydown', function (e){ if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); woodPreviewClose(); } });
 }
