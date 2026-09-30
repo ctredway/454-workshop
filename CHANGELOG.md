@@ -765,6 +765,16 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.106.1 — tabs show in Preview in wood
+- **Thin wood shows in amber** in Preview in wood (3D and flat): tabs, and anything nearly cut through. Tabs are a
+  fraction of a millimetre to a few millimetres of wood at the bottom of a deep cut, and in wood colour they
+  couldn't be seen from most angles. Thin means under 2 mm, or the thickest tab on the ticked toolpaths and a
+  little more; there's none when the material's thickness isn't set. The window says what amber means.
+- Tested (5 tests, reading the drawn picture's colours and the 3D block's) on flat and 3D tabs from the editor;
+  each part checked by breaking it on purpose (4 ways). It showed that tabs come out much smaller than their
+  Length setting with a bit wider than the tab: the Length is taken along the bit's centre, so the bit's own
+  width cuts into both ends. That's for a separate change.
+
 ### 0.106.0 — Preview in wood, in 3D
 - **Preview in wood is a 3D view now**: the material as a block of wood with every cut in it, its edges, and the
   spoilboard showing through through-cuts. Drag to turn it and look from any side, right-drag (or Shift+drag)

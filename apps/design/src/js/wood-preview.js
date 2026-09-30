@@ -7,6 +7,23 @@
    cuts nothing and isn't counted.)
    woodSim and woodShade are plain functions of their inputs (tested on their own); woodPreviewOpen is the window. */
 var WOOD_TOP = [226, 190, 140], WOOD_DEEP = [176, 128, 82], WOOD_BOARD = [84, 90, 98];
+// Wood thinner than sim.thin above the bottom of the material, in amber: tabs are a fraction of a millimetre to a
+// few millimetres at the bottom of a deep cut, so in wood colour they're all but invisible; and a skin that's nearly
+// cut through is worth seeing too.
+var WOOD_THIN = [236, 150, 38];
+// How thin counts as thin: 2 mm, or the thickest tab the ticked toolpaths leave, and a little.
+function woodThinBand(){
+  var t = 2;
+  tpList().forEach(function (tp){ if (!tp.exclude && tp.tabsOn && tp.tabThk > 0) t = Math.max(t, tp.tabThk + 0.25); });
+  return t;
+}
+// The colour of wood at height h: spoilboard where it's cut through, amber where it's thin, else wood by depth.
+function woodColour(sim, h){
+  if (h <= sim.bottom + 1e-6) return WOOD_BOARD;
+  if (sim.thin > 0 && h < sim.bottom + sim.thin) return WOOD_THIN;
+  var f = Math.pow(Math.min(1, Math.max(0, (sim.top - h) / Math.max(1e-6, sim.top - sim.bottom))), 0.6);
+  return [WOOD_TOP[0] + (WOOD_DEEP[0] - WOOD_TOP[0]) * f, WOOD_TOP[1] + (WOOD_DEEP[1] - WOOD_TOP[1]) * f, WOOD_TOP[2] + (WOOD_DEEP[2] - WOOD_TOP[2]) * f];
+}
 
 // The bit's shape for a toolpath: {kind:'flat'|'ball'|'v', r, half (V: half the included angle, radians), tip}
 function woodTool(tp){
@@ -95,18 +112,14 @@ function woodSim(parts, box, cell){
 // The picture: RGBA, row 0 at the top of the material (the far side, as on screen). Light from the top left.
 function woodShade(sim){
   var nx = sim.nx, ny = sim.ny, z = sim.z, out = new Uint8ClampedArray(nx * ny * 4);
-  var span = Math.max(1e-6, sim.top - sim.bottom), Lx = -0.5, Ly = 0.5, Lz = 0.707, ln = Math.hypot(Lx, Ly, Lz);
+  var Lx = -0.5, Ly = 0.5, Lz = 0.707, ln = Math.hypot(Lx, Ly, Lz);
   Lx /= ln; Ly /= ln; Lz /= ln;
   function at(i, j){ i = Math.max(0, Math.min(nx - 1, i)); j = Math.max(0, Math.min(ny - 1, j)); return z[j * nx + i]; }
   for (var j = 0; j < ny; j++){
     var oy = (ny - 1 - j) * nx * 4;                                   // world y up, picture rows down
     for (var i = 0; i < nx; i++){
       var h = z[j * nx + i], o = oy + i * 4, c;
-      if (h <= sim.bottom + 1e-6) c = WOOD_BOARD;                      // cut through: the spoilboard shows
-      else {
-        var f = Math.min(1, Math.max(0, (sim.top - h) / span)), k = Math.pow(f, 0.6);
-        c = [WOOD_TOP[0] + (WOOD_DEEP[0] - WOOD_TOP[0]) * k, WOOD_TOP[1] + (WOOD_DEEP[1] - WOOD_TOP[1]) * k, WOOD_TOP[2] + (WOOD_DEEP[2] - WOOD_TOP[2]) * k];
-      }
+      c = woodColour(sim, h);                                           // spoilboard, amber where thin, or wood
       var gx = (at(i + 1, j) - at(i - 1, j)) / (2 * sim.cell), gy = (at(i, j + 1) - at(i, j - 1)) / (2 * sim.cell);
       var nl = Math.hypot(gx, gy, 1), lit = Math.max(0, (-gx * Lx - gy * Ly + Lz) / nl);
       var s = 0.45 + 0.6 * lit;
@@ -139,7 +152,10 @@ function woodPreviewOpen(){
   setTimeout(function (){                                            // let the window show first
     var box = woodBox(), cell = woodCell(box), bottomless = !(box.bottom > -Infinity);
     if (bottomless) box.bottom = box.top - 50;
-    var sim = woodSim(parts, box, cell), px = woodShade(sim);
+    var sim = woodSim(parts, box, cell);
+    sim.thin = bottomless ? 0 : woodThinBand();
+    var px = woodShade(sim), thinCells = 0;
+    if (sim.thin) for (var q = 0; q < sim.z.length; q++) if (sim.z[q] > sim.bottom + 1e-6 && sim.z[q] < sim.bottom + sim.thin) thinCells++;
     var cv = document.getElementById('woodCv');
     cv.width = sim.nx; cv.height = sim.ny;
     var g = cv.getContext && cv.getContext('2d');
@@ -147,6 +163,7 @@ function woodPreviewOpen(){
     var depth = box.top - sim.deepest, said = [];
     said.push(parts.length + (parts.length === 1 ? ' toolpath' : ' toolpaths') + ', cut in order. Deepest cut ' + fmtDisp(depth) + ' ' + unitTag() +
       (bottomless ? ' (the material’s thickness isn’t set, so through-cuts don’t show as holes).' : '.'));
+    if (thinCells) said.push('Amber: wood thinner than ' + fmtDisp(sim.thin) + ' ' + unitTag() + ', such as tabs, and anything nearly cut through.');
     said.push('Worked out from the toolpaths’ moves and bits, to ' + fmtDisp(cell, 2) + ' ' + unitTag() + '. Check it looks as you expect.');
     var note = document.getElementById('woodNote');
     note.textContent = said.join(' ');

@@ -17,7 +17,6 @@ function woodMesh(sim, maxVerts){
   var mx = Math.ceil(sim.nx / k), my = Math.ceil(sim.ny / k), cs = sim.cell * k;
   var nTop = mx * my, nEdge = 2 * (mx + my) * 2;
   var pos = new Float32Array((nTop + nEdge) * 3), col = new Float32Array((nTop + nEdge) * 3);
-  var span = Math.max(1e-6, sim.top - sim.bottom);
   function heightAt(i, j){                                        // the lowest cell in the patch
     var lo = Infinity;
     for (var b = j * k; b < Math.min(sim.ny, (j + 1) * k); b++)
@@ -25,10 +24,7 @@ function woodMesh(sim, maxVerts){
     return lo;
   }
   function paint(o, h){
-    var c;
-    if (h <= sim.bottom + 1e-6) c = WOOD_BOARD;
-    else { var f = Math.pow(Math.min(1, Math.max(0, (sim.top - h) / span)), 0.6);
-      c = [WOOD_TOP[0] + (WOOD_DEEP[0] - WOOD_TOP[0]) * f, WOOD_TOP[1] + (WOOD_DEEP[1] - WOOD_TOP[1]) * f, WOOD_TOP[2] + (WOOD_DEEP[2] - WOOD_TOP[2]) * f]; }
+    var c = woodColour(sim, h);                                   // spoilboard, amber where thin, or wood
     col[o] = c[0] / 255; col[o + 1] = c[1] / 255; col[o + 2] = c[2] / 255;
   }
   var v = 0, tops = new Float32Array(nTop);
