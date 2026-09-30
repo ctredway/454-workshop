@@ -13,7 +13,7 @@ function tabbed(style, thk) {
   D.DOC.layers = [{ id: 'L1', name: 'Layer 1', visible: true, locked: false }]; D.DOC.activeLayer = 'L1';
   D.DOC.ents = [{ t: 'rect', x: 20, y: 20, w: 120, h: 70, layer: 'L1' }]; D.DOC.toolpaths = [];
   D.SEL = [0]; D.cutOpen(null); set('cutType', 'outside', 'change'); D.CUT.toolChosen = true; set('cutDia', 6.35); tick('cutThrough', true);
-  tick('cutTabsOn', true); set('cutTabs', 4); set('cutTabStyle', style, 'change'); if (thk) set('cutTabThk', thk);
+  tick('cutTabsOn', true); set('cutTabs', 4); set('cutTabStyle', style, 'change'); set('cutTabThk', thk || 0.5);       // typed every time: a new toolpath starts with the last tabs used
   D.document.getElementById('cutTabSpread').click(); D.CUT.toolChosen = true; D.cutApply();
   const box = JSON.parse(JSON.stringify(D.woodBox())), s = D.woodSim(D.woodParts(), box, D.woodCell(box));
   s.thin = D.woodThinBand();

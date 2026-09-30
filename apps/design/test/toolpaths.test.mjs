@@ -27,7 +27,7 @@ function make(shapes, type, o = {}) {
   if (o.step) set('cutStep', o.step);
   if (o.vAngle) { set('cutVAngle', o.vAngle); set('cutVcAngle', o.vAngle); }
   if (o.chamW) set('cutChamW', o.chamW);
-  if (o.tabs) { tick('cutTabsOn', true); set('cutTabs', o.tabs); D.document.getElementById('cutTabSpread').click(); }
+  if (o.tabs) { tick('cutTabsOn', true); set('cutTabs', o.tabs); set('cutTabThk', 0.5); D.document.getElementById('cutTabSpread').click(); }
   D.CUT.toolChosen = true;
   D.cutApply();
   const tp = D.tpList().at(-1);
@@ -90,12 +90,13 @@ test('tabs: the last passes rise over each tab, leaving the tab\u2019s thickness
   }
 });
 
-// Tabs on the bottom edge of RECT (y = 20): the cutter's centre runs along y = 20 - R there. A tab at x = c spans
-// c - L/2 .. c + L/2 along the path. The tab's top: for a flat tab, TOP everywhere over it; for a 3D tab, a
-// triangle from the cut's floor at its ends to TOP at its middle.
+// Tabs on the bottom edge of RECT (y = 20): the cutter's centre runs along y = 20 - R there. A tab of length L at
+// x = c leaves L of wood along the middle of the cut, so the cutter stays up over c - L/2 - R .. c + L/2 + R.
+// Its height there: for a flat tab, TOP all the way; for a 3D tab, TOP for R either side of the middle, then
+// down a straight slope to the cut's floor at the ends. (The wood this leaves is checked in tab-length.test.mjs.)
 function tabCheck(tp, centres, len, top, floor, shape) {
   const y = 20 - R, half = len / 2, surf = (x) => { let best = -Infinity;
-    for (const c of centres) { const d = Math.abs(x - c); if (d < half) best = Math.max(best, shape === '3d' ? floor + (top - floor) * (1 - d / half) : top); } return best; };
+    for (const c of centres) { const d = Math.abs(x - c); if (d < half + R) best = Math.max(best, shape === '3d' ? (d <= R ? top : floor + (top - floor) * (1 - (d - R) / half)) : top); } return best; };
   const onEdge = cuts(tp).filter((c) => Math.abs(c.y0 - y) < 0.02 && Math.abs(c.y1 - y) < 0.02);
   // along every move, not just its ends: a straight move between two points on a tab's slopes passes under
   // its peak (the tab comes to a point), so the ends alone can look fine while the middle cuts into it
@@ -115,23 +116,26 @@ test('3D tabs: a triangle, up to the tab\u2019s thickness at its middle, never c
   // middle falls can differ by a fraction of a micron; the failure this guards against is 0.14 mm
   assert.ok(lowest >= -0.001, 'never below the tab: ' + lowest.toFixed(4));
   const lastLap = onEdge.filter((c) => c.z0 <= top + 0.001 && c.z1 <= top + 0.001);   // the passes that meet the tab: at or below its top
-  const peak = lastLap.flatMap((c) => [[c.x0, c.z0], [c.x1, c.z1]]).filter(([x]) => Math.abs(x - 70) < 0.001);
-  assert.ok(peak.some(([, z]) => Math.abs(z - top) < 0.001), 'at its top, Z -11.5, at its middle (within a micron)');
-  const ends = onEdge.filter((c) => Math.abs(c.z1 - floor) < 1e-6 && (Math.abs(c.x1 - 65) < 1e-6 || Math.abs(c.x1 - 75) < 1e-6));
-  assert.ok(ends.length >= 2, 'at the floor at both ends');
+  for (const px of [70 - R, 70, 70 + R]) {
+    const peak = lastLap.flatMap((c) => [[c.x0, c.z0], [c.x1, c.z1]]).filter(([x]) => Math.abs(x - px) < 0.001);
+    assert.ok(peak.some(([, z]) => Math.abs(z - top) < 0.001), 'at its top, Z -11.5, from R before its middle to R after (within a micron): ' + px);
+  }
+  const lo = 70 - 5 - R, hi = 70 + 5 + R;
+  const ends = onEdge.filter((c) => Math.abs(c.z1 - floor) < 1e-6 && (Math.abs(c.x1 - lo) < 1e-6 || Math.abs(c.x1 - hi) < 1e-6));
+  assert.ok(ends.length >= 2, 'at the floor at both ends, the tab’s half-length and the cutter’s radius from its middle');
   const slope = (top - floor) / 5;
   for (const c of onEdge) {
     const run = Math.hypot(c.x1 - c.x0, c.y1 - c.y0), rise = Math.abs(c.z1 - c.z0);
-    if (c.x1 > 65 - 1e-6 && c.x1 < 75 + 1e-6 && c.x0 > 65 - 1e-6 && c.x0 < 75 + 1e-6 && rise > 1e-9)
+    if (c.x1 > lo - 1e-6 && c.x1 < hi + 1e-6 && c.x0 > lo - 1e-6 && c.x0 < hi + 1e-6 && rise > 1e-9)
       assert.ok(run > 1e-9 && rise / run <= slope + 1e-6, 'climbs along the tab, no steeper than it: ' + (rise / (run || 1e-12)).toFixed(3));
   }
 });
 test('3D tabs: passes above the floor rise only where the triangle comes up through them', () => {
   const tp = make([RECT], 'outside', { through: true, step: 4, tabs: 1 });
   tp.tabLen = 10; tp.tabStyle = '3d'; tp.tabPts = { [tp.ents[0]]: [[70, 20]] }; D.tpGenerate(tp);
-  // the pass at Z -12 (above the -12.2 floor): the triangle reaches -12 at 0.2 / 0.7 of the way up from each end
+  // the pass at Z -12 (above the -12.2 floor): the cutter's slope reaches -12 at 0.2 / 0.7 of the way up from each end
   const floor = deepest(tp), top = -11.5, { onEdge } = tabCheck(tp, [70], 10, top, floor, '3d');
-  const k = 5 * (1 - (-12 - floor) / (top - floor));
+  const k = R + 5 * (1 - (-12 - floor) / (top - floor));
   const atPass = onEdge.filter((c) => Math.abs(c.z0 - -12) < 1e-6 && Math.abs(c.z1 - -12) < 1e-6).flatMap((c) => [c.x0, c.x1]);
   assert.ok(atPass.some((x) => Math.abs(x - (70 - k)) < 1e-6) && atPass.some((x) => Math.abs(x - (70 + k)) < 1e-6), 'leaves the pass exactly where the slope meets it');
   assert.ok(!atPass.some((x) => x > 70 - k + 1e-6 && x < 70 + k - 1e-6), 'and not over the part of the tab above it');

@@ -765,6 +765,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.107.0 — tabs as long as you ask, and remembered
+- **A tab's Length is now the wood it leaves**, along the middle of the cut, whatever the bit. It used to be
+  measured along the bit's path, so the bit's round ends cut into both ends of every tab: a 4 mm tab with a
+  1/4" bit left two slivers and nothing in the middle. The bit now stays up over the length and its own width.
+  3D tabs are a triangle of wood as long as the length, at full thickness in the middle. Existing toolpaths get
+  longer, stronger tabs when they're next saved as G-code.
+- **New toolpaths start with the tabs you used last** (number, length, thickness and shape), remembered between
+  sessions, so they're set once rather than on every profile. Editing a toolpath still shows its own.
+- **Tabs start 1.5 mm thick** the first time, instead of 0.5 mm: 0.5 mm of wood can let a part break free
+  while the cutter is still going round it.
+- Tested: the wood left, measured in Preview in wood's simulation, with 1/4" and 1/8" bits, 4 and 10 mm tabs,
+  flat and 3D (6 tests); the starting tabs (5 tests). Each checked by breaking it on purpose (11 ways).
+
 ### 0.106.1 — tabs show in Preview in wood
 - **Thin wood shows in amber** in Preview in wood (3D and flat): tabs, and anything nearly cut through. Tabs are a
   fraction of a millimetre to a few millimetres of wood at the bottom of a deep cut, and in wood colour they

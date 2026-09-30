@@ -109,7 +109,9 @@
   //   climb     true for climb milling
   //   safeZ     height for rapid moves
   //   feed, plunge  mm/min
-  //   tabs      {count, length, thickness, shape} or null; shape 'flat' (the default) or '3d' (tapered)
+  //   tabs      {count, length, thickness, shape} or null; shape 'flat' (the default) or '3d' (tapered);
+  //             length is the wood left, along the middle of the cut
+  //             (the cutter stays up over that and its radius either side)
   //   ramp      {length} to lead into each pass, or null for a straight plunge
   function profile(opts){
     var o = Object.assign({
@@ -203,15 +205,21 @@
         var tabZ = o.tabs ? o.z0 - Math.max(0, o.depth - o.tabs.thickness) : -Infinity;
         var cutTabs = !!(o.tabs && tabAt.length && z < tabZ - 1e-9);
         var rampLen = o.ramp && o.ramp.length > 0 ? Math.min(o.ramp.length, L) : 0;
-        // 3D (tapered) tabs: a triangle, the cut's floor at a tab's ends rising to its full height at its middle.
-        // The cutter follows the higher of that and the pass depth.
+        // A tab's length is the wood it leaves, measured along the middle of the cut. The cutter reaches its
+        // radius past its centre either side, so it stays up over the length and its radius more at each end.
+        // (It used to stay up over just the length: a 4 mm tab with a 6.35 mm cutter left two slivers.)
+        var tHalf = o.tabs ? o.tabs.length / 2 : 0, tUp = tHalf + r;
+        // 3D (tapered) tabs: a triangle of wood, the cut's floor at a tab's ends rising to its full height at
+        // its middle. The cutter holds the full height for its radius either side of the middle, then comes
+        // down the slope: the higher of that and the pass depth.
         var tri = !!(o.tabs && o.tabs.shape === '3d'), zFloor = o.z0 - o.depth;
-        function tabTopAt(dist){                        // a 3D tab's top at this distance along the path
+        function tabTopAt(dist){                        // the cutter's height over a 3D tab at this distance along the path
           if (!cutTabs) return -Infinity;
-          var best = -Infinity, half = o.tabs.length / 2;
+          var best = -Infinity;
           for (var ti = 0; ti < tabAt.length; ti++){
             var c = tabAt[ti], dd = Math.min(Math.abs(dist - c), Math.abs(dist - c - L), Math.abs(dist - c + L));
-            if (dd < half) best = Math.max(best, zFloor + (tabZ - zFloor) * (1 - dd / half));
+            if (dd <= r) best = Math.max(best, tabZ);
+            else if (dd < tUp) best = Math.max(best, zFloor + (tabZ - zFloor) * (1 - (dd - r) / tHalf));
           }
           return best;
         }
@@ -220,11 +228,10 @@
         // along the ramp for it to be a ramp rather than one long move
         var extra = [];
         if (cutTabs) tabAt.forEach(function (c) {
-          var half = o.tabs.length / 2;
-          extra.push(c - half); extra.push(c + half);
-          if (tri){                                     // its peak, and where this pass meets its slopes: exact
-            extra.push(c);
-            if (z > zFloor + 1e-9){ var k = half * (1 - (z - zFloor) / (tabZ - zFloor)); if (k > 1e-6){ extra.push(c - k); extra.push(c + k); } }
+          extra.push(c - tUp); extra.push(c + tUp);
+          if (tri){                                     // its top, and where this pass meets its slopes: exact
+            extra.push(c - r); extra.push(c); extra.push(c + r);
+            if (z > zFloor + 1e-9){ var k = r + tHalf * (1 - (z - zFloor) / (tabZ - zFloor)); if (k > r + 1e-6){ extra.push(c - k); extra.push(c + k); } }
           }
         });
         if (rampLen > 0) extra.push(rampLen);
@@ -233,9 +240,9 @@
         function inTabAt(dist){
           if (!cutTabs) return false;
           for (var ti = 0; ti < tabAt.length; ti++){
-            var half = o.tabs.length / 2, c = tabAt[ti];
+            var c = tabAt[ti];
             var dd = Math.min(Math.abs(dist - c), Math.abs(dist - c - L), Math.abs(dist - c + L));
-            if (dd <= half - 1e-9) return true;
+            if (dd <= tUp - 1e-9) return true;
           }
           return false;
         }

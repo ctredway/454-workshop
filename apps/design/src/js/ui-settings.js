@@ -36,6 +36,7 @@ function uiCfgLoad(){
       if (c.libMachine) UICFG.libMachine = c.libMachine;
       if (typeof c.libMaterial === 'string') UICFG.libMaterial = c.libMaterial;
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
+      if (c.tabs && typeof c.tabs === 'object') UICFG.tabs = c.tabs;   // checked where it's used (cutTabsStart)
     }
   }catch(e){}
 }

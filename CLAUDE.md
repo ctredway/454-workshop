@@ -117,7 +117,9 @@ without a published release looks to them like a newest release with nothing in 
 - **Setting Z zero cancels the controller's tool length offset (G49) first**, by every route, so an old
   BitSetter offset can't be built into the new zero. (One once made a job cut 20 mm too deep.)
 - **The BitSetter searches fast** (the speed that coasts at most 0.5 mm, from `$122`), then measures slowly.
-- **A tab's thickness is the material it leaves**, measured from the bottom of the material. Tabs are **Flat**
+- **A tab's thickness and length are the material it leaves**: thickness from the bottom of the material, length
+  along the middle of the cut (the cutter stays up over the length plus its diameter). New toolpaths start with
+  the last tabs used (`cutTabsStart`; 1.5 mm thick before any). Tabs are **Flat**
   or **3D (tapered)**. Profiles sit at the cutter's radius, padded by up to 0.011 mm on purpose (never closer).
 - **Dimensions remember which edge they measure** (a rectangle's side, an outline's segment), not a point.
 

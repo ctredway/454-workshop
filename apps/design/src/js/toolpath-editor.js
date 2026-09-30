@@ -20,6 +20,7 @@ function cutOpen(existing){
        chamW: 1, vAngle: 90,
        through: false, depth: null, over: 0.2};
   if (existing){ CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {})); CUT.toolChosen = tpToolChosen(existing); }
+  else { var ts = cutTabsStart(); CUT.tabCount = ts.count; CUT.tabLen = ts.len; CUT.tabThk = ts.thk; CUT.tabStyle = ts.style; }
   // The tool sets every dimension of the cut, so every toolpath has its tool chosen for it: never
   // defaulted, never carried over from another toolpath. Until then there is no tool, and a toolpath
   // without one can't be created or saved as G-code.
@@ -534,6 +535,18 @@ function cutRestFill(){
   cands.forEach(function (x) { var o = document.createElement('option'); o.value = x.id; o.textContent = x.name + ' (' + fmtDisp(x.dia) + ' ' + unitTag() + ')'; sel.appendChild(o); });
   sel.value = want;
 }
+// Tabs for a new toolpath: the last ones used (their number, length, thickness and shape), remembered between
+// sessions, so they're set once rather than on every profile. Before any: 4 tabs, 4 mm long, 1.5 mm thick, flat.
+// (Tabs started at 0.5 mm thick, thin enough in wood for a part to break free before the last pass.)
+var TAB_START = {count: 4, len: 4, thk: 1.5, style: 'flat'};
+function cutTabsStart(){
+  var t = UICFG.tabs || {}, ok = function (v, lo, hi) { return typeof v === 'number' && v >= lo && v <= hi; };
+  return {count: ok(t.count, 1, 20) ? Math.round(t.count) : TAB_START.count, len: ok(t.len, 0.1, 500) ? t.len : TAB_START.len,
+          thk: ok(t.thk, 0.05, 500) ? t.thk : TAB_START.thk, style: t.style === '3d' ? '3d' : 'flat'};
+}
+function cutTabsRemember(tp){
+  UICFG.tabs = {count: tp.tabCount, len: tp.tabLen, thk: tp.tabThk, style: tp.tabStyle}; uiCfgSave();
+}
 function cutApply(){
   if (!CUT || !(CUT.dia > 0) || !CUT.toolChosen) return;   // never without a chosen tool
   var restSrc = tpRestSource(CUT);                           // a clean-up takes the larger pocket's depth
@@ -578,6 +591,7 @@ function cutApply(){
     tp.sheet = sheetsUsed[0] || DOC.activeSheet;
   }
   if (tp.restFrom === undefined) delete tp.restFrom;
+  if (tp.tabsOn) cutTabsRemember(tp);                      // the next new toolpath starts with these tabs
   if (at >= 0) list[at] = tp; else tpInsertByRank(tp);   // new ones take their place in the cutting order
   var rsrc = tpRestSource(tp);                              // a clean-up goes after the pocket it follows (moved to just after it, if need be)
   if (rsrc && list.indexOf(rsrc) > list.indexOf(tp)){ list.splice(list.indexOf(tp), 1); list.splice(list.indexOf(rsrc) + 1, 0, tp); tpGenerate(tp); }
