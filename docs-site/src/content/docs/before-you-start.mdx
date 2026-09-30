@@ -1,0 +1,62 @@
+---
+title: "Before you start"
+description: "454 Workshop is beta software that moves a real machine. What that means, how to cut safely with it, and how to tell us when something goes wrong."
+---
+
+454 Workshop is in **beta**. It's used for real work, but it's new, and it's still finding problems. This page
+is what to know before you connect it to your machine. It takes five minutes to read.
+
+## It moves a real machine
+
+A CNC router spins a sharp cutter fast and moves it with a lot of force. A wrong depth, a missed lift or a
+tab that's too thin can ruin the work, break a bit, or throw a part. 454 Workshop tries hard to prevent that,
+and says so plainly when something looks wrong, but software can't see your machine.
+
+- **Air-cut anything new first.** Set Z zero well above the material (a few centimetres), run the job, and
+  watch it go through in the air. Only then set the real zero and cut. See the
+  [Control quick start](control-quickstart.html).
+- **Keep a hand near the stop.** Know where your e-stop or power switch is before you press Start. Control's
+  red **STOP** button stops the job too, but a switch you can reach without looking is faster.
+- **Stay with the machine** while it runs.
+- **Hold the work down properly**, and check tabs are on through-cuts before cutting parts free.
+- **Wear eye and ear protection**, and use dust collection.
+
+## The toolpaths (CAM) are the newest part
+
+Design's toolpaths are the part most likely to have mistakes, and each one is marked **beta**. Before cutting
+a job made in Design:
+
+1. Run **Check** (the magnifier with a tick, at the top of the Toolpaths panel), and read each toolpath's notes.
+2. Look at **Preview in wood**: does the finished piece look as you expect?
+3. Open it in 454 Control with **Preview in 454 Control**: its 3D view and checks look at the G-code itself.
+4. Air-cut it.
+
+See the [CAM reference](cam-reference.html) for what each setting does.
+
+## What it's been tried on
+
+So far, 454 Workshop has run a **Shapeoko XXL** (GRBL 1.1, a VFD spindle, a BitSetter and a BitZero v2).
+It's written for GRBL 1.1 machines generally, such as other Shapeokos and the Nomad, but on anything else
+you're among the first: air-cut and go slowly, and tell us how it went, good or bad.
+
+It runs on **Windows**. The apps also run in Chrome or Edge on other systems, from
+[454workshop.com](https://454workshop.com).
+
+## Installing on Windows
+
+The installer isn't signed yet, so Windows warns that it's from an unrecognised publisher. Choose
+**More info**, then **Run anyway**. See [The desktop app](desktop-app.html) for installing and updates.
+
+## When something goes wrong
+
+Please tell us: it's how the beta gets better.
+
+- In the desktop app: **454 Workshop → Report a problem…**. It opens a short form on GitHub with the version
+  already filled in.
+- Or go straight to the form: [report a problem](https://github.com/ctredway/454-workshop/issues/new?template=problem.yml).
+
+The form asks what happened, how to make it happen again, and your machine. **If the machine moved or cut in
+a way it shouldn't have, say so**: those reports are looked at first. The drawing (`.454.json`) or the G-code
+file helps a lot; drag it into the form. Everything on the form is public, so leave out anything private.
+
+Ideas are welcome too: [suggest an idea](https://github.com/ctredway/454-workshop/issues/new?template=idea.yml).

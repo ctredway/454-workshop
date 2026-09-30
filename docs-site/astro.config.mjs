@@ -22,6 +22,7 @@ export default defineConfig({
       sidebar: [
         { label: 'Getting started', items: [
           { label: 'Overview', link: '/' },
+          { label: 'Before you start', link: '/before-you-start' },
           { label: 'Control quick start', link: '/control-quickstart' },
           { label: 'Design quick start', link: '/design-quickstart' },
           { label: 'Coming from Carbide Motion', link: '/carbide-motion' },
