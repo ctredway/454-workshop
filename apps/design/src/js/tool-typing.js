@@ -1,4 +1,5 @@
 function toolCommitText(txt){
+  if (shapeToolText(txt)) return;
   if (DRAW && DRAW.stage === 'dimEdit2'){
     var ea = DOC.ents[DRAW.a], eb = DOC.ents[DRAW.b];
     if (!ea || !eb){ DRAW = null; hidePrompt(); return; }

@@ -35,6 +35,7 @@ version is in `src/js/version.js`.
 | `js/tool-manager.js` | 286 | the tool manager: hover feedback, selection handles, transforms, switching tools |
 | `js/tool-click.js` | 284 | what each tool does with a click |
 | `js/tool-typing.js` | 300 | what each tool does with a typed value |
+| `js/shapes.js` | 149 | the Ellipse, Polygon and Star tools: the shapes, clicks, typed sizes and the preview |
 | `js/prompt.js` | 42 | the floating input box and the hints |
 | `js/vcarve-read.js` | 203 | reading VCarve’s file format (OLE), its vectors and toolpaths |
 | `js/toolpaths.js` | 41 | toolpaths: the list and its shared helpers |

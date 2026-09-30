@@ -188,6 +188,34 @@ Draws a circle.
 1. Click the center, or type it as `x,y`.
 2. Click a point on the edge, or type the size: `D5` for a 5 mm diameter, `R2.5` for a 2.5 mm radius.
 
+### Ellipse
+
+Draws an ellipse, square to the material. Rotate it afterwards if it should lean.
+
+1. Click the centre, or type it as `x,y`.
+2. Click a corner of the box it fits in, or type its width and height, such as `120,60`.
+
+An ellipse is made of arcs that stay within 0.0005 mm of a true ellipse, far finer than any bit cuts, so it
+offsets, cuts and exports like any other outline. Its points can be moved with Edit nodes, but it doesn't
+stay an ellipse you can resize by typing, as a rectangle does.
+
+### Polygon
+
+Draws a regular polygon: a triangle, square, hexagon, octagon, and so on.
+
+1. The prompt shows the number of sides. To change it, type `S` and the number, such as `S8`, and press Enter. It's remembered for next time.
+2. Click the centre, or type it as `x,y`.
+3. Click where one corner goes, or type the size: `R40` for 40 mm from the centre to each corner, `D80` for 80 mm across the corners, or `F70` for 70 mm across the flats (the size a spanner fits). A typed polygon stands on a flat.
+
+### Star
+
+Draws a star.
+
+1. The prompt shows the number of points. To change it, type `S` and the number, such as `S6`, and press Enter.
+2. Click the centre, or type it as `x,y`.
+3. Click the tip of one point, or type `R40` for points 40 mm from the centre, with one pointing straight up.
+4. Move the pointer in or out to set how deep the points are, and click; or type the inner corners' distance from the centre, such as `15`.
+
 ### Arc
 
 Shortcut: <kbd>A</kbd>

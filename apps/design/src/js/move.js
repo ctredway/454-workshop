@@ -20,6 +20,9 @@ var ICON = {
  sel:'<svg viewBox="0 0 18 18"><path d="M4 2 L4 13 L7.2 10.4 L9.2 15 L11.4 14 L9.4 9.6 L13.5 9.2 Z"/></svg>',
  line:'<svg viewBox="0 0 18 18"><line x1="3.5" y1="14.5" x2="14.5" y2="3.5"/><circle cx="3.5" cy="14.5" r="1.4"/><circle cx="14.5" cy="3.5" r="1.4"/></svg>',
  rect:'<svg viewBox="0 0 18 18"><rect x="3" y="4.5" width="12" height="9"/></svg>',
+ ellipse:'<svg viewBox="0 0 18 18"><ellipse cx="9" cy="9" rx="7" ry="4.5"/></svg>',
+ polygon:'<svg viewBox="0 0 18 18"><path d="M15.80 9.00 L12.40 14.89 L5.60 14.89 L2.20 9.00 L5.60 3.11 L12.40 3.11 Z"/></svg>',
+ star:'<svg viewBox="0 0 18 18"><path d="M9.00 2.40 L10.70 7.25 L15.85 7.38 L11.76 10.50 L13.23 15.42 L9.00 12.50 L4.77 15.42 L6.24 10.50 L2.15 7.38 L7.30 7.25 Z"/></svg>',
  circ:'<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="6"/></svg>',
  poly:'<svg viewBox="0 0 18 18"><path d="M2.5 13.5 L6.5 5.5 L10.5 11 L15.5 3.5"/><circle cx="2.5" cy="13.5" r="1.2"/><circle cx="6.5" cy="5.5" r="1.2"/><circle cx="10.5" cy="11" r="1.2"/><circle cx="15.5" cy="3.5" r="1.2"/></svg>',
  arc:'<svg viewBox="0 0 18 18"><path d="M3.5 14.5 A 11 11 0 0 1 14.5 3.5"/><circle cx="3.5" cy="14.5" r="1.3"/><circle cx="14.5" cy="3.5" r="1.3"/></svg>',
@@ -73,6 +76,9 @@ var PANEL_BTNS = {
  select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes', active:true},
  line:  {tool:'line', icon:'line', title:'Line (L) \u2014 click points; type exact coords anytime'},
  rect:  {tool:'rect', icon:'rect', title:'Rectangle (R) \u2014 two corners, or click then type W,H'},
+ ellipse:{tool:'ellipse', icon:'ellipse', title:'Ellipse — centre, then a corner of its box, or type W,H e.g. 120,60'},
+ polygon:{tool:'polygon', icon:'polygon', title:'Polygon — centre, then a corner; type S8 for 8 sides, or R, D or F (across the flats) for its size'},
+ star:{tool:'star', icon:'star', title:'Star — centre, the tip of a point, then the inner corners; type S6 for 6 points'},
  circle:{tool:'circle', icon:'circ', title:'Circle (C) \u2014 center then radius point, or type D5 for diameter'},
  arc:   {tool:'arc', icon:'arc', title:'Arc (A) \u2014 start point, end point, then bow it with the mouse (3-point) or type a radius; + bows left of start\u2192end, \u2212 right'},
  poly:  {tool:'poly', icon:'poly', title:'Polyline (P) \u2014 click points, Enter ends, click start to close'},
@@ -127,7 +133,7 @@ var PANEL_BTNS = {
 };
 var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
- {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','arc','poly','textT']},
+ {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},

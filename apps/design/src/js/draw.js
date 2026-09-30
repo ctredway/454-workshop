@@ -207,6 +207,7 @@ function draw(){
     else if (TOOL==='circle' && DRAW.stage===1){
       var cc=w2s(DRAW.x,DRAW.y); ctx.arc(cc.x,cc.y, Math.hypot(m.x-DRAW.x,m.y-DRAW.y)*VIEW.scale, 0, Math.PI*2);
     }
+    else if (TOOL==='ellipse' || TOOL==='polygon' || TOOL==='star'){ shapeToolPreview(ctx, m); }
     else if (TOOL==='arc' && DRAW.stage===1){
       var aa=w2s(DRAW.ax,DRAW.ay), am=w2s(m.x,m.y);
       ctx.moveTo(aa.x,aa.y); ctx.lineTo(am.x,am.y);

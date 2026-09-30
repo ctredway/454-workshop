@@ -1,5 +1,6 @@
 function toolClick(w, snap){
   var p = snap;
+  if (shapeToolClick(p)) return;
   if (TOOL === 'line'){
     if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y}; stagePrompt('line1'); }
     else { pushUndo(); DOC.ents.push({t:'line',x1:DRAW.x,y1:DRAW.y,x2:p.x,y2:p.y}); DRAW = {stage:1,x:p.x,y:p.y}; persist(); }

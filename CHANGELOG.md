@@ -740,6 +740,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.101.0 — Ellipse, Polygon and Star
+- **Three new drawing tools**, in Create Vectors after Circle, each started with a click on the centre:
+  - **Ellipse**: then a corner of its box, or type its width and height (`120,60`). It's made of arcs within
+    0.0005 mm of a true ellipse, so it offsets, cuts and exports like any other outline; a round one is simply
+    a circle.
+  - **Polygon**: then a corner, or type `R` (to the corners), `D` (across the corners) or `F` (across the flats,
+    the size a spanner fits). A typed one stands on a flat.
+  - **Star**: then the tip of a point (or `R`, one point straight up), then the inner corners, clicked or typed.
+  - For Polygon and Star, type `S` and a number any time for the number of sides or points (3 to 100). It's
+    remembered.
+- Tested (8 tests), each checked by breaking it on purpose (11 ways); drawn in the desktop app.
+
 ### 0.100.0 — Weld, Subtract and Intersect
 - **Weld, Subtract and Intersect**, in Edit Vectors (after Ungroup), the shape tools VCarve users reach for
   most. **Weld** joins closed shapes that overlap or touch into one outline; **Subtract** cuts the other
