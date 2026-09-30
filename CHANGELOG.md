@@ -27,7 +27,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### Next beta (not released yet)
+### 0.6.2-beta.23 — Control starts again; report a problem
 - **Control starts again** (Control 0.31.20): beta.20 to beta.22 shipped a Control that wouldn't open.
 - **Report a problem…** in the 454 Workshop menu opens a form on GitHub (`.github/ISSUE_TEMPLATE/problem.yml`) with
   this build's version and the computer already filled in (`src/report.js`). The form asks, in plain words, which part,
