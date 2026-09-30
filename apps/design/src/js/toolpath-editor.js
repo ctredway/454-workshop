@@ -81,6 +81,7 @@ function cutToForm(){
   document.getElementById('cutPeck').value = fmtDisp(CUT.peck || 0);
   document.getElementById('cutStepover').value = CUT.stepoverPct || 40;
   document.getElementById('cutClear').value = CUT.pocketClear === 'raster' ? 'raster' : 'offset';
+  cutRestFill();
   document.getElementById('cutDir').value = CUT.climb === false ? 'conv' : 'climb';
   document.getElementById('cutLead').value = CUT.leadType || 'none';
   document.getElementById('cutRamp').value = CUT.rampOff ? 'off' : 'on';
@@ -120,6 +121,8 @@ function cutFromForm(){
   var pk = lenIn(document.getElementById('cutPeck').value); if (!isNaN(pk) && pk >= 0) CUT.peck = pk;
   var so2 = parseFloat(document.getElementById('cutStepover').value); if (so2 > 0) CUT.stepoverPct = Math.max(5, Math.min(95, so2));
   CUT.pocketClear = document.getElementById('cutClear').value;
+  CUT.restFrom = document.getElementById('cutRest').value || undefined;
+  if (!CUT.restFrom) delete CUT.restFrom;
   CUT.climb = document.getElementById('cutDir').value !== 'conv';
   CUT.leadType = document.getElementById('cutLead').value;
   CUT.rampOff = document.getElementById('cutRamp').value === 'off';
@@ -185,13 +188,17 @@ function cutRenderInner(){
   if (chamfering){ CUT.through = false; CUT.placing = false; }
   document.getElementById('cutOverlapRow').hidden = !pocketing;
   document.getElementById('cutClearRow').hidden = !pocketing;
+  cutRestFill();
+  document.getElementById('cutRestRow').hidden = !pocketing || document.getElementById('cutRest').options.length < 2;
+  var restSrc = pocketing ? tpRestSource(CUT) : null;
   document.getElementById('cutRasterBits').style.display = CUT.pocketClear === 'raster' ? '' : 'none';
   if (pocketing){ CUT.placing = false; document.getElementById('cutTabRow').hidden = true; document.getElementById('cutTabSize').hidden = true; document.getElementById('cutTabTools').hidden = true; }
   var dEl = document.getElementById('cutDepth');
-  dEl.disabled = !!CUT.through;
+  dEl.disabled = !!CUT.through || !!restSrc;
+  if (restSrc){ CUT.through = false; document.getElementById('cutThrough').checked = false; dEl.value = fmtDisp(tpDepth(restSrc)); }
   document.getElementById('cutOverRow').hidden = !CUT.through;
   if (CUT.through) dEl.value = fmtDisp(tpDepth(CUT));
-  else if (!(CUT.depth > 0) && document.activeElement !== dEl) dEl.value = '';
+  else if (!(CUT.depth > 0) && !restSrc && document.activeElement !== dEl) dEl.value = '';
   var noThk = CUT.through && !(DOC.stock.t > 0);
   document.getElementById('cutStepRow').hidden = drilling;
   document.getElementById('cutPeckRow').hidden = !drilling;
@@ -200,7 +207,7 @@ function cutRenderInner(){
   if (drilling){ CUT.placing = false; }
   var loops = drilling ? tpDrillPoints(CUT.ents) : tpOutlines(CUT.ents);
   cutFillTools();                                        // the tool label follows a typed diameter
-  var depthSet = CUT.side === 'chamfer' || CUT.side === 'vcarve' || CUT.side === 'inlay' || CUT.through || CUT.depth > 0;
+  var depthSet = CUT.side === 'chamfer' || CUT.side === 'vcarve' || CUT.side === 'inlay' || CUT.through || CUT.depth > 0 || !!restSrc;
   var ok = loops.length > 0 && CUT.dia > 0 && !!CUT.toolChosen && depthSet;
   cutRender.extra = (CUT.allowance > 0 && (pocketing || CUT.side === 'inside' || CUT.side === 'outside'))
     ? (CUT.finishPass ? ' Roughs leaving ' + fmtDisp(CUT.allowance) + ' ' + unitTag() + ', then one finishing pass at full depth.'
@@ -335,6 +342,11 @@ function cutRenderInner(){
     var so = CUT.dia * (CUT.stepoverPct || 40) / 100;
     document.getElementById('cutHint').textContent = pv.warning
       ? '\u26a0 ' + pv.warning.charAt(0).toUpperCase() + pv.warning.slice(1) + '.'
+      : restSrc
+      ? 'Cleans up after \u201c' + restSrc.name + '\u201d (' + fmtDisp(restSrc.dia) + ' ' + unitTag() + ' bit): only its corners and the parts too narrow for it, ' +
+        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + Math.ceil(tpDepth(restSrc) / CUT.step) + (Math.ceil(tpDepth(restSrc) / CUT.step) === 1 ? ' pass' : ' passes') +
+        (pv.restRuns ? ' (' + pv.restRuns + (pv.restRuns === 1 ? ' stretch' : ' stretches') + ').' : ': the larger bit reaches everywhere, so there\u2019s nothing left for this one.') +
+        (CUT.pocketClear === 'raster' ? ' It follows the walls rather than raster lines.' : '')
       : grp.length + (grp.length === 1 ? ' pocket' : ' pockets') + (isl ? ' with ' + isl + (isl === 1 ? ' island' : ' islands') + ' left standing' : '') + '. ' +
         (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(CUT.over) : fmtDisp(tpDepth(CUT)) + ' ' + unitTag() + ' deep') +
         ', ' + Math.ceil(tpDepth(CUT) / CUT.step) + (Math.ceil(tpDepth(CUT) / CUT.step) === 1 ? ' pass' : ' passes') +
@@ -505,16 +517,36 @@ function vcarveClearing(tp){
   tpGenerate(c); tpInsertByRank(c);
   return 'Added \u201c' + c.name + '\u201d to clear the flat middles: open it and choose its end mill. It runs before the V-carve.';
 }
+// The pockets this one could clean up after: pockets on the same shapes with a larger bit (none that are
+// clean-ups themselves), in the Clean up after list.
+function cutRestFill(){
+  var sel = document.getElementById('cutRest');
+  if (!sel || !CUT) return;
+  var same = function (a, c) { return a.slice().sort().join('|') === c.slice().sort().join('|'); };
+  var cands = tpList().filter(function (x) { return x.side === 'pocket' && x.id !== CUT.editing && !x.restFrom && same(x.ents, CUT.ents) && (!(CUT.dia > 0) || x.dia > CUT.dia); });
+  if (CUT.restFrom && !cands.some(function (x) { return x.id === CUT.restFrom; })){
+    var gone = tpList().filter(function (x) { return x.id === CUT.restFrom; })[0];
+    if (gone) cands.push(gone);
+  }
+  var want = CUT.restFrom || '';
+  sel.innerHTML = '';
+  var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Nothing: clear it all'; sel.appendChild(o0);
+  cands.forEach(function (x) { var o = document.createElement('option'); o.value = x.id; o.textContent = x.name + ' (' + fmtDisp(x.dia) + ' ' + unitTag() + ')'; sel.appendChild(o); });
+  sel.value = want;
+}
 function cutApply(){
   if (!CUT || !(CUT.dia > 0) || !CUT.toolChosen) return;   // never without a chosen tool
+  var restSrc = tpRestSource(CUT);                           // a clean-up takes the larger pocket's depth
+  if (restSrc){ CUT.through = false; CUT.depth = tpDepth(restSrc); }
   if (!(CUT.side === 'chamfer' || CUT.side === 'vcarve' || CUT.side === 'inlay' || CUT.through || CUT.depth > 0)) return;   // nor without a depth
   if (CUT.side === 'inlay'){ cutFromForm(); if (CUT.ents.length) inlayApply(); return; }
   cutFromForm();
+  if (restSrc){ CUT.through = false; CUT.depth = tpDepth(restSrc); }
   if (!CUT.ents.length) return;
   pushUndo();
   var tp = {
     id: CUT.editing || tpNewId(),
-    name: CUT.name || (CUT.side === 'drill' ? 'Drilling' : CUT.side === 'pocket' ? 'Pocket' : CUT.side === 'chamfer' ? 'Chamfer' : CUT.side === 'vcarve' ? 'V-carve' : (CUT.side === 'inside' ? 'Inside' : CUT.side === 'on' ? 'On-line' : 'Outside') + ' profile'),
+    name: CUT.name || (CUT.side === 'drill' ? 'Drilling' : CUT.side === 'pocket' ? (CUT.restFrom ? 'Pocket clean-up' : 'Pocket') : CUT.side === 'chamfer' ? 'Chamfer' : CUT.side === 'vcarve' ? 'V-carve' : (CUT.side === 'inside' ? 'Inside' : CUT.side === 'on' ? 'On-line' : 'Outside') + ' profile'),
     type: CUT.side === 'drill' ? 'drill' : CUT.side === 'pocket' ? 'pocket' : CUT.side === 'chamfer' ? 'chamfer' : CUT.side === 'vcarve' ? 'vcarve' : 'profile', stepoverPct: CUT.stepoverPct || 40,
     vcMax: CUT.vcMax || 0, vTip: CUT.vTip || 0,
     chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge', toolChosen: !!CUT.toolChosen,
@@ -526,6 +558,7 @@ function cutApply(){
     dia: CUT.dia, depth: CUT.depth, step: CUT.step, feed: CUT.feed, plunge: CUT.plunge,
     tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk, tabStyle: CUT.tabStyle === '3d' ? '3d' : 'flat',
     tabPts: JSON.parse(JSON.stringify(CUT.tabPts || {})),
+    restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
     hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
   };
@@ -544,7 +577,10 @@ function cutApply(){
     }
     tp.sheet = sheetsUsed[0] || DOC.activeSheet;
   }
+  if (tp.restFrom === undefined) delete tp.restFrom;
   if (at >= 0) list[at] = tp; else tpInsertByRank(tp);   // new ones take their place in the cutting order
+  var rsrc = tpRestSource(tp);                              // a clean-up goes after the pocket it follows (moved to just after it, if need be)
+  if (rsrc && list.indexOf(rsrc) > list.indexOf(tp)){ list.splice(list.indexOf(tp), 1); list.splice(list.indexOf(rsrc) + 1, 0, tp); tpGenerate(tp); }
   var clearMsg = tp.side === 'vcarve' ? vcarveClearing(tp) : '';
   CUTSEL = tp.id;
   persist();

@@ -641,6 +641,6 @@
     closestOnSeg: closestOnSeg, distToSeg: distToSeg, distToPath: distToPath, pathIndex: pathIndex, segX: segX,
     arcPoints: arcPoints, circlePoints: circlePoints,
     offsetLoop: offsetLoop, offsetPart: offsetPart,
-    distanceField: distanceField, isoLoops: isoLoops
+    distanceField: distanceField, isoLoops: isoLoops, edt2: edt2
   };
 });

@@ -72,6 +72,29 @@ Pockets ramp into each depth by default (see [Ramps](#ramps)), and link passes w
 
 **If the cutter is too big** for part of a pocket, that part is left and the hint says so. A narrow strip the cutter can’t reach needs a smaller tool.
 
+### Clearing with a larger bit, then a smaller one
+
+A large bit clears a big pocket quickly but leaves its corners round and can't get into narrow parts. A small
+bit reaches them but takes a long time over the whole pocket. Use both:
+
+1. Make the pocket with the **large bit**, as usual.
+2. Select the same shapes and make a second pocket with the **small bit**. Under **Clean up after**, choose the
+   large bit's pocket.
+
+The small bit then cuts only where the large one couldn't reach: the corners it left round, and any part too
+narrow for it. Typically that's a quarter of the cutting a full pocket with the small bit would take, or
+less. The clean-up goes as deep as the large bit's pocket, runs after it, and follows it if you change it.
+
+**Clean up after** lists pockets on the same shapes with a larger bit. If that pocket is deleted, changed to
+other shapes, or unticked, the clean-up says so; if it's deleted, the clean-up clears the whole pocket, so
+nothing is left uncut.
+
+<Compare kind="same" title="Same as VCarve">
+
+This does what VCarve's larger clearance tool and rest machining do.
+
+</Compare>
+
 ## Drill
 
 **Drill at centres** drills at the centre of each selected circle, nearest hole next.

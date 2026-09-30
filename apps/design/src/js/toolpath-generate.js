@@ -70,15 +70,19 @@ function tpGenerate(tp){
   if (!camReady()) return tp;
   if (tp.side === 'pocket'){
     var groups = tpPocketGroups(tp.ents), pm = [], warnP = null, rings = 0; tp.rasterLines = 0;
-    var zs = tpSurface();
+    var zs = tpSurface(), rs = tpRestSource(tp), restRuns = 0;
+    // a clean-up after a larger bit: where that bit's centre could go (its radius, the flattening tolerance,
+    // and any allowance it left on the walls without a finishing pass)
+    var rest = rs ? {toolDia: rs.dia, level: rs.dia / 2 + 0.01 + (rs.allowance > 0 && !rs.finishPass ? rs.allowance : 0)} : null;
     groups.forEach(function (g) {
       var pr = Cam.pocket({outline: g.outline, islands: g.islands, toolDia: tp.dia,
                            stepover: tp.dia * (tp.stepoverPct || 40) / 100, depth: tpDepth(tp), passDepth: tp.step,
                            strategy: tp.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: tp.rasterAngle || 0,
                            allowance: tp.allowance || 0, finishPass: !!tp.finishPass,
                            z0: zs, safeZ: zs + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
-                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}});
+                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}, rest: rest});
       if (pr.warning) warnP = pr.warning;
+      restRuns += pr.restRuns || 0;
       rings += pr.rings || 0; tp.rasterLines = (tp.rasterLines || 0) + (pr.rasterLines || 0);
       pr.moves.forEach(function (m) { pm.push(m); });
     });
@@ -86,6 +90,8 @@ function tpGenerate(tp){
     tp.rings = rings;
     tp.islands = groups.reduce(function (s2, g) { return s2 + g.islands.length; }, 0);
     tp.warning = groups.length ? warnP : 'nothing to pocket: pick closed shapes';
+    tp.restRuns = rs ? restRuns : undefined;
+    if (!tp.warning && tp.restFrom) tp.warning = tpRestProblem(tp) || tpRestNote(tp) || null;
     tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
     return tp;
   }
@@ -183,7 +189,37 @@ function tpTabHeight(tp){
   var thk = tp.tabThk || 0.5, t = DOC.stock && DOC.stock.t > 0 ? DOC.stock.t : 0;
   return thk + (t > 0 ? Math.max(0, tpDepth(tp) - t) : 0);
 }
+// A pocket that cleans up after a larger bit's pocket (tp.restFrom): that pocket, if it can be cleaned up
+// after (it's a pocket, on the same shapes, with a larger bit, and not itself a clean-up), or null.
+function tpRestSource(tp){
+  if (!tp || tp.side !== 'pocket' || !tp.restFrom) return null;
+  var b = tpList().filter(function (x) { return x.id === tp.restFrom; })[0];
+  if (!b || b.side !== 'pocket' || b.restFrom || !(b.dia > tp.dia)) return null;
+  var same = function (a, c) { return a.slice().sort().join('|') === c.slice().sort().join('|'); };
+  return same(b.ents, tp.ents) ? b : null;
+}
+// Why a clean-up can't follow its larger bit's pocket, in words, or '' if it can.
+function tpRestProblem(tp){
+  if (!tp || tp.side !== 'pocket' || !tp.restFrom) return '';
+  var b = tpList().filter(function (x) { return x.id === tp.restFrom; })[0];
+  if (!b || b.side !== 'pocket') return 'the larger bit\u2019s pocket it cleaned up after is gone, so this clears the whole pocket';
+  if (b.restFrom) return '\u201c' + b.name + '\u201d is a clean-up itself, so this clears the whole pocket';
+  if (!(b.dia > tp.dia)) return '\u201c' + b.name + '\u201d doesn\u2019t use a larger bit than this, so this clears the whole pocket';
+  if (!tpRestSource(tp)) return '\u201c' + b.name + '\u201d is on different shapes, so this clears the whole pocket';
+  return '';
+}
+// Worth saying about a working clean-up: its larger bit's pocket left out, or cut after it.
+function tpRestNote(tp){
+  var b = tpRestSource(tp);
+  if (!b) return '';
+  var list = tpList();
+  if (b.exclude) return '\u201c' + b.name + '\u201d is unticked, so it won\u2019t be cut: this only cleans up after it';
+  if (list.indexOf(tp) >= 0 && list.indexOf(b) > list.indexOf(tp)) return 'this runs before \u201c' + b.name + '\u201d: drag it below, so the larger bit goes first';
+  return '';
+}
 function tpDepth(tp){
+  var rs = tpRestSource(tp);
+  if (rs) return tpDepth(rs);                           // a clean-up goes as deep as the pocket it follows
   if (tp.side === 'chamfer') return tpChamferDepth(tp);
   if (tp.side === 'vcarve') return tp.vcDepth || 0;
   if (tp.through) return (DOC.stock.t || 0) + (tp.over === undefined ? 0.2 : tp.over);
@@ -197,7 +233,9 @@ function tpChamferDepth(tp){
   return (tp.chamW || 1) / Math.tan(half);
 }
 function tpSurface(){ return DOC.stock.zero === 'bottom' ? (DOC.stock.t || 0) : 0; }
-function tpStockSig(tp){                              // what makes a through-cut out of date
-  return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top');
+function tpStockSig(tp){                              // what makes a through-cut (or a clean-up) out of date
+  var rs = tpRestSource(tp);
+  return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top') +
+         (tp.restFrom ? '|r' + (rs ? [rs.id, rs.dia, tpDepth(rs), rs.allowance || 0, !!rs.finishPass, tpStockSig(rs)].join(',') : 'none:' + tpRestProblem(tp)) : '');
 }
 

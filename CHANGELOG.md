@@ -740,6 +740,22 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.105.0 — clean up after a larger bit
+- **Pockets can clean up after a larger bit.** Make the pocket with a large bit as usual, then a second pocket on
+  the same shapes with a small bit, and under **Clean up after** choose the first. The small bit then cuts only
+  where the large one couldn't reach: the corners it left round, and parts too narrow for it. That's typically
+  a quarter of the cutting of a full pocket with the small bit, or less. As VCarve's larger clearance tool does.
+- The clean-up goes as deep as the large bit's pocket, goes after it in the cutting order, and is rebuilt when
+  that pocket changes. If that pocket is unticked, deleted or on other shapes, the clean-up says so; deleted,
+  it clears the whole pocket, so nothing is left uncut.
+- In the CAM engine (cam.js pocket's `rest` option): the large bit is taken to clear everything within its
+  radius of where its centre could go; the small bit's usual rings are kept only where it would touch what's
+  left, a point either side. geom.js now exports its distance transform (edt2), which this uses.
+- Tested (9 tests) with Preview in wood's simulation, cell by cell, on a rectangle, an octagon, a slot too narrow for the
+  large bit, a pocket with an island and a triangle: the large bit plus the clean-up clear everything a full
+  pocket with the small bit would (to within 0.02 mm of the walls), cut nothing it wouldn't, with no rapid
+  moves into wood, in 20 to 29% of the cutting. Each part checked by breaking it on purpose (14 ways).
+
 ### 0.104.0 — Preview in wood
 - **Preview in wood**, in the Toolpaths panel: the material as it will look after the ticked toolpaths, shaded,
   lit from the top left. Pockets, V-carving, tabs and through-cuts (the spoilboard showing) look as they'll

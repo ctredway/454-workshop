@@ -325,7 +325,13 @@
   // distance from the nearest wall, so the finished walls are true.
   //
   // opts: outline, islands [], toolDia, stepover (mm), depth, passDepth, z0, safeZ, feed, plunge,
-  //       climb, ramp {length}
+  //       climb, ramp {length}, rest {toolDia, level}
+  //
+  // rest: clean up after a larger cutter that has already pocketed the same outline to the same depth, its
+  // centre kept `level` from the walls (its radius, the tolerance, and any allowance it left). It cleared
+  // everything within its radius of where its centre could go; what's left is the corners it couldn't get
+  // into and the parts too narrow for it. This cutter's usual rings are kept only where it would touch that,
+  // so it goes only where it's needed. Leftovers thinner than about the grid's accuracy are ignored.
   function pocket(opts){
     var o = Object.assign({islands: [], toolDia: 3.175, stepover: 1.2, depth: 3, passDepth: 1, z0: 0,
                            safeZ: 5, feed: 800, plunge: 300, climb: true, ramp: {length: 8}}, opts);
@@ -385,6 +391,43 @@
     var ringsByLevel = levels.map(function (lv) {
       return G.isoLoops(F, lv).map(function (l) { return prepare(l, lv); }).filter(Boolean);
     });
+    // REST: the larger cutter's leftovers, and which stretches of these rings reach them
+    var restRuns = null, restLeft = 0;
+    if (o.rest && o.rest.toolDia > 0){
+      var N = F.w * F.h, Rb = o.rest.toolDia / 2, slack = res * 1.5;
+      var reach = new Float64Array(N);                   // squared distance to where the larger cutter's centre went
+      for (var q0 = 0; q0 < N; q0++) reach[q0] = F.d[q0] >= o.rest.level ? 0 : 1e20;
+      G.edt2(reach, F.w, F.h, res);
+      var left = new Float64Array(N);                    // squared distance to material it left
+      for (var q1 = 0; q1 < N; q1++){
+        var isLeft = F.d[q1] > 0 && Math.sqrt(reach[q1]) > Rb + tol + slack;
+        left[q1] = isLeft ? 0 : 1e20;
+        if (isLeft) restLeft++;
+      }
+      G.edt2(left, F.w, F.h, res);
+      var needAt = function (px, py){                    // would this cutter, centred here, touch any of it?
+        var gx = Math.round((px - F.x0) / res), gy = Math.round((py - F.y0) / res);
+        if (gx < 0 || gy < 0 || gx >= F.w || gy >= F.h) return true;
+        return left[gy * F.w + gx] <= (r + res * 2) * (r + res * 2);
+      };
+      restRuns = ringsByLevel.map(function (rings) {
+        var out = [];
+        rings.forEach(function (ring) {
+          var n = ring.length, need = ring.map(function (p) { return needAt(p[0], p[1]); });
+          var grown = need.map(function (v, i) { return v || need[(i + 1) % n] || need[(i + n - 1) % n]; });   // a point either side
+          if (grown.every(Boolean)){ out.push({pts: ring, closed: true}); return; }
+          var s0 = grown.indexOf(false);
+          var run = null;
+          for (var k = 1; k <= n; k++){
+            var i = (s0 + k) % n;
+            if (grown[i]){ if (!run) run = []; run.push(ring[i]); }
+            else if (run){ if (run.length >= 2) out.push({pts: run, closed: false}); run = null; }
+          }
+          if (run && run.length >= 2) out.push({pts: run, closed: false});
+        });
+        return out;
+      });
+    }
     var ringCount = ringsByLevel.reduce(function (s2, a2) { return s2 + a2.length; }, 0);
 
     var moves = [], passes = Math.max(1, Math.ceil(o.depth / o.passDepth)), here = null;
@@ -450,6 +493,27 @@
     for (var p = 1; p <= passes; p++){
       var z = o.z0 - Math.min(o.depth, o.passDepth * p), prevZ = o.z0 - Math.min(o.depth, o.passDepth * (p - 1));
       var entered = false;
+      if (restRuns){                                     // only the stretches that reach what was left
+        for (var lr = restRuns.length - 1; lr >= 0; lr--){
+          var runs = restRuns[lr].slice();
+          while (runs.length){
+            var fromR = here || runs[0].pts[0], bR = 0, bdR = Infinity;
+            runs.forEach(function (rn, kk) { var dd = G.dist(fromR[0], fromR[1], rn.pts[0][0], rn.pts[0][1]); if (dd < bdR){ bdR = dd; bR = kk; } });
+            var rn = runs.splice(bR, 1)[0], pts = rn.closed ? rotateTo(rn.pts, fromR).concat([null]) : rn.pts.slice();
+            if (rn.closed) pts[pts.length - 1] = pts[0];
+            moves.push({g: 0, z: entered ? clear : o.safeZ});
+            moves.push({g: 0, x: pts[0][0], y: pts[0][1]});
+            moves.push({g: 0, z: prevZ + 0.5 < clear ? prevZ + 0.5 : clear});
+            moves.push({g: 1, z: prevZ, f: o.plunge});
+            rampOn(pts[0], pts[1], prevZ, z);
+            entered = true;
+            for (var kr = 1; kr < pts.length; kr++) moves.push({g: 1, x: pts[kr][0], y: pts[kr][1], z: z, f: o.feed});
+            here = pts[pts.length - 1];
+          }
+        }
+        moves.push({g: 0, z: clear});
+        continue;
+      }
       if (raster){
         var todo = rasterSegs.slice();
         while (todo.length){
@@ -527,7 +591,8 @@
       moves.push({g: 0, z: clear});
     }
     moves.push({g: 0, z: o.safeZ});
-    return {moves: moves, rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD};
+    return {moves: moves, rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD,
+            restRuns: restRuns ? restRuns.reduce(function (s3, a3) { return s3 + a3.length; }, 0) : undefined, restLeft: restRuns ? restLeft * res * res : undefined};
   }
 
   // ---- V-carving -------------------------------------------------------
