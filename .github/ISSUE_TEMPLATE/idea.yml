@@ -1,6 +1,6 @@
 name: Suggest an idea
 description: Something 454 Workshop could do, or do better.
-labels: [idea]
+labels: [enhancement]
 body:
   - type: markdown
     attributes:

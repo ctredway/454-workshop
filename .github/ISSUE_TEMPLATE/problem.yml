@@ -1,6 +1,6 @@
 name: Report a problem
 description: Something in 454 Control, 454 Design or the desktop app didn't work as it should.
-labels: [problem]
+labels: [bug]
 body:
   - type: markdown
     attributes:
