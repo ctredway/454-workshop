@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.25 — tabs as long as you ask
+- Includes Design 0.107.0: a tab's Length is the wood it leaves, whatever the bit (a 4 mm tab with a 1/4" bit
+  used to leave two slivers); new toolpaths start with the tabs you used last, 1.5 mm thick the first time.
+  And Design 0.106.1: tabs and nearly-cut-through wood show in amber in Preview in wood.
+
 ### 0.6.2-beta.24 — Preview in wood, in 3D
 - Includes Design 0.106.0: Preview in wood is a 3D view you can turn, move and zoom, using the app's own copy of
   three.js, so it works offline. Problem reports from the menu arrive labelled `bug`.
