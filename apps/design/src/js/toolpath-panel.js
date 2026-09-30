@@ -22,6 +22,7 @@ function renderToolpathPanel(){
   document.getElementById('tpList').innerHTML = '';
   sheetBar();
   if (mine.length) renderMyToolpaths();
+  tplButtons();
   if (!list.length){
     document.getElementById('tpLibNote').innerHTML = '';
     return;

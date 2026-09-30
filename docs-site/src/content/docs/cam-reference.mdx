@@ -270,6 +270,17 @@ gets another file rather than moving its cuts earlier, so nothing is cut out of 
 part never comes before the carving on it). Each file says at the top which file it is. Run them in order,
 and keep Z zero and XY zero the same between them. It asks before replacing files already in the folder.
 
+**Templates:** for jobs you make again and again (signs, boxes, cutting boards), **Save template…** at the
+bottom of the Toolpaths panel saves the toolpaths' settings to a file: bits, depths, passes, feeds, tabs, ramps,
+finishing and their order, but not the shapes. **Apply template…** makes them again in another drawing. Each
+toolpath finds its shapes by the **name of the layer** they were on, so draw the parts of the job on layers
+named for what happens to them (say "Carve" and "Cut out"), and use the same names next time.
+
+Before making anything, it lists each toolpath with the shapes it found, and any it can't make (no layer of
+that name, or nothing on it). They're added after any toolpaths already there, with tabs spaced evenly, and
+Undo takes them all back. Depths that cut through use the new drawing's material thickness, so set that
+first, and check each toolpath before cutting.
+
 **Preview in 454 Control** loads exactly the G-code Save G-code would write into 454 Control, for its 3D
 preview and playback, its time estimate (with your machine's acceleration) and its checks, with no file to
 save or open. Nothing is sent to the machine. If Control is already open, the job goes to it, without

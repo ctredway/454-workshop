@@ -58,6 +58,7 @@ version is in `src/js/version.js`.
 | `js/preview-in-control.js` | 41 | Preview in 454 Control: handing the job to Control |
 | `js/wood-preview.js` | 168 | Preview in wood: the cut worked out from the moves and each bit's shape, shaded |
 | `js/wood-3d.js` | 175 | Preview in wood in 3D: the block from the simulation, and turning, moving and zooming it |
+| `js/templates.js` | 130 | Toolpath templates: save a job's toolpaths without their shapes, apply them by layer name |
 | `js/sheets.js` | 55 | sheets (multi-sheet VCarve projects) |
 | `js/toolpath-panel.js` | 116 | the Toolpaths panel |
 | `js/tool-library.js` | 187 | the tool library: reading VCarve’s, storage, lookups |

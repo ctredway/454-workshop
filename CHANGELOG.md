@@ -770,6 +770,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.109.0 — toolpath templates
+- **Save template…** and **Apply template…**, at the bottom of the Toolpaths panel. A template is a job's
+  toolpaths without their shapes: bits, depths, passes, feeds, tabs, ramps, finishing, clean-ups and order,
+  in a small file. Applied to another drawing, each toolpath cuts the shapes on the layer with the same name
+  as when it was saved ("Carve", "Cut out"), so a job you make often is set up in one step.
+- Applying lists what each toolpath found first, and makes nothing until you say so. A toolpath whose layer is
+  missing or empty isn't made, and nor is a pocket clean-up whose pocket isn't. New toolpaths go after any
+  already there, tabs spaced evenly; Undo takes them back.
+- Tested (6 tests): applied back to the drawing it came from, it makes exactly the same toolpaths, move for
+  move; in another drawing it takes only the shapes on the named layers; the skipping, the question, Cancel
+  and Undo, and the buttons in a drawing with no toolpaths yet. Each checked by breaking it on purpose (10 ways).
+
 ### 0.108.0 — one G-code file per bit
 - **Save G-code can save one file per bit.** For a job with more than one bit, it asks: **One file** (as
   before: Control stops at each bit change) or **One file per bit**, which saves a file for each stretch cut
