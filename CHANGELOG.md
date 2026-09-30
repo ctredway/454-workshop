@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.22 — the VCarve group: shapes, sizes, curved text, a wood preview, pocket clean-up
+- Includes Design 0.100.0 to 0.105.0: Weld, Subtract and Intersect; the Ellipse, Polygon and Star tools; the
+  Selection box (exact position, size and rotation); text on a curve; Preview in wood; and pockets that clean
+  up after a larger bit.
+
 ### 0.6.2-beta.21 — Save back to the file; tools named at tool changes
 - **Design's files are opened and saved by path** (src/design-files.js), so Save goes back to the file a
   drawing came from, even after a restart. Includes Design 0.99.3 (that, and Save as) and 0.99.2 (its G-code
