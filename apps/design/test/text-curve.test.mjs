@@ -8,8 +8,8 @@ import { createRequire } from 'node:module';
 import { loadDesign } from './harness.mjs';
 
 const require = createRequire(import.meta.url);
-const opentype = require('../../desktop/node_modules/opentype.js');
-const roboto = fs.readFileSync(new URL('../../desktop/node_modules/@fontsource/roboto/files/roboto-latin-400-normal.woff', import.meta.url));
+const opentype = require('opentype.js');                          // (the project's dev packages: npm ci)
+const roboto = fs.readFileSync(require.resolve('@fontsource/roboto/files/roboto-latin-400-normal.woff'));
 const plain = (v) => JSON.parse(JSON.stringify(v));
 function fresh(ents, cam = false) {
   const D = loadDesign({ start: false, cam });
