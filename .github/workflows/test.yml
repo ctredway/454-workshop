@@ -18,3 +18,5 @@ jobs:
       - run: npm test
       - name: 454 Design's tests (on its real source files; needs npm ci for linkedom)
         run: node --test 'apps/design/test/*.test.mjs'
+      - name: The website builds, with every internal link checked (the same build Cloudflare runs)
+        run: npm ci --prefix docs-site && node site/build.js
