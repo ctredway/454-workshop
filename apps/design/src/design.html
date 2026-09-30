@@ -263,6 +263,16 @@
 
   <div id="canvasWrap">
     <canvas id="cv"></canvas>
+    <div id="selBox" hidden role="group" aria-label="Selection position, size and rotation">
+      <div id="sbAnchor" title="The reference point: X and Y are where it is, and it stays put when you resize or rotate"><button type="button" data-a="tl" aria-label="top left"></button><button type="button" data-a="t" aria-label="top middle"></button><button type="button" data-a="tr" aria-label="top right"></button><button type="button" data-a="l" aria-label="middle left"></button><button type="button" data-a="c" aria-label="centre"></button><button type="button" data-a="r" aria-label="middle right"></button><button type="button" data-a="bl" aria-label="bottom left"></button><button type="button" data-a="b" aria-label="bottom middle"></button><button type="button" data-a="br" aria-label="bottom right"></button></div>
+      <label>X <input id="sbX" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label>Y <input id="sbY" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label>W <input id="sbW" type="text" inputmode="decimal" autocomplete="off"></label>
+      <button type="button" id="sbLock" aria-label="Keep proportions"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="7" rx="1"/><path class="shut" d="M5.5 7 V5 a2.5 2.5 0 0 1 5 0 V7"/><path class="open" d="M5.5 7 V5 a2.5 2.5 0 0 1 5 0"/></svg></button>
+      <label>H <input id="sbH" type="text" inputmode="decimal" autocomplete="off"></label>
+      <span id="sbUnit">mm</span>
+      <label title="Turn the selection by this many degrees about the reference point: positive anticlockwise, negative clockwise">Rotate <input id="sbR" type="text" inputmode="decimal" autocomplete="off" placeholder="0">&deg;</label>
+    </div>
     <div id="promptHint"></div>
     <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
       <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
@@ -489,6 +499,7 @@
 @@include js/tool-click.js
 @@include js/tool-typing.js
 @@include js/shapes.js
+@@include js/selbox.js
 @@include js/prompt.js
 @@include js/vcarve-read.js
 @@include js/toolpaths.js

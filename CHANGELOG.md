@@ -740,6 +740,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.102.0 — exact position, size and rotation
+- **The Selection box**: while shapes are selected, a box at the top of the drawing shows their position and
+  size and takes exact values, like VCarve's Move, Set Size and Rotate. A 3×3 grid picks the reference point
+  (a corner, a side's middle, or the centre); **X** and **Y** move the selection so that point lands there;
+  **W** and **H** resize it about that point, in proportion with the padlock closed; **Rotate** turns it by a
+  typed angle about that point. The reference point and the padlock are remembered.
+- **A rectangle turned a quarter turn stays a rectangle** (by the box or the Rotate tool), so its dimensions
+  and typed sizes keep working. Other angles still make it an outline, as before.
+- **Stretching a circle one way makes a true ellipse** (arcs within 0.0005 mm, from the Ellipse tool), where it
+  used to make 120 short straight lines.
+- Tested (7 tests), each part checked by breaking it on purpose (12 ways); tried in the desktop app, dark and
+  light.
+
 ### 0.101.0 — Ellipse, Polygon and Star
 - **Three new drawing tools**, in Create Vectors after Circle, each started with a click on the centre:
   - **Ellipse**: then a corner of its box, or type its width and height (`120,60`). It's made of arcs within

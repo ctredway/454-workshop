@@ -23,6 +23,8 @@ function uiCfgLoad(){
       if (typeof c.showDims === 'boolean') UICFG.showDims = c.showDims;
       if (c.filletR > 0) UICFG.filletR = c.filletR;
       if (c.polySides >= 3) UICFG.polySides = c.polySides;
+      if (c.selAnchor) UICFG.selAnchor = c.selAnchor;
+      if (typeof c.selLock === 'boolean') UICFG.selLock = c.selLock;
       if (c.starPoints >= 3) UICFG.starPoints = c.starPoints;
       if (c.lastFont) UICFG.lastFont = c.lastFont;
       if (c.filletType) UICFG.filletType = c.filletType;

@@ -402,6 +402,19 @@
   #promptBar.on{display:flex}
   #promptBar label{color:var(--muted);font-size:12.5px}
   #promptBar input{width:170px}
+  #selBox{position:absolute;top:10px;left:10px;z-index:6;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--muted);box-shadow:0 2px 10px rgba(0,0,0,.25)}
+  #selBox[hidden]{display:none}
+  #selBox label{display:flex;align-items:center;gap:4px}
+  #selBox input{width:62px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:3px 5px}
+  #selBox input:focus{outline:none;border-color:var(--amber)}
+  #sbR{width:44px!important}
+  #sbAnchor{display:grid;grid-template-columns:repeat(3,7px);gap:2px}
+  #sbAnchor button{width:7px;height:7px;padding:0;border:1px solid var(--muted);border-radius:1px;background:none;cursor:pointer}
+  #sbAnchor button[aria-pressed="true"]{background:var(--amber);border-color:var(--amber)}
+  #sbLock{background:none;border:0;padding:2px;cursor:pointer;color:var(--muted)}
+  #sbLock svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.4;display:block}
+  #sbLock[aria-pressed="true"]{color:var(--amber)}
+  #sbLock[aria-pressed="true"] .open,#sbLock[aria-pressed="false"] .shut{display:none}
   #promptHint{position:absolute;left:50%;transform:translateX(-50%);bottom:60px;color:var(--muted);font-size:12px;z-index:5;background:var(--panel);padding:3px 10px;border-radius:4px;display:none}
   #promptHint.on{display:block}
 

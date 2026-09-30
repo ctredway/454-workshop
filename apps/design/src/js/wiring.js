@@ -6,7 +6,7 @@ function wire(){
   buildToolPanel();
   wirePanel();
   unsavedWire();
-  clipWire();
+  clipWire(); selBoxWire();
   keysWire();
   fit();
 

@@ -135,6 +135,22 @@ Picks shapes so you can move them, change them, or use another tool on them.
 Shapes on hidden or locked layers can’t be selected.
 :::
 
+#### Exact position, size and rotation
+
+While shapes are selected, the **Selection box** at the top of the drawing shows where they are and how big,
+and takes exact values, like VCarve's Move, Set Size and Rotate:
+
+- **The small grid** on its left picks the reference point: a corner, the middle of a side, or the centre.
+  X and Y are where that point is, and it stays put when you resize or rotate.
+- **X** and **Y**: type where the reference point should be, and press Enter. The selection moves there.
+- **W** and **H**: type the width or height. With the padlock closed, the other changes in proportion; click the
+  padlock to set them separately. Stretching a circle one way makes an ellipse.
+- **Rotate**: type the angle in degrees and press Enter to turn the selection about the reference point:
+  positive anticlockwise, negative clockwise. A rectangle turned 90° stays a rectangle.
+
+Values are in the units the drawing is shown in (millimetres or inches). <kbd>Esc</kbd> puts back what
+you typed; <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes a change.
+
 ### Copy and paste
 
 Copies shapes, with their dimensions, to paste somewhere else in the drawing, or into another drawing.

@@ -412,6 +412,19 @@
   #promptBar.on{display:flex}
   #promptBar label{color:var(--muted);font-size:12.5px}
   #promptBar input{width:170px}
+  #selBox{position:absolute;top:10px;left:10px;z-index:6;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--muted);box-shadow:0 2px 10px rgba(0,0,0,.25)}
+  #selBox[hidden]{display:none}
+  #selBox label{display:flex;align-items:center;gap:4px}
+  #selBox input{width:62px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:3px 5px}
+  #selBox input:focus{outline:none;border-color:var(--amber)}
+  #sbR{width:44px!important}
+  #sbAnchor{display:grid;grid-template-columns:repeat(3,7px);gap:2px}
+  #sbAnchor button{width:7px;height:7px;padding:0;border:1px solid var(--muted);border-radius:1px;background:none;cursor:pointer}
+  #sbAnchor button[aria-pressed="true"]{background:var(--amber);border-color:var(--amber)}
+  #sbLock{background:none;border:0;padding:2px;cursor:pointer;color:var(--muted)}
+  #sbLock svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.4;display:block}
+  #sbLock[aria-pressed="true"]{color:var(--amber)}
+  #sbLock[aria-pressed="true"] .open,#sbLock[aria-pressed="false"] .shut{display:none}
   #promptHint{position:absolute;left:50%;transform:translateX(-50%);bottom:60px;color:var(--muted);font-size:12px;z-index:5;background:var(--panel);padding:3px 10px;border-radius:4px;display:none}
   #promptHint.on{display:block}
 
@@ -682,6 +695,16 @@
 
   <div id="canvasWrap">
     <canvas id="cv"></canvas>
+    <div id="selBox" hidden role="group" aria-label="Selection position, size and rotation">
+      <div id="sbAnchor" title="The reference point: X and Y are where it is, and it stays put when you resize or rotate"><button type="button" data-a="tl" aria-label="top left"></button><button type="button" data-a="t" aria-label="top middle"></button><button type="button" data-a="tr" aria-label="top right"></button><button type="button" data-a="l" aria-label="middle left"></button><button type="button" data-a="c" aria-label="centre"></button><button type="button" data-a="r" aria-label="middle right"></button><button type="button" data-a="bl" aria-label="bottom left"></button><button type="button" data-a="b" aria-label="bottom middle"></button><button type="button" data-a="br" aria-label="bottom right"></button></div>
+      <label>X <input id="sbX" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label>Y <input id="sbY" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label>W <input id="sbW" type="text" inputmode="decimal" autocomplete="off"></label>
+      <button type="button" id="sbLock" aria-label="Keep proportions"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="7" rx="1"/><path class="shut" d="M5.5 7 V5 a2.5 2.5 0 0 1 5 0 V7"/><path class="open" d="M5.5 7 V5 a2.5 2.5 0 0 1 5 0"/></svg></button>
+      <label>H <input id="sbH" type="text" inputmode="decimal" autocomplete="off"></label>
+      <span id="sbUnit">mm</span>
+      <label title="Turn the selection by this many degrees about the reference point: positive anticlockwise, negative clockwise">Rotate <input id="sbR" type="text" inputmode="decimal" autocomplete="off" placeholder="0">&deg;</label>
+    </div>
     <div id="promptHint"></div>
     <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
       <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
@@ -906,7 +929,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.101.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.102.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -2848,6 +2871,116 @@ function shapeToolPreview(ctx, m){
   }
   e.pts.forEach(function (q, i){ var s = w2s(q[0], q[1]); if (i) ctx.lineTo(s.x, s.y); else ctx.moveTo(s.x, s.y); });
   ctx.closePath();
+}
+/* ---------------- the Selection box: exact position, size and rotation ----------------
+   While shapes are selected with Select, a small box at the top of the drawing shows where the selection is
+   and how big, and takes typed values, as VCarve's Move, Set Size and Rotate forms do:
+     the 3x3 grid picks the reference point: a corner, the middle of a side, or the centre. X and Y are where
+       that point is; resizing and rotating keep it where it is.
+     X, Y   move the selection so the reference point lands there.
+     W, H   resize it; with the padlock closed, the other follows in proportion.
+     Rotate turns it by that many degrees, anticlockwise (negative for clockwise), about the reference point.
+   Enter (or leaving the box) applies a value, Esc puts it back. Each change is one undo step. Values are in
+   the units the drawing is shown in. */
+var SELBOX_ANCHORS = ['tl', 't', 'tr', 'l', 'c', 'r', 'bl', 'b', 'br'];
+
+function selBoxAnchor(){ return SELBOX_ANCHORS.indexOf(UICFG.selAnchor) >= 0 ? UICFG.selAnchor : 'bl'; }
+function selBoxLocked(){ return UICFG.selLock !== false; }
+// The reference point of box b.
+function selBoxPoint(b, a){
+  a = a || selBoxAnchor();
+  return {x: /l/.test(a) ? b.x0 : /r/.test(a) ? b.x1 : (b.x0 + b.x1) / 2,
+          y: /^b/.test(a) ? b.y0 : /^t/.test(a) ? b.y1 : (b.y0 + b.y1) / 2};
+}
+function selBoxShown(){ return TOOL === 'select' && SEL.length > 0 && !(DRAW && (DRAW.stage === 'marq' || DRAW.stage === 'xform')); }
+// Show the selection's numbers (except in the field being typed in).
+function selBoxRefresh(){
+  var box = document.getElementById('selBox');
+  if (!box) return;
+  var show = selBoxShown(), b = show ? selBBox() : null;
+  box.hidden = !b;
+  if (!b) return;
+  var p = selBoxPoint(b), vals = {sbX:p.x, sbY:p.y, sbW:b.x1 - b.x0, sbH:b.y1 - b.y0};
+  Object.keys(vals).forEach(function (id){
+    var el = document.getElementById(id);
+    if (document.activeElement !== el) el.value = fmtDisp(vals[id]);
+  });
+  var r = document.getElementById('sbR');
+  if (document.activeElement !== r) r.value = '';
+  document.getElementById('sbUnit').textContent = dispIn() ? 'in' : 'mm';
+  Array.prototype.forEach.call(document.querySelectorAll('#sbAnchor button'), function (bt){
+    bt.setAttribute('aria-pressed', bt.dataset.a === selBoxAnchor() ? 'true' : 'false');
+  });
+  var lk = document.getElementById('sbLock');
+  lk.setAttribute('aria-pressed', selBoxLocked() ? 'true' : 'false');
+  lk.title = selBoxLocked() ? 'Proportions kept: changing W changes H to match. Click to size them separately.'
+                            : 'Width and height separately. Click to keep the proportions.';
+}
+// Apply a typed value. field: 'x', 'y', 'w', 'h' or 'r'. Returns false (and says why) if it can't.
+function selBoxApply(field, txt){
+  if (!SEL.length) return false;
+  var b = selBBox();
+  if (!b) return false;
+  var v = field === 'r' ? parseFloat(String(txt).replace(/[°\s]/g, '')) : lenIn(txt);
+  if (!isFinite(v)){ if (String(txt).trim() !== '') toast('warn', 'That isn’t a number', 'Type a number, such as 120 or 45.5.'); return false; }
+  var p = selBoxPoint(b), w = b.x1 - b.x0, h = b.y1 - b.y0;
+  if (field === 'x' || field === 'y'){
+    var dx = field === 'x' ? v - p.x : 0, dy = field === 'y' ? v - p.y : 0;
+    if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) return true;
+    pushUndo();
+    SEL.forEach(function (i){ moveEntity(DOC.ents[i], dx, dy); });
+  } else if (field === 'w' || field === 'h'){
+    if (!(v > 0)){ toast('warn', 'Bigger than nothing', 'A size has to be more than 0.'); return false; }
+    var cur = field === 'w' ? w : h, other = field === 'w' ? h : w;
+    if (cur < 1e-9){
+      toast('warn', 'It has no ' + (field === 'w' ? 'width' : 'height'), 'The selection is a straight ' + (field === 'w' ? 'up-and-down' : 'side-to-side') +
+        ' line, so it can’t be stretched that way. Set its ' + (field === 'w' ? 'height' : 'width') + ' instead.');
+      return false;
+    }
+    var k = v / cur, sx = field === 'w' ? k : 1, sy = field === 'h' ? k : 1;
+    if (selBoxLocked() && other > 1e-9){ sx = k; sy = k; }
+    if (Math.abs(sx - 1) < 1e-12 && Math.abs(sy - 1) < 1e-12) return true;
+    pushUndo();
+    SCALE_NOTE = null;
+    SEL.forEach(function (i){ scaleEnt(DOC.ents[i], p.x, p.y, sx, sy); });
+    if (SCALE_NOTE === 'ellipse')
+      toast('info', 'Circles became ellipses', 'Stretching one way turns circles and arcs into ellipses. Close the padlock to keep them round.');
+    else if (SCALE_NOTE === 'text')
+      toast('info', 'Angled text scaled evenly', 'Text at an angle can only be scaled evenly. Convert it to curves first to stretch it.');
+  } else if (field === 'r'){
+    if (Math.abs(v) < 1e-12) return true;
+    pushUndo();
+    SEL.forEach(function (i){ rotateEnt(DOC.ents[i], p.x, p.y, v * Math.PI / 180); });
+  } else return false;
+  HANDLES.pivot = null;
+  persist(); draw();
+  return true;
+}
+function selBoxWire(){
+  var box = document.getElementById('selBox');
+  if (!box) return;
+  [['sbX', 'x'], ['sbY', 'y'], ['sbW', 'w'], ['sbH', 'h'], ['sbR', 'r']].forEach(function (pr){
+    var el = document.getElementById(pr[0]), shown = '';
+    el.addEventListener('focus', function (){ shown = el.value; if (el.select) el.select(); });
+    function commit(){
+      if (el.value === shown) return;
+      shown = el.value;
+      selBoxApply(pr[1], el.value);
+      if (pr[1] === 'r') el.value = '';
+      selBoxRefresh();
+    }
+    el.addEventListener('keydown', function (ev){
+      if (ev.key === 'Enter'){ ev.preventDefault(); commit(); shown = el.value; if (el.select) el.select(); }
+      else if (ev.key === 'Escape'){ ev.preventDefault(); el.value = shown; el.blur(); }
+    });
+    el.addEventListener('blur', function (){ commit(); selBoxRefresh(); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#sbAnchor button'), function (bt){
+    bt.addEventListener('click', function (){ UICFG.selAnchor = bt.dataset.a; uiCfgSave(); selBoxRefresh(); draw(); });
+  });
+  document.getElementById('sbLock').addEventListener('click', function (){
+    UICFG.selLock = !selBoxLocked(); uiCfgSave(); selBoxRefresh();
+  });
 }
 /* ---------------- prompt / hint ---------------- */
 // Where the floating value box should sit, in canvas pixels. Callers set FLOAT_AT for a
@@ -7911,6 +8044,7 @@ function keysWire(){
 }
 /* ---------------- rendering ---------------- */
 function draw(){
+  selBoxRefresh();
   var w = cv.width = cv.clientWidth * (window.devicePixelRatio||1);
   var h = cv.height = cv.clientHeight * (window.devicePixelRatio||1);
   ctx.setTransform(window.devicePixelRatio||1,0,0,window.devicePixelRatio||1,0,0);
@@ -10101,6 +10235,11 @@ function rotateEnt(e, cx, cy, ang){
     e.rot = (e.rot || 0) + ang;
     return;
   }
+  if (e.t === 'rect' && (Math.abs(sa) < 1e-9 || Math.abs(ca) < 1e-9)){   // quarter turns: still a rectangle
+    var q0 = rotPt(e.x, e.y, cx, cy, ca, sa), q1 = rotPt(e.x + e.w, e.y + e.h, cx, cy, ca, sa);
+    e.x = Math.min(q0[0], q1[0]); e.y = Math.min(q0[1], q1[1]); e.w = Math.abs(q1[0] - q0[0]); e.h = Math.abs(q1[1] - q0[1]);
+    return;
+  }
   if (e.t === 'rect'){ // rotation breaks axis alignment: become a closed poly first
     var pp = [[e.x,e.y],[e.x+e.w,e.y],[e.x+e.w,e.y+e.h],[e.x,e.y+e.h]];
     e.t = 'poly'; e.pts = pp; e.closed = true;
@@ -10190,12 +10329,7 @@ function scaleEnt(e, ox, oy, sx, sy){
   if (e.t === 'poly'){ e.pts = e.pts.map(function(q){ return [X(q[0]), Y(q[1])]; }); return; }
   if (e.t === 'circle'){
     if (uniform){ e.cx = X(e.cx); e.cy = Y(e.cy); e.r *= Math.abs(sx); return; }
-    var ell = [];
-    for (var k = 0; k < 120; k++){
-      var a = k / 120 * 2 * Math.PI;
-      ell.push([X(e.cx + e.r * Math.cos(a)), Y(e.cy + e.r * Math.sin(a))]);
-    }
-    morphEnt(e, {t:'poly', pts:ell, closed:true}); SCALE_NOTE = 'ellipse';
+    morphEnt(e, ellipseShape(X(e.cx), Y(e.cy), e.r * Math.abs(sx), e.r * Math.abs(sy))); SCALE_NOTE = 'ellipse';
     return;
   }
   if (e.t === 'arc'){
@@ -11681,6 +11815,8 @@ function uiCfgLoad(){
       if (typeof c.showDims === 'boolean') UICFG.showDims = c.showDims;
       if (c.filletR > 0) UICFG.filletR = c.filletR;
       if (c.polySides >= 3) UICFG.polySides = c.polySides;
+      if (c.selAnchor) UICFG.selAnchor = c.selAnchor;
+      if (typeof c.selLock === 'boolean') UICFG.selLock = c.selLock;
       if (c.starPoints >= 3) UICFG.starPoints = c.starPoints;
       if (c.lastFont) UICFG.lastFont = c.lastFont;
       if (c.filletType) UICFG.filletType = c.filletType;
@@ -11964,7 +12100,7 @@ function wire(){
   buildToolPanel();
   wirePanel();
   unsavedWire();
-  clipWire();
+  clipWire(); selBoxWire();
   keysWire();
   fit();
 

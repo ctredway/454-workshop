@@ -1,5 +1,6 @@
 /* ---------------- rendering ---------------- */
 function draw(){
+  selBoxRefresh();
   var w = cv.width = cv.clientWidth * (window.devicePixelRatio||1);
   var h = cv.height = cv.clientHeight * (window.devicePixelRatio||1);
   ctx.setTransform(window.devicePixelRatio||1,0,0,window.devicePixelRatio||1,0,0);

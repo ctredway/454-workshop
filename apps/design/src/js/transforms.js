@@ -67,6 +67,11 @@ function rotateEnt(e, cx, cy, ang){
     e.rot = (e.rot || 0) + ang;
     return;
   }
+  if (e.t === 'rect' && (Math.abs(sa) < 1e-9 || Math.abs(ca) < 1e-9)){   // quarter turns: still a rectangle
+    var q0 = rotPt(e.x, e.y, cx, cy, ca, sa), q1 = rotPt(e.x + e.w, e.y + e.h, cx, cy, ca, sa);
+    e.x = Math.min(q0[0], q1[0]); e.y = Math.min(q0[1], q1[1]); e.w = Math.abs(q1[0] - q0[0]); e.h = Math.abs(q1[1] - q0[1]);
+    return;
+  }
   if (e.t === 'rect'){ // rotation breaks axis alignment: become a closed poly first
     var pp = [[e.x,e.y],[e.x+e.w,e.y],[e.x+e.w,e.y+e.h],[e.x,e.y+e.h]];
     e.t = 'poly'; e.pts = pp; e.closed = true;
@@ -156,12 +161,7 @@ function scaleEnt(e, ox, oy, sx, sy){
   if (e.t === 'poly'){ e.pts = e.pts.map(function(q){ return [X(q[0]), Y(q[1])]; }); return; }
   if (e.t === 'circle'){
     if (uniform){ e.cx = X(e.cx); e.cy = Y(e.cy); e.r *= Math.abs(sx); return; }
-    var ell = [];
-    for (var k = 0; k < 120; k++){
-      var a = k / 120 * 2 * Math.PI;
-      ell.push([X(e.cx + e.r * Math.cos(a)), Y(e.cy + e.r * Math.sin(a))]);
-    }
-    morphEnt(e, {t:'poly', pts:ell, closed:true}); SCALE_NOTE = 'ellipse';
+    morphEnt(e, ellipseShape(X(e.cx), Y(e.cy), e.r * Math.abs(sx), e.r * Math.abs(sy))); SCALE_NOTE = 'ellipse';
     return;
   }
   if (e.t === 'arc'){
