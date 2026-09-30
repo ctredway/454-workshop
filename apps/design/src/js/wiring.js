@@ -153,7 +153,7 @@ function wire(){
     if (!CUT) return;
     cutFromForm();
     if (!CUT.tabsOn) CUT.placing = false;
-    else if (!tpTabTotal(CUT)) CUT.placing = true;        // straight into placing them
+    else if (!tpTabTotal(CUT)){ CUT.placing = true; CUT.placingStart = false; }   // straight into placing them
     cutRender();
   });
   document.getElementById('cutTabs').addEventListener('input', function(){ if (CUT) cutFromForm(); });
@@ -161,13 +161,22 @@ function wire(){
     if (!CUT) return;
     cutFromForm(); tpAddEvenTabs(CUT, CUT.tabCount); cutRender();
   });
+  document.getElementById('cutStartPlace').addEventListener('click', function(){
+    if (!CUT) return;
+    CUT.placingStart = !CUT.placingStart; if (CUT.placingStart) CUT.placing = false;   // one kind of clicking at a time
+    cutRender();
+  });
+  document.getElementById('cutStartClear').addEventListener('click', function(){
+    if (!CUT) return;
+    CUT.startPts = {}; CUT.placingStart = false; cutRender();
+  });
   document.getElementById('cutTabClear').addEventListener('click', function(){
     if (!CUT) return;
     CUT.tabPts = {}; cutRender();
   });
   document.getElementById('cutTabPlace').addEventListener('click', function(){
     if (!CUT) return;
-    CUT.placing = !CUT.placing;
+    CUT.placing = !CUT.placing; if (CUT.placing) CUT.placingStart = false;
     cutRender();
   });
   document.getElementById('cutPanel').addEventListener('keydown', function(e){

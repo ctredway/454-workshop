@@ -11,7 +11,7 @@ function cutOpen(existing){
   // Every setting the editor shows, so a toolpath saved by an older version (missing some of these)
   // opens cleanly instead of breaking the form.
   var CUT_DEFAULTS = {side: 'outside', depth: 3, step: 1, feed: 800, plunge: 300, tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5, tabStyle: 'flat',
-                      tabPts: {}, toolId: null, stepoverPct: 40, chamW: 1, vAngle: 90, chamMode: 'edge', peck: 0, over: 0.2, through: false};
+                      tabPts: {}, startPts: {}, toolId: null, stepoverPct: 40, chamW: 1, vAngle: 90, chamMode: 'edge', peck: 0, over: 0.2, through: false};
   CUT = existing
     ? Object.assign({}, CUT_DEFAULTS, existing, {ents: existing.ents.slice(), editing: existing.id})
     : {ents: picked.map(function (i) { return entId(DOC.ents[i]); }),
@@ -19,14 +19,15 @@ function cutOpen(existing){
        tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5, tabPts: {}, toolId: null, editing: null, stepoverPct: 40,
        chamW: 1, vAngle: 90,
        through: false, depth: null, over: 0.2};
-  if (existing){ CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {})); CUT.toolChosen = tpToolChosen(existing); }
+  if (existing){ CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {})); CUT.startPts = JSON.parse(JSON.stringify(existing.startPts || {})); CUT.toolChosen = tpToolChosen(existing); }
   else { var ts = cutTabsStart(); CUT.tabCount = ts.count; CUT.tabLen = ts.len; CUT.tabThk = ts.thk; CUT.tabStyle = ts.style; }
   // The tool sets every dimension of the cut, so every toolpath has its tool chosen for it: never
   // defaulted, never carried over from another toolpath. Until then there is no tool, and a toolpath
   // without one can't be created or saved as G-code.
   if (!existing){ CUT.dia = null; CUT.toolId = null; CUT.toolChosen = false; }
   if (CUT.tabsOn === undefined) CUT.tabsOn = CUT.tabCount > 0;
-  CUT.placing = false;
+  if (!CUT.startPts) CUT.startPts = {};
+  CUT.placing = false; CUT.placingStart = false;
   document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
   document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
   cutFillTools();
@@ -172,6 +173,9 @@ function cutRenderInner(){
   document.getElementById('cutDirRow').hidden = drilling || vcarving;
   document.getElementById('cutFinRow').hidden = !(pocketing || CUT.side === 'inside' || CUT.side === 'outside');
   document.getElementById('cutLeadRow').hidden = !(CUT.side === 'inside' || CUT.side === 'outside');
+  var profiling = CUT.side === 'inside' || CUT.side === 'outside' || CUT.side === 'on';
+  document.getElementById('cutStartRow').hidden = !profiling;
+  if (!profiling) CUT.placingStart = false;
   var ramps = pocketing || CUT.side === 'inside' || CUT.side === 'outside' || CUT.side === 'on';
   document.getElementById('cutRampRow').hidden = !ramps;
   document.getElementById('cutRampU').textContent = unitTag();
@@ -245,7 +249,13 @@ function cutRenderInner(){
   document.getElementById('cutTabPlace').disabled = !CUT.tabsOn || !ok;
   document.getElementById('cutTabPlace').textContent = CUT.placing ? 'Done' : 'Edit tabs';
   document.getElementById('cutTabPlace').setAttribute('aria-pressed', CUT.placing ? 'true' : 'false');
-  document.getElementById('cutShapes').setAttribute('aria-pressed', CUT.placing ? 'false' : 'true');
+  document.getElementById('cutShapes').setAttribute('aria-pressed', CUT.placing || CUT.placingStart ? 'false' : 'true');
+  var nStart = cutStartCount();
+  document.getElementById('cutStartSay').textContent = nStart ? nStart + ' of ' + CUT.ents.length + ' chosen' : 'automatic';
+  document.getElementById('cutStartPlace').textContent = CUT.placingStart ? 'Done' : 'Set start';
+  document.getElementById('cutStartPlace').setAttribute('aria-pressed', CUT.placingStart ? 'true' : 'false');
+  document.getElementById('cutStartPlace').disabled = !ok;
+  document.getElementById('cutStartClear').disabled = !nStart;
   if (drilling){
     document.getElementById('cutTabSize').hidden = true;
     document.getElementById('cutTabTools').hidden = true;
@@ -358,7 +368,9 @@ function cutRenderInner(){
     draw();
     return;
   }
-  document.getElementById('cutHint').textContent = CUT.placing
+  document.getElementById('cutHint').textContent = CUT.placingStart
+    ? 'Click the outline where the cut should start: one point per shape (clicking again moves it). Press Done when finished.'
+    : CUT.placing
     ? 'Click the outline to add a tab, click a tab to remove it.'
     : (CUT.tabsOn && ok && !nTabs)
     ? 'Tabs are on but none are placed \u2014 press Edit tabs and click the outline where you want them.'
@@ -406,12 +418,38 @@ function cutIssuesRender(){
   });
 }
 function cutClick(w){
+  if (CUT.placingStart){ cutStartClick(w); return; }
   if (CUT.placing){ cutTabClick(w); return; }
   var h = pickEntity(w);
   if (h === null) return;
   var id = entId(DOC.ents[h]);
   var at = CUT.ents.indexOf(id);
   if (at >= 0) CUT.ents.splice(at, 1); else CUT.ents.push(id);
+  cutRender();
+}
+// How many of the chosen shapes have a start point set
+function cutStartCount(){
+  return CUT.ents.filter(function (id) { return CUT.startPts && CUT.startPts[id]; }).length;
+}
+// The nearest point on the nearest chosen outline to w, or null if the click was too far from any
+function cutNearestOnOutline(w){
+  var best = null;
+  tpOutlinesById(CUT.ents).forEach(function (o) {
+    var n = o.loop.length;
+    for (var k = 0; k < n; k++){
+      var a = o.loop[k], b = o.loop[(k + 1) % n];
+      var q = Geom.closestOnSeg(w.x, w.y, a[0], a[1], b[0], b[1]);
+      var dd = Math.hypot(q[0] - w.x, q[1] - w.y);
+      if (!best || dd < best.d) best = {d: dd, id: o.id, p: q};
+    }
+  });
+  return best && best.d <= 12 / VIEW.scale ? best : null;
+}
+// Start that shape's cut where its outline was clicked (one start per shape: a second click moves it)
+function cutStartClick(w){
+  var best = cutNearestOnOutline(w);
+  if (!best){ toast('info', 'Click on the outline', 'The cut starts on the edge of the shape being cut.'); return; }
+  CUT.startPts[best.id] = [best.p[0], best.p[1]];
   cutRender();
 }
 // Add a tab where the outline was clicked, or take away the one that was clicked on.
@@ -547,6 +585,13 @@ function cutTabsStart(){
 function cutTabsRemember(tp){
   UICFG.tabs = {count: tp.tabCount, len: tp.tabLen, thk: tp.tabThk, style: tp.tabStyle}; uiCfgSave();
 }
+// The start points to keep: those on shapes still being cut, for profiles only
+function cutStartsKept(){
+  var out = {};
+  if (CUT.side === 'inside' || CUT.side === 'outside' || CUT.side === 'on')
+    CUT.ents.forEach(function (id) { if (CUT.startPts && CUT.startPts[id]) out[id] = CUT.startPts[id].slice(); });
+  return out;
+}
 function cutApply(){
   if (!CUT || !(CUT.dia > 0) || !CUT.toolChosen) return;   // never without a chosen tool
   var restSrc = tpRestSource(CUT);                           // a clean-up takes the larger pocket's depth
@@ -571,6 +616,7 @@ function cutApply(){
     dia: CUT.dia, depth: CUT.depth, step: CUT.step, feed: CUT.feed, plunge: CUT.plunge,
     tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk, tabStyle: CUT.tabStyle === '3d' ? '3d' : 'flat',
     tabPts: JSON.parse(JSON.stringify(CUT.tabPts || {})),
+    startPts: cutStartsKept(),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
     hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6

@@ -159,7 +159,8 @@ function tpGenerate(tp){
   var moves = [], warn = null;
   if (tp.tabsOn === undefined) tp.tabsOn = tp.tabCount > 0;         // older toolpaths
   tpEnsureTabs(tp);
-  loops.forEach(function (o) {
+  var starts = tpStartLoops(tp, loops);
+  loops.forEach(function (o, li) {
     var pts = tp.tabsOn && tp.tabPts ? tp.tabPts[o.id] : null;
     var res = Cam.profile({
       outline: o.loop, side: tp.side, toolDia: tp.dia, depth: tpDepth(tp), passDepth: tp.step, z0: tpSurface(),
@@ -167,7 +168,8 @@ function tpGenerate(tp){
       lead: tp.leadType && tp.leadType !== 'none' ? {type: tp.leadType, size: tp.leadSize > 0 ? tp.leadSize : tp.dia} : null,
       feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2), climb: tp.climb !== false, safeZ: tpSurface() + (tp.safeZ || 6),
       tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), shape: tp.tabStyle === '3d' ? '3d' : 'flat', at: pts} : null,
-      ramp: {length: tpRamp(tp)}
+      ramp: {length: tpRamp(tp)},
+      startAt: starts[li] || null
     });
     if (res.warning) warn = res.warning;
     res.moves.forEach(function (m) { moves.push(m); });
@@ -176,6 +178,24 @@ function tpGenerate(tp){
   tp.warning = loops.length ? warn : 'nothing to cut: pick closed shapes';
   tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
   return tp;
+}
+// Where each outline's cut starts, if one was chosen (tp.startPts: a point on a shape's outline, by the shape's
+// id). A shape with several outlines (text, a shape with holes) starts there only on the outline nearest it.
+function tpStartLoops(tp, loops){
+  var out = [];
+  if (!tp.startPts) return out;
+  var near = {};                                          // for each shape: its outline nearest its start point
+  loops.forEach(function (o, li) {
+    var p = tp.startPts[o.id]; if (!p) return;
+    var d = Infinity, n = o.loop.length;
+    for (var k = 0; k < n; k++){
+      var a = o.loop[k], b = o.loop[(k + 1) % n], q = Geom.closestOnSeg(p[0], p[1], a[0], a[1], b[0], b[1]);
+      d = Math.min(d, Math.hypot(q[0] - p[0], q[1] - p[1]));
+    }
+    if (!near[o.id] || d < near[o.id].d) near[o.id] = {d: d, li: li};
+  });
+  Object.keys(near).forEach(function (id) { out[near[id].li] = tp.startPts[id]; });
+  return out;
 }
 function tpStale(tp){ return tp.sig !== tpSignature(tp.ents) + tpStockSig(tp); }
 // Depth is measured down from the top of the material. "Through" means the thickness plus a

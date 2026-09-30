@@ -770,6 +770,21 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.110.0 — choose where a profile starts
+- **Set start** in the toolpath editor, for profiles: click a shape's outline and its cut starts there, at the
+  nearest point on the cutter's path, instead of at a corner. Put the mark where each pass begins somewhere
+  harmless. One per shape (clicking again moves it); **Automatic** goes back. Shown on the drawing as a ring with
+  a dot. Leads sweep in to it; ramps and tabs work from it.
+- Otherwise the cut is the same: the same length of cutting at every depth, never closer than the cutter's
+  radius. On a shape with several outlines (text), the start goes on the outline nearest the click.
+- Templates don't keep start points (they belong to the shapes).
+- **Fixed:** the toolpath editor showed **Clean up after** for every kind of toolpath (since 0.105.0), and **Ramp
+  in** for drilling: those rows' hidden setting was overridden by their layout. Every row in the editor now hides
+  properly (checked in the desktop app for all seven kinds).
+- Tested (8 tests): where the cut starts, on a rectangle and a circle; the same cut otherwise; one per shape,
+  moving, Automatic, Cancel; profiles only; never into a tab; with a lead-in. Each checked by breaking it on
+  purpose (12 ways).
+
 ### 0.109.0 — toolpath templates
 - **Save template…** and **Apply template…**, at the bottom of the Toolpaths panel. A template is a job's
   toolpaths without their shapes: bits, depths, passes, feeds, tabs, ramps, finishing, clean-ups and order,

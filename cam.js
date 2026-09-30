@@ -81,6 +81,19 @@
     }
     return at;
   }
+  // The same loop, starting at the point nearest p: the cut starts there instead of at the loop's first corner.
+  function loopFromNearest(loop, px, py){
+    var d = distanceAlong(loop, px, py), P = pointAt(loop, d), run = 0, n = loop.length;
+    for (var i = 0; i < n; i++){
+      var a = loop[i], b = loop[(i + 1) % n], seg = G.dist(a[0], a[1], b[0], b[1]);
+      if (run + seg >= d - 1e-9 || i === n - 1){                 // P is on the edge a..b: P, b, ... round to a
+        var out = [P].concat(loop.slice(i + 1), loop.slice(0, i + 1));
+        return out.filter(function (q, k) { return k === 0 || G.dist(q[0], q[1], P[0], P[1]) > 1e-9; });
+      }
+      run += seg;
+    }
+    return loop;
+  }
   // Tab positions spread evenly round a loop, as points: half a spacing along so none sits on
   // the seam where the tool enters.
   function evenTabPoints(loop, count){
@@ -113,6 +126,8 @@
   //             length is the wood left, along the middle of the cut
   //             (the cutter stays up over that and its radius either side)
   //   ramp      {length} to lead into each pass, or null for a straight plunge
+  //   startAt   [x, y] or null: start each pass at the point on the path nearest this (else a corner, or with
+  //             leads the middle of the longest edge)
   function profile(opts){
     var o = Object.assign({
       side: 'outside', toolDia: 3.175, depth: 3, z0: 0, passDepth: 1,
@@ -174,7 +189,8 @@
 
     loops.forEach(function (raw) {
       var loop = orient(raw, o.side, o.climb);
-      if (leadOn){                                             // start mid-way along the longest edge, where the direction is clear
+      if (o.startAt) loop = loopFromNearest(loop, o.startAt[0], o.startAt[1]);   // chosen: start where it was clicked
+      else if (leadOn){                                            // start mid-way along the longest edge, where the direction is clear
         var bi = 0, bl = -1;
         for (var i0 = 0; i0 < loop.length; i0++){ var a0 = loop[i0], b0 = loop[(i0 + 1) % loop.length], l0 = G.dist(a0[0], a0[1], b0[0], b0[1]); if (l0 > bl){ bl = l0; bi = i0; } }
         var A0 = loop[bi], B0 = loop[(bi + 1) % loop.length], mid = [(A0[0] + B0[0]) / 2, (A0[1] + B0[1]) / 2];

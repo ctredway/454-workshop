@@ -287,6 +287,7 @@
   #cutPanel select{font-size:12px}
   #cutTabPlace[aria-pressed=true]{border-color:var(--amber);background:var(--accent-soft)}
   #cutTabSize[hidden],#cutTabTools[hidden],#cutStepRow[hidden],#cutPeckRow[hidden],#cutTabRow[hidden],#cutOverRow[hidden],#cutOverlapRow[hidden],#cutClearRow[hidden],#cutDirRow[hidden],#cutFinRow[hidden],#cutLeadRow[hidden],#cutChamRow[hidden],#cutChamModeRow[hidden],#cutVcRow[hidden],#cutInlayRow[hidden]{display:none}
+  #cutPanel .mirSlot[hidden]{display:none}             /* every row: .mirSlot's display:flex would override [hidden] */
   .tpMine{border-left-color:#7fb069}
   .tpInc{margin:0 6px 0 0;vertical-align:middle;accent-color:var(--amber)}
   .tpEye{margin-left:auto;background:none;border:0;padding:1px 3px;color:var(--muted);cursor:pointer;line-height:0}

@@ -297,6 +297,20 @@ function draw(){
       });
       ctx.restore();
     }
+    // Where a profile's cut starts, if chosen: a ring with a dot, on the outline
+    function drawStarts(tp, strong){
+      if (!tp.startPts || !(tp.side === 'inside' || tp.side === 'outside' || tp.side === 'on')) return;
+      ctx.save();
+      tp.ents.forEach(function (id) {
+        var pt = tp.startPts[id]; if (!pt) return;
+        var c = w2s(pt[0], pt[1]);
+        ctx.beginPath(); ctx.arc(c.x, c.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = THEME.theme === 'light' ? '#fff' : '#14181d'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = strong ? THEME.accent : accentRGBA(.7); ctx.stroke();
+        ctx.beginPath(); ctx.arc(c.x, c.y, 3, 0, Math.PI * 2); ctx.fillStyle = strong ? THEME.accent : accentRGBA(.7); ctx.fill();
+      });
+      ctx.restore();
+    }
     function drawHoles(pts, dia, strong){
       ctx.save();
       pts.forEach(function (p) {
@@ -331,7 +345,7 @@ function draw(){
       ctx.restore();
     }
     if (CUT && CUT.preview && CUT.preview.length && CUT.side !== 'drill') drawMoves(CUT.preview, THEME.accent, 'rgba(127,176,105,.5)');
-    if (CUT) drawTabs(CUT, true);
+    if (CUT){ drawTabs(CUT, true); drawStarts(CUT, true); }
     else if (DOC.toolpaths){
       // One selected: show only that one, highlighted, with its tabs. (The selected one's path used
       // not to be drawn at all: only its tabs, because the branches were chained so this never ran.)
@@ -341,7 +355,7 @@ function draw(){
         if (tp.hidden && tp.id !== CUTSEL) return;                // hidden, unless it's the one picked
         drawMoves(tp.moves, tp.id === CUTSEL ? THEME.accent : cutCol, 'rgba(120,130,140,.35)');
       });
-      if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL) drawTabs(tp, false); });
+      if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL){ drawTabs(tp, false); drawStarts(tp, false); } });
     }
   })();
 

@@ -394,6 +394,10 @@
         <select id="cutLead" title="Sweep onto the line from the waste side and off it again, so no pass starts or stops on the finished wall">
           <option value="none">None</option><option value="arc">Arc</option><option value="line">Line</option></select>
         <input id="cutLeadSize" type="text" inputmode="decimal" autocomplete="off" style="width:44px;margin-left:6px" title="How far the lead reaches: the arc's radius, or the line's length"> <span class="mirVal" id="cutLeadU"></span></div>
+      <div class="mirSlot" id="cutStartRow" hidden style="cursor:default"><span class="mirLbl">Start</span>
+        <span class="mirVal" id="cutStartSay"></span>
+        <button id="cutStartPlace" title="Click the outline where each shape&#39;s cut should start" aria-pressed="false" style="font-size:11.5px;padding:2px 7px;margin-left:auto">Set start</button>
+        <button id="cutStartClear" title="Let 454 Design choose where each cut starts" style="font-size:11.5px;padding:2px 7px">Automatic</button></div>
       <div class="mirSlot" id="cutTabRow" style="cursor:default">
         <input type="checkbox" id="cutTabsOn"><label for="cutTabsOn" class="mirLbl" style="color:var(--ink)">Add tabs</label>
         <span class="mirVal" id="cutTabCount" style="margin-left:auto"></span>
