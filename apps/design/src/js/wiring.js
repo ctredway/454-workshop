@@ -298,11 +298,17 @@ function wire(){
     var hv = parseFloat(document.getElementById('txtH').value);
     if (hv > 0 && isFinite(hv)) e.h = hv;
     e.align = document.getElementById('txtAlign').value;
+    textCurveRowsRead(e);
     fontObj(e.font);
     draw();
+    textLocal(e); textCurveNote(e);
   }
-  ['txtStr','txtH'].forEach(function(id){ document.getElementById(id).addEventListener('input', txtLive); });
-  ['txtFont','txtAlign'].forEach(function(id){ document.getElementById(id).addEventListener('change', txtLive); });
+  ['txtStr','txtH','txtCGap'].forEach(function(id){ document.getElementById(id).addEventListener('input', txtLive); });
+  ['txtFont','txtAlign','txtCPos','txtCSide','txtCRev'].forEach(function(id){ document.getElementById(id).addEventListener('change', txtLive); });
+  document.getElementById('txtStraight').addEventListener('click', function(){
+    if (!TXT) return;
+    textStraighten(TXT.ent); textCurveRowsShow(TXT.ent); draw();
+  });
   document.getElementById('txtOK').addEventListener('click', function(){ txtLive(); closeTextModal(true); });
   document.getElementById('txtCancel').addEventListener('click', function(){ closeTextModal(false); });
   document.getElementById('txtCurves').addEventListener('click', function(){

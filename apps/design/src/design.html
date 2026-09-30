@@ -68,6 +68,24 @@
         <label for="txtAlign" style="margin-left:10px">Align</label>
         <select id="txtAlign"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
       </div>
+      <div id="txtCurveRows" hidden>
+        <div class="srow">
+          <label for="txtCPos">On the curve</label>
+          <select id="txtCPos" title="Where the text sits along the curve. On a circle: at its top (its bottom when reversed)"><option value="start">From the start</option><option value="center">Centred</option><option value="end">To the end</option></select>
+          <label for="txtCGap" style="margin-left:10px">Gap</label>
+          <input type="number" id="txtCGap" step="0.5" min="0" title="Space between the curve and the letters"> <span class="unit">mm</span>
+        </div>
+        <div class="srow">
+          <label for="txtCSide">Letters</label>
+          <select id="txtCSide"><option value="above">Standing on it</option><option value="below">Hanging under it</option></select>
+        </div>
+        <div class="srow">
+          <label title="Run the other way along the curve: for text along the bottom of a circle, reading left to right"><input type="checkbox" id="txtCRev"> Reverse, for a circle&rsquo;s bottom</label>
+          <span class="grow"></span>
+          <button id="txtStraight" title="Take the text off the curve: back to a straight line">Straighten</button>
+        </div>
+        <p class="snote" id="txtCurveNote" style="color:var(--amber)"></p>
+      </div>
       <p class="snote">Letter height is the height of a capital letter. For through-cuts, choose a font from the Stencil group: they keep the middles of letters like O, A and R attached so they don&rsquo;t fall out.</p>
       <div class="srow tbtns">
         <button id="txtCurves" title="Place the text as ordinary shapes instead of editable text">Convert to curves</button>
@@ -489,6 +507,7 @@
 @@include js/model.js
 @@include js/fonts.js
 @@include js/text.js
+@@include js/text-curve.js
 @@include js/dimensions.js
 @@include js/view.js
 @@include js/snapping.js

@@ -26,6 +26,7 @@ version is in `src/js/version.js`.
 | `js/model.js` | 55 | the drawing’s model: entity ids |
 | `js/fonts.js` | 73 | fonts: loading, the font library, your own fonts |
 | `js/text.js` | 205 | text: glyph outlines, placing, the Text panel, converting to curves |
+| `js/text-curve.js` | 161 | text on a curve: laying the letters along it, and its settings in the Text panel |
 | `js/dimensions.js` | 209 | dimensions: which edges they measure, their values and labels, editing them |
 | `js/view.js` | 34 | screen and drawing coordinates, the material and the job origin |
 | `js/snapping.js` | 129 | snapping: shapes’ points, guides, angles (45° and 90°), the grid |

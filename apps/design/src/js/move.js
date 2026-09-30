@@ -53,6 +53,7 @@ var ICON = {
  aDistV:'<svg viewBox="0 0 18 18"><path d="M3 1.5 H15 M3 16.5 H15" opacity=".5"/><rect x="6" y="3.5" width="6" height="2.5"/><rect x="6" y="7.75" width="6" height="2.5"/><rect x="6" y="12" width="6" height="2.5"/></svg>',
  measure:'<svg viewBox="0 0 18 18"><path d="M2.5 12.5 L12.5 2.5 L15.5 5.5 L5.5 15.5 Z"/><path d="M5.5 9.5 L7 11 M8 7 L9.5 8.5 M10.5 4.5 L12 6" opacity=".8"/></svg>',
  text:'<svg viewBox="0 0 18 18"><path d="M3.5 15 L9 3 L14.5 15"/><path d="M5.6 10.6 H12.4"/></svg>',
+ textCurve:'<svg viewBox="0 0 18 18"><path d="M2.5 15 A 9 9 0 0 1 15.5 15" opacity=".45" stroke-dasharray="2 2"/><path d="M4.2 10.2 L5.6 6.4 L7.4 9.3"/><path d="M9 5.2 V9.4 M7.8 5.4 H10.2"/><path d="M12.4 6.3 L13.9 10.4"/></svg>',
  curves:'<svg viewBox="0 0 18 18"><path d="M3 15 L7 4 L11 15"/><path d="M4.6 11 H9.4"/><rect x="1.5" y="13.5" width="3" height="3"/><rect x="5.5" y="2.5" width="3" height="3"/><rect x="9.5" y="13.5" width="3" height="3"/><path d="M13 5 H16.5 M14.75 3.2 V6.8" opacity=".6"/></svg>',
  node:'<svg viewBox="0 0 18 18"><path d="M3 14 L8 6 L12 10 L15.5 4"/><rect x="1.4" y="12.4" width="3.2" height="3.2"/><rect x="6.4" y="4.4" width="3.2" height="3.2"/><rect x="10.4" y="8.4" width="3.2" height="3.2"/><rect x="13.9" y="2.4" width="3.2" height="3.2"/></svg>',
  group:'<svg viewBox="0 0 18 18"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="9.5" y="9.5" width="6" height="6"/><rect x="1" y="1" width="16" height="16" stroke-dasharray="2.5 2" opacity=".55"/></svg>',
@@ -99,6 +100,7 @@ var PANEL_BTNS = {
  alDistV:{id:'alDistV', icon:'aDistV', title:'Space evenly top to bottom \u2014 equal gaps; the top and bottom shapes stay put'},
  flipHBtn:{id:'flipHBtn', icon:'flipH', title:'Flip horizontal (Shift+H) \u2014 turn the selection over in place, left to right, in place'},
  flipVBtn:{id:'flipVBtn', icon:'flipV', title:'Flip vertical (Shift+V) \u2014 turn the selection over in place, top to bottom, in place'},
+ textCurveBtn:{id:'textCurveBtn', icon:'textCurve', title:'Text on curve \u2014 select a text and a line, arc, circle or outline, then press this to lay the letters along it'},
  curvesBtn:{id:'curvesBtn', icon:'curves', title:'Convert to curves \u2014 turn selected text into ordinary shapes you can trim, offset and cut'},
  offsetT:{tool:'offset', icon:'offs', title:'Offset (O) \u2014 select or click shapes, then type the distance: + outward, \u2212 inward (open shapes: + is left of travel)'},
  dimT:{tool:'dim', icon:'dim', title:'Dimension (D) \u2014 click a shape, then another, and type the distance: the second shape moves. Click one shape twice for its own size. Dimensions stay on the drawing and keep themselves up to date.'},
@@ -134,7 +136,7 @@ var PANEL_BTNS = {
 var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn']},
+ {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},
  {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}

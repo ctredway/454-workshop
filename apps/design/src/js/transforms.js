@@ -184,8 +184,15 @@ function scaleEnt(e, ox, oy, sx, sy){
   }
   if (e.t === 'text'){
     var tx = X(e.x), ty = Y(e.y); e.x = tx; e.y = ty;
+    if (e.curve){                                            // text on a curve: its curve scales with it, evenly
+      var cs = uniform ? Math.abs(sx) : Math.sqrt(Math.abs(sx * sy));
+      e.h *= cs; e.cgap = (e.cgap || 0) * cs;
+      e.curve.pts = e.curve.pts.map(function(q){ return [q[0] * cs, q[1] * cs]; });
+      if (!uniform) SCALE_NOTE = 'text';
+      return;
+    }
     if (uniform){ e.h *= Math.abs(sx); return; }
-    var r = (((e.rot || 0) % Math.PI) + Math.PI) % Math.PI;
+    var r =(((e.rot || 0) % Math.PI) + Math.PI) % Math.PI;
     if (r < 1e-6 || Math.abs(r - Math.PI) < 1e-6){          // reads left-right: h follows y, width follows x
       e.h *= sy; e.sw = (e.sw || 1) * sx / sy;
     } else if (Math.abs(r - Math.PI/2) < 1e-6){             // turned 90 degrees: axes swap

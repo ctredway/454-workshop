@@ -66,6 +66,7 @@ function wirePanel(){
   document.getElementById('flipHBtn').addEventListener('click', function(){ flipBtnRef(true); });
   document.getElementById('flipVBtn').addEventListener('click', function(){ flipBtnRef(false); });
   document.getElementById('curvesBtn').addEventListener('click', curvesBtnClick);
+  document.getElementById('textCurveBtn').addEventListener('click', textOnCurveClick);
   [['alMat','mat'],['alMatX','matx'],['alMatY','maty'],['alCenter','center'],['alHCenter','hcenter'],['alVCenter','vcenter'],
    ['alLeft','left'],['alRight','right'],['alTop','top'],['alBottom','bottom'],['alDistH','disth'],['alDistV','distv']]
     .forEach(function(pr){ document.getElementById(pr[0]).addEventListener('click', function(){ alignBtnClick(pr[1]); }); });

@@ -740,6 +740,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.103.0 — text on a curve
+- **Text on curve**, in Edit Vectors: select a text and a line, arc, circle or outline, and the letters are laid
+  along it, each turned to follow it. It sits on top, reading left to right, centred (on a circle, across the
+  top). The text stays text: its words, font and height can still be changed.
+- In the Text panel, for text on a curve: where it sits along the curve (start, centred, end), a gap, letters
+  standing on the curve or hanging under it, **Reverse** (for a circle's bottom, still reading left to right),
+  and **Straighten**. It says when the text is longer than the curve.
+- The text keeps its own copy of the curve, so moving, turning, scaling or mirroring it takes the curve along;
+  changing the letter height doesn't change the curve. It saves, cuts and exports like any other text.
+- Tested with a real font (Roboto, as the app ships it; 8 tests), each part checked by breaking it on purpose
+  (14 ways); tried in the desktop app on a round badge and an arch.
+
 ### 0.102.0 — exact position, size and rotation
 - **The Selection box**: while shapes are selected, a box at the top of the drawing shows their position and
   size and takes exact values, like VCarve's Move, Set Size and Rotate. A 3×3 grid picks the reference point

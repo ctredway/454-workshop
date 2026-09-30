@@ -500,6 +500,24 @@
         <label for="txtAlign" style="margin-left:10px">Align</label>
         <select id="txtAlign"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
       </div>
+      <div id="txtCurveRows" hidden>
+        <div class="srow">
+          <label for="txtCPos">On the curve</label>
+          <select id="txtCPos" title="Where the text sits along the curve. On a circle: at its top (its bottom when reversed)"><option value="start">From the start</option><option value="center">Centred</option><option value="end">To the end</option></select>
+          <label for="txtCGap" style="margin-left:10px">Gap</label>
+          <input type="number" id="txtCGap" step="0.5" min="0" title="Space between the curve and the letters"> <span class="unit">mm</span>
+        </div>
+        <div class="srow">
+          <label for="txtCSide">Letters</label>
+          <select id="txtCSide"><option value="above">Standing on it</option><option value="below">Hanging under it</option></select>
+        </div>
+        <div class="srow">
+          <label title="Run the other way along the curve: for text along the bottom of a circle, reading left to right"><input type="checkbox" id="txtCRev"> Reverse, for a circle&rsquo;s bottom</label>
+          <span class="grow"></span>
+          <button id="txtStraight" title="Take the text off the curve: back to a straight line">Straighten</button>
+        </div>
+        <p class="snote" id="txtCurveNote" style="color:var(--amber)"></p>
+      </div>
       <p class="snote">Letter height is the height of a capital letter. For through-cuts, choose a font from the Stencil group: they keep the middles of letters like O, A and R attached so they don&rsquo;t fall out.</p>
       <div class="srow tbtns">
         <button id="txtCurves" title="Place the text as ordinary shapes instead of editable text">Convert to curves</button>
@@ -929,7 +947,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.102.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.103.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1111,19 +1129,23 @@ function textLocal(e){
   var font = fontObj(e.font);
   if (!font) return null;
   var sw = e.sw || 1;                                           // horizontal stretch factor
-  var sig = [e.str, e.font, e.h, e.align, sw].join('\u0001');
+  var sig = [e.str, e.font, e.h, e.align, sw, textCurveSig(e)].join('\u0001');
   var c = TEXT_CACHE.get(e);
   if (c && c.sig === sig && c.font === font) return c;
   var fs = e.h * font.unitsPerEm / capHeightUnits(font);        // em size giving cap height = h
   var sc = fs / font.unitsPerEm;
   var lineH = (font.ascender - font.descender) * sc * 1.1;
-  var raw = [];
-  String(e.str).split('\n').forEach(function(line, li){
-    var w = font.getAdvanceWidth(line, fs);
-    var ox = e.align === 'center' ? -w/2 : (e.align === 'right' ? -w : 0);
-    flattenGlyphCommands(font.getPath(line, ox, li * lineH, fs).commands, 0.01, raw);
-  });
-  var contours = raw.map(function(ct){ return ct.map(function(p){ return [p[0] * sw, -p[1]]; }); });
+  var contours;
+  if (e.curve) contours = textCurveContours(e, font, fs, lineH);      // along a curve (text-curve.js)
+  else {
+    var raw = [];
+    String(e.str).split('\n').forEach(function(line, li){
+      var w = font.getAdvanceWidth(line, fs);
+      var ox = e.align === 'center' ? -w/2 : (e.align === 'right' ? -w : 0);
+      flattenGlyphCommands(font.getPath(line, ox, li * lineH, fs).commands, 0.01, raw);
+    });
+    contours = raw.map(function(ct){ return ct.map(function(p){ return [p[0] * sw, -p[1]]; }); });
+  }
   var box = null;
   contours.forEach(function(ct){ ct.forEach(function(p){
     if (!box) box = {x0:p[0], y0:p[1], x1:p[0], y1:p[1]};
@@ -1143,6 +1165,11 @@ function textXform(e, lx, ly){
 function textLocalBox(e){
   var L = textLocal(e);
   if (L) return L.box;
+  if (e.curve){                                                     // font still loading: the curve's box
+    var cb = {x0:Infinity, y0:Infinity, x1:-Infinity, y1:-Infinity};
+    e.curve.pts.forEach(function(p){ cb.x0 = Math.min(cb.x0, p[0]); cb.y0 = Math.min(cb.y0, p[1]); cb.x1 = Math.max(cb.x1, p[0]); cb.y1 = Math.max(cb.y1, p[1]); });
+    return cb;
+  }
   // font still loading: a reasonable estimate so the text is still visible and pickable
   var lines = String(e.str).split('\n'), n = 0;
   lines.forEach(function(l){ n = Math.max(n, l.length); });
@@ -1220,6 +1247,7 @@ function openTextModal(idx, at){
   refreshFontSelect(e.font);
   document.getElementById('txtH').value = e.h;
   document.getElementById('txtAlign').value = e.align || 'left';
+  textCurveRowsShow(e);
   document.getElementById('textModal').hidden = false;
   var ta = document.getElementById('txtStr'); ta.focus(); ta.select();
   draw();
@@ -1263,6 +1291,167 @@ function convertTextsToCurves(idxs){
   return n;
 }
 
+/* ---------------- text along a curve ----------------
+   Select a text and a line, arc, circle or outline, and press Text on curve: the letters are laid along it, each
+   turned to follow it, and the text stays text (its words, font and height can still be changed).
+   The text keeps its own copy of the curve (e.curve: points in mm relative to the text's anchor), so moving,
+   turning, scaling or mirroring the text carries the curve with it, changing the letter height doesn't change
+   the curve, and the curve itself can be deleted or kept as a guide. Settings, in the Text panel:
+     e.cpos   'start' | 'center' | 'end'   where along the curve the text sits (on a closed curve: begins at,
+                                           centres on, or ends at its top, or with Reverse, its bottom)
+     e.cside  'above' | 'below'            letters stand on the curve, or hang from it (tops on the curve)
+     e.cgap   mm                            space between the curve and the letters
+     e.crev   true                          run the other way (a circle's bottom, reading left to right)
+   An open curve is stored reading left to right and a closed one clockwise, so by default the text sits on top
+   of the curve, reading left to right. */
+
+// The curve's points, in world coordinates, or null for a shape that can't carry text.
+function textCurvePoints(e){
+  if (!e) return null;
+  var step = 0.02, pts = null, closed = false;
+  if (e.t === 'line') pts = [[e.x1, e.y1], [e.x2, e.y2]];
+  else if (e.t === 'arc'){
+    var sw = arcSweepOf(e.a0, e.a1, e.ccw), n = Math.max(2, Math.ceil(sw / step));
+    pts = [];
+    for (var i = 0; i <= n; i++){ var q = arcPtAt(e, sw * i / n); pts.push([q.x, q.y]); }
+  } else if (e.t === 'circle'){
+    var m = Math.max(24, Math.ceil(2 * Math.PI / step));
+    pts = []; closed = true;
+    for (var j = 0; j < m; j++){ var a = 2 * Math.PI * j / m; pts.push([e.cx + e.r * Math.cos(a), e.cy + e.r * Math.sin(a)]); }
+  } else if (e.t === 'rect'){ pts = [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]]; closed = true; }
+  else if (e.t === 'poly'){ pts = e.pts.map(function (q){ return [q[0], q[1]]; }); closed = !!e.closed; }
+  else if (e.t === 'path'){ pts = tessPath(e, step).map(function (q){ return [q[0], q[1]]; }); closed = !!e.closed; }
+  if (!pts || pts.length < 2) return null;
+  var len = 0;
+  for (var k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
+  if (len < 1e-6) return null;
+  return {pts:pts, closed:closed};
+}
+// Lay text e along the curve c (from textCurvePoints). Resets its turn and mirror: the curve sets its direction.
+function textFitCurve(e, c){
+  var pts = c.pts.slice();
+  if (c.closed){
+    var a2 = 0; for (var i = 0; i < pts.length; i++){ var p = pts[i], q = pts[(i + 1) % pts.length]; a2 += p[0] * q[1] - q[0] * p[1]; }
+    if (a2 > 0) pts.reverse();                                    // clockwise
+  } else if (pts[0][0] > pts[pts.length - 1][0] + 1e-9) pts.reverse();   // left to right
+  var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  pts.forEach(function (p){ x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); });
+  var ax = (x0 + x1) / 2, ay = (y0 + y1) / 2;
+  e.x = ax; e.y = ay; e.rot = 0; delete e.fy; delete e.sw;
+  e.curve = {pts: pts.map(function (p){ return [p[0] - ax, p[1] - ay]; }), closed: c.closed};
+  if (!e.cpos) e.cpos = 'center';
+  if (!e.cside) e.cside = 'above';
+  if (!(e.cgap >= 0)) e.cgap = 0;
+}
+function textStraighten(e){
+  delete e.curve; delete e.cpos; delete e.cside; delete e.cgap; delete e.crev;
+}
+function textCurveSig(e){
+  return e.curve ? [JSON.stringify(e.curve), e.cpos, e.cside, e.cgap, !!e.crev].join('\u0002') : '';
+}
+// The curve as used for laying out: points in local coordinates, in running order, with
+// the distance along it to each point. A closed curve starts at its top (bottom when reversed) and repeats that
+// point at the end.
+function textCurveRun(e){
+  var pts = e.curve.pts.map(function (p){ return [p[0], p[1]]; });
+  if (e.crev) pts.reverse();
+  if (e.curve.closed){
+    var best = 0;
+    for (var i = 1; i < pts.length; i++) if (e.crev ? pts[i][1] < pts[best][1] - 1e-9 : pts[i][1] > pts[best][1] + 1e-9) best = i;
+    pts = pts.slice(best).concat(pts.slice(0, best));
+    pts.push(pts[0]);
+  }
+  var cum = [0];
+  for (var j = 1; j < pts.length; j++) cum.push(cum[j - 1] + Math.hypot(pts[j][0] - pts[j - 1][0], pts[j][1] - pts[j - 1][1]));
+  return {pts:pts, cum:cum, len:cum[cum.length - 1], closed:e.curve.closed};
+}
+// Point and direction at distance s along the run. An open curve carries on straight past its ends; a closed
+// one goes round again.
+function textCurveAt(run, s){
+  var pts = run.pts, cum = run.cum, n = pts.length;
+  if (run.closed){ s = s % run.len; if (s < 0) s += run.len; }
+  var i;
+  if (s <= 0) i = 0;
+  else if (s >= run.len) i = n - 2;
+  else { var lo = 0, hi = n - 1; while (hi - lo > 1){ var mid = (lo + hi) >> 1; if (cum[mid] <= s) lo = mid; else hi = mid; } i = lo; }
+  while (i < n - 2 && cum[i + 1] - cum[i] < 1e-12) i++;
+  var a = pts[i], b = pts[i + 1], L = cum[i + 1] - cum[i] || 1e-12;
+  var tx = (b[0] - a[0]) / L, ty = (b[1] - a[1]) / L, u = s - cum[i];
+  return {x: a[0] + tx * u, y: a[1] + ty * u, tx:tx, ty:ty};
+}
+// The letters' outlines in local coordinates (y up), laid along the curve. fs: font size; lineH: line spacing.
+function textCurveContours(e, font, fs, lineH){
+  var run = textCurveRun(e), gap = e.cgap || 0, out = [], longest = 0;
+  String(e.str).split('\n').forEach(function (line, li){
+    var W = font.getAdvanceWidth(line, fs);
+    longest = Math.max(longest, W);
+    var s0 = e.cpos === 'start' ? 0 : e.cpos === 'end' ? (run.closed ? -W : run.len - W) : (run.closed ? -W / 2 : (run.len - W) / 2);
+    var off = (e.cside === 'below' ? -(gap + e.h) : gap) - li * lineH;
+    font.forEachGlyph(line, 0, 0, fs, {kerning:true}, function (glyph, gx, gy, gfs){
+      var adv = (glyph.advanceWidth || 0) * gfs / font.unitsPerEm;
+      var at = textCurveAt(run, s0 + gx + adv / 2), nx = -at.ty, ny = at.tx;
+      var raw = [];
+      flattenGlyphCommands(glyph.getPath(-adv / 2, 0, gfs).commands, 0.01, raw);
+      raw.forEach(function (ct){
+        out.push(ct.map(function (p){
+          var u = p[0], v = -p[1] + off;                        // font y is down
+          return [at.x + u * at.tx + v * nx, at.y + u * at.ty + v * ny];
+        }));
+      });
+    });
+  });
+  TEXT_CURVE_LONG.set(e, longest > run.len + 1e-6);
+  return out;
+}
+var TEXT_CURVE_LONG = new WeakMap();                              // does the text run past the curve's length?
+function textCurveTooLong(e){ return !!(e.curve && TEXT_CURVE_LONG.get(e)); }
+
+// The Text on curve button: a text and one curve selected.
+function textOnCurveClick(){
+  var texts = SEL.filter(function (i){ return DOC.ents[i] && DOC.ents[i].t === 'text'; });
+  var others = SEL.filter(function (i){ return DOC.ents[i] && DOC.ents[i].t !== 'text'; });
+  if (texts.length !== 1 || others.length !== 1){
+    toast('info', 'Select a text and a curve', 'Select one text and one line, arc, circle or outline (Shift+click adds to the selection), then press Text on curve.');
+    if (!SEL.length) stagePrompt('selFirst');
+    return false;
+  }
+  var c = textCurvePoints(DOC.ents[others[0]]);
+  if (!c){ toast('warn', 'Text can’t follow that', 'Use a line, an arc, a circle, a rectangle or an outline. For a group, ungroup it and pick one piece.'); return false; }
+  pushUndo();
+  var e = DOC.ents[texts[0]];
+  textFitCurve(e, c);
+  SEL = [texts[0]];
+  persist(); draw();
+  toast('ok', 'Text on the curve', 'It sits on top, reading left to right. Double-click the text to change where it sits, which side, the gap, or to reverse it. The curve is still there to keep or delete.');
+  return true;
+}
+// The Text panel's curve settings: shown for text on a curve.
+function textCurveRowsShow(e){
+  var box = document.getElementById('txtCurveRows');
+  if (!box) return;
+  box.hidden = !e.curve;
+  document.getElementById('txtAlign').disabled = !!e.curve;   // Along the curve does its job
+  if (!e.curve) return;
+  document.getElementById('txtCPos').value = e.cpos || 'center';
+  document.getElementById('txtCSide').value = e.cside || 'above';
+  document.getElementById('txtCGap').value = +(e.cgap || 0).toFixed(3);
+  document.getElementById('txtCRev').checked = !!e.crev;
+  textCurveNote(e);
+}
+function textCurveNote(e){
+  var n = document.getElementById('txtCurveNote');
+  if (n) n.textContent = textCurveTooLong(e) ? 'The text is longer than the curve: make the letters smaller, or the curve longer.' : '';
+}
+// Read the Text panel's curve settings into e.
+function textCurveRowsRead(e){
+  if (!e.curve) return;
+  e.cpos = document.getElementById('txtCPos').value;
+  e.cside = document.getElementById('txtCSide').value;
+  var g = parseFloat(document.getElementById('txtCGap').value);
+  if (g >= 0 && isFinite(g)) e.cgap = g;
+  e.crev = document.getElementById('txtCRev').checked || undefined;
+  if (!e.crev) delete e.crev;
+}
 function dimsArr(){ if (!DOC.dims) DOC.dims = []; return DOC.dims; }
 var SELAT = {};                                        // entity id -> where it was last clicked to select it
 // A dimension remembers WHICH edge of a shape it measures, not a point on the drawing: a point stays put
@@ -10352,8 +10541,15 @@ function scaleEnt(e, ox, oy, sx, sy){
   }
   if (e.t === 'text'){
     var tx = X(e.x), ty = Y(e.y); e.x = tx; e.y = ty;
+    if (e.curve){                                            // text on a curve: its curve scales with it, evenly
+      var cs = uniform ? Math.abs(sx) : Math.sqrt(Math.abs(sx * sy));
+      e.h *= cs; e.cgap = (e.cgap || 0) * cs;
+      e.curve.pts = e.curve.pts.map(function(q){ return [q[0] * cs, q[1] * cs]; });
+      if (!uniform) SCALE_NOTE = 'text';
+      return;
+    }
     if (uniform){ e.h *= Math.abs(sx); return; }
-    var r = (((e.rot || 0) % Math.PI) + Math.PI) % Math.PI;
+    var r =(((e.rot || 0) % Math.PI) + Math.PI) % Math.PI;
     if (r < 1e-6 || Math.abs(r - Math.PI) < 1e-6){          // reads left-right: h follows y, width follows x
       e.h *= sy; e.sw = (e.sw || 1) * sx / sy;
     } else if (Math.abs(r - Math.PI/2) < 1e-6){             // turned 90 degrees: axes swap
@@ -11703,6 +11899,7 @@ var ICON = {
  aDistV:'<svg viewBox="0 0 18 18"><path d="M3 1.5 H15 M3 16.5 H15" opacity=".5"/><rect x="6" y="3.5" width="6" height="2.5"/><rect x="6" y="7.75" width="6" height="2.5"/><rect x="6" y="12" width="6" height="2.5"/></svg>',
  measure:'<svg viewBox="0 0 18 18"><path d="M2.5 12.5 L12.5 2.5 L15.5 5.5 L5.5 15.5 Z"/><path d="M5.5 9.5 L7 11 M8 7 L9.5 8.5 M10.5 4.5 L12 6" opacity=".8"/></svg>',
  text:'<svg viewBox="0 0 18 18"><path d="M3.5 15 L9 3 L14.5 15"/><path d="M5.6 10.6 H12.4"/></svg>',
+ textCurve:'<svg viewBox="0 0 18 18"><path d="M2.5 15 A 9 9 0 0 1 15.5 15" opacity=".45" stroke-dasharray="2 2"/><path d="M4.2 10.2 L5.6 6.4 L7.4 9.3"/><path d="M9 5.2 V9.4 M7.8 5.4 H10.2"/><path d="M12.4 6.3 L13.9 10.4"/></svg>',
  curves:'<svg viewBox="0 0 18 18"><path d="M3 15 L7 4 L11 15"/><path d="M4.6 11 H9.4"/><rect x="1.5" y="13.5" width="3" height="3"/><rect x="5.5" y="2.5" width="3" height="3"/><rect x="9.5" y="13.5" width="3" height="3"/><path d="M13 5 H16.5 M14.75 3.2 V6.8" opacity=".6"/></svg>',
  node:'<svg viewBox="0 0 18 18"><path d="M3 14 L8 6 L12 10 L15.5 4"/><rect x="1.4" y="12.4" width="3.2" height="3.2"/><rect x="6.4" y="4.4" width="3.2" height="3.2"/><rect x="10.4" y="8.4" width="3.2" height="3.2"/><rect x="13.9" y="2.4" width="3.2" height="3.2"/></svg>',
  group:'<svg viewBox="0 0 18 18"><rect x="2.5" y="2.5" width="6" height="6"/><rect x="9.5" y="9.5" width="6" height="6"/><rect x="1" y="1" width="16" height="16" stroke-dasharray="2.5 2" opacity=".55"/></svg>',
@@ -11749,6 +11946,7 @@ var PANEL_BTNS = {
  alDistV:{id:'alDistV', icon:'aDistV', title:'Space evenly top to bottom \u2014 equal gaps; the top and bottom shapes stay put'},
  flipHBtn:{id:'flipHBtn', icon:'flipH', title:'Flip horizontal (Shift+H) \u2014 turn the selection over in place, left to right, in place'},
  flipVBtn:{id:'flipVBtn', icon:'flipV', title:'Flip vertical (Shift+V) \u2014 turn the selection over in place, top to bottom, in place'},
+ textCurveBtn:{id:'textCurveBtn', icon:'textCurve', title:'Text on curve \u2014 select a text and a line, arc, circle or outline, then press this to lay the letters along it'},
  curvesBtn:{id:'curvesBtn', icon:'curves', title:'Convert to curves \u2014 turn selected text into ordinary shapes you can trim, offset and cut'},
  offsetT:{tool:'offset', icon:'offs', title:'Offset (O) \u2014 select or click shapes, then type the distance: + outward, \u2212 inward (open shapes: + is left of travel)'},
  dimT:{tool:'dim', icon:'dim', title:'Dimension (D) \u2014 click a shape, then another, and type the distance: the second shape moves. Click one shape twice for its own size. Dimensions stay on the drawing and keep themselves up to date.'},
@@ -11784,7 +11982,7 @@ var PANEL_BTNS = {
 var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn']},
+ {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},
  {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}
@@ -12016,6 +12214,7 @@ function wirePanel(){
   document.getElementById('flipHBtn').addEventListener('click', function(){ flipBtnRef(true); });
   document.getElementById('flipVBtn').addEventListener('click', function(){ flipBtnRef(false); });
   document.getElementById('curvesBtn').addEventListener('click', curvesBtnClick);
+  document.getElementById('textCurveBtn').addEventListener('click', textOnCurveClick);
   [['alMat','mat'],['alMatX','matx'],['alMatY','maty'],['alCenter','center'],['alHCenter','hcenter'],['alVCenter','vcenter'],
    ['alLeft','left'],['alRight','right'],['alTop','top'],['alBottom','bottom'],['alDistH','disth'],['alDistV','distv']]
     .forEach(function(pr){ document.getElementById(pr[0]).addEventListener('click', function(){ alignBtnClick(pr[1]); }); });
@@ -12392,11 +12591,17 @@ function wire(){
     var hv = parseFloat(document.getElementById('txtH').value);
     if (hv > 0 && isFinite(hv)) e.h = hv;
     e.align = document.getElementById('txtAlign').value;
+    textCurveRowsRead(e);
     fontObj(e.font);
     draw();
+    textLocal(e); textCurveNote(e);
   }
-  ['txtStr','txtH'].forEach(function(id){ document.getElementById(id).addEventListener('input', txtLive); });
-  ['txtFont','txtAlign'].forEach(function(id){ document.getElementById(id).addEventListener('change', txtLive); });
+  ['txtStr','txtH','txtCGap'].forEach(function(id){ document.getElementById(id).addEventListener('input', txtLive); });
+  ['txtFont','txtAlign','txtCPos','txtCSide','txtCRev'].forEach(function(id){ document.getElementById(id).addEventListener('change', txtLive); });
+  document.getElementById('txtStraight').addEventListener('click', function(){
+    if (!TXT) return;
+    textStraighten(TXT.ent); textCurveRowsShow(TXT.ent); draw();
+  });
   document.getElementById('txtOK').addEventListener('click', function(){ txtLive(); closeTextModal(true); });
   document.getElementById('txtCancel').addEventListener('click', function(){ closeTextModal(false); });
   document.getElementById('txtCurves').addEventListener('click', function(){

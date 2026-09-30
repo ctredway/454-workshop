@@ -51,19 +51,23 @@ function textLocal(e){
   var font = fontObj(e.font);
   if (!font) return null;
   var sw = e.sw || 1;                                           // horizontal stretch factor
-  var sig = [e.str, e.font, e.h, e.align, sw].join('\u0001');
+  var sig = [e.str, e.font, e.h, e.align, sw, textCurveSig(e)].join('\u0001');
   var c = TEXT_CACHE.get(e);
   if (c && c.sig === sig && c.font === font) return c;
   var fs = e.h * font.unitsPerEm / capHeightUnits(font);        // em size giving cap height = h
   var sc = fs / font.unitsPerEm;
   var lineH = (font.ascender - font.descender) * sc * 1.1;
-  var raw = [];
-  String(e.str).split('\n').forEach(function(line, li){
-    var w = font.getAdvanceWidth(line, fs);
-    var ox = e.align === 'center' ? -w/2 : (e.align === 'right' ? -w : 0);
-    flattenGlyphCommands(font.getPath(line, ox, li * lineH, fs).commands, 0.01, raw);
-  });
-  var contours = raw.map(function(ct){ return ct.map(function(p){ return [p[0] * sw, -p[1]]; }); });
+  var contours;
+  if (e.curve) contours = textCurveContours(e, font, fs, lineH);      // along a curve (text-curve.js)
+  else {
+    var raw = [];
+    String(e.str).split('\n').forEach(function(line, li){
+      var w = font.getAdvanceWidth(line, fs);
+      var ox = e.align === 'center' ? -w/2 : (e.align === 'right' ? -w : 0);
+      flattenGlyphCommands(font.getPath(line, ox, li * lineH, fs).commands, 0.01, raw);
+    });
+    contours = raw.map(function(ct){ return ct.map(function(p){ return [p[0] * sw, -p[1]]; }); });
+  }
   var box = null;
   contours.forEach(function(ct){ ct.forEach(function(p){
     if (!box) box = {x0:p[0], y0:p[1], x1:p[0], y1:p[1]};
@@ -83,6 +87,11 @@ function textXform(e, lx, ly){
 function textLocalBox(e){
   var L = textLocal(e);
   if (L) return L.box;
+  if (e.curve){                                                     // font still loading: the curve's box
+    var cb = {x0:Infinity, y0:Infinity, x1:-Infinity, y1:-Infinity};
+    e.curve.pts.forEach(function(p){ cb.x0 = Math.min(cb.x0, p[0]); cb.y0 = Math.min(cb.y0, p[1]); cb.x1 = Math.max(cb.x1, p[0]); cb.y1 = Math.max(cb.y1, p[1]); });
+    return cb;
+  }
   // font still loading: a reasonable estimate so the text is still visible and pickable
   var lines = String(e.str).split('\n'), n = 0;
   lines.forEach(function(l){ n = Math.max(n, l.length); });
@@ -160,6 +169,7 @@ function openTextModal(idx, at){
   refreshFontSelect(e.font);
   document.getElementById('txtH').value = e.h;
   document.getElementById('txtAlign').value = e.align || 'left';
+  textCurveRowsShow(e);
   document.getElementById('textModal').hidden = false;
   var ta = document.getElementById('txtStr'); ta.focus(); ta.select();
   draw();
