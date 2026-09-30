@@ -1,0 +1,24 @@
+name: Suggest an idea
+description: Something 454 Workshop could do, or do better.
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. It helps most to hear what you're making and where 454 Workshop gets in the way,
+        rather than only the feature you'd like: there may be a better way to get you there.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What are you making, and how would this help?
+  - type: textarea
+    id: now
+    attributes:
+      label: How do you do it now?
+      description: In 454 Workshop, or in other software (VCarve, Carbide Create, Fusion...).

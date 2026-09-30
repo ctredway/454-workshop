@@ -213,6 +213,7 @@ function fromAppPage(e) { try { return isAppPage(new URL(e.senderFrame.url)); } 
 
 // ---- 454 Design's files, by path (src/design-files.js): Save goes back to the file a drawing came from
 const { createDesignFiles } = require('./design-files');
+const { reportUrl, osName } = require('./report');
 let designFiles = null;
 function files() {
   if (designFiles) return designFiles;
@@ -258,6 +259,8 @@ function menu() {
       { label: '454 Control', accelerator: 'CmdOrCtrl+1', click: showControl },
       { label: '454 Design', accelerator: 'CmdOrCtrl+2', click: showDesign },
       { label: 'Docs', click: () => openDocs(ORIGIN + '/docs/index.html') },
+      // a GitHub form in the browser, with this build's version and the computer filled in (report.js)
+      { label: 'Report a problem\u2026', click: () => shell.openExternal(reportUrl({ version: app.getVersion(), os: osName(process.platform, require('os').release()) })) },
       { type: 'separator' },
       { label: 'About 454 Workshop', click: openAbout },
       ...updateMenu(),

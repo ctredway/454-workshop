@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### Next beta (not released yet)
+- **Report a problem…** in the 454 Workshop menu opens a form on GitHub (`.github/ISSUE_TEMPLATE/problem.yml`) with
+  this build's version and the computer already filled in (`src/report.js`). The form asks, in plain words, which part,
+  whether the machine moved or cut in a way it shouldn't (those come first), what happened, how to make it happen
+  again, the machine, and files. There's a form for ideas too; blank issues are off, so every report has these.
+
 ### 0.6.2-beta.22 — the VCarve group: shapes, sizes, curved text, a wood preview, pocket clean-up
 - Includes Design 0.100.0 to 0.105.0: Weld, Subtract and Intersect; the Ellipse, Polygon and Star tools; the
   Selection box (exact position, size and rotation); text on a curve; Preview in wood; and pockets that clean

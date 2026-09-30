@@ -1,0 +1,79 @@
+name: Report a problem
+description: Something in 454 Control, 454 Design or the desktop app didn't work as it should.
+labels: [problem]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying 454 Workshop and taking the time to say what went wrong.
+
+        **If the machine moved, cut or went somewhere it shouldn't have**, say so below: those are looked at first.
+        If anything is still running, stop the machine before filling this in.
+
+        Everything you write and attach here is public. Leave out anything private.
+  - type: dropdown
+    id: part
+    attributes:
+      label: Which part?
+      options:
+        - 454 Control (running the machine)
+        - 454 Design (drawing and toolpaths)
+        - The desktop app (installing, updating, windows)
+        - The docs or the website
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: machine-moved
+    attributes:
+      label: Did the machine move or cut in a way it shouldn't?
+      options:
+        - "No"
+        - "Yes: it moved, cut or went somewhere unexpected"
+        - "Not connected to a machine"
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+      description: What you saw, and any message 454 Workshop showed (a screenshot helps).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can it be made to happen again?
+      description: The steps, in order, from opening the app. If it only happened once, say what you were doing.
+      placeholder: |
+        1. Opened a drawing
+        2. Made a pocket toolpath with a 1/4" end mill
+        3. Pressed Preview in wood
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: In the desktop app, 454 Workshop → About. On the website, the version in the page's header.
+      placeholder: 0.6.2-beta.22
+    validations:
+      required: true
+  - type: input
+    id: machine
+    attributes:
+      label: Machine
+      description: The machine and anything on it that matters (a BitSetter, a BitZero, a VFD spindle), and its GRBL version if you know it.
+      placeholder: Shapeoko XXL, BitSetter, BitZero v2, VFD spindle
+  - type: input
+    id: os
+    attributes:
+      label: Computer
+      placeholder: Windows 11
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: Drag the drawing (.454.json), the G-code file, or screenshots into this box. G-code files may need zipping first.
