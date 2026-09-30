@@ -740,6 +740,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.104.0 — Preview in wood
+- **Preview in wood**, in the Toolpaths panel: the material as it will look after the ticked toolpaths, shaded,
+  lit from the top left. Pockets, V-carving, tabs and through-cuts (the spoilboard showing) look as they'll
+  come off the machine.
+- It's worked out from the toolpaths' own moves, in cutting order, each cut by the bit's real shape: flat end
+  mill, ball-nose, or V-bit at its angle and tip, on a grid about 0.1 mm fine for a small job. It says the
+  deepest cut, and warns in red if a rapid move (G0) would cut wood. A rapid down into wood already cleared,
+  as between a pocket's passes, isn't counted.
+- Tested (8 tests): each bit's shape against hand-worked numbers, a ramp, rapids, the picture, and a real
+  pocket from the editor; each part checked by breaking it on purpose (12 ways). In the desktop app, on a
+  sign with a pocket, V-carved numbers and a tabbed outline. While checking the picture, V-carving on a star
+  and on "454" was measured cell by cell: nothing is cut outside the shapes.
+
 ### 0.103.0 — text on a curve
 - **Text on curve**, in Edit Vectors: select a text and a line, arc, circle or outline, and the letters are laid
   along it, each turned to follow it. It sits on top, reading left to right, centred (on a circle, across the

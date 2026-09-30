@@ -6,7 +6,7 @@ function wire(){
   buildToolPanel();
   wirePanel();
   unsavedWire();
-  clipWire(); selBoxWire();
+  clipWire(); selBoxWire(); woodWire();
   keysWire();
   fit();
 
@@ -753,6 +753,7 @@ function wire(){
     if (!document.getElementById('libModal').hidden) return;    // and the tool library
     if (!document.getElementById('toolModal').hidden) return;   // and tool details
     if (!document.getElementById('dlgModal').hidden) return;    // and an in-app dialog
+    if (!document.getElementById('woodModal').hidden) return;   // and Preview in wood
     if (e.key === 'Escape' && !document.getElementById('msgPanel').hidden){ setMsgPanel(false); return; }
     var inField = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA';
     // Ctrl-combos are global: they work from anywhere, including while an input has focus,

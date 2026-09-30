@@ -157,6 +157,13 @@ function renderMyToolpaths(){
     ex.style.cssText = 'width:calc(100% - 20px);margin:4px 10px 10px';
     ex.addEventListener('click', tpExport);
     box.appendChild(ex);
+    var wd = document.createElement('button');
+    wd.textContent = 'Preview in wood';
+    wd.title = 'See the material as it will look after these toolpaths, cut by each bit\u2019s real shape';
+    wd.style.cssText = 'width:calc(100% - 20px);margin:0 10px 10px';
+    wd.disabled = nInc === 0;
+    wd.addEventListener('click', woodPreviewOpen);
+    box.appendChild(wd);
     var pv = document.createElement('button');
     pv.textContent = 'Preview in 454 Control';
     pv.title = 'Load exactly this G-code into 454 Control: its 3D preview and playback, time estimate and checks. Nothing is sent to the machine.';

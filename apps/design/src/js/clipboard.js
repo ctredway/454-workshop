@@ -13,7 +13,7 @@
 var CLIP_KEY = 'd454DesignClip';
 var CLIP_OVER = false;           // is the pointer over the drawing? (where Ctrl+V puts the copy)
 var CLIP_KEYED = 0;              // when a key last did it (the desktop app's Edit menu fires too: once is enough)
-var CLIP_DIALOGS = ['nestModal', 'textModal', 'jobModal', 'settingsModal', 'dlgModal', 'toolModal', 'libModal', 'jsModal', 'impModal'];
+var CLIP_DIALOGS = ['nestModal', 'textModal', 'jobModal', 'settingsModal', 'dlgModal', 'toolModal', 'libModal', 'jsModal', 'impModal', 'woodModal'];
 // a word on what happened, in the hint above the prompt, gone after a few seconds
 function clipSay(t){
   showHint(t);

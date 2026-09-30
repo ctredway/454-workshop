@@ -213,6 +213,20 @@ A new toolpath slots into the usual cutting order: **holes, chamfers, pockets, V
 
 **Check** looks over the drawing before cutting: open shapes, shapes in pieces, doubled shapes, crossings, and shapes no toolpath cuts. It lists what needs a look, selects those shapes on the drawing, and offers to fix the ones it can.
 
+### Preview in wood
+
+**Preview in wood**, in the Toolpaths panel, shows the material as it will look after the ticked toolpaths,
+shaded as if lit from the top left: pockets with their floors and rounded corners, V-carving with its slopes,
+tabs holding the parts, and through-cuts showing the spoilboard underneath.
+
+It's worked out from the toolpaths' own moves, in order, each cut by its bit's real shape: a flat end mill, a
+ball-nose (from the tool library), or a V-bit at its angle and tip, on a grid about 0.1 mm fine for a small
+job. So a wrong depth, a pocket that leaves an island, or a part with no tabs shows here before any wood is
+cut. It also says the deepest cut, and warns in red if a rapid move would cut wood.
+
+Use it as well as, not instead of, the preview and air run in 454 Control, which check the G-code itself
+with the machine's own limits.
+
 ### Saving G-code
 
 **Save G-code…** writes every included toolpath to one file, in order, with a tool change wherever the tool changes, numbered from your library, and each toolpath’s name so 454 Control can show which one is running. It refuses while any toolpath has no tool chosen.

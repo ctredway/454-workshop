@@ -56,6 +56,7 @@ version is in `src/js/version.js`.
 | `js/context-menu.js` | 24 | the right-click menu |
 | `js/toolpath-cards.js` | 174 | the Toolpaths panel’s cards |
 | `js/preview-in-control.js` | 41 | Preview in 454 Control: handing the job to Control |
+| `js/wood-preview.js` | 168 | Preview in wood: the cut worked out from the moves and each bit's shape, shaded |
 | `js/sheets.js` | 55 | sheets (multi-sheet VCarve projects) |
 | `js/toolpath-panel.js` | 116 | the Toolpaths panel |
 | `js/tool-library.js` | 187 | the tool library: reading VCarve’s, storage, lookups |
