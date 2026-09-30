@@ -66,6 +66,9 @@ version is in `src/js/version.js`.
 | `js/vector-import.js` | 86 | adding a DXF or SVG to the drawing, or replacing it |
 | `js/messages.js` | 81 | messages and the recent-messages panel |
 | `js/persist-units.js` | 81 | saving the drawing in the browser, units, restoring |
+| `js/unsaved.js` | 243 | unsaved changes: Save, Save as, Open, New, asking before closing, Recover last drawing |
+| `js/clipboard.js` | 150 | copy, cut, paste and duplicate, with the dimensions on the copied shapes |
+| `js/shortcuts.js` | 27 | keyboard shortcuts: Ctrl+S, O, N, A, D and F1 |
 | `js/draw.js` | 614 | drawing the canvas |
 | `js/offset-mirror-panels.js` | 140 | the Offset and Mirror panels |
 | `js/edit-previews.js` | 75 | trim and extend previews |
@@ -79,6 +82,7 @@ version is in `src/js/version.js`.
 | `js/alignment.js` | 112 | aligning and distributing |
 | `js/offset.js` | 75 | offsetting outlines |
 | `js/join-explode.js` | 284 | join and explode |
+| `js/booleans.js` | 463 | Weld, Subtract and Intersect: closed shapes combined exactly, arcs kept as arcs |
 | `js/readout.js` | 134 | shapes’ sizes and the readout |
 | `js/relations.js` | 108 | distances between shapes |
 | `js/dimension-apply.js` | 108 | applying a dimension: moving, or stretching a held shape |

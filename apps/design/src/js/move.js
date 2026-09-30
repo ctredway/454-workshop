@@ -28,6 +28,9 @@ var ICON = {
  rotate:'<svg viewBox="0 0 18 18"><path d="M14.5 9 A 5.5 5.5 0 1 1 9 3.5"/><path d="M9 1 L12.2 3.5 L9 6"/><circle cx="9" cy="9" r="1"/></svg>',
  array:'<svg viewBox="0 0 18 18"><circle cx="4.5" cy="4.5" r="1.7"/><circle cx="11" cy="4.5" r="1.7"/><circle cx="4.5" cy="11" r="1.7"/><circle cx="11" cy="11" r="1.7" opacity=".45"/></svg>',
  offs:'<svg viewBox="0 0 18 18"><rect x="6" y="6" width="6" height="6"/><rect x="2.5" y="2.5" width="13" height="13" opacity=".5" stroke-dasharray="2.4 2"/></svg>',
+ weld:'<svg viewBox="0 0 18 18"><path d="M9 4.97 A4.5 4.5 0 1 0 9 13.03 A4.5 4.5 0 1 0 9 4.97 Z"/><path d="M9 4.97 A4.5 4.5 0 0 1 9 13.03 M9 4.97 A4.5 4.5 0 0 0 9 13.03" opacity=".35" stroke-dasharray="1.6 1.6"/></svg>',
+ subtract:'<svg viewBox="0 0 18 18"><path d="M9 4.97 A4.5 4.5 0 1 0 9 13.03 A4.5 4.5 0 0 1 9 4.97 Z"/><circle cx="11" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/></svg>',
+ intersect:'<svg viewBox="0 0 18 18"><circle cx="7" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/><circle cx="11" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/><path d="M9 4.97 A4.5 4.5 0 0 1 9 13.03 A4.5 4.5 0 0 1 9 4.97 Z"/></svg>',
  join:'<svg viewBox="0 0 18 18"><path d="M3 14 L8 9"/><path d="M10 7 L15 3"/><circle cx="9" cy="8" r="2.2" opacity=".6"/></svg>',
  dim:'<svg viewBox="0 0 18 18"><path d="M2 5 V13 M16 5 V13"/><path d="M2 9 H16"/><path d="M4.5 7 L2 9 L4.5 11 M13.5 7 L16 9 L13.5 11"/></svg>',
  flipH:'<svg viewBox="0 0 18 18"><path d="M9 2 V16" stroke-dasharray="2 2"/><path d="M7 4 L2 13 H7 Z"/><path d="M11 4 L16 13 H11 Z" opacity=".5"/></svg>',
@@ -96,6 +99,9 @@ var PANEL_BTNS = {
  nodeT:{tool:'node', icon:'node', title:'Edit nodes (N) \u2014 click a polyline to show its points; drag a point to move it, click a point or segment to type exact values'},
  groupBtn:{id:'groupBtn', icon:'group', title:'Group (Ctrl+G) \u2014 bundle the selected vectors into one object. All geometry is kept; it just selects and moves as one piece.'},
  ungroupBtn:{id:'ungroupBtn', icon:'ungroup', title:'Ungroup (Ctrl+U) \u2014 break a group back into its separate vectors'},
+ weldBtn:{id:'weldBtn', icon:'weld', title:'Weld — join the selected closed shapes that overlap or touch into one outline (arcs stay arcs)'},
+ subtractBtn:{id:'subtractBtn', icon:'subtract', title:'Subtract — cut the other selected shapes out of the biggest one'},
+ intersectBtn:{id:'intersectBtn', icon:'intersect', title:'Intersect — keep only the area all the selected shapes share'},
  joinBtn:{id:'joinBtn', icon:'join', title:'Join \u2014 stitch selected OPEN vectors whose ends meet into one continuous contour'},
  explodeBtn:{id:'explodeBtn', icon:'expl', title:'Explode \u2014 break a contour into its individual lines and arcs'},
  copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 select first (V), then click base point and destination, or type @dx,dy'},
@@ -122,7 +128,7 @@ var PANEL_BTNS = {
 var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','joinBtn','explodeBtn','curvesBtn']},
+ {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},
  {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}

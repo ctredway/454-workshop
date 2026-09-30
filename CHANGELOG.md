@@ -740,6 +740,21 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.100.0 — Weld, Subtract and Intersect
+- **Weld, Subtract and Intersect**, in Edit Vectors (after Ungroup), the shape tools VCarve users reach for
+  most. **Weld** joins closed shapes that overlap or touch into one outline; **Subtract** cuts the other
+  selected shapes out of the biggest one (the first picked, if two are as big); **Intersect** keeps only the
+  area they all share. Groups and text count as one piece with their holes, so a letter keeps its middle.
+- **The results are exact.** Straight edges stay straight and arcs stay true arcs, rather than becoming many
+  short lines; a whole circle comes back as a circle, and a square-on rectangle as a rectangle, so dimensions,
+  drilling and offsets treat them as drawn.
+- A toolpath that cut a welded shape now cuts the result (for Subtract, the shape that was kept), and
+  dimensions on the shapes that went are removed, as Delete does. Ctrl+Z undoes it all.
+- Tested (16 tests): shapes with known answers (areas worked out by hand), and 270 random pairs, including
+  shapes sharing edges and corners, checked at over 50,000 points against the rule for each operation. Each
+  of 11 parts of it was broken on purpose to check a test fails. Three shapes of 5,000 points each weld in
+  about a third of a second. Tried in the desktop app with the buttons.
+
 ### 0.99.3 — Save goes back to the file; Save as
 - **In the desktop app, Save (Ctrl+S) goes straight back to the file a drawing came from, and keeps doing so
   after Design is closed and opened again.** Files are now opened and saved by their path, by the app

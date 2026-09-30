@@ -388,6 +388,44 @@ Breaks a group back into its separate shapes.
 
 1. Select the group, then click **Ungroup**.
 
+### Weld
+
+Joins closed shapes that overlap or touch into one outline, and removes the lines inside. Use it for a sign
+with a rounded end, a board with a handle, or letters that run into each other.
+
+1. Select two or more closed shapes (rectangles, circles, closed outlines, groups or text).
+2. Click **Weld**.
+
+Shapes in the selection that don't overlap or touch anything else are left as they were. Holes stay holes:
+a letter's middle, or a gap the shapes surround, comes out as its own outline.
+
+### Subtract
+
+Cuts the other selected shapes out of the biggest one, like cutting a notch or a finger hole out of a part.
+
+1. Select the part and the shapes to cut out of it.
+2. Click **Subtract**.
+
+The biggest shape is the one kept. If two shapes are the same size, such as two circles for a crescent moon,
+the one you picked first is kept: click it, then Shift+click the other. A shape wholly inside the part becomes
+a hole in it. Selected shapes that don't overlap the part are left alone.
+
+### Intersect
+
+Keeps only the area that all the selected shapes share, and removes the rest.
+
+1. Select the shapes.
+2. Click **Intersect**.
+
+If the shapes don't all overlap, nothing changes and Design says so.
+
+:::tip
+All three keep the shapes exact: straight edges stay straight and curves stay true arcs, so the result
+measures, offsets and cuts just as if you had drawn it. The result is selected afterwards, and **Ctrl+Z**
+undoes it. A toolpath that cut one of the shapes cuts the result instead (for Subtract, the part that was kept);
+check it before cutting. Open shapes such as lines take no part.
+:::
+
 ### Join
 
 Joins open shapes whose ends meet into one continuous outline, such as lines drawn separately into a closed shape.

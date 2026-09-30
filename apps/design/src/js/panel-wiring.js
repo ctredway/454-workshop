@@ -69,6 +69,9 @@ function wirePanel(){
   [['alMat','mat'],['alMatX','matx'],['alMatY','maty'],['alCenter','center'],['alHCenter','hcenter'],['alVCenter','vcenter'],
    ['alLeft','left'],['alRight','right'],['alTop','top'],['alBottom','bottom'],['alDistH','disth'],['alDistV','distv']]
     .forEach(function(pr){ document.getElementById(pr[0]).addEventListener('click', function(){ alignBtnClick(pr[1]); }); });
+  ['weld','subtract','intersect'].forEach(function (k){
+    document.getElementById(k + 'Btn').addEventListener('click', function(){ boolBtnClick(k); });
+  });
   document.getElementById('joinBtn').addEventListener('click', function(){
     if (!SEL.length){
       toast('info', 'Nothing selected', 'Select the open vectors you want to join, then press Join.');
