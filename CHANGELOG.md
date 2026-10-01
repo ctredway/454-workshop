@@ -825,26 +825,38 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
-### 0.114.0 — open Carbide Create projects (.c2d): shapes, layers and material
+### 0.114.0 — open Carbide Create projects (.c2d): shapes, text, layers, material and zero
 - **Open a `.c2d` file** and its shapes come across on their layers (hidden and locked ones too), with the
-  material's size and thickness, in the units the project shows. Circles and plain rectangles stay circles and
-  rectangles; other shapes become outlines, with curves followed within 0.02 mm. Each shape keeps Carbide
-  Create's ID, for bringing toolpaths in next. **Toolpaths aren't brought in yet**, and the message after
-  opening says how many the project has.
-- **How it's read.** A `.c2d` (Carbide Create 7, build 870) is an SQLite database whose items are JSON text
-  packed with zlib; found by reading two files Clint saved. Design reads the database and unpacks the text
+  material's size and thickness, in the units the project shows. Each shape keeps Carbide Create's ID, for
+  bringing toolpaths in next. **Toolpaths aren't brought in yet**, and the message after opening says how many
+  the project has.
+- **Both kinds of file.** Current Carbide Create (7, build 8xx) saves an SQLite database whose items are JSON
+  text packed with zlib. Older versions (seen: builds 464, 648, 756) save one JSON text with the 3D model's
+  bytes after it. The shapes are described the same way in both. Design reads the database and unpacks the text
   itself (`c2d-import.js`), read-only, with no library added, so it works offline and in a browser. Carbide
   Create's own G-code inside the file is encrypted and isn't read.
-- **What it can't read is said, not guessed:** zero somewhere other than the lower-left corner and the top, a
-  kind of point it doesn't know, shapes with nothing to draw, items it couldn't read. A file it can't open
-  says so and suggests exporting SVG or DXF.
+- **A shape is known by its outline, not its label.** Four curves round one centre are a circle and four
+  square corners are a rectangle, whatever the file calls them (older files don't say). Anything else is an
+  outline, its curves followed within 0.02 mm. A shape with several outlines is one group.
+- **Text** comes in as its letters' outlines, through the text's own transform, as one group.
+- **XY zero** at a corner or the centre is taken from the project, with the shapes measured from it, and the
+  message says so. Anywhere else it's left at the lower-left corner, and the message says where the project had
+  it. **Z zero** other than the top is said, not guessed.
+- **What it can't read is said:** a kind of point it doesn't know, shapes with nothing to draw, lists it
+  doesn't know, items it couldn't read. Stray points (shapes with no size: one real project has 491) are left
+  out and counted. A file it can't open says so and suggests exporting SVG or DXF.
 - **Opening one doesn't touch the last drawing's file.** The drawing before is kept for Recover, Save asks
   where to save, and it offers the project's own name.
 - The Toolpaths panel's "No toolpaths yet" note says how to make one (it only mentioned VCarve projects).
-- Tested (7 tests): unpacking against Node's zlib (every packing level, 70 KB of noise); the database reader
-  against Node's SQLite (three page sizes, 700 rows, a 300 KB value); the two real files; projects made in the
-  test for lines, curves, open paths, several outlines, layers, a turned rectangle and a rounded one; what
-  can't be read; opening. Checked by breaking it on purpose (38 ways). Opened both files in the desktop app.
+- Tested (11 tests): unpacking against Node's zlib (every packing level, 70 KB of noise); the database reader
+  against Node's SQLite (three page sizes, 700 rows, a 300 KB value); the two files Clint saved for this
+  (`test/fixtures`); projects made in the test for lines, curves, open paths, several outlines, layers, turned
+  and rounded rectangles, unlabelled circles, text, zero in six places, and the older kind of file; what can't
+  be read; opening. Checked by breaking it on purpose (63 ways). Opened in the desktop app: the two fixtures,
+  and three larger real projects (570 shapes; an older file with text; a sign with 24 shapes and 491 stray
+  points), which aren't in the repository because they're other people's designs.
+- Not yet confirmed: which way round text ends up. The one real file with text reads right to left here, and
+  Clint is checking it against Carbide Create.
 
 ### 0.113.0 — add sheets to a project
 - **A project can have several sheets**, one for each piece of material. Design could show the sheets of a

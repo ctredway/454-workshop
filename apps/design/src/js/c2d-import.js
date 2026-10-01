@@ -182,10 +182,19 @@ function sqliteTables(buf){
   return tables;
 }
 
-function c2dIs(buf){ return sqliteIs(buf); }
+// An older .c2d (before the database): the project as one JSON text, with the 3D model's bytes after it
+function c2dTextIs(buf){
+  var u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf), head = '';
+  for (var i = 0; i < Math.min(u8.length, 600); i++) head += String.fromCharCode(u8[i]);
+  return /^\s*\{/.test(head) && (head.indexOf('"CURVE_OBJECTS"') >= 0 || head.indexOf('"DOCUMENT_VALUES"') >= 0);
+}
+function c2dIs(buf){ return sqliteIs(buf) || c2dTextIs(buf); }
 // What's in a .c2d: the job's settings, and its layers, shapes, toolpaths and toolpath groups as Carbide Create
-// wrote them. skipped counts what couldn't be read, by kind.
+// wrote them. skipped counts what couldn't be read, by kind. Both kinds of file give the same thing.
 function c2dExtract(buf){
+  return sqliteIs(buf) ? c2dExtractDb(buf) : c2dExtractText(buf);
+}
+function c2dExtractDb(buf){
   var t = sqliteTables(buf);
   if (!t.items || !t.params) throw new Error('It’s a database, but not a Carbide Create project.');
   var params = {};
@@ -207,39 +216,83 @@ function c2dExtract(buf){
   });
   return ex;
 }
-// One Carbide Create shape -> 454 shapes (usually one). Its points are measured from its position; a curve to a
-// point is a cubic Bezier with that point's two control points. point_type: 0 start, 1 line, 3 curve, 4 close.
-function c2dElementEnts(el, unknown){
-  var px = el.position ? +el.position[0] || 0 : 0, py = el.position ? +el.position[1] || 0 : 0;
-  var P = el.points || [], T = el.point_type || [], C1 = el.cp1 || [], C2 = el.cp2 || [];
-  var real = P.filter(function (_, i) { return T[i] !== 4; });
-  if (el.geometryType === 'circle' && el.radius > 0 && real.length &&
-      real.every(function (p) { return Math.abs(Math.hypot(p[0], p[1]) - el.radius) < 1e-6 * el.radius + 1e-9; }))
-    return [{t: 'circle', cx: px, cy: py, r: +el.radius}];
-  if (el.geometryType === 'rectangle' && !el.corner_type && el.width > 0 && el.height > 0 && real.length >= 4 &&
-      real.every(function (p, i) { return T[i] !== 3 && Math.abs(Math.abs(p[0]) - el.width / 2) < 1e-6 && Math.abs(Math.abs(p[1]) - el.height / 2) < 1e-6; }))
-    return [{t: 'rect', x: px - el.width / 2, y: py - el.height / 2, w: +el.width, h: +el.height}];
-  var subs = [], cur = null, last = null;
-  P.forEach(function (p0, i) {
-    var ty = T[i], p = [px + p0[0], py + p0[1]];
-    if (ty === 4){ if (cur) cur.closed = true; cur = null; return; }
-    if (ty === 0 || !cur){ cur = {pts: [p], closed: false}; subs.push(cur); last = p; if (ty !== 0) unknown[ty] = 1; return; }
-    if (ty === 3 && C1[i] && C2[i]){
-      var flat = [];
-      svgFlatCubic(last, [px + C1[i][0], py + C1[i][1]], [px + C2[i][0], py + C2[i][1]], p, 0.02, flat, 0);
-      flat.forEach(function (q) { cur.pts.push(q); });
-    } else { if (ty !== 1) unknown[ty] = 1; cur.pts.push(p); }
-    last = p;
+// The older file: shapes in CURVE_OBJECTS and TEXT_OBJECTS, the job in DOCUMENT_VALUES, toolpaths inside their
+// groups. Found by reading three projects saved before the database (two of them from 2020).
+function c2dExtractText(buf){
+  var u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf), mark = 'MODELV1', end = u8.length;
+  for (var i = u8.length - mark.length; i >= 0; i--){                 // the text stops where the model starts
+    var hit = true;
+    for (var k = 0; k < mark.length; k++) if (u8[i + k] !== mark.charCodeAt(k)){ hit = false; break; }
+    if (hit){ end = i; break; }
+  }
+  var text = new TextDecoder('utf-8').decode(u8.subarray(0, end)), j;
+  try { j = JSON.parse(text.slice(0, text.lastIndexOf('}') + 1)); } catch (e) { throw new Error('Its text is cut short or damaged.'); }
+  var dv = j && j.DOCUMENT_VALUES;
+  if (!dv || typeof dv !== 'object') throw new Error('It’s text, but not a Carbide Create project.');
+  var params = {width: dv.WIDTH, height: dv.HEIGHT, thickness: dv.THICKNESS, display_mm: dv.DISPLAYMM ? '1' : '0',
+                zero_x: dv.ZERO_X, zero_y: dv.ZERO_Y, zero_z: dv.ZERO_Z, build_num: dv.build_num, retract: dv.RETRACT};
+  var ex = {params: params, build: +dv.build_num || 0, layers: Array.isArray(j.layers) ? j.layers : [], elements: [], toolpaths: [], groups: [], skipped: {}};
+  ['CURVE_OBJECTS', 'TEXT_OBJECTS'].forEach(function (key) { if (Array.isArray(j[key])) ex.elements = ex.elements.concat(j[key]); });
+  (Array.isArray(j.TOOLPATH_GROUP_OBJECTS) ? j.TOOLPATH_GROUP_OBJECTS : []).forEach(function (g) {
+    ex.groups.push({name: g.name, enabled: g.enabled !== false, uuid: g.uuid});
+    (g.TOOLPATH_OBJECTS || []).forEach(function (tp) { if (!tp.toolpath_group) tp.toolpath_group = g.uuid; ex.toolpaths.push(tp); });
   });
-  var out = [];
-  subs.forEach(function (s) {
-    var pts = s.pts.filter(function (p, i) { return !i || Math.hypot(p[0] - s.pts[i - 1][0], p[1] - s.pts[i - 1][1]) > 1e-9; });
-    if (s.closed && pts.length > 1 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < 1e-9) pts.pop();
-    if (s.closed && pts.length >= 3) out.push({t: 'poly', pts: pts, closed: true});
-    else if (pts.length === 2) out.push({t: 'line', x1: pts[0][0], y1: pts[0][1], x2: pts[1][0], y2: pts[1][1]});
-    else if (pts.length > 2) out.push({t: 'poly', pts: pts, closed: false});
+  Object.keys(j).forEach(function (key) {                // any other list of things: said, not dropped quietly
+    if (/_OBJECTS$/.test(key) && ['CURVE_OBJECTS', 'TEXT_OBJECTS', 'TOOLPATH_GROUP_OBJECTS'].indexOf(key) < 0 && Array.isArray(j[key]) && j[key].length)
+      ex.skipped[key] = j[key].length;
   });
-  return out;
+  return ex;
+}
+// One Carbide Create shape -> one 454 shape (a group, if it has several outlines), or null if there's nothing
+// to draw. Its points are measured from its position; a curve to a point is a cubic Bezier with that point's two
+// control points. point_type: 0 start, 1 line, 3 curve, 4 close. Text carries its letters' finished outlines
+// (rendered), to be put through its transform. What the shape IS is judged from its outline, not its label:
+// the older files don't label circles and rectangles.
+function c2dElementEnt(el, unknown){
+  var px = el.position ? +el.position[0] || 0 : 0, py = el.position ? +el.position[1] || 0 : 0, subs = [];
+  if (Array.isArray(el.rendered)){
+    var M = Array.isArray(el.transform) && el.transform.length === 9 ? el.transform : [1, 0, 0, 0, 1, 0, 0, 0, 1];
+    el.rendered.forEach(function (o) {
+      if (!Array.isArray(o)) return;
+      subs.push({closed: true, curves: 0, anchors: [], pts: o.map(function (p) { return [px + M[0] * p[0] + M[3] * p[1] + M[6], py + M[1] * p[0] + M[4] * p[1] + M[7]]; })});
+    });
+  } else {
+    var P = el.points || [], T = el.point_type || [], C1 = el.cp1 || [], C2 = el.cp2 || [], cur = null, last = null;
+    P.forEach(function (p0, i) {
+      var ty = T[i], p = [px + p0[0], py + p0[1]];
+      if (ty === 4){ if (cur) cur.closed = true; cur = null; return; }
+      if (ty === 0 || !cur){ cur = {pts: [p], closed: false, curves: 0, anchors: [p]}; subs.push(cur); last = p; if (ty !== 0) unknown[ty] = 1; return; }
+      if (ty === 3 && C1[i] && C2[i]){
+        var flat = [];
+        svgFlatCubic(last, [px + C1[i][0], py + C1[i][1]], [px + C2[i][0], py + C2[i][1]], p, 0.02, flat, 0);
+        flat.forEach(function (q) { cur.pts.push(q); });
+        cur.curves++;
+      } else { if (ty !== 1) unknown[ty] = 1; cur.pts.push(p); }
+      cur.anchors.push(p); last = p;
+    });
+  }
+  var shapes = subs.map(c2dOutlineEnt).filter(Boolean);
+  return !shapes.length ? null : shapes.length === 1 ? shapes[0] : {t: 'group', ents: shapes};
+}
+// One outline as a shape: a circle or a plain rectangle where that's what it is, else its points
+function c2dOutlineEnt(s){
+  var pts = s.pts.filter(function (p, i) { return !i || Math.hypot(p[0] - s.pts[i - 1][0], p[1] - s.pts[i - 1][1]) > 1e-9; });
+  if (s.closed && pts.length > 1 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < 1e-9) pts.pop();
+  if (!s.closed) return pts.length === 2 ? {t: 'line', x1: pts[0][0], y1: pts[0][1], x2: pts[1][0], y2: pts[1][1]} : pts.length > 2 ? {t: 'poly', pts: pts, closed: false} : null;
+  if (pts.length < 3) return null;
+  if (s.curves === 4 && s.anchors.length === 5){         // four curves round one centre, all the same distance out
+    var an = s.anchors.slice(0, 4), cx = (an[0][0] + an[1][0] + an[2][0] + an[3][0]) / 4, cy = (an[0][1] + an[1][1] + an[2][1] + an[3][1]) / 4;
+    var r = Math.hypot(an[0][0] - cx, an[0][1] - cy), tol = Math.max(0.02, r * 5e-4);
+    if (r > 1e-6 && an.every(function (p) { return Math.abs(Math.hypot(p[0] - cx, p[1] - cy) - r) < 1e-6 * r + 1e-9; }) &&
+        pts.every(function (p) { return Math.abs(Math.hypot(p[0] - cx, p[1] - cy) - r) < tol; }))
+      return {t: 'circle', cx: cx, cy: cy, r: r};
+  }
+  if (!s.curves && pts.length === 4 && pts.every(function (p, i) { var q = pts[(i + 1) % 4]; return Math.abs(p[0] - q[0]) < 1e-9 || Math.abs(p[1] - q[1]) < 1e-9; })){
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys), w = Math.max.apply(null, xs) - x0, h = Math.max.apply(null, ys) - y0;
+    if (w > 1e-9 && h > 1e-9) return {t: 'rect', x: x0, y: y0, w: w, h: h};
+  }
+  return {t: 'poly', pts: pts, closed: true};
 }
 // The project as a 454 drawing: {doc, inches, shapes, toolpaths, notes}. Each shape keeps Carbide Create's ID
 // (ccId), so its toolpaths can find it.
@@ -254,20 +307,32 @@ function c2dToDoc(ex, name){
     return byName[nm].id;
   }
   ex.layers.forEach(layerFor);
-  var ents = [], unknown = {}, empty = 0;
+  var ents = [], unknown = {}, empty = 0, dots = 0;
   ex.elements.forEach(function (el) {
-    var made = c2dElementEnts(el, unknown), lid = layerFor(el.layer);
-    if (!made.length) empty++;
-    made.forEach(function (e) { e.layer = lid; if (el.id) e.ccId = el.id; ents.push(e); });
+    var e = c2dElementEnt(el, unknown), lid = layerFor(el.layer);
+    if (!e){                                             // a stray point (every point in one place) isn't a shape
+      var T0 = el.point_type || [], P0 = (el.points || []).filter(function (_, i) { return T0[i] !== 4; });
+      if (P0.length && P0.every(function (q) { return Math.hypot(q[0] - P0[0][0], q[1] - P0[0][1]) < 1e-9; })) dots++; else empty++;
+      return;
+    }
+    e.layer = lid; if (el.id) e.ccId = el.id;
+    ents.push(e);
   });
   if (!layers.length) layerFor(null);
   var notes = [];
+  // XY zero: Carbide Create keeps it as a distance from the lower-left corner, where its shapes are measured
+  // from. 454 has zero at a corner or the centre, and measures shapes from zero.
+  var zx = num('zero_x'), zy = num('zero_y'), spots = {fl: [0, 0], fr: [stock.w, 0], bl: [0, stock.h], br: [stock.w, stock.h], center: [stock.w / 2, stock.h / 2]}, at = null;
+  Object.keys(spots).forEach(function (k) { if (!at && Math.abs(zx - spots[k][0]) < 0.01 && Math.abs(zy - spots[k][1]) < 0.01) at = k; });
+  if (at && at !== 'fl'){ stock.origin = at; ents.forEach(function (e) { moveEntity(e, -zx, -zy); }); }
+  if (!at) notes.push('XY zero in this project is ' + zx.toFixed(2) + ', ' + zy.toFixed(2) + ' mm from the lower-left corner. 454 puts zero at a corner or the centre, so it’s at the lower-left corner here: check Job setup.');
+  if (num('zero_z')) notes.push('Z zero isn’t on the top of the material in this project, and 454 doesn’t read where it is yet. It’s set to the top here: check Job setup before cutting.');
   if (Object.keys(unknown).length) notes.push('Some shapes use a kind of point 454 doesn’t know yet (' + Object.keys(unknown).join(', ') + '): check them against Carbide Create.');
+  if (dots) notes.push(dots + (dots === 1 ? ' stray point (a shape with no size) was' : ' stray points (shapes with no size) were') + ' left out.');
   if (empty) notes.push(empty + (empty === 1 ? ' shape had' : ' shapes had') + ' nothing 454 could draw.');
-  if (num('zero_x') || num('zero_y') || num('zero_z')) notes.push('Zero isn’t at the lower-left corner and the top in this project, and 454 doesn’t read where it is yet: set it in Job setup.');
   Object.keys(ex.skipped).forEach(function (k) { notes.push(ex.skipped[k] + ' ' + k + (ex.skipped[k] === 1 ? ' item' : ' items') + ' couldn’t be read.'); });
   var doc = {stock: stock, ents: ents, guides: [], dims: [], layers: layers, activeLayer: layers[0].id, name: String(name || 'Carbide Create project').replace(/\.c2d$/i, '')};
-  return {doc: doc, inches: p.display_mm === '0', shapes: ents.length, toolpaths: ex.toolpaths.length, notes: notes};
+  return {doc: doc, inches: p.display_mm === '0', shapes: ents.length, toolpaths: ex.toolpaths.length, zeroAt: at, notes: notes};
 }
 // Open a .c2d as the drawing: the one before is put aside for Recover, and Save asks where to save, since this
 // isn't a 454 Design file.
@@ -287,6 +352,7 @@ function c2dOpen(buf, name){
   toast(r.notes.length ? 'warn' : 'ok', 'Opened ' + name,
         r.shapes + (r.shapes === 1 ? ' shape' : ' shapes') + ' on ' + fmtDisp(st.w) + ' × ' + fmtDisp(st.h) + ' ' + u + ' material' +
         (st.t > 0 ? ', ' + fmtDisp(st.t) + ' ' + u + ' thick' : '') + '. ' +
+        (r.zeroAt && r.zeroAt !== 'fl' ? 'XY zero is at the ' + ORIGIN_NAMES[r.zeroAt] + ', as in the project. ' : '') +
         (r.toolpaths ? (r.toolpaths === 1 ? 'Its toolpath isn’t' : 'Its ' + r.toolpaths + ' toolpaths aren’t') + ' brought in yet: make ' + (r.toolpaths === 1 ? 'it' : 'them') + ' again in the Toolpaths panel. ' : '') +
         r.notes.join(' '));
   return r;

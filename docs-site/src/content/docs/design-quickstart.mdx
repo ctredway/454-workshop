@@ -114,18 +114,23 @@ VCarve’s toolpaths show here as a read-only list. 454 Design doesn’t run the
 ### Open a Carbide Create project
 
 **Open** a `.c2d` file. The shapes come across as you drew them, on their layers, with the material's size and
-thickness, and Design switches to the units the project shows (inches or millimetres).
+thickness, and Design switches to the units the project shows (inches or millimetres). Projects from current
+Carbide Create and from older versions both open.
 
 - **Toolpaths aren't brought in yet.** The message after opening says how many the project has: make them
   again in the Toolpaths panel. Your Carbide Create file isn't changed.
-- **Curves become many short straight lines**, within 0.02 mm of the curve. Circles and plain rectangles stay
-  circles and rectangles.
-- **Zero** is taken as the lower-left corner and the top of the material. If the project has it elsewhere,
-  the message says so: set it in Job setup.
+- **Circles and plain rectangles stay circles and rectangles.** Other curves become many short straight
+  lines, within 0.02 mm of the curve.
+- **Text comes in as its letters' outlines**, as one group. It can be moved and cut, but not retyped.
+- **XY zero** at a corner or the centre is taken from the project, and the message says so. Anywhere else, it's
+  put at the lower-left corner and the message says where the project had it.
+- **Z zero** is set to the top of the material. If the project has it elsewhere, the message says so: set it in
+  Job setup before cutting.
+- **Stray points** (shapes with no size, which some projects are full of) are left out, and counted in the message.
 - **Save** asks where to save, since a 454 drawing is a different file (`.454.json`).
 
-It reads projects saved by Carbide Create 7 (tested with build 870). If one won't open, export it from
-Carbide Create as SVG or DXF, which open here, and [tell us](before-you-start.html#when-something-goes-wrong).
+If one won't open, export it from Carbide Create as SVG or DXF, which open here, and
+[tell us](before-you-start.html#when-something-goes-wrong).
 
 ## Trace an image
 
