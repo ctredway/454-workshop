@@ -17,6 +17,8 @@ function tpRows(tp){
   if (tp.side === 'pocket' || tp.side === 'inside' || tp.side === 'outside' || tp.side === 'on')
     row('Entry', tp.rampOff ? 'straight plunge' : 'ramps in over ' + fmtDisp(tpRamp(tp)) + ' ' + unitTag());
   if (tp.warning) row('Note', tp.warning);
+  if (tpPastNow(tp)) row('⚠ Depth', tpPastSay(tp));
+  else if (tpDepthUnchecked() && !tp.through) row('Note', 'the depth isn’t checked against the material: set its thickness in Settings');
   return rows;
 }
 // What kind of toolpath it is, in words

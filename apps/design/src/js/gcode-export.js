@@ -1,5 +1,6 @@
 // G-code for every toolpath, in order: one file, or, for a job with more than one bit, one file per bit if asked
-function tpExport(){
+function tpExport(checked){
+  if (checked !== true){ tpDepthGate('Save anyway', function () { tpExport(true); }); return; }   // past the material? ask first
   var j = tpJob();
   if (!j) return;
   var files = tpBitFiles(j);
@@ -13,6 +14,25 @@ function tpExport(){
     if (v === 'alt') gcodeSaveMany(files, j.said);
     else if (v) gcodeSave(j.gc, j.base + '.nc', j.said);
   });
+}
+// Before anything leaves Design (Save G-code, Preview in 454 Control): any toolpath that goes past the bottom of
+// the material is listed, and nothing happens unless the person says so. If the material's thickness isn't set,
+// depths can't be checked, and it says that instead. go() runs once it's clear, or when they choose `anyway`.
+function tpDepthGate(anyway, go){
+  if (!camReady()){ go(); return; }
+  var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });
+  var past = chosen.filter(function (tp) { return tpPastNow(tp); });
+  var unchecked = tpDepthUnchecked() ? chosen.filter(function (tp) { return !tp.through; }) : [];
+  if (!past.length && !unchecked.length){ go(); return; }
+  var body = past.length
+    ? (past.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' past the bottom of the material:\n\n' +
+      past.map(function (tp) { return '• ' + tp.name + ' ' + tpPastSay(tp) + '.'; }).join('\n') +
+      '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Settings) first.'
+    : 'The material’s thickness isn’t set, so these depths can’t be checked against it:\n\n' +
+      unchecked.map(function (tp) { return '• ' + tp.name + ', ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' deep'; }).join('\n') +
+      '\n\nSet the thickness in Settings to have them checked.';
+  uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!past.length})
+    .then(function (ok) { if (ok) go(); });
 }
 // The job split where the bit changes, in cutting order: a bit used again later gets another file, so nothing is
 // cut out of order (a profile that frees a part mustn't move ahead of carving on it). Each file is a whole job

@@ -11,7 +11,7 @@ function wire(){
   fit();
 
   document.getElementById('stkT').addEventListener('change', function(e){
-    var raw = e.target.value.trim();
+    var raw = e.target.value.trim(), pastBefore = tpPastIds();      // to name toolpaths a thinner material puts through it
     if (!raw){ DOC.stock.t = 0; }
     else {
       var t = parseStockLen(raw, stockUnits());
@@ -21,6 +21,7 @@ function wire(){
       DOC.stock.t = t;
     }
     paramsSayFailed(paramsApplyDims());
+    tpPastNotice(pastBefore);
     syncStockUI(); persist(); renderToolpathPanel(); draw();       // cut-through toolpaths follow it
   });
   document.getElementById('stkZ').addEventListener('change', function(e){

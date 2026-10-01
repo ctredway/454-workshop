@@ -19,9 +19,9 @@ function job(kinds) {
   D.DOC.layers = [{ id: 'L1', name: 'Layer 1', visible: true, locked: false }]; D.DOC.activeLayer = 'L1';
   D.DOC.ents = [{ t: 'rect', x: 20, y: 20, w: 100, h: 60, layer: 'L1' }, { t: 'rect', x: 40, y: 35, w: 40, h: 25, layer: 'L1' }];
   D.DOC.toolpaths = []; D.DOC.name = 'Sign';
-  for (const [sel, type, dia] of kinds) {
+  for (const [sel, type, dia] of kinds) {                       // a 120° V-carve: 7.2 mm deep, within the 12 mm material
     D.SEL = [sel]; D.cutOpen(null); set('cutType', type, 'change'); D.CUT.toolChosen = true; set('cutDia', dia);
-    if (type === 'vcarve') set('cutVcAngle', 60); else if (type === 'outside') tick('cutThrough', true); else set('cutDepth', 3);
+    if (type === 'vcarve') set('cutVcAngle', 120); else if (type === 'outside') tick('cutThrough', true); else set('cutDepth', 3);
     D.CUT.toolChosen = true; D.cutApply();
   }
   return D.tpJob();

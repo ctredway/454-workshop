@@ -158,7 +158,14 @@ function cutRenderHintExtra(){
   var h = document.getElementById('cutHint');
   if (h && cutRender.extra && h.textContent.indexOf(cutRender.extra.trim()) < 0 && h.textContent.charAt(0) !== '\u26a0') h.textContent += cutRender.extra;
 }
-function cutRender(){ cutRenderInner(); cutRenderHintExtra(); }   // every hint also says how the walls are finished
+function cutRender(){
+  tpGenerate.last = null;
+  cutRenderInner(); cutRenderHintExtra();
+  // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
+  var pv = tpGenerate.last, h = document.getElementById('cutHint');
+  CUT.previewPast = pv && pv.ents === CUT.ents ? pv.past : null;
+  if (h && CUT.previewPast) h.textContent = '⚠ This ' + tpPastSay(Object.assign({}, CUT, {past: CUT.previewPast})) + '. ' + h.textContent.replace(/^⚠ /, '');
+}   // every hint also says how the walls are finished
 function cutRenderInner(){
   if (!CUT) return;
   document.getElementById('cutShapesVal').textContent = CUT.ents.length

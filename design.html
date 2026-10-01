@@ -3995,8 +3995,52 @@ function tpTabTotal(tp){
 function tpRampDefault(tp){ return Math.max(4, (tp.dia || 0) * 4); }
 function tpRamp(tp){ return tp.rampOff ? 0 : (tp.rampLen > 0 ? tp.rampLen : tpRampDefault(tp)); }
 
-// Build (or rebuild) the moves for one toolpath.
+// Build (or rebuild) the moves for one toolpath, then check how deep they really go (tpPastMaterial): every
+// toolpath that's made or recalculated is checked, however its depth was set.
 function tpGenerate(tp){
+  tpGenerateMoves(tp);
+  tp.past = camReady() ? tpPastMaterial(tp) : null;
+  tpGenerate.last = tp;                                   // the editor reads its preview's depth from this
+  return tp;
+}
+// How far below the bottom of the material the moves go, from the deepest point actually cut (so it's right for
+// every kind of toolpath: a pocket's floor, a V-carve's deepest V, a drill's tip, a ramp): null if they stay in
+// the material, or go through it only by the overcut a through cut asks for. {depth, past, t} in mm, where depth
+// is below the top of the material. Also null when the material's thickness isn't set: there's nothing to check
+// against (tpDepthUnchecked says so).
+function tpPastMaterial(tp){
+  if (!(DOC.stock && DOC.stock.t > 0) || !tp.moves) return null;
+  var z = 0, deepest = Infinity;
+  tp.moves.forEach(function (m) { if (m.z !== undefined) z = m.z; if (m.g === 1 && z < deepest) deepest = z; });
+  if (!isFinite(deepest)) return null;
+  var top = tpSurface(), bottom = top - DOC.stock.t, past = bottom - deepest;
+  if (past <= 1e-3) return null;
+  if (tp.through && past <= (tp.over === undefined ? 0.2 : tp.over) + 1e-3) return null;   // the overcut, on purpose
+  return {depth: top - deepest, past: past, t: DOC.stock.t};
+}
+// The check now, from the toolpath's moves and the material as it is now: read fresh every time, because a
+// change of thickness doesn't always change the moves (a pocket with Z zero on top), so a stored answer goes stale.
+function tpPastNow(tp){ if (camReady() && tp.moves && tpStale(tp)) tpGenerate(tp); return (tp.past = camReady() ? tpPastMaterial(tp) : null); }
+// What to say about it: "goes 15.00 mm deep: through the 12.00 mm material and 3.00 mm into the spoilboard"
+function tpPastSay(tp){
+  var p = tp.past; if (!p) return '';
+  return 'goes ' + fmtDisp(p.depth) + ' ' + unitTag() + ' deep: through the ' + fmtDisp(p.t) + ' ' + unitTag() + ' material and ' +
+         fmtDisp(p.past) + ' ' + unitTag() + ' into the spoilboard' +
+         (tp.side === 'vcarve' ? '. Set a max depth' : tp.through ? ', more than the overcut' : '. Tick Through if that’s meant');
+}
+// After a change that can move depths (the material's thickness, a parameter): recalculate what it touched, and
+// name every toolpath that now goes past the material and didn't before. before: tpPastIds() from before the change.
+function tpPastIds(){ return tpList().filter(function (tp) { return tpPastNow(tp); }).map(function (tp) { return tp.id; }); }
+function tpPastNotice(before){
+  if (!camReady()) return [];
+  var now = tpList().filter(function (tp) { return tpPastNow(tp) && before.indexOf(tp.id) < 0; });
+  if (now.length) toast('warn', now.length === 1 ? now[0].name + ' now cuts past the material' : now.length + ' toolpaths now cut past the material',
+                        now.slice(0, 4).map(function (tp) { return tp.name + ' ' + tpPastSay(tp) + '.'; }).join(' '));
+  return now;
+}
+// Toolpaths whose depth can't be checked: the material's thickness isn't set (through cuts already refuse)
+function tpDepthUnchecked(){ return !(DOC.stock && DOC.stock.t > 0); }
+function tpGenerateMoves(tp){
   if (!camReady()) return tp;
   if (tp.side === 'pocket'){
     var groups = tpPocketGroups(tp.ents), pm = [], warnP = null, rings = 0; tp.rasterLines = 0;
@@ -4035,9 +4079,8 @@ function tpGenerate(tp){
     tp.warning = vr.warning && !vr.moves.length ? vr.warning : null;
     tp.vcNote = vr.moves.length ? {depth: vr.depth, widest: widest, flat: vr.flatCapped, passes: vr.passes, outlines: vr.paths} : null;
     // the cone at the surface is as wide as the widest part carved: a bit narrower than that can't do it
-    if (vr.moves.length && DOC.stock.t > 0 && vr.depth > DOC.stock.t + 1e-6)
-      tp.warning = 'the carving goes ' + fmtDisp(vr.depth) + ' ' + unitTag() + ' deep, through the ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' material: set a max depth';
-    else if (vr.moves.length && tp.dia > 0 && widest > tp.dia + 0.01)
+    // (carving through the material is checked for every toolpath, in tpGenerate)
+    if (vr.moves.length && tp.dia > 0 && widest > tp.dia + 0.01)
       tp.warning = 'the carving is ' + fmtDisp(widest) + ' ' + unitTag() + ' across at its widest, more than this bit\u2019s ' + fmtDisp(tp.dia) + ' ' + unitTag() + ': set a max depth, or use a larger bit';
     tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
     return tp;
@@ -4349,7 +4392,14 @@ function cutRenderHintExtra(){
   var h = document.getElementById('cutHint');
   if (h && cutRender.extra && h.textContent.indexOf(cutRender.extra.trim()) < 0 && h.textContent.charAt(0) !== '\u26a0') h.textContent += cutRender.extra;
 }
-function cutRender(){ cutRenderInner(); cutRenderHintExtra(); }   // every hint also says how the walls are finished
+function cutRender(){
+  tpGenerate.last = null;
+  cutRenderInner(); cutRenderHintExtra();
+  // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
+  var pv = tpGenerate.last, h = document.getElementById('cutHint');
+  CUT.previewPast = pv && pv.ents === CUT.ents ? pv.past : null;
+  if (h && CUT.previewPast) h.textContent = '⚠ This ' + tpPastSay(Object.assign({}, CUT, {past: CUT.previewPast})) + '. ' + h.textContent.replace(/^⚠ /, '');
+}   // every hint also says how the walls are finished
 function cutRenderInner(){
   if (!CUT) return;
   document.getElementById('cutShapesVal').textContent = CUT.ents.length
@@ -4908,7 +4958,8 @@ function toolNumbering(){
   };
 }
 // G-code for every toolpath, in order: one file, or, for a job with more than one bit, one file per bit if asked
-function tpExport(){
+function tpExport(checked){
+  if (checked !== true){ tpDepthGate('Save anyway', function () { tpExport(true); }); return; }   // past the material? ask first
   var j = tpJob();
   if (!j) return;
   var files = tpBitFiles(j);
@@ -4922,6 +4973,25 @@ function tpExport(){
     if (v === 'alt') gcodeSaveMany(files, j.said);
     else if (v) gcodeSave(j.gc, j.base + '.nc', j.said);
   });
+}
+// Before anything leaves Design (Save G-code, Preview in 454 Control): any toolpath that goes past the bottom of
+// the material is listed, and nothing happens unless the person says so. If the material's thickness isn't set,
+// depths can't be checked, and it says that instead. go() runs once it's clear, or when they choose `anyway`.
+function tpDepthGate(anyway, go){
+  if (!camReady()){ go(); return; }
+  var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });
+  var past = chosen.filter(function (tp) { return tpPastNow(tp); });
+  var unchecked = tpDepthUnchecked() ? chosen.filter(function (tp) { return !tp.through; }) : [];
+  if (!past.length && !unchecked.length){ go(); return; }
+  var body = past.length
+    ? (past.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' past the bottom of the material:\n\n' +
+      past.map(function (tp) { return '• ' + tp.name + ' ' + tpPastSay(tp) + '.'; }).join('\n') +
+      '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Settings) first.'
+    : 'The material’s thickness isn’t set, so these depths can’t be checked against it:\n\n' +
+      unchecked.map(function (tp) { return '• ' + tp.name + ', ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' deep'; }).join('\n') +
+      '\n\nSet the thickness in Settings to have them checked.';
+  uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!past.length})
+    .then(function (ok) { if (ok) go(); });
 }
 // The job split where the bit changes, in cutting order: a bit used again later gets another file, so nothing is
 // cut out of order (a profile that frees a part mustn't move ahead of carving on it). Each file is a whole job
@@ -6222,6 +6292,8 @@ function tpRows(tp){
   if (tp.side === 'pocket' || tp.side === 'inside' || tp.side === 'outside' || tp.side === 'on')
     row('Entry', tp.rampOff ? 'straight plunge' : 'ramps in over ' + fmtDisp(tpRamp(tp)) + ' ' + unitTag());
   if (tp.warning) row('Note', tp.warning);
+  if (tpPastNow(tp)) row('⚠ Depth', tpPastSay(tp));
+  else if (tpDepthUnchecked() && !tp.through) row('Note', 'the depth isn’t checked against the material: set its thickness in Settings');
   return rows;
 }
 // What kind of toolpath it is, in words
@@ -6395,7 +6467,8 @@ function renderMyToolpaths(){
 // connection): if one answers, it has the job; if none does, the job is stored and a new Control opens,
 // which picks it up as it starts.
 var HANDOFF_KEY = '454.handoff';
-function tpPreview(){
+function tpPreview(checked){
+  if (checked !== true){ tpDepthGate('Preview anyway', function () { tpPreview(true); }); return; }
   var j = tpJob();
   if (!j) return;
   var job = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name: j.base + '.nc', text: j.gc, at: Date.now()};
@@ -6806,7 +6879,7 @@ function woodWire3D(){
 //   {kind: '454-toolpath-template', version: 1, design: '0.108.0', toolpaths: [{layers: ['Cut out'], ...settings}]}
 var TPL_KIND = '454-toolpath-template';
 // What a template doesn't keep: which shapes, where the tabs sat on them, and everything worked out from them
-var TPL_DROP = ['id', 'ents', 'tabPts', 'startPts', 'moves', 'sheet', 'sig', 'warning', 'rasterLines', 'vcNote', 'vcFlat', 'vcDepth',
+var TPL_DROP = ['id', 'ents', 'tabPts', 'startPts', 'past', 'moves', 'sheet', 'sig', 'warning', 'rasterLines', 'vcNote', 'vcFlat', 'vcDepth',
                 'rings', 'restRuns', 'islands', 'holes', 'foundBy', 'hidden', 'vcFrom', 'restFrom'];
 
 // The template for the toolpaths on this sheet: each one's settings and the names of its shapes' layers
@@ -13465,7 +13538,7 @@ function wire(){
   fit();
 
   document.getElementById('stkT').addEventListener('change', function(e){
-    var raw = e.target.value.trim();
+    var raw = e.target.value.trim(), pastBefore = tpPastIds();      // to name toolpaths a thinner material puts through it
     if (!raw){ DOC.stock.t = 0; }
     else {
       var t = parseStockLen(raw, stockUnits());
@@ -13475,6 +13548,7 @@ function wire(){
       DOC.stock.t = t;
     }
     paramsSayFailed(paramsApplyDims());
+    tpPastNotice(pastBefore);
     syncStockUI(); persist(); renderToolpathPanel(); draw();       // cut-through toolpaths follow it
   });
   document.getElementById('stkZ').addEventListener('change', function(e){

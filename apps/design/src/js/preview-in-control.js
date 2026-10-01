@@ -6,7 +6,8 @@
 // connection): if one answers, it has the job; if none does, the job is stored and a new Control opens,
 // which picks it up as it starts.
 var HANDOFF_KEY = '454.handoff';
-function tpPreview(){
+function tpPreview(checked){
+  if (checked !== true){ tpDepthGate('Preview anyway', function () { tpPreview(true); }); return; }
   var j = tpJob();
   if (!j) return;
   var job = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name: j.base + '.nc', text: j.gc, at: Date.now()};

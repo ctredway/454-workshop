@@ -65,8 +65,52 @@ function tpTabTotal(tp){
 function tpRampDefault(tp){ return Math.max(4, (tp.dia || 0) * 4); }
 function tpRamp(tp){ return tp.rampOff ? 0 : (tp.rampLen > 0 ? tp.rampLen : tpRampDefault(tp)); }
 
-// Build (or rebuild) the moves for one toolpath.
+// Build (or rebuild) the moves for one toolpath, then check how deep they really go (tpPastMaterial): every
+// toolpath that's made or recalculated is checked, however its depth was set.
 function tpGenerate(tp){
+  tpGenerateMoves(tp);
+  tp.past = camReady() ? tpPastMaterial(tp) : null;
+  tpGenerate.last = tp;                                   // the editor reads its preview's depth from this
+  return tp;
+}
+// How far below the bottom of the material the moves go, from the deepest point actually cut (so it's right for
+// every kind of toolpath: a pocket's floor, a V-carve's deepest V, a drill's tip, a ramp): null if they stay in
+// the material, or go through it only by the overcut a through cut asks for. {depth, past, t} in mm, where depth
+// is below the top of the material. Also null when the material's thickness isn't set: there's nothing to check
+// against (tpDepthUnchecked says so).
+function tpPastMaterial(tp){
+  if (!(DOC.stock && DOC.stock.t > 0) || !tp.moves) return null;
+  var z = 0, deepest = Infinity;
+  tp.moves.forEach(function (m) { if (m.z !== undefined) z = m.z; if (m.g === 1 && z < deepest) deepest = z; });
+  if (!isFinite(deepest)) return null;
+  var top = tpSurface(), bottom = top - DOC.stock.t, past = bottom - deepest;
+  if (past <= 1e-3) return null;
+  if (tp.through && past <= (tp.over === undefined ? 0.2 : tp.over) + 1e-3) return null;   // the overcut, on purpose
+  return {depth: top - deepest, past: past, t: DOC.stock.t};
+}
+// The check now, from the toolpath's moves and the material as it is now: read fresh every time, because a
+// change of thickness doesn't always change the moves (a pocket with Z zero on top), so a stored answer goes stale.
+function tpPastNow(tp){ if (camReady() && tp.moves && tpStale(tp)) tpGenerate(tp); return (tp.past = camReady() ? tpPastMaterial(tp) : null); }
+// What to say about it: "goes 15.00 mm deep: through the 12.00 mm material and 3.00 mm into the spoilboard"
+function tpPastSay(tp){
+  var p = tp.past; if (!p) return '';
+  return 'goes ' + fmtDisp(p.depth) + ' ' + unitTag() + ' deep: through the ' + fmtDisp(p.t) + ' ' + unitTag() + ' material and ' +
+         fmtDisp(p.past) + ' ' + unitTag() + ' into the spoilboard' +
+         (tp.side === 'vcarve' ? '. Set a max depth' : tp.through ? ', more than the overcut' : '. Tick Through if that’s meant');
+}
+// After a change that can move depths (the material's thickness, a parameter): recalculate what it touched, and
+// name every toolpath that now goes past the material and didn't before. before: tpPastIds() from before the change.
+function tpPastIds(){ return tpList().filter(function (tp) { return tpPastNow(tp); }).map(function (tp) { return tp.id; }); }
+function tpPastNotice(before){
+  if (!camReady()) return [];
+  var now = tpList().filter(function (tp) { return tpPastNow(tp) && before.indexOf(tp.id) < 0; });
+  if (now.length) toast('warn', now.length === 1 ? now[0].name + ' now cuts past the material' : now.length + ' toolpaths now cut past the material',
+                        now.slice(0, 4).map(function (tp) { return tp.name + ' ' + tpPastSay(tp) + '.'; }).join(' '));
+  return now;
+}
+// Toolpaths whose depth can't be checked: the material's thickness isn't set (through cuts already refuse)
+function tpDepthUnchecked(){ return !(DOC.stock && DOC.stock.t > 0); }
+function tpGenerateMoves(tp){
   if (!camReady()) return tp;
   if (tp.side === 'pocket'){
     var groups = tpPocketGroups(tp.ents), pm = [], warnP = null, rings = 0; tp.rasterLines = 0;
@@ -105,9 +149,8 @@ function tpGenerate(tp){
     tp.warning = vr.warning && !vr.moves.length ? vr.warning : null;
     tp.vcNote = vr.moves.length ? {depth: vr.depth, widest: widest, flat: vr.flatCapped, passes: vr.passes, outlines: vr.paths} : null;
     // the cone at the surface is as wide as the widest part carved: a bit narrower than that can't do it
-    if (vr.moves.length && DOC.stock.t > 0 && vr.depth > DOC.stock.t + 1e-6)
-      tp.warning = 'the carving goes ' + fmtDisp(vr.depth) + ' ' + unitTag() + ' deep, through the ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' material: set a max depth';
-    else if (vr.moves.length && tp.dia > 0 && widest > tp.dia + 0.01)
+    // (carving through the material is checked for every toolpath, in tpGenerate)
+    if (vr.moves.length && tp.dia > 0 && widest > tp.dia + 0.01)
       tp.warning = 'the carving is ' + fmtDisp(widest) + ' ' + unitTag() + ' across at its widest, more than this bit\u2019s ' + fmtDisp(tp.dia) + ' ' + unitTag() + ': set a max depth, or use a larger bit';
     tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
     return tp;
