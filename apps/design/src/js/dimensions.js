@@ -108,9 +108,10 @@ function dimLabel(d){
   var v = dimValue(d);
   if (v === null) return null;
   var t = fmtDisp(v) + (dispIn() ? '\u2033' : '');
-  if (d.kind === 'dia') return '\u00d8' + t;
-  if (d.kind === 'rad') return 'R' + t;
-  if (d.kind === 'pair' && d.edge) return t + ' (edge)';
+  if (d.kind === 'dia') t = '\u00d8' + t;
+  if (d.kind === 'rad') t = 'R' + t;
+  if (d.kind === 'pair' && d.edge) t += ' (edge)';
+  if (d.expr) t += ' = ' + d.expr + (dimExprHolds(d) ? '' : ' ⚠');   // driven by parameters; ⚠ if it isn't what they say
   return t;
 }
 // apply a typed value: drives the geometry
@@ -171,7 +172,7 @@ function editDim(i, sx, sy){
   var cur = dimValue(d);
   if (sx !== undefined) FLOAT_AT = {x:sx, y:sy};     // open the box where it was grabbed
   else { var an = dimAnchor(d); if (an) floatAtWorld(an.x, an.y); }
-  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], cur === null ? '' : fmtDisp(cur), true,
+  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], d.expr || (cur === null ? '' : fmtDisp(cur)), true,
              (d.kind === 'dia' ? '\u00d8 ' : d.kind === 'rad' ? 'R ' : '') + unitTag());
   draw();
 }
@@ -190,7 +191,7 @@ function dimJustAdded(d){
   DRAW = {stage:'dimValue', di:i};
   var cur = dimValue(d), an = dimAnchor(d);
   if (an) floatAtWorld(an.x, an.y);                 // the box opens on the dimension itself
-  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], cur === null ? '' : fmtDisp(cur), true,
+  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], d.expr || (cur === null ? '' : fmtDisp(cur)), true,
              (d.kind === 'dia' ? '\u00d8 ' : d.kind === 'rad' ? 'R ' : '') + unitTag());
   draw();
 }

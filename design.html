@@ -1594,9 +1594,10 @@ function dimLabel(d){
   var v = dimValue(d);
   if (v === null) return null;
   var t = fmtDisp(v) + (dispIn() ? '\u2033' : '');
-  if (d.kind === 'dia') return '\u00d8' + t;
-  if (d.kind === 'rad') return 'R' + t;
-  if (d.kind === 'pair' && d.edge) return t + ' (edge)';
+  if (d.kind === 'dia') t = '\u00d8' + t;
+  if (d.kind === 'rad') t = 'R' + t;
+  if (d.kind === 'pair' && d.edge) t += ' (edge)';
+  if (d.expr) t += ' = ' + d.expr + (dimExprHolds(d) ? '' : ' ⚠');   // driven by parameters; ⚠ if it isn't what they say
   return t;
 }
 // apply a typed value: drives the geometry
@@ -1657,7 +1658,7 @@ function editDim(i, sx, sy){
   var cur = dimValue(d);
   if (sx !== undefined) FLOAT_AT = {x:sx, y:sy};     // open the box where it was grabbed
   else { var an = dimAnchor(d); if (an) floatAtWorld(an.x, an.y); }
-  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], cur === null ? '' : fmtDisp(cur), true,
+  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], d.expr || (cur === null ? '' : fmtDisp(cur)), true,
              (d.kind === 'dia' ? '\u00d8 ' : d.kind === 'rad' ? 'R ' : '') + unitTag());
   draw();
 }
@@ -1676,7 +1677,7 @@ function dimJustAdded(d){
   DRAW = {stage:'dimValue', di:i};
   var cur = dimValue(d), an = dimAnchor(d);
   if (an) floatAtWorld(an.x, an.y);                 // the box opens on the dimension itself
-  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], cur === null ? '' : fmtDisp(cur), true,
+  showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], d.expr || (cur === null ? '' : fmtDisp(cur)), true,
              (d.kind === 'dia' ? '\u00d8 ' : d.kind === 'rad' ? 'R ' : '') + unitTag());
   draw();
 }
@@ -1693,6 +1694,134 @@ var SEL = [];          // selected entity indices, in selection order (first = r
 var MOUSE = {x:0,y:0,mx:0,my:0,snap:null};
 var cv, ctx;
 
+// Parameters: named values saved with the drawing (DOC.params), used in place of numbers. A parameter is a
+// name and an expression: a number (thickness = 18.3), or arithmetic on numbers and other parameters
+// (dado = thickness + 0.2, gap = (height - 3 * thickness) / 2). Dimensions can be set to an expression, and
+// remember it: change a parameter and every dimension using it changes too (dimension-params.js).
+//
+// Units: each expression is worked out in the units it was typed in (unit: 'mm' or 'in'), so a bare number means
+// that unit, and parameters are converted into it first. That keeps sums and scaling right in either unit:
+// "(height - 3 * thickness) / 2" typed in inches gives inches. A number can say its unit: 18mm, 3/4in, 3/4".
+//   DOC.params = [{name: 'thickness', expr: '18.3', unit: 'mm', note: 'birch ply, measured'}]
+// The material's thickness (Settings) is always there as "material", in mm, and can't be changed here.
+function paramsArr(){ if (!DOC.params) DOC.params = []; return DOC.params; }
+var PARAM_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+var PARAM_BUILTIN = 'material';
+
+// Split an expression into numbers (with any unit), names, operators and brackets; null if it has anything else
+function paramTokens(src){
+  var s = String(src), i = 0, out = [], m;
+  while (i < s.length){
+    var c = s.charAt(i);
+    if (/\s/.test(c)){ i++; continue; }
+    // a number, or a fraction with a unit after it (3/4in is three quarters of an inch, not 3 / 4in)
+    if ((m = /^(\d+\.?\d*|\.\d+)(?:\s*\/\s*(\d+\.?\d*)(?=\s*(?:mm|cm|in|"|″)))?(?:\s*(mm|cm|in)(?![A-Za-z0-9_])|\s*("|″))?/i.exec(s.slice(i)))){
+      var u = m[4] ? 'in' : m[3] ? m[3].toLowerCase() : null;
+      if (m[2] !== undefined && !(parseFloat(m[2]) > 0)) return null;
+      out.push({t: 'num', v: m[2] !== undefined ? parseFloat(m[1]) / parseFloat(m[2]) : parseFloat(m[1]), u: u === 'mm' ? 'mm' : u === 'cm' ? 'cm' : u ? 'in' : null});
+      i += m[0].length; continue;
+    }
+    if ((m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(s.slice(i)))){ out.push({t: 'name', v: m[0]}); i += m[0].length; continue; }
+    if ('+-*/()'.indexOf(c) >= 0){ out.push({t: c}); i++; continue; }
+    return null;
+  }
+  return out;
+}
+// Work out an expression, in its own unit: look(name) gives a parameter's value in mm (or throws why not).
+// Returns mm, or throws an Error saying what's wrong, in plain words.
+function paramEval(src, unit, look){
+  var toks = paramTokens(src);
+  if (!toks) throw new Error('Only numbers, names, + - * / and brackets can be used.');
+  if (!toks.length) throw new Error('It’s empty.');
+  var k = 0, per = unit === 'in' ? 25.4 : 1;                   // mm in one of the expression's units
+  function peek(){ return toks[k]; }
+  function expr(){                                            // sums
+    var v = term();
+    while (peek() && (peek().t === '+' || peek().t === '-')){ var op = toks[k++].t, r = term(); v = op === '+' ? v + r : v - r; }
+    return v;
+  }
+  function term(){                                            // products
+    var v = unary();
+    while (peek() && (peek().t === '*' || peek().t === '/')){
+      var op = toks[k++].t, r = unary();
+      if (op === '/' && Math.abs(r) < 1e-12) throw new Error('It divides by zero.');
+      v = op === '*' ? v * r : v / r;
+    }
+    return v;
+  }
+  function unary(){
+    if (peek() && peek().t === '-'){ k++; return -unary(); }
+    if (peek() && peek().t === '+'){ k++; return unary(); }
+    return atom();
+  }
+  function atom(){
+    var t = toks[k++];
+    if (!t) throw new Error('It ends too soon.');
+    if (t.t === 'num') return t.u ? t.v * (t.u === 'in' ? 25.4 : t.u === 'cm' ? 10 : 1) / per : t.v;
+    if (t.t === 'name') return look(t.v) / per;
+    if (t.t === '('){ var v = expr(); if (!peek() || peek().t !== ')') throw new Error('A bracket isn’t closed.'); k++; return v; }
+    throw new Error('Something’s missing before “' + t.t + '”.');
+  }
+  var v = expr();
+  if (k < toks.length) throw new Error('Something’s missing before “' + (toks[k].v !== undefined ? toks[k].v : toks[k].t) + '”.');
+  if (!isFinite(v)) throw new Error('It doesn’t come to a number.');
+  return v * per;
+}
+// The parameter called name (any case), or null
+function paramByName(name){
+  var n = String(name).toLowerCase();
+  return paramsArr().filter(function (p) { return p.name.toLowerCase() === n; })[0] || null;
+}
+// A parameter's value in mm, or throws why it can't be worked out (unknown name, a loop, a bad expression)
+function paramValue(name, seen){
+  if (String(name).toLowerCase() === PARAM_BUILTIN){
+    if (!(DOC.stock && DOC.stock.t > 0)) throw new Error('“material” is the material’s thickness, which isn’t set (Settings).');
+    return DOC.stock.t;
+  }
+  var p = paramByName(name);
+  if (!p) throw new Error('There’s no parameter called “' + name + '”.');
+  seen = seen || [];
+  if (seen.indexOf(p.name.toLowerCase()) >= 0) throw new Error('“' + p.name + '” depends on itself (' + seen.concat(p.name.toLowerCase()).join(' → ') + ').');
+  var chain = seen.concat(p.name.toLowerCase());
+  try { return paramEval(p.expr, p.unit, function (n) { return paramValue(n, chain); }); }
+  catch (e) { if (seen.length) throw e; throw new Error(p.name + ': ' + e.message); }
+}
+// An expression's value in mm, with the drawing's parameters: {v} or {why}
+function paramTry(src, unit){
+  try { return {v: paramEval(src, unit, function (n) { return paramValue(n, []); })}; }
+  catch (e) { return {why: e.message}; }
+}
+// Does this text use a parameter (a name), rather than just being a number?
+function paramUsesNames(src){ var t = paramTokens(src); return !!(t && t.some(function (x) { return x.t === 'name'; })); }
+// The names an expression uses, in lower case
+function paramNamesIn(src){ var t = paramTokens(src) || [], out = [];
+  t.forEach(function (x) { if (x.t === 'name' && out.indexOf(x.v.toLowerCase()) < 0) out.push(x.v.toLowerCase()); }); return out; }
+// Give a parameter a new name, and change it in every expression that uses it (other parameters, dimensions)
+function paramRename(p, to){
+  var from = p.name.toLowerCase();
+  var swap = function (src) {
+    // (a unit after a number, as in 18mm, is never mistaken for it: a parameter can't be called mm, cm or in)
+    return String(src).replace(/[A-Za-z_][A-Za-z0-9_]*/g, function (w) { return w.toLowerCase() === from ? to : w; });
+  };
+  paramsArr().forEach(function (q) { if (q !== p) q.expr = swap(q.expr); });
+  (DOC.dims || []).forEach(function (d) { if (d.expr) d.expr = swap(d.expr); });
+  p.name = to;
+}
+// Why a name can't be used for a parameter (or '' if it can): other than the given one
+function paramNameProblem(name, except){
+  if (!PARAM_NAME.test(name)) return 'A name is letters, digits and _, starting with a letter (like shelf_gap).';
+  if (name.toLowerCase() === PARAM_BUILTIN) return '“material” is the material’s thickness, from Settings.';
+  if (/^(mm|cm|in)$/i.test(name)) return '“' + name + '” is a unit.';
+  var p = paramByName(name);
+  if (p && p !== except) return 'There’s already a parameter called “' + p.name + '”.';
+  return '';
+}
+// Where a parameter is used: other parameters' names, and how many dimensions
+function paramUsers(p){
+  var n = p.name.toLowerCase();
+  return {params: paramsArr().filter(function (q) { return q !== p && paramNamesIn(q.expr).indexOf(n) >= 0; }).map(function (q) { return q.name; }),
+          dims: (DOC.dims || []).filter(function (d) { return d.expr && paramNamesIn(d.expr).indexOf(n) >= 0; }).length};
+}
 /* ---------------- transforms ---------------- */
 function s2w(px,py){ return {x:(px - VIEW.ox)/VIEW.scale, y:(VIEW.oy - py)/VIEW.scale}; }
 function w2s(x,y){ return {x: VIEW.ox + x*VIEW.scale, y: VIEW.oy - y*VIEW.scale}; }
@@ -1958,10 +2087,10 @@ function docForStorage(pretty){
   }
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
-function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], toolpaths:tpLean(DOC.toolpaths), vcConverted: !!DOC.vcConverted, stock: DOC.stock,
+function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), vcConverted: !!DOC.vcConverted, stock: DOC.stock,
   layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images}); }
 function docRestore(str){
-  var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || [];
+  var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
   DOC.vcConverted = !!s.vcConverted;
   if (s.stock) DOC.stock = s.stock;
   if (s.layers){ DOC.layers = s.layers; DOC.activeLayer = s.activeLayer; DOC.images = s.images || []; }
@@ -2045,8 +2174,8 @@ var STAGE_LABEL = {
   node0:  'Edit nodes \u2014 click a polyline or path to show its points',
   dim0:   'Dimension \u2014 click a shape, then another, to set the distance between them \u00b7 click one shape twice for its own size \u00b7 click an existing value to change it',
   dim1:   'Dimension \u2014 now click what to measure it TO; that one stays put (or the same shape again for its own size)',
-  dimEditV:'Distance \u2014 type the value and press Enter; the FIRST shape you clicked moves \u00b7 prefix E for edge-to-edge',
-  dimEditS:'Size \u2014 type the value and press Enter; the shape resizes',
+  dimEditV:'Distance \u2014 type the value and press Enter; the FIRST shape you clicked moves \u00b7 prefix E for edge-to-edge \u00b7 or a parameter, like dado or gap * 2',
+  dimEditS:'Size \u2014 type the value and press Enter; the shape resizes \u00b7 or a parameter, like thickness or material + 0.2',
   node1:  'Edit nodes \u2014 drag a point to move it \u00b7 click a point to type exact X,Y \u00b7 click a segment to type its length \u00b7 Esc when done',
   nodeXY: 'Point \u2014 type exact "x,y"',
   nodeLen:'Segment \u2014 type its length (the later point moves along the segment direction)',
@@ -2833,17 +2962,24 @@ function toolCommitText(txt){
   if (DRAW && DRAW.stage === 'dimValue'){
     var dd = DOC.dims[DRAW.di];
     if (!dd){ DRAW = null; DIMSEL = null; hidePrompt(); return; }
-    var rawD = txt.trim();
-    var wantEdgeD = /^[eE]/.test(rawD) || /[eE]$/.test(rawD);
-    var vD = lenIn(rawD.replace(/[eE]/g, '').trim());       // shown units, with 1/2, 12 1/2 or a unit suffix
-    if (isNaN(vD) || vD <= 0) return;
-    if (wantEdgeD && dd.kind === 'pair') dd.edge = true;
+    // a measurement in the shown units (with 1/2, 12 1/2 or a unit), with e for "to the edge", or an expression
+    // using parameters (dado, shelf_gap * 2), which the dimension then remembers (dimension-params.js)
+    var rd = dimReadTyped(txt);
+    if (rd.why){ toast('warn', 'Could not work that out', rd.why); return; }
+    var vD = rd.v;
+    if (isNaN(vD) || vD <= 0){ if (rd.expr) toast('warn', 'That’s not a size', rd.expr + ' comes to ' + fmtDisp(vD) + ' ' + unitTag() + '. A size has to be more than 0.'); return; }
     pushUndo();
+    var wasEdge = dd.edge, wasExpr = dd.expr, wasUnit = dd.exprUnit;
+    if (rd.edge && dd.kind === 'pair') dd.edge = true;
+    if (rd.expr){ dd.expr = rd.expr; dd.exprUnit = rd.unit; } else { delete dd.expr; delete dd.exprUnit; }   // a plain number unlinks it
     if (dimApply(dd, vD)){
+      var failedD = rd.expr ? paramsApplyDims() : [];
       DRAW = null; DIMSEL = null; stagePrompt('dim0'); persist(); draw();
-      toast('ok', 'Dimension applied', 'Set to ' + fmtDisp(vD) + ' ' + unitTag() + '.');
+      toast('ok', 'Dimension applied', 'Set to ' + fmtDisp(vD) + ' ' + unitTag() + (rd.expr ? ', from ' + rd.expr + '. It follows if that changes.' : '.'));
+      paramsSayFailed(failedD);
     } else {
       UNDO.pop();                                       // nothing changed: nothing to undo
+      dd.edge = wasEdge; if (wasExpr){ dd.expr = wasExpr; dd.exprUnit = wasUnit; } else { delete dd.expr; delete dd.exprUnit; }
       toast('warn', 'Could not apply that', relApply.why || dimApply.why || 'The dimension could not drive this geometry.');
       relApply.why = dimApply.why = null;
     }
@@ -12645,6 +12781,66 @@ function dimGeometry(e1, e2){
   return {p1:p1, p2:p2, label:r.cur.toFixed(2)};
 }
 
+// Dimensions driven by parameters: type a name or some arithmetic into a dimension (dado, shelf_gap * 2,
+// material + 0.2) and it remembers it (d.expr, worked out in d.exprUnit). Change a parameter, or the material's
+// thickness, and every dimension using it is applied again (paramsApplyDims). Typing a plain number unlinks it.
+
+// A dimension's expression worked out now: {v} in mm, {why} if it can't be, or null if it has none
+function dimExprValue(d){ return d && d.expr ? paramTry(d.expr, d.exprUnit || 'mm') : null; }
+
+// Apply every dimension that has an expression, until they all hold. Applying one can move what another one
+// measures (a shape's width, then its distance from the next), so it goes round until nothing changes, a few
+// times at most. Returns what couldn't be held, each with why, in plain words.
+function paramsApplyDims(){
+  var dims = (DOC.dims || []).filter(function (d) { return d.expr; }), failed = [], why = {};
+  if (!dims.length) return failed;
+  for (var pass = 0; pass < 8; pass++){
+    var changed = false;
+    dims.forEach(function (d, i) {
+      var r = dimExprValue(d), cur = dimValue(d);
+      if (r.why || cur === null || !(r.v > 0) || Math.abs(cur - r.v) < 1e-6) return;
+      relApply.why = dimApply.why = null;
+      if (dimApply(d, r.v)) changed = true;
+      else why[i] = relApply.why || dimApply.why || '';
+    });
+    if (!changed) break;
+  }
+  dims.forEach(function (d, i) {
+    var r = dimExprValue(d), cur = dimValue(d);
+    if (r.why) failed.push({d: d, why: r.why});
+    else if (cur === null) failed.push({d: d, why: 'the shapes it measures are gone'});
+    else if (!(r.v > 0)) failed.push({d: d, why: d.expr + ' comes to ' + fmtDisp(r.v) + ' ' + unitTag() + ', and a size has to be more than 0'});
+    else if (Math.abs(cur - r.v) > 1e-3) failed.push({d: d, why: why[i] || ('it can’t be ' + fmtDisp(r.v) + ' ' + unitTag() + ' while the other dimensions hold')});
+  });
+  relApply.why = dimApply.why = null;
+  return failed;
+}
+// Whether a dimension shows what its expression says (false: something moved it, or it can't be worked out)
+function dimExprHolds(d){
+  var r = dimExprValue(d), cur = dimValue(d);
+  return !r || (!r.why && cur !== null && Math.abs(cur - r.v) <= 1e-3);
+}
+// Say what didn't hold, after parameters were applied
+function paramsSayFailed(failed){
+  if (!failed.length) return;
+  toast('warn', failed.length === 1 ? 'A dimension couldn’t follow its parameters' : failed.length + ' dimensions couldn’t follow their parameters',
+        failed.slice(0, 4).map(function (f) { return (f.d.expr || '') + ': ' + f.why + '.'; }).join(' ') +
+        ' They’re marked ⚠ on the drawing.');
+}
+// What was typed into a dimension: a plain measurement (a number, a fraction, with a unit), the same with e for
+// "to the edge", or an expression that uses parameters or arithmetic. Returns {v}, {v, edge}, {v, expr, unit} or {why}.
+function dimReadTyped(raw){
+  var t = String(raw).trim();
+  var plain = lenIn(t);
+  if (!isNaN(plain)) return {v: plain};
+  if (/^[eE]/.test(t) || /[eE]$/.test(t)){                     // "25e" or "e 25": to the edge, as before
+    var ve = lenIn(t.replace(/^[eE]\s*|\s*[eE]$/g, '').trim());
+    if (!isNaN(ve)) return {v: ve, edge: true};
+  }
+  var unit = stockUnits(), r = paramTry(t, unit);
+  if (r.why) return {why: r.why};
+  return {v: r.v, expr: t, unit: unit};
+}
 /* ---------------- entity move ---------------- */
 function moveEntity(e, dx, dy){
   if (e.t==='line'){ e.x1+=dx; e.y1+=dy; e.x2+=dx; e.y2+=dy; }

@@ -188,17 +188,24 @@ function toolCommitText(txt){
   if (DRAW && DRAW.stage === 'dimValue'){
     var dd = DOC.dims[DRAW.di];
     if (!dd){ DRAW = null; DIMSEL = null; hidePrompt(); return; }
-    var rawD = txt.trim();
-    var wantEdgeD = /^[eE]/.test(rawD) || /[eE]$/.test(rawD);
-    var vD = lenIn(rawD.replace(/[eE]/g, '').trim());       // shown units, with 1/2, 12 1/2 or a unit suffix
-    if (isNaN(vD) || vD <= 0) return;
-    if (wantEdgeD && dd.kind === 'pair') dd.edge = true;
+    // a measurement in the shown units (with 1/2, 12 1/2 or a unit), with e for "to the edge", or an expression
+    // using parameters (dado, shelf_gap * 2), which the dimension then remembers (dimension-params.js)
+    var rd = dimReadTyped(txt);
+    if (rd.why){ toast('warn', 'Could not work that out', rd.why); return; }
+    var vD = rd.v;
+    if (isNaN(vD) || vD <= 0){ if (rd.expr) toast('warn', 'That’s not a size', rd.expr + ' comes to ' + fmtDisp(vD) + ' ' + unitTag() + '. A size has to be more than 0.'); return; }
     pushUndo();
+    var wasEdge = dd.edge, wasExpr = dd.expr, wasUnit = dd.exprUnit;
+    if (rd.edge && dd.kind === 'pair') dd.edge = true;
+    if (rd.expr){ dd.expr = rd.expr; dd.exprUnit = rd.unit; } else { delete dd.expr; delete dd.exprUnit; }   // a plain number unlinks it
     if (dimApply(dd, vD)){
+      var failedD = rd.expr ? paramsApplyDims() : [];
       DRAW = null; DIMSEL = null; stagePrompt('dim0'); persist(); draw();
-      toast('ok', 'Dimension applied', 'Set to ' + fmtDisp(vD) + ' ' + unitTag() + '.');
+      toast('ok', 'Dimension applied', 'Set to ' + fmtDisp(vD) + ' ' + unitTag() + (rd.expr ? ', from ' + rd.expr + '. It follows if that changes.' : '.'));
+      paramsSayFailed(failedD);
     } else {
       UNDO.pop();                                       // nothing changed: nothing to undo
+      dd.edge = wasEdge; if (wasExpr){ dd.expr = wasExpr; dd.exprUnit = wasUnit; } else { delete dd.expr; delete dd.exprUnit; }
       toast('warn', 'Could not apply that', relApply.why || dimApply.why || 'The dimension could not drive this geometry.');
       relApply.why = dimApply.why = null;
     }
