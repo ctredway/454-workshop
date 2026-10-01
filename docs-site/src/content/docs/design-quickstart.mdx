@@ -117,8 +117,19 @@ VCarve’s toolpaths show here as a read-only list. 454 Design doesn’t run the
 thickness, and Design switches to the units the project shows (inches or millimetres). Projects from current
 Carbide Create and from older versions both open.
 
-- **Toolpaths aren't brought in yet.** The message after opening says how many the project has: make them
-  again in the Toolpaths panel. Your Carbide Create file isn't changed.
+- **Toolpaths come in as 454 toolpaths** you can edit, reorder and save as G-code: contours (outside and
+  inside), pockets and V-carves, with their depths, passes, feeds and speeds, on the shapes Carbide Create had
+  them on. One that was switched off there is left out of the G-code here. Your Carbide Create file isn't changed.
+- **Check every one before cutting.** They are 454's own toolpaths made from Carbide Create's settings, not
+  copies of its cuts. Bits come as sizes, not tools from your library; tabs are spread evenly round each shape,
+  not where Carbide Create had them; a V-carve that Carbide Create clears with a second bit is carved with the
+  V bit alone. The window after opening lists each of these by name.
+- **What can't be converted for certain is left out and named**, with why. For now that includes contours from
+  current Carbide Create (build 8xx), because the file doesn't say clearly which side of the line they cut,
+  and drilling, texture and 3D toolpaths. Make those again in the Toolpaths panel.
+- **Big projects take time.** The drawing shows first, then the toolpaths are calculated one at a time. A
+  V-carve over hundreds of shapes, or a pocket with text in it, can take a minute or more, and Design won't
+  respond while it works one out.
 - **Circles and plain rectangles stay circles and rectangles.** Other curves become many short straight
   lines, within 0.02 mm of the curve.
 - **Text comes in as its letters' outlines**, as one group. It can be moved and cut, but not retyped.

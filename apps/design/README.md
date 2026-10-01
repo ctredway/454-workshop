@@ -71,7 +71,8 @@ version is in `src/js/version.js`.
 | `js/dialogs.js` | 21 | in-app dialogs |
 | `js/tool-details.js` | 103 | the Tool details panel |
 | `js/crv-import.js` | 146 | importing VCarve projects, and their sheets |
-| `js/c2d-import.js` | 359 | opening Carbide Create projects (.c2d), both kinds of file: its own SQLite and zlib readers; the job, shapes and text as a drawing |
+| `js/c2d-toolpaths.js` | 116 | Carbide Create's toolpaths as 454 toolpaths: what's known of each kind, what's left out and why; built one at a time |
+| `js/c2d-import.js` | 370 | opening Carbide Create projects (.c2d), both kinds of file: its own SQLite and zlib readers; the job, shapes and text as a drawing |
 | `js/dxf-import.js` | 290 | reading DXF files |
 | `js/svg-import.js` | 225 | reading SVG files |
 | `js/vector-import.js` | 86 | adding a DXF or SVG to the drawing, or replacing it |

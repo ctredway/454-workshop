@@ -249,7 +249,10 @@ test('opening one: it becomes the drawing, in its units, unsaved, and Save won�
     assert.equal(D.SAVE_HANDLE, null); assert.equal(D.lsGet(D.PATH_KEY), null, 'the last drawing’s file is forgotten');
     assert.equal(D.drawingUnsaved(), true, 'not saved as a 454 drawing yet');
     assert.equal(D.drawingFileName(), 'Circle.454.json', 'and Save offers its own name');
-    assert.match(toasts[0], /^ok \| Opened Circle\.c2d \| 1 shape on 8\.000 × 8\.000 in material, 1\.000 in thick\. Its toolpath isn.t brought in yet/);
+    assert.equal(toasts.length, 0, 'there’s something to check, so it’s a window to read, not a passing notice');
+    assert.equal(el('dlgTitle').textContent, 'Opened Circle.c2d');
+    assert.match(el('dlgBody').textContent, /^1 shape on 8\.000 × 8\.000 in material, 1\.000 in thick\.\s+• Not brought in: Cutout 2\. 454 can.t yet read which side of the line a contour cuts in this version of Carbide Create\. Make it again in the Toolpaths panel\./);
+    D.dlgEnd(true);
     assert.ok(D.asideRead(), 'the drawing before is kept for Recover');
     D.doUndo(); assert.equal(D.DOC.ents[0].t, 'rect', 'and Undo brings it back');
     // a file that isn't one: nothing changes

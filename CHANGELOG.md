@@ -828,8 +828,26 @@ The controller is the authority on the machine, so anything it reports is used r
 ### 0.114.0 — open Carbide Create projects (.c2d): shapes, text, layers, material and zero
 - **Open a `.c2d` file** and its shapes come across on their layers (hidden and locked ones too), with the
   material's size and thickness, in the units the project shows. Each shape keeps Carbide Create's ID, for
-  bringing toolpaths in next. **Toolpaths aren't brought in yet**, and the message after opening says how many
-  the project has.
+  its toolpaths.
+- **Toolpaths come in as 454 toolpaths** (`c2d-toolpaths.js`): editable, recalculated from their shapes, checked
+  like any other. Contours (outside and inside), pockets and V-carves, with depth, passes, stepover, feeds,
+  speeds, ramp or plunge, and tabs' size and number. Their shapes are found by Carbide Create's own IDs, or by
+  layer where the toolpath picks by layer, never by position. One switched off, or in a group that's switched
+  off, comes in left out of the G-code.
+- **Nothing about a cut is guessed.** A toolpath that can't be converted for certain is left out and named, with
+  why: a contour from current Carbide Create (it stores the side as `path_type`, and two files Clint meant as
+  outside cuts hold different values, so its meaning isn't known), a kind not converted yet (drilling,
+  texture), shapes not found, no bit size, no depth. What's known comes from real projects: in older files
+  `ofset_dir` 1 is outside ("Outside", "cutout", "SignCutOut"), -1 inside ("eyes", "nose"), 2 a pocket, 3 a
+  V-carve, and a V bit's `angle` is half its included angle (#301, 90 degrees, is 45).
+- **What differs from Carbide Create is said, by name,** in a window after opening: tabs spread evenly instead
+  of where they were; a V-carve's flat areas cut by the V bit instead of a second bit; a clean-up pocket brought
+  in whole; a start depth; a bit given by its tip. And always: bits are sizes, not library tools, so check each
+  toolpath and air-cut.
+- **The drawing shows first; toolpaths are calculated after, one at a time.** A V-carve over hundreds of
+  shapes can take minutes, and a pocket with text in it 17 seconds, during which Design doesn't respond. That
+  is the CAM engine's speed, not the import's (the same toolpaths made by hand take as long), and is the next
+  thing to look at. Opening another drawing meanwhile drops the ones not yet calculated.
 - **Both kinds of file.** Current Carbide Create (7, build 8xx) saves an SQLite database whose items are JSON
   text packed with zlib. Older versions (seen: builds 464, 648, 756) save one JSON text with the 3D model's
   bytes after it. The shapes are described the same way in both. Design reads the database and unpacks the text
@@ -848,7 +866,10 @@ The controller is the authority on the machine, so anything it reports is used r
 - **Opening one doesn't touch the last drawing's file.** The drawing before is kept for Recover, Save asks
   where to save, and it offers the project's own name.
 - The Toolpaths panel's "No toolpaths yet" note says how to make one (it only mentioned VCarve projects).
-- Tested (11 tests): unpacking against Node's zlib (every packing level, 70 KB of noise); the database reader
+- Toolpaths tested (10 tests): each kind, shapes by ID and by layer, depths and through cuts, feeds, tabs,
+  switched off, start depths, everything left out, opening and the window, another drawing opened meanwhile.
+  Checked by breaking it on purpose (45 ways). Three real projects' toolpaths converted in the desktop app.
+- Reading tested (11 tests): unpacking against Node's zlib (every packing level, 70 KB of noise); the database reader
   against Node's SQLite (three page sizes, 700 rows, a 300 KB value); the two files Clint saved for this
   (`test/fixtures`); projects made in the test for lines, curves, open paths, several outlines, layers, turned
   and rounded rectangles, unlabelled circles, text, zero in six places, and the older kind of file; what can't

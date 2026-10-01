@@ -337,23 +337,34 @@ function c2dToDoc(ex, name){
 // Open a .c2d as the drawing: the one before is put aside for Recover, and Save asks where to save, since this
 // isn't a 454 Design file.
 function c2dOpen(buf, name){
-  var r = c2dToDoc(c2dExtract(buf), name);
+  var ex = c2dExtract(buf), r = c2dToDoc(ex, name);
   if (!r.shapes) throw new Error('There are no shapes in it that 454 can draw.');
   var aside = asideTake();
   pushUndo();
   DOC = r.doc;
   UICFG.stockUnits = r.inches ? 'in' : 'mm'; uiCfgSave();
   SEL = []; CUTSEL = null; setTool('select');
+  // its toolpaths, as 454 toolpaths (c2d-toolpaths.js): needs the CAM engine to build them
+  var tps = r.toolpaths && camReady() ? c2dToolpaths(ex) : {made: [], left: [], notes: []};
+  DOC.toolpaths = tps.made;
+  r.made = tps.made.length; r.left = tps.left; r.tpNotes = tps.notes;
   syncStockUI(); persist(); forgetFile();
   lsSet(NAME_KEY, DOC.name + '.454.json');             // the name Save offers
   renderLayers(); renderToolpathPanel(); fit();
   asideKeep(aside);
+  r.built = c2dBuild(tps.made);                        // after this returns: the drawing is on screen first
   var st = DOC.stock, u = unitTag();
-  toast(r.notes.length ? 'warn' : 'ok', 'Opened ' + name,
-        r.shapes + (r.shapes === 1 ? ' shape' : ' shapes') + ' on ' + fmtDisp(st.w) + ' × ' + fmtDisp(st.h) + ' ' + u + ' material' +
-        (st.t > 0 ? ', ' + fmtDisp(st.t) + ' ' + u + ' thick' : '') + '. ' +
-        (r.zeroAt && r.zeroAt !== 'fl' ? 'XY zero is at the ' + ORIGIN_NAMES[r.zeroAt] + ', as in the project. ' : '') +
-        (r.toolpaths ? (r.toolpaths === 1 ? 'Its toolpath isn’t' : 'Its ' + r.toolpaths + ' toolpaths aren’t') + ' brought in yet: make ' + (r.toolpaths === 1 ? 'it' : 'them') + ' again in the Toolpaths panel. ' : '') +
-        r.notes.join(' '));
+  var said = r.shapes + (r.shapes === 1 ? ' shape' : ' shapes') + ' on ' + fmtDisp(st.w) + ' × ' + fmtDisp(st.h) + ' ' + u + ' material' +
+        (st.t > 0 ? ', ' + fmtDisp(st.t) + ' ' + u + ' thick' : '') + '.' +
+        (r.zeroAt && r.zeroAt !== 'fl' ? ' XY zero is at the ' + ORIGIN_NAMES[r.zeroAt] + ', as in the project.' : '');
+  if (r.toolpaths && !camReady()) said += ' Its ' + (r.toolpaths === 1 ? 'toolpath wasn’t' : r.toolpaths + ' toolpaths weren’t') + ' brought in: the CAM engine isn’t loaded.';
+  else if (r.made) said += ' ' + r.made + (r.made === 1 ? ' toolpath' : ' toolpaths') + ' brought in' + (r.made < r.toolpaths ? ', of ' + r.toolpaths : '') + '.';
+  var lines = r.left.map(function (l) { return '• Not brought in: ' + l.name + '. ' + l.why.charAt(0).toUpperCase() + l.why.slice(1) + '. Make it again in the Toolpaths panel.'; })
+    .concat(r.tpNotes.map(function (n) { return '• ' + n; })).concat(r.notes.map(function (n) { return '• ' + n; }));
+  if (r.made) lines.push('• The toolpaths are 454’s own, made from Carbide Create’s settings: bits come as sizes, not tools from your library. Check each one, and air-cut before cutting material.',
+                         '• They’re being calculated now, one at a time. A large V-carve, or a pocket with text in it, can take a minute or more, and 454 won’t respond while it works one out.');
+  // a short notice when there's nothing to check; a window to read when there is
+  if (!lines.length) toast('ok', 'Opened ' + name, said);
+  else uiDialog({title: 'Opened ' + name, body: said + '\n\n' + lines.join('\n'), ok: 'OK', note: true});
   return r;
 }
