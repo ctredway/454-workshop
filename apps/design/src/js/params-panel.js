@@ -25,7 +25,7 @@ function paramPanelRender(){
   // the material's thickness, always there
   var mat = cell('div', 'prow pbuilt');
   mat.appendChild(cell('span', 'pname', PARAM_BUILTIN));
-  mat.appendChild(cell('span', 'pexpr', 'the material’s thickness, from Settings'));
+  mat.appendChild(cell('span', 'pexpr', 'the material’s thickness, from Job setup'));
   mat.appendChild(cell('span', 'pval', DOC.stock && DOC.stock.t > 0 ? '= ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() : 'not set'));
   box.appendChild(mat);
   paramsArr().forEach(function (p, i) {

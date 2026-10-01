@@ -277,7 +277,7 @@ function cutRenderInner(){
     var sizeTxt = Object.keys(sizes).map(function (k) { return sizes[k] + ' \u00d7 ' + k; }).join(', ');
     document.getElementById('cutHint').textContent = !CUT.ents.length
       ? 'Click the circles to drill. Each is drilled at its centre.'
-      : noThk ? '\u26a0 Set the material thickness in Settings before drilling through \u2014 until then this drills only the overcut.'
+      : noThk ? '\u26a0 Set the material thickness in Job setup before drilling through \u2014 until then this drills only the overcut.'
       : (loops.length + (loops.length === 1 ? ' hole' : ' holes') + ' (' + sizeTxt + ' ' + unitTag() + '), ' +
          (CUT.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) : fmtDisp(CUT.depth) + ' ' + unitTag() + ' deep') +
          (CUT.peck > 0 ? ', pecking every ' + fmtDisp(CUT.peck) : ', one plunge each') + '.' +
@@ -387,7 +387,7 @@ function cutRenderInner(){
     : !CUT.ents.length
     ? 'Click closed shapes on the drawing to cut.'
     : (!ok ? 'Nothing here is a closed outline yet. See below for what can be fixed.'
-           : noThk ? '\u26a0 Set the material thickness in Settings before cutting through \u2014 until then this cuts only the overcut.'
+           : noThk ? '\u26a0 Set the material thickness in Job setup before cutting through \u2014 until then this cuts only the overcut.'
            : (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) + ' overcut. ' : '') +
              'Passes: ' + Math.ceil(tpDepth(CUT) / CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
              (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');

@@ -1013,7 +1013,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.112.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.112.1'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1737,7 +1737,7 @@ var cv, ctx;
 // that unit, and parameters are converted into it first. That keeps sums and scaling right in either unit:
 // "(height - 3 * thickness) / 2" typed in inches gives inches. A number can say its unit: 18mm, 3/4in, 3/4".
 //   DOC.params = [{name: 'thickness', expr: '18.3', unit: 'mm', note: 'birch ply, measured'}]
-// The material's thickness (Settings) is always there as "material", in mm, and can't be changed here.
+// The material's thickness (Job setup) is always there as "material", in mm, and can't be changed here.
 function paramsArr(){ if (!DOC.params) DOC.params = []; return DOC.params; }
 var PARAM_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 var PARAM_BUILTIN = 'material';
@@ -1809,7 +1809,7 @@ function paramByName(name){
 // A parameter's value in mm, or throws why it can't be worked out (unknown name, a loop, a bad expression)
 function paramValue(name, seen){
   if (String(name).toLowerCase() === PARAM_BUILTIN){
-    if (!(DOC.stock && DOC.stock.t > 0)) throw new Error('“material” is the material’s thickness, which isn’t set (Settings).');
+    if (!(DOC.stock && DOC.stock.t > 0)) throw new Error('“material” is the material’s thickness, which isn’t set (Job setup).');
     return DOC.stock.t;
   }
   var p = paramByName(name);
@@ -1845,7 +1845,7 @@ function paramRename(p, to){
 // Why a name can't be used for a parameter (or '' if it can): other than the given one
 function paramNameProblem(name, except){
   if (!PARAM_NAME.test(name)) return 'A name is letters, digits and _, starting with a letter (like shelf_gap).';
-  if (name.toLowerCase() === PARAM_BUILTIN) return '“material” is the material’s thickness, from Settings.';
+  if (name.toLowerCase() === PARAM_BUILTIN) return '“material” is the material’s thickness, from Job setup.';
   if (/^(mm|cm|in)$/i.test(name)) return '“' + name + '” is a unit.';
   var p = paramByName(name);
   if (p && p !== except) return 'There’s already a parameter called “' + p.name + '”.';
@@ -4518,7 +4518,7 @@ function cutRenderInner(){
     var sizeTxt = Object.keys(sizes).map(function (k) { return sizes[k] + ' \u00d7 ' + k; }).join(', ');
     document.getElementById('cutHint').textContent = !CUT.ents.length
       ? 'Click the circles to drill. Each is drilled at its centre.'
-      : noThk ? '\u26a0 Set the material thickness in Settings before drilling through \u2014 until then this drills only the overcut.'
+      : noThk ? '\u26a0 Set the material thickness in Job setup before drilling through \u2014 until then this drills only the overcut.'
       : (loops.length + (loops.length === 1 ? ' hole' : ' holes') + ' (' + sizeTxt + ' ' + unitTag() + '), ' +
          (CUT.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) : fmtDisp(CUT.depth) + ' ' + unitTag() + ' deep') +
          (CUT.peck > 0 ? ', pecking every ' + fmtDisp(CUT.peck) : ', one plunge each') + '.' +
@@ -4628,7 +4628,7 @@ function cutRenderInner(){
     : !CUT.ents.length
     ? 'Click closed shapes on the drawing to cut.'
     : (!ok ? 'Nothing here is a closed outline yet. See below for what can be fixed.'
-           : noThk ? '\u26a0 Set the material thickness in Settings before cutting through \u2014 until then this cuts only the overcut.'
+           : noThk ? '\u26a0 Set the material thickness in Job setup before cutting through \u2014 until then this cuts only the overcut.'
            : (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) + ' overcut. ' : '') +
              'Passes: ' + Math.ceil(tpDepth(CUT) / CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
              (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
@@ -5005,10 +5005,10 @@ function tpDepthGate(anyway, go){
   var body = past.length
     ? (past.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' past the bottom of the material:\n\n' +
       past.map(function (tp) { return '• ' + tp.name + ' ' + tpPastSay(tp) + '.'; }).join('\n') +
-      '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Settings) first.'
+      '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Job setup) first.'
     : 'The material’s thickness isn’t set, so these depths can’t be checked against it:\n\n' +
       unchecked.map(function (tp) { return '• ' + tp.name + ', ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' deep'; }).join('\n') +
-      '\n\nSet the thickness in Settings to have them checked.';
+      '\n\nSet the thickness in Job setup to have them checked.';
   uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!past.length})
     .then(function (ok) { if (ok) go(); });
 }
@@ -5051,8 +5051,8 @@ function tpJob(){
               body: blind.map(function (tp) { return '\u2022 ' + tp.name; }).join('\n') + '\n\n' +
                     (blind.length === 1 ? 'This toolpath is' : 'These toolpaths are') + ' set to cut through the material, but its thickness isn\u2019t set, ' +
                     'so ' + (blind.length === 1 ? 'it' : 'they') + ' would cut only the ' + fmtDisp(blind[0].over === undefined ? 0.2 : blind[0].over) + ' ' + unitTag() + ' overcut.\n\n' +
-                    'Measure the material and enter its thickness in Settings, then save again.',
-              ok: 'Open Settings', cancel: 'Cancel'}).then(function (go) { if (go) openSettings(); });
+                    'Measure the material and enter its thickness in Job setup, then save again.',
+              ok: 'Open Job setup', cancel: 'Cancel'}).then(function (go) { if (go) jobOpen(); });
     return null;
   }
   if (!chosen.length){
@@ -6300,7 +6300,7 @@ function tpRows(tp){
   if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
   else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
   else row('Depth', dTxt + tpExprSay(tp, 'depth') + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
-  if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Settings');
+  if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Job setup');
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
   else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
@@ -6313,7 +6313,7 @@ function tpRows(tp){
   if (tp.warning) row('Note', tp.warning);
   if (tpExprProblem(tp)) row('⚠ Parameters', tpExprProblem(tp) + '. It can’t be saved as G-code until that’s put right');
   if (tpPastNow(tp)) row('⚠ Depth', tpPastSay(tp));
-  else if (tpDepthUnchecked() && !tp.through) row('Note', 'the depth isn’t checked against the material: set its thickness in Settings');
+  else if (tpDepthUnchecked() && !tp.through) row('Note', 'the depth isn’t checked against the material: set its thickness in Job setup');
   return rows;
 }
 // What kind of toolpath it is, in words
@@ -13005,7 +13005,7 @@ function paramPanelRender(){
   // the material's thickness, always there
   var mat = cell('div', 'prow pbuilt');
   mat.appendChild(cell('span', 'pname', PARAM_BUILTIN));
-  mat.appendChild(cell('span', 'pexpr', 'the material’s thickness, from Settings'));
+  mat.appendChild(cell('span', 'pexpr', 'the material’s thickness, from Job setup'));
   mat.appendChild(cell('span', 'pval', DOC.stock && DOC.stock.t > 0 ? '= ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() : 'not set'));
   box.appendChild(mat);
   paramsArr().forEach(function (p, i) {
@@ -13121,7 +13121,7 @@ var TP_EXPR_FIELDS = [
 // Why an expression can't be this field's value now ('' if it can): {v, why}
 function tpExprEval(f, e, u){
   if (f.depth && paramUsesNames(e) && !(DOC.stock && DOC.stock.t > 0))
-    return {why: 'a depth from a parameter needs the material’s thickness, so it can be checked against it: set it in Settings'};
+    return {why: 'a depth from a parameter needs the material’s thickness, so it can be checked against it: set it in Job setup'};
   var r = paramTry(e, u);
   if (r.why) return {why: r.why.charAt(0).toLowerCase() + r.why.slice(1).replace(/\.$/, '')};
   if (!(r.v > 0)) return {why: e + ' comes to ' + fmtDisp(r.v) + ' ' + unitTag() + ', and it has to be more than 0'};
@@ -14142,7 +14142,7 @@ function wire(){
     renderToolpathPanel();
     if (DOC.stock.t > 0)
       toast('info', 'Material from the project', fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' thick, Z zero on the ' +
-            (DOC.stock.zero === 'bottom' ? 'spoilboard' : 'top of the material') + '. Change it in Settings if that\u2019s not what you\u2019ll cut.');
+            (DOC.stock.zero === 'bottom' ? 'spoilboard' : 'top of the material') + '. Change it in Job setup if that\u2019s not what you\u2019ll cut.');
   });
   window.addEventListener('keydown', function(e){
     if (e.code === 'Escape' && !document.getElementById('impModal').hidden){

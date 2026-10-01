@@ -1,5 +1,5 @@
 // The Parameters list (params-panel.js), used as at the screen: add, change, rename, delete, with mistakes
-// refused and dimensions following; and the material's thickness in Settings driving dimensions that use it.
+// refused and dimensions following; and the material's thickness in Job setup driving dimensions that use it.
 //   node --test 'apps/design/test/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -92,7 +92,7 @@ test('typed in inches while the drawing shows inches: kept as inches', () => {
     assert.equal(D.run('DOC.params[0].unit'), 'in');
   } finally { D.run(`UICFG.stockUnits = 'mm'; 1`); }
 });
-test('the material’s thickness in Settings: dimensions using material follow, as one Undo', () => {
+test('the material’s thickness in Job setup: dimensions using material follow, as one Undo', () => {
   fresh();
   link('material + 2'); near(width(), 20);
   typeInto(el('stkT'), '12');

@@ -64,7 +64,7 @@ test('parameters using parameters, in inches', () => {
   setParam('thickness', '3/4in');
   near(ents()[2].h, 19.05 + 25.4 / 64, 'thickness in inches, plus a 64th');
 });
-test('the material’s thickness: change it in Settings and dimensions using material follow', () => {
+test('the material’s thickness: change it in Job setup and dimensions using material follow', () => {
   cabinet();
   type(0, 'material');
   near(ents()[0].w, 18);

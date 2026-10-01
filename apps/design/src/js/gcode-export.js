@@ -34,10 +34,10 @@ function tpDepthGate(anyway, go){
   var body = past.length
     ? (past.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' past the bottom of the material:\n\n' +
       past.map(function (tp) { return '• ' + tp.name + ' ' + tpPastSay(tp) + '.'; }).join('\n') +
-      '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Settings) first.'
+      '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Job setup) first.'
     : 'The material’s thickness isn’t set, so these depths can’t be checked against it:\n\n' +
       unchecked.map(function (tp) { return '• ' + tp.name + ', ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' deep'; }).join('\n') +
-      '\n\nSet the thickness in Settings to have them checked.';
+      '\n\nSet the thickness in Job setup to have them checked.';
   uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!past.length})
     .then(function (ok) { if (ok) go(); });
 }
@@ -80,8 +80,8 @@ function tpJob(){
               body: blind.map(function (tp) { return '\u2022 ' + tp.name; }).join('\n') + '\n\n' +
                     (blind.length === 1 ? 'This toolpath is' : 'These toolpaths are') + ' set to cut through the material, but its thickness isn\u2019t set, ' +
                     'so ' + (blind.length === 1 ? 'it' : 'they') + ' would cut only the ' + fmtDisp(blind[0].over === undefined ? 0.2 : blind[0].over) + ' ' + unitTag() + ' overcut.\n\n' +
-                    'Measure the material and enter its thickness in Settings, then save again.',
-              ok: 'Open Settings', cancel: 'Cancel'}).then(function (go) { if (go) openSettings(); });
+                    'Measure the material and enter its thickness in Job setup, then save again.',
+              ok: 'Open Job setup', cancel: 'Cancel'}).then(function (go) { if (go) jobOpen(); });
     return null;
   }
   if (!chosen.length){

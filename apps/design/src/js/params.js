@@ -7,7 +7,7 @@
 // that unit, and parameters are converted into it first. That keeps sums and scaling right in either unit:
 // "(height - 3 * thickness) / 2" typed in inches gives inches. A number can say its unit: 18mm, 3/4in, 3/4".
 //   DOC.params = [{name: 'thickness', expr: '18.3', unit: 'mm', note: 'birch ply, measured'}]
-// The material's thickness (Settings) is always there as "material", in mm, and can't be changed here.
+// The material's thickness (Job setup) is always there as "material", in mm, and can't be changed here.
 function paramsArr(){ if (!DOC.params) DOC.params = []; return DOC.params; }
 var PARAM_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 var PARAM_BUILTIN = 'material';
@@ -79,7 +79,7 @@ function paramByName(name){
 // A parameter's value in mm, or throws why it can't be worked out (unknown name, a loop, a bad expression)
 function paramValue(name, seen){
   if (String(name).toLowerCase() === PARAM_BUILTIN){
-    if (!(DOC.stock && DOC.stock.t > 0)) throw new Error('“material” is the material’s thickness, which isn’t set (Settings).');
+    if (!(DOC.stock && DOC.stock.t > 0)) throw new Error('“material” is the material’s thickness, which isn’t set (Job setup).');
     return DOC.stock.t;
   }
   var p = paramByName(name);
@@ -115,7 +115,7 @@ function paramRename(p, to){
 // Why a name can't be used for a parameter (or '' if it can): other than the given one
 function paramNameProblem(name, except){
   if (!PARAM_NAME.test(name)) return 'A name is letters, digits and _, starting with a letter (like shelf_gap).';
-  if (name.toLowerCase() === PARAM_BUILTIN) return '“material” is the material’s thickness, from Settings.';
+  if (name.toLowerCase() === PARAM_BUILTIN) return '“material” is the material’s thickness, from Job setup.';
   if (/^(mm|cm|in)$/i.test(name)) return '“' + name + '” is a unit.';
   var p = paramByName(name);
   if (p && p !== except) return 'There’s already a parameter called “' + p.name + '”.';

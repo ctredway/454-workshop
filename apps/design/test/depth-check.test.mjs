@@ -100,13 +100,24 @@ test('a job within the material saves without asking', async () => {
 test('no material thickness: the card and Save G-code say depths can’t be checked', async () => {
   drawing(0); open(0, 'pocket', { depth: 15 }); const tp = create();
   assert.equal(tp.past, null);
-  assert.match(rows(tp), /depth isn.t checked against the material: set its thickness in Settings/);
+  assert.match(rows(tp), /depth isn.t checked against the material: set its thickness in Job setup/);
   D.tpExport(); await later();
   assert.equal(el('dlgTitle').textContent, 'Depths not checked');
   assert.match(el('dlgBody').textContent, /Pocket, 15\.00 mm deep/);
   el('dlgCancel').click();
 });
-test('a thinner material in Settings names the toolpaths it puts through', () => {
+test('a through cut with no thickness: Save G-code refuses, and its button opens Job setup', async () => {
+  drawing(0); open(0, 'outside', { through: true }); create();
+  el('jobModal').hidden = true;
+  D.tpExport(); await later();
+  assert.equal(el('dlgTitle').textContent, 'Set the material thickness first');
+  assert.match(el('dlgBody').textContent, /enter its thickness in Job setup/);
+  assert.equal(el('dlgOk').textContent, 'Open Job setup');
+  el('dlgOk').click(); await later();
+  assert.equal(el('jobModal').hidden, false, 'Job setup is open, where the thickness is');
+  el('jobModal').hidden = true;
+});
+test('a thinner material in Job setup names the toolpaths it puts through', () => {
   drawing(); open(0, 'pocket', { depth: 10 }); create();
   const toasts = [];
   const real = D.toast; D.toast = (k, t, b) => { toasts.push(t + ' | ' + b); };

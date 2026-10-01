@@ -36,7 +36,7 @@ test('parameters: by name (any case), using each other, worked out in each one�
   params([['thickness', '18'], ['half', 'thickness / 2', 'in'], ['plus', 'thickness + 1', 'in']]);
   near(D.paramValue('half'), 9); near(D.paramValue('plus'), 18 + 25.4, 'the 1 is an inch');
 });
-test('material is the material’s thickness, from Settings', () => {
+test('material is the material’s thickness, from Job setup', () => {
   params([['dado', 'material + 0.2']], 12.7);
   near(D.paramValue('dado'), 12.9); near(ev('material / 2').v, 6.35);
   params([['dado', 'material + 0.2']], 0);

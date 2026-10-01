@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.29 — "Job setup", not "Settings"; a button that did nothing
+- Includes Design 0.112.1: messages say the material's thickness is set in Job setup, where it is, and the
+  "Set the material thickness first" window's button opens it (it did nothing before).
+- **Releases now carry notes**, a few plain lines, so **Update available** has something to show when it's
+  clicked. They were empty. The same lines are kept on the docs' new **What's new** page.
+
 ### 0.6.2-beta.28 — parameters; cutting past the material is always said
 - Includes Design 0.111.0 and 0.112.0: parameters (the fx button) used in dimensions and in toolpath depths and
   tabs; arithmetic in every length box; and a warning, wherever it's seen and before saving, for any toolpath
@@ -256,6 +262,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   cam.js and geom.js are public.
 
 ## Docs
+
+### What's new; pictures of the newest features (2026-10-01)
+- **A What's new page**: each version's changes in a few plain lines, newest first, from beta.22, with changes
+  that affect cutting marked. The change log here is long and detailed; this is the version for people cutting.
+- **Four new screenshots**, made by the screenshot script like the rest: the Parameters list beside a
+  dimensioned drawing, toolpath cards with a depth from a parameter and a depth warning, the "Cutting past the
+  material" window, and a profile's chosen start point.
+- **The Design quick start** has a short section on parameters. **Before you start** says to set the
+  material's thickness from a measurement, and what the depth warning does and doesn't cover.
 
 - **The desktop app page** points to the front page's Download button, names the installer file to pick from
   a release's Assets, and says a beta version starts on the Beta update channel.
@@ -796,6 +811,16 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.112.1 — "Job setup", not "Settings"
+- **Messages about the material's thickness, and Z zero, said to change them "in Settings".** They're in Job
+  setup; Settings holds appearance (with a link to Job setup, which is how it went unnoticed). A dozen messages
+  now say Job setup: toolpath cards, the editor's hints, the Parameters list, and the windows before Save G-code.
+- **Fixed: "Open Settings" did nothing.** Saving G-code for a through cut with no thickness set shows "Set the
+  material thickness first"; its button called a function that page couldn't reach, so nothing opened. It's now
+  **Open Job setup**, and opens it.
+- Tested (1 new test: the window, its button's name, and Job setup opening); checked by breaking it on purpose
+  (2 ways).
 
 ### 0.112.0 — cutting past the material is always said; parameters in toolpaths
 - **Every toolpath that goes past the bottom of the material says so**, from the deepest point it really cuts,

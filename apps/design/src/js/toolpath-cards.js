@@ -6,7 +6,7 @@ function tpRows(tp){
   if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
   else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
   else row('Depth', dTxt + tpExprSay(tp, 'depth') + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
-  if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Settings');
+  if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Job setup');
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
   else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
@@ -19,7 +19,7 @@ function tpRows(tp){
   if (tp.warning) row('Note', tp.warning);
   if (tpExprProblem(tp)) row('⚠ Parameters', tpExprProblem(tp) + '. It can’t be saved as G-code until that’s put right');
   if (tpPastNow(tp)) row('⚠ Depth', tpPastSay(tp));
-  else if (tpDepthUnchecked() && !tp.through) row('Note', 'the depth isn’t checked against the material: set its thickness in Settings');
+  else if (tpDepthUnchecked() && !tp.through) row('Note', 'the depth isn’t checked against the material: set its thickness in Job setup');
   return rows;
 }
 // What kind of toolpath it is, in words

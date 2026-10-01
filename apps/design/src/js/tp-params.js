@@ -14,7 +14,7 @@ var TP_EXPR_FIELDS = [
 // Why an expression can't be this field's value now ('' if it can): {v, why}
 function tpExprEval(f, e, u){
   if (f.depth && paramUsesNames(e) && !(DOC.stock && DOC.stock.t > 0))
-    return {why: 'a depth from a parameter needs the material’s thickness, so it can be checked against it: set it in Settings'};
+    return {why: 'a depth from a parameter needs the material’s thickness, so it can be checked against it: set it in Job setup'};
   var r = paramTry(e, u);
   if (r.why) return {why: r.why.charAt(0).toLowerCase() + r.why.slice(1).replace(/\.$/, '')};
   if (!(r.v > 0)) return {why: e + ' comes to ' + fmtDisp(r.v) + ' ' + unitTag() + ', and it has to be more than 0'};

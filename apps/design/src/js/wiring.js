@@ -498,7 +498,7 @@ function wire(){
     renderToolpathPanel();
     if (DOC.stock.t > 0)
       toast('info', 'Material from the project', fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' thick, Z zero on the ' +
-            (DOC.stock.zero === 'bottom' ? 'spoilboard' : 'top of the material') + '. Change it in Settings if that\u2019s not what you\u2019ll cut.');
+            (DOC.stock.zero === 'bottom' ? 'spoilboard' : 'top of the material') + '. Change it in Job setup if that\u2019s not what you\u2019ll cut.');
   });
   window.addEventListener('keydown', function(e){
     if (e.code === 'Escape' && !document.getElementById('impModal').hidden){

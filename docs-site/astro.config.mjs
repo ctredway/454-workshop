@@ -28,6 +28,7 @@ export default defineConfig({
           { label: 'Coming from Carbide Motion', link: '/carbide-motion' },
           { label: 'The desktop app', link: '/desktop-app' },
           { label: 'Keyboard shortcuts', link: '/keyboard-shortcuts' },
+          { label: 'What’s new', link: '/whats-new' },
         ] },
         { label: '454 Control', items: [
           { label: 'Reference', link: '/control-reference' },

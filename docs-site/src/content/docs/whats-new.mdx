@@ -1,0 +1,94 @@
+---
+title: "What's new"
+description: "What changed in each version of 454 Workshop, newest first, in a few plain lines."
+---
+
+What changed in each version of 454 Workshop, newest first. The version you have is shown in
+**About 454 Workshop**, in the menu, and beside each app's name in its header.
+
+Changes that affect how the machine moves or cuts are marked **(cutting)**. After an update with one of those,
+air-cut your next job before cutting material.
+
+The full record, in more detail than most people want, is the
+[change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
+
+## 0.6.2-beta.29
+
+1 October 2026
+
+- **Messages now say "Job setup"** where they used to say "Settings". The material's thickness is set in Job
+  setup (the material icon, top right of 454 Design), and about ten messages sent you to Settings instead.
+- **Fixed: a button that did nothing.** Saving G-code for a through cut with no material thickness set shows
+  "Set the material thickness first". Its button now opens Job setup. Before, it did nothing.
+- The docs have this page, pictures of parameters, the depth warning and the start point, and a parameters
+  section in the Design quick start.
+
+## 0.6.2-beta.28
+
+30 September 2026
+
+- **Parameters.** Name a size once (`thickness` = 18) with the **fx** button, use the name in your dimensions,
+  and change it in one place: every dimension using it follows. Arithmetic works too: `600 - 2 * thickness`.
+  See [Parameters](design-tools.html#parameters).
+- **Toolpath depths and tabs can use parameters**, such as a pocket `material / 2` deep. They are recalculated
+  when the number changes.
+- **Design warns when a cut would go past the bottom of the material (cutting).** Any toolpath that does is
+  marked ⚠ on its card, and Save G-code stops and names it first. Before this, only V-carves warned.
+- **Every length box takes arithmetic.** Type `12 + 3/4` or `600 - 2 * thickness` where you'd type a number.
+
+## 0.6.2-beta.27
+
+30 September 2026
+
+- **A beta copy is offered the next beta without any setup.** Before, you had to choose **Updates → Beta** in
+  the menu, or you were never offered an update. If you installed an earlier beta, choose Beta there once.
+- The website has a **Download for Windows** button.
+
+## 0.6.2-beta.26
+
+30 September 2026
+
+- **One G-code file per bit.** For a job with more than one bit, Save G-code can save a numbered file for each
+  bit, in cutting order, for running one at a time.
+- **Toolpath templates.** Save a job's toolpaths (bits, depths, feeds, tabs) and apply them to another drawing
+  with the same layer names.
+- **Choose where a profile starts (cutting).** **Set start** puts the small mark where each pass begins on an
+  edge of your choosing.
+- Fixed: the toolpath editor showed "Clean up after" for every kind of toolpath.
+
+## 0.6.2-beta.25
+
+30 September 2026
+
+- **A tab's Length is now the wood it leaves (cutting).** Before, a wide bit ate both ends of a tab: a 4 mm tab
+  cut with a 1/4" bit left two slivers. Tabs made before this update come out longer and stronger when
+  recalculated, never weaker.
+- **New toolpaths start with the tabs you used last**, and 1.5 mm thick the first time.
+- Preview in wood shows tabs, and wood that's nearly cut through, in amber.
+
+## 0.6.2-beta.24
+
+30 September 2026
+
+- **Preview in wood is a 3D view** you can turn, move and zoom. It works without an internet connection.
+
+## 0.6.2-beta.23
+
+30 September 2026
+
+- **Fixed: 454 Control wouldn't open** in beta.20, beta.21 and beta.22.
+- **Report a problem…** in the 454 Workshop menu opens a short form with your version already filled in.
+
+## 0.6.2-beta.22
+
+30 September 2026
+
+- **New drawing tools:** Weld, Subtract and Intersect; Ellipse, Polygon and Star; and text on a curve.
+- **The selection box:** type a shape's exact position, size and rotation.
+- **Preview in wood:** see the finished piece before cutting.
+- **Pockets can clean up after a larger bit (cutting):** clear most of a pocket with a big bit, then cut only
+  what it couldn't reach with a small one.
+
+## Earlier versions
+
+See the [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
