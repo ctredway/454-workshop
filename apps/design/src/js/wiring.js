@@ -17,10 +17,12 @@ function wire(){
       var t = parseStockLen(raw, stockUnits());
       if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
       // dimensions using "material" follow it (and Undo takes the reshaping back)
-      if ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; })) pushUndo();
+      if ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; }) ||
+          tpList().some(function (tp){ return Object.keys(tpExprsUsed(tp)).length; })) pushUndo();
       DOC.stock.t = t;
     }
     paramsSayFailed(paramsApplyDims());
+    tpParamsApply();
     tpPastNotice(pastBefore);
     syncStockUI(); persist(); renderToolpathPanel(); draw();       // cut-through toolpaths follow it
   });

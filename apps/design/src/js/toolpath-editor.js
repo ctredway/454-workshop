@@ -19,7 +19,7 @@ function cutOpen(existing){
        tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5, tabPts: {}, toolId: null, editing: null, stepoverPct: 40,
        chamW: 1, vAngle: 90,
        through: false, depth: null, over: 0.2};
-  if (existing){ CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {})); CUT.startPts = JSON.parse(JSON.stringify(existing.startPts || {})); CUT.toolChosen = tpToolChosen(existing); }
+  if (existing){ CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {})); CUT.startPts = JSON.parse(JSON.stringify(existing.startPts || {})); CUT.exprs = JSON.parse(JSON.stringify(existing.exprs || {})); CUT.toolChosen = tpToolChosen(existing); }
   else { var ts = cutTabsStart(); CUT.tabCount = ts.count; CUT.tabLen = ts.len; CUT.tabThk = ts.thk; CUT.tabStyle = ts.style; }
   // The tool sets every dimension of the cut, so every toolpath has its tool chosen for it: never
   // defaulted, never carried over from another toolpath. Until then there is no tool, and a toolpath
@@ -27,6 +27,8 @@ function cutOpen(existing){
   if (!existing){ CUT.dia = null; CUT.toolId = null; CUT.toolChosen = false; }
   if (CUT.tabsOn === undefined) CUT.tabsOn = CUT.tabCount > 0;
   if (!CUT.startPts) CUT.startPts = {};
+  if (!existing) CUT.exprs = {};
+  CUT.exprWhy = {};
   CUT.placing = false; CUT.placingStart = false;
   document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
   document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
@@ -75,7 +77,7 @@ function cutToForm(){
   document.getElementById('cutType').value = CUT.side;
   document.getElementById('cutDia').value = CUT.dia > 0 ? fmtDisp(CUT.dia) : '';
   document.getElementById('cutDia').placeholder = 'choose';
-  document.getElementById('cutDepth').value = CUT.through ? fmtDisp(tpDepth(CUT)) : (CUT.depth > 0 ? fmtDisp(CUT.depth) : '');
+  document.getElementById('cutDepth').value = CUT.through ? fmtDisp(tpDepth(CUT)) : cutExprFieldText('depth', CUT.depth > 0 ? fmtDisp(CUT.depth) : '');
   document.getElementById('cutDepth').placeholder = 'depth';
   document.getElementById('cutThrough').checked = !!CUT.through;
   document.getElementById('cutOver').value = fmtDisp(CUT.over === undefined ? 0.2 : CUT.over);
@@ -105,8 +107,8 @@ function cutToForm(){
   document.getElementById('cutFeed').value = CUT.side === 'drill' ? (CUT.plunge || CUT.feed) : CUT.feed;
   document.getElementById('cutTabs').value = CUT.tabCount;
   document.getElementById('cutTabsOn').checked = !!CUT.tabsOn;
-  document.getElementById('cutTabLen').value = fmtDisp(CUT.tabLen);
-  document.getElementById('cutTabThk').value = fmtDisp(CUT.tabThk);
+  document.getElementById('cutTabLen').value = cutExprFieldText('tabLen', fmtDisp(CUT.tabLen));
+  document.getElementById('cutTabThk').value = cutExprFieldText('tabThk', fmtDisp(CUT.tabThk));
   document.getElementById('cutTabStyle').value = CUT.tabStyle === '3d' ? '3d' : 'flat';
   cutTabShapeFollows();
   document.getElementById('cutUnit').textContent = unitTag();
@@ -115,7 +117,8 @@ function cutFromForm(){
   CUT.side = document.getElementById('cutType').value;
   var d = lenIn(document.getElementById('cutDia').value); if (d > 0) CUT.dia = d;
   CUT.through = document.getElementById('cutThrough').checked;
-  if (!CUT.through){ var dep = lenIn(document.getElementById('cutDepth').value); if (dep > 0) CUT.depth = dep; }
+  if (!CUT.through) cutReadExprField(TP_EXPR_FIELDS[0]);          // a measurement, or a parameter it remembers (tp-params.js)
+  else if (CUT.exprWhy) delete CUT.exprWhy.depth;
   var ov = lenIn(document.getElementById('cutOver').value); if (!isNaN(ov) && ov >= 0) CUT.over = ov;
   var st = lenIn(document.getElementById('cutStep').value); if (st > 0) CUT.step = st;
   var f = parseFloat(document.getElementById('cutFeed').value);
@@ -150,8 +153,7 @@ function cutFromForm(){
   }
   CUT.tabsOn = document.getElementById('cutTabsOn').checked;
   var tb = parseInt(document.getElementById('cutTabs').value, 10); if (tb > 0) CUT.tabCount = Math.min(20, tb);
-  var tl = lenIn(document.getElementById('cutTabLen').value); if (tl > 0) CUT.tabLen = tl;
-  var tt = lenIn(document.getElementById('cutTabThk').value); if (tt > 0) CUT.tabThk = tt;
+  cutReadExprField(TP_EXPR_FIELDS[1]); cutReadExprField(TP_EXPR_FIELDS[2]);
   CUT.tabStyle = document.getElementById('cutTabStyle').value === '3d' ? '3d' : 'flat';
 }
 function cutRenderHintExtra(){
@@ -163,6 +165,7 @@ function cutRender(){
   cutRenderInner(); cutRenderHintExtra();
   // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
   var pv = tpGenerate.last, h = document.getElementById('cutHint');
+  if (h && cutExprProblem()){ h.textContent = '⚠ ' + cutExprProblem() + '.'; CUT.previewPast = null; return; }
   CUT.previewPast = pv && pv.ents === CUT.ents ? pv.past : null;
   if (h && CUT.previewPast) h.textContent = '⚠ This ' + tpPastSay(Object.assign({}, CUT, {past: CUT.previewPast})) + '. ' + h.textContent.replace(/^⚠ /, '');
 }   // every hint also says how the walls are finished
@@ -606,6 +609,7 @@ function cutApply(){
   if (!(CUT.side === 'chamfer' || CUT.side === 'vcarve' || CUT.side === 'inlay' || CUT.through || CUT.depth > 0)) return;   // nor without a depth
   if (CUT.side === 'inlay'){ cutFromForm(); if (CUT.ents.length) inlayApply(); return; }
   cutFromForm();
+  if (cutExprProblem()){ toast('warn', 'Check the values', cutExprProblem() + '.'); return; }
   if (restSrc){ CUT.through = false; CUT.depth = tpDepth(restSrc); }
   if (!CUT.ents.length) return;
   pushUndo();
@@ -624,6 +628,7 @@ function cutApply(){
     tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk, tabStyle: CUT.tabStyle === '3d' ? '3d' : 'flat',
     tabPts: JSON.parse(JSON.stringify(CUT.tabPts || {})),
     startPts: cutStartsKept(),
+    exprs: JSON.parse(JSON.stringify(CUT.exprs || {})),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
     hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6

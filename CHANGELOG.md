@@ -792,6 +792,29 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.112.0 — cutting past the material is always said; parameters in toolpaths
+- **Every toolpath that goes past the bottom of the material says so**, from the deepest point it really cuts,
+  whatever kind it is (pocket, profile, V-carve, drilling, chamfer, clean-up) and however its depth was set:
+  ⚠ in the editor's hint and on its card, with how far into the spoilboard. **Save G-code** and **Preview in 454
+  Control** stop and list them, with Cancel or Save anyway. A change that puts a toolpath through (a thinner
+  material, a parameter) names it at once. A through cut's own overcut isn't flagged. With no material thickness
+  set, Save G-code says depths can't be checked. Before this, only V-carves warned: a 15 mm pocket in 12 mm
+  material said nothing.
+- **Depth, tab length and tab thickness can be parameters** (`material / 2`, `tab_thk`), remembered by the
+  toolpath and recalculated when the parameter or the material changes. A depth from a parameter needs the
+  material's thickness, so it can always be checked. A toolpath whose parameters can't be worked out says so,
+  and Save G-code refuses it, with no way past, until it's put right. A parameter a toolpath uses can't be
+  deleted; renaming changes it in the toolpath too.
+- **Every length box takes arithmetic and parameters**, worked out once: `600 - 2 * thickness` in the
+  selection box, an offset, and so on. Measurements mean what they did (`12 1/2`, `3/4`).
+- Fixed on the way: the check's answer was kept from when a toolpath was made, and a pocket with Z zero on top
+  isn't recalculated when the thickness changes, so a thinner material wasn't noticed. It's now worked out
+  fresh each time it's read.
+- Tested (20 tests): the depth check for every kind, through cuts, Z zero on the spoilboard, Save and Preview,
+  no thickness, a thinner material; parameters in depth and tabs, following the list and Settings, refusing
+  mistakes and a missing thickness, Save refusing, rename and delete, one-off arithmetic. Each checked by
+  breaking it on purpose (26 ways). Tried in the desktop app.
+
 ### 0.111.0 — parameters
 - **Parameters**, as in Fusion: named sizes saved with the drawing (the **fx** button beside Dimension). A
   value is a number or arithmetic using other parameters (`dado = thickness + 0.2`,

@@ -31,6 +31,23 @@ Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a wa
 
 **The hint** under the editor’s settings says what the toolpath will do in plain words (depth, passes, rings, tabs, finishing), and starts with ⚠ when something is wrong. Read it before pressing **Create**.
 
+**Cutting past the material is always said.** Every toolpath is checked against the material's thickness
+(Job setup), from the deepest point it really cuts, whatever kind it is and however its depth was set. One
+that goes past the bottom says so with ⚠ in the editor's hint and on its card: "goes 15.00 mm deep: through the
+12.00 mm material and 3.00 mm into the spoilboard". **Save G-code** and **Preview in 454 Control** stop and
+list them first, with **Cancel** or **Save anyway** (cutting into the spoilboard is sometimes meant). A change
+that puts a toolpath through, such as a thinner material or a [parameter](design-tools#parameters), names it
+straight away. A through cut's own overcut is meant, so it isn't flagged. If the material's thickness isn't
+set, depths can't be checked, and Save G-code says so.
+
+**Depth and tabs from parameters.** The **Depth**, tab **Length** and tab **Thickness** boxes take a
+parameter, or arithmetic with one: `material / 2`, `dado_depth`, `tab_thk`. The toolpath remembers it (its
+card shows **9.00 mm = material / 2**) and is recalculated when the parameter or the material changes. A
+depth from a parameter needs the material's thickness set, so it can always be checked. If a toolpath's
+parameter can't be worked out (it was deleted, or the thickness was cleared), its card says so and **Save
+G-code refuses** until it's put right. Arithmetic without names (`6 + 2`) is just worked out, and a plain
+number unlinks the box.
+
 **Any closed shape can be cut**: rectangles, circles, closed outlines, **groups** (such as a traced logo) and **text**. A group’s outlines, or a word’s letters, count as one shape.
 
 <Compare kind="same" title="Same as VCarve">

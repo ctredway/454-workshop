@@ -28,7 +28,16 @@ function fmtStockLen(mm, u){
 // Every typed LENGTH goes through here: a plain number means the document units, and a unit
 // written after it wins ("25mm" while working in inches, or 1/2" while working in mm).
 // Angles, counts and percentages are not lengths and are left alone.
+// A length typed in any box: a measurement (below), or arithmetic and parameters, worked out once
+// (600 - 2 * thickness). NaN if it's neither. Boxes that remember an expression read lenInPlain first.
 function lenIn(txt){
+  var v = lenInPlain(txt);
+  if (!isNaN(v) || typeof paramTry !== 'function' || !String(txt).trim()) return v;
+  var r = paramTry(String(txt).trim(), stockUnits());
+  return r.why ? NaN : r.v;
+}
+// A measurement as it's written on a tape or a drawing: 12, 12.5, 3/4, 12 1/2, with a unit or in the shown units
+function lenInPlain(txt){
   var t = String(txt).trim().toLowerCase();
   if (!t) return NaN;
   var u = stockUnits(), m = /^(.*?)\s*(mm|cm|in|"|\u2033)$/.exec(t);

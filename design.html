@@ -1013,7 +1013,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.111.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.112.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1839,6 +1839,7 @@ function paramRename(p, to){
   };
   paramsArr().forEach(function (q) { if (q !== p) q.expr = swap(q.expr); });
   (DOC.dims || []).forEach(function (d) { if (d.expr) d.expr = swap(d.expr); });
+  tpList().forEach(function (tp) { Object.keys(tp.exprs || {}).forEach(function (k) { tp.exprs[k].e = swap(tp.exprs[k].e); }); });
   p.name = to;
 }
 // Why a name can't be used for a parameter (or '' if it can): other than the given one
@@ -1854,7 +1855,13 @@ function paramNameProblem(name, except){
 function paramUsers(p){
   var n = p.name.toLowerCase();
   return {params: paramsArr().filter(function (q) { return q !== p && paramNamesIn(q.expr).indexOf(n) >= 0; }).map(function (q) { return q.name; }),
-          dims: (DOC.dims || []).filter(function (d) { return d.expr && paramNamesIn(d.expr).indexOf(n) >= 0; }).length};
+          dims: (DOC.dims || []).filter(function (d) { return d.expr && paramNamesIn(d.expr).indexOf(n) >= 0; }).length,
+          tps: tpList().filter(function (tp) { return Object.keys(tp.exprs || {}).some(function (k) { return paramNamesIn(tp.exprs[k].e).indexOf(n) >= 0; }); }).map(function (tp) { return tp.name; })};
+}
+// "2 dimensions, dado and the toolpath Pocket"
+function paramUsersSay(u){
+  return [u.dims ? u.dims + (u.dims === 1 ? ' dimension' : ' dimensions') : '', u.params.join(', '),
+          (u.tps || []).length ? ((u.tps.length === 1 ? 'the toolpath ' : 'the toolpaths ') + u.tps.join(', ')) : ''].filter(Boolean).join(' and ');
 }
 /* ---------------- transforms ---------------- */
 function s2w(px,py){ return {x:(px - VIEW.ox)/VIEW.scale, y:(VIEW.oy - py)/VIEW.scale}; }
@@ -4253,7 +4260,7 @@ function cutOpen(existing){
        tabsOn: false, tabCount: 4, tabLen: 4, tabThk: 0.5, tabPts: {}, toolId: null, editing: null, stepoverPct: 40,
        chamW: 1, vAngle: 90,
        through: false, depth: null, over: 0.2};
-  if (existing){ CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {})); CUT.startPts = JSON.parse(JSON.stringify(existing.startPts || {})); CUT.toolChosen = tpToolChosen(existing); }
+  if (existing){ CUT.tabPts = JSON.parse(JSON.stringify(existing.tabPts || {})); CUT.startPts = JSON.parse(JSON.stringify(existing.startPts || {})); CUT.exprs = JSON.parse(JSON.stringify(existing.exprs || {})); CUT.toolChosen = tpToolChosen(existing); }
   else { var ts = cutTabsStart(); CUT.tabCount = ts.count; CUT.tabLen = ts.len; CUT.tabThk = ts.thk; CUT.tabStyle = ts.style; }
   // The tool sets every dimension of the cut, so every toolpath has its tool chosen for it: never
   // defaulted, never carried over from another toolpath. Until then there is no tool, and a toolpath
@@ -4261,6 +4268,8 @@ function cutOpen(existing){
   if (!existing){ CUT.dia = null; CUT.toolId = null; CUT.toolChosen = false; }
   if (CUT.tabsOn === undefined) CUT.tabsOn = CUT.tabCount > 0;
   if (!CUT.startPts) CUT.startPts = {};
+  if (!existing) CUT.exprs = {};
+  CUT.exprWhy = {};
   CUT.placing = false; CUT.placingStart = false;
   document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
   document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
@@ -4309,7 +4318,7 @@ function cutToForm(){
   document.getElementById('cutType').value = CUT.side;
   document.getElementById('cutDia').value = CUT.dia > 0 ? fmtDisp(CUT.dia) : '';
   document.getElementById('cutDia').placeholder = 'choose';
-  document.getElementById('cutDepth').value = CUT.through ? fmtDisp(tpDepth(CUT)) : (CUT.depth > 0 ? fmtDisp(CUT.depth) : '');
+  document.getElementById('cutDepth').value = CUT.through ? fmtDisp(tpDepth(CUT)) : cutExprFieldText('depth', CUT.depth > 0 ? fmtDisp(CUT.depth) : '');
   document.getElementById('cutDepth').placeholder = 'depth';
   document.getElementById('cutThrough').checked = !!CUT.through;
   document.getElementById('cutOver').value = fmtDisp(CUT.over === undefined ? 0.2 : CUT.over);
@@ -4339,8 +4348,8 @@ function cutToForm(){
   document.getElementById('cutFeed').value = CUT.side === 'drill' ? (CUT.plunge || CUT.feed) : CUT.feed;
   document.getElementById('cutTabs').value = CUT.tabCount;
   document.getElementById('cutTabsOn').checked = !!CUT.tabsOn;
-  document.getElementById('cutTabLen').value = fmtDisp(CUT.tabLen);
-  document.getElementById('cutTabThk').value = fmtDisp(CUT.tabThk);
+  document.getElementById('cutTabLen').value = cutExprFieldText('tabLen', fmtDisp(CUT.tabLen));
+  document.getElementById('cutTabThk').value = cutExprFieldText('tabThk', fmtDisp(CUT.tabThk));
   document.getElementById('cutTabStyle').value = CUT.tabStyle === '3d' ? '3d' : 'flat';
   cutTabShapeFollows();
   document.getElementById('cutUnit').textContent = unitTag();
@@ -4349,7 +4358,8 @@ function cutFromForm(){
   CUT.side = document.getElementById('cutType').value;
   var d = lenIn(document.getElementById('cutDia').value); if (d > 0) CUT.dia = d;
   CUT.through = document.getElementById('cutThrough').checked;
-  if (!CUT.through){ var dep = lenIn(document.getElementById('cutDepth').value); if (dep > 0) CUT.depth = dep; }
+  if (!CUT.through) cutReadExprField(TP_EXPR_FIELDS[0]);          // a measurement, or a parameter it remembers (tp-params.js)
+  else if (CUT.exprWhy) delete CUT.exprWhy.depth;
   var ov = lenIn(document.getElementById('cutOver').value); if (!isNaN(ov) && ov >= 0) CUT.over = ov;
   var st = lenIn(document.getElementById('cutStep').value); if (st > 0) CUT.step = st;
   var f = parseFloat(document.getElementById('cutFeed').value);
@@ -4384,8 +4394,7 @@ function cutFromForm(){
   }
   CUT.tabsOn = document.getElementById('cutTabsOn').checked;
   var tb = parseInt(document.getElementById('cutTabs').value, 10); if (tb > 0) CUT.tabCount = Math.min(20, tb);
-  var tl = lenIn(document.getElementById('cutTabLen').value); if (tl > 0) CUT.tabLen = tl;
-  var tt = lenIn(document.getElementById('cutTabThk').value); if (tt > 0) CUT.tabThk = tt;
+  cutReadExprField(TP_EXPR_FIELDS[1]); cutReadExprField(TP_EXPR_FIELDS[2]);
   CUT.tabStyle = document.getElementById('cutTabStyle').value === '3d' ? '3d' : 'flat';
 }
 function cutRenderHintExtra(){
@@ -4397,6 +4406,7 @@ function cutRender(){
   cutRenderInner(); cutRenderHintExtra();
   // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
   var pv = tpGenerate.last, h = document.getElementById('cutHint');
+  if (h && cutExprProblem()){ h.textContent = '⚠ ' + cutExprProblem() + '.'; CUT.previewPast = null; return; }
   CUT.previewPast = pv && pv.ents === CUT.ents ? pv.past : null;
   if (h && CUT.previewPast) h.textContent = '⚠ This ' + tpPastSay(Object.assign({}, CUT, {past: CUT.previewPast})) + '. ' + h.textContent.replace(/^⚠ /, '');
 }   // every hint also says how the walls are finished
@@ -4840,6 +4850,7 @@ function cutApply(){
   if (!(CUT.side === 'chamfer' || CUT.side === 'vcarve' || CUT.side === 'inlay' || CUT.through || CUT.depth > 0)) return;   // nor without a depth
   if (CUT.side === 'inlay'){ cutFromForm(); if (CUT.ents.length) inlayApply(); return; }
   cutFromForm();
+  if (cutExprProblem()){ toast('warn', 'Check the values', cutExprProblem() + '.'); return; }
   if (restSrc){ CUT.through = false; CUT.depth = tpDepth(restSrc); }
   if (!CUT.ents.length) return;
   pushUndo();
@@ -4858,6 +4869,7 @@ function cutApply(){
     tabsOn: CUT.tabsOn && tpTabTotal(CUT) > 0, tabCount: CUT.tabCount, tabLen: CUT.tabLen, tabThk: CUT.tabThk, tabStyle: CUT.tabStyle === '3d' ? '3d' : 'flat',
     tabPts: JSON.parse(JSON.stringify(CUT.tabPts || {})),
     startPts: cutStartsKept(),
+    exprs: JSON.parse(JSON.stringify(CUT.exprs || {})),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
     hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
@@ -4980,6 +4992,13 @@ function tpExport(checked){
 function tpDepthGate(anyway, go){
   if (!camReady()){ go(); return; }
   var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });
+  var broken = chosen.filter(function (tp) { return tpExprProblem(tp); });
+  if (broken.length){
+    uiDialog({title: 'Parameters can’t be worked out', note: true,
+              body: broken.map(function (tp) { return '• ' + tp.name + ': ' + tpExprProblem(tp) + '.'; }).join('\n') +
+                    '\n\nNothing was saved. Put the parameter right (in fx), or edit the toolpath and type a number.'});
+    return;
+  }
   var past = chosen.filter(function (tp) { return tpPastNow(tp); });
   var unchecked = tpDepthUnchecked() ? chosen.filter(function (tp) { return !tp.through; }) : [];
   if (!past.length && !unchecked.length){ go(); return; }
@@ -6280,7 +6299,7 @@ function tpRows(tp){
     var dTxt = tp.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(tp.over) + ' ' + unitTag() : fmtDisp(tpDepth(tp)) + ' ' + unitTag();
   if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
   else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
-  else row('Depth', dTxt + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
+  else row('Depth', dTxt + tpExprSay(tp, 'depth') + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
   if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Settings');
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
@@ -6292,6 +6311,7 @@ function tpRows(tp){
   if (tp.side === 'pocket' || tp.side === 'inside' || tp.side === 'outside' || tp.side === 'on')
     row('Entry', tp.rampOff ? 'straight plunge' : 'ramps in over ' + fmtDisp(tpRamp(tp)) + ' ' + unitTag());
   if (tp.warning) row('Note', tp.warning);
+  if (tpExprProblem(tp)) row('⚠ Parameters', tpExprProblem(tp) + '. It can’t be saved as G-code until that’s put right');
   if (tpPastNow(tp)) row('⚠ Depth', tpPastSay(tp));
   else if (tpDepthUnchecked() && !tp.through) row('Note', 'the depth isn’t checked against the material: set its thickness in Settings');
   return rows;
@@ -6936,6 +6956,7 @@ function tplMakeToolpaths(plan){
     tpGenerate(tp);
     tpList().push(tp); made.push(tp); ids.push(tp.id);
   });
+  tpParamsApply();                                            // their parameters, as this drawing has them
   persist();
   renderToolpathPanel();
   return made;
@@ -8789,7 +8810,16 @@ function fmtStockLen(mm, u){
 // Every typed LENGTH goes through here: a plain number means the document units, and a unit
 // written after it wins ("25mm" while working in inches, or 1/2" while working in mm).
 // Angles, counts and percentages are not lengths and are left alone.
+// A length typed in any box: a measurement (below), or arithmetic and parameters, worked out once
+// (600 - 2 * thickness). NaN if it's neither. Boxes that remember an expression read lenInPlain first.
 function lenIn(txt){
+  var v = lenInPlain(txt);
+  if (!isNaN(v) || typeof paramTry !== 'function' || !String(txt).trim()) return v;
+  var r = paramTry(String(txt).trim(), stockUnits());
+  return r.why ? NaN : r.v;
+}
+// A measurement as it's written on a tape or a drawing: 12, 12.5, 3/4, 12 1/2, with a unit or in the shown units
+function lenInPlain(txt){
   var t = String(txt).trim().toLowerCase();
   if (!t) return NaN;
   var u = stockUnits(), m = /^(.*?)\s*(mm|cm|in|"|\u2033)$/.exec(t);
@@ -12938,10 +12968,10 @@ function paramsSayFailed(failed){
 // "to the edge", or an expression that uses parameters or arithmetic. Returns {v}, {v, edge}, {v, expr, unit} or {why}.
 function dimReadTyped(raw){
   var t = String(raw).trim();
-  var plain = lenIn(t);
+  var plain = lenInPlain(t);
   if (!isNaN(plain)) return {v: plain};
   if (/^[eE]/.test(t) || /[eE]$/.test(t)){                     // "25e" or "e 25": to the edge, as before
-    var ve = lenIn(t.replace(/^[eE]\s*|\s*[eE]$/g, '').trim());
+    var ve = lenInPlain(t.replace(/^[eE]\s*|\s*[eE]$/g, '').trim());
     if (!isNaN(ve)) return {v: ve, edge: true};
   }
   var unit = stockUnits(), r = paramTry(t, unit);
@@ -12986,8 +13016,8 @@ function paramPanelRender(){
     ex.title = 'A number, or arithmetic using other parameters, like thickness + 0.2. Numbers are ' + (p.unit === 'in' ? 'inches' : 'mm') + ' unless they say otherwise (18mm, 3/4in).';
     ex.addEventListener('change', function () { paramPanelSetExpr(p, ex.value.trim(), ex); });
     var sh = paramShow(p), val = cell('span', 'pval' + (sh.bad ? ' bad' : ''), sh.txt);
-    var users = paramUsers(p), n = users.dims + users.params.length;
-    val.title = n ? 'Used by ' + [users.dims ? users.dims + (users.dims === 1 ? ' dimension' : ' dimensions') : '', users.params.join(', ')].filter(Boolean).join(' and ') : 'Not used yet';
+    var users = paramUsers(p), n = users.dims + users.params.length + users.tps.length;
+    val.title = n ? 'Used by ' + paramUsersSay(users) : 'Not used yet';
     var del = cell('button', 'pdel', '✕'); del.title = 'Delete ' + p.name; del.setAttribute('aria-label', 'Delete ' + p.name);
     del.addEventListener('click', function () { paramPanelDelete(p); });
     row.appendChild(nm); row.appendChild(ex); row.appendChild(val); row.appendChild(del);
@@ -13000,8 +13030,9 @@ function paramPanelRender(){
   document.getElementById('paramNewUnit').textContent = unitTag();
 }
 // Apply after a change: every dimension follows; say what couldn't
-function paramPanelApplied(said){
+function paramPanelApplied(said, pastBefore){
   var failed = paramsApplyDims();
+  tpParamsApply(); tpPastNotice(pastBefore || []); renderToolpathPanel();
   persist(); draw(); paramPanelRender();
   paramPanelSay(said, false);
   paramsSayFailed(failed);
@@ -13018,9 +13049,10 @@ function paramPanelSetExpr(p, expr, input){
   if (expr === p.expr && p.unit === stockUnits()) return;
   var why = paramExprProblem(p, expr);
   if (why){ paramPanelSay(why + ' Nothing changed.', true); input.value = p.expr; return; }
+  var pastBefore = tpPastIds();
   pushUndo();
   p.expr = expr; p.unit = stockUnits();                     // typed in the units shown now
-  paramPanelApplied(p.name + ' is now ' + expr + '.');
+  paramPanelApplied(p.name + ' is now ' + expr + '.', pastBefore);
 }
 function paramPanelRename(p, to, input){
   if (to === p.name) return;
@@ -13034,9 +13066,8 @@ function paramPanelRename(p, to, input){
 }
 function paramPanelDelete(p){
   var u = paramUsers(p);
-  if (u.dims || u.params.length){
-    paramPanelSay(p.name + ' is used by ' + [u.dims ? u.dims + (u.dims === 1 ? ' dimension' : ' dimensions') : '', u.params.join(', ')].filter(Boolean).join(' and ') +
-                  '. Change those first, then delete it.', true);
+  if (u.dims || u.params.length || u.tps.length){
+    paramPanelSay(p.name + ' is used by ' + paramUsersSay(u) + '. Change those first, then delete it.', true);
     return;
   }
   pushUndo();
@@ -13074,6 +13105,92 @@ function paramPanelWire(){
     if (e.key === 'Escape'){ e.preventDefault(); paramPanelClose(); }
   });
 }
+// Parameters in a toolpath: its depth, tab length and tab thickness can be a parameter or arithmetic with one
+// (material / 2, tab_thk), which the toolpath remembers (tp.exprs) and works out again when parameters or the
+// material change (tpParamsApply). Because a depth decides how deep the bit goes:
+//   - a depth that uses a parameter needs the material's thickness set, so it can always be checked against it
+//     (tpPastMaterial), and every change that moves it names any toolpath it puts past the material;
+//   - a toolpath whose parameters can't be worked out (one deleted, the thickness cleared) says so on its card,
+//     and Save G-code and Preview in 454 Control refuse it until it's put right.
+//   tp.exprs = {depth: {e: 'material / 2', u: 'mm'}, tabThk: {e: 'tab_thk', u: 'mm'}}
+var TP_EXPR_FIELDS = [
+  {key: 'depth',  id: 'cutDepth',  label: 'Depth',         depth: true},
+  {key: 'tabLen', id: 'cutTabLen', label: 'Tab length'},
+  {key: 'tabThk', id: 'cutTabThk', label: 'Tab thickness'}
+];
+// Why an expression can't be this field's value now ('' if it can): {v, why}
+function tpExprEval(f, e, u){
+  if (f.depth && paramUsesNames(e) && !(DOC.stock && DOC.stock.t > 0))
+    return {why: 'a depth from a parameter needs the material’s thickness, so it can be checked against it: set it in Settings'};
+  var r = paramTry(e, u);
+  if (r.why) return {why: r.why.charAt(0).toLowerCase() + r.why.slice(1).replace(/\.$/, '')};
+  if (!(r.v > 0)) return {why: e + ' comes to ' + fmtDisp(r.v) + ' ' + unitTag() + ', and it has to be more than 0'};
+  return {v: r.v};
+}
+// Read one of the fields in the editor: a measurement (unlinked), arithmetic without names (worked out once), or
+// an expression with parameters (remembered). A mistake is kept in CUT.exprWhy, and Create refuses until it's put right.
+function cutReadExprField(f){
+  var el = document.getElementById(f.id), raw = el.value.trim();
+  CUT.exprs = CUT.exprs || {}; CUT.exprWhy = CUT.exprWhy || {};
+  delete CUT.exprWhy[f.key];
+  if (!raw) return;
+  var plain = lenInPlain(raw);
+  if (!isNaN(plain)){ if (plain > 0){ CUT[f.key] = plain; delete CUT.exprs[f.key]; } return; }
+  var unit = stockUnits(), r = tpExprEval(f, raw, unit);
+  if (r.why){ CUT.exprWhy[f.key] = f.label + ': ' + r.why; return; }
+  CUT[f.key] = r.v;
+  if (paramUsesNames(raw)) CUT.exprs[f.key] = {e: raw, u: unit};      // linked
+  else delete CUT.exprs[f.key];                                    // just arithmetic: worked out, not linked
+}
+// What the editor's fields show: a linked one its expression, else its number
+function cutExprFieldText(key, fallback){ var x = CUT.exprs && CUT.exprs[key]; return x ? x.e : fallback; }
+// The first thing wrong in the editor's parameter fields, or ''
+function cutExprProblem(){
+  var w = CUT && CUT.exprWhy ? CUT.exprWhy : {};
+  for (var k in w) if (w[k]) return w[k];
+  return '';
+}
+// The expressions a toolpath really uses (a through cut's depth is the material's; tabs only when on)
+function tpExprsUsed(tp){
+  var x = tp.exprs || {}, out = {};
+  if (x.depth && !tp.through && tp.side !== 'vcarve' && tp.side !== 'chamfer') out.depth = x.depth;
+  if (tp.tabsOn && x.tabLen) out.tabLen = x.tabLen;
+  if (tp.tabsOn && x.tabThk) out.tabThk = x.tabThk;
+  return out;
+}
+// Why a toolpath's parameters can't be worked out now, or ''
+function tpExprProblem(tp){
+  var used = tpExprsUsed(tp);
+  for (var i = 0; i < TP_EXPR_FIELDS.length; i++){
+    var f = TP_EXPR_FIELDS[i], x = used[f.key];
+    if (!x) continue;
+    var r = tpExprEval(f, x.e, x.u);
+    if (r.why) return f.label + ' (' + x.e + '): ' + r.why;
+  }
+  return '';
+}
+// After parameters or the material change: every toolpath using them takes the new values and is recalculated.
+// Returns the toolpaths that can't be worked out, each with why.
+function tpParamsApply(){
+  var failed = [];
+  tpList().forEach(function (tp) {
+    var used = tpExprsUsed(tp), changed = false;
+    if (!Object.keys(used).length) return;
+    var why = tpExprProblem(tp);
+    if (why){ failed.push({tp: tp, why: why}); return; }
+    TP_EXPR_FIELDS.forEach(function (f) {
+      var x = used[f.key]; if (!x) return;
+      var v = tpExprEval(f, x.e, x.u).v;
+      if (Math.abs((tp[f.key] || 0) - v) > 1e-9){ tp[f.key] = v; changed = true; }
+    });
+    if (changed) tpGenerate(tp);
+  });
+  if (failed.length) toast('err', failed.length === 1 ? failed[0].tp.name + ': its parameters can’t be worked out' : failed.length + ' toolpaths: their parameters can’t be worked out',
+                           failed.slice(0, 3).map(function (f) { return f.tp.name + ': ' + f.why + '.'; }).join(' ') + ' It can’t be saved as G-code until that’s put right.');
+  return failed;
+}
+// " = material / 2" after a value on a card, when it comes from a parameter
+function tpExprSay(tp, key){ var x = tpExprsUsed(tp)[key]; return x ? ' = ' + x.e : ''; }
 /* ---------------- entity move ---------------- */
 function moveEntity(e, dx, dy){
   if (e.t==='line'){ e.x1+=dx; e.y1+=dy; e.x2+=dx; e.y2+=dy; }
@@ -13544,10 +13661,12 @@ function wire(){
       var t = parseStockLen(raw, stockUnits());
       if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
       // dimensions using "material" follow it (and Undo takes the reshaping back)
-      if ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; })) pushUndo();
+      if ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; }) ||
+          tpList().some(function (tp){ return Object.keys(tpExprsUsed(tp)).length; })) pushUndo();
       DOC.stock.t = t;
     }
     paramsSayFailed(paramsApplyDims());
+    tpParamsApply();
     tpPastNotice(pastBefore);
     syncStockUI(); persist(); renderToolpathPanel(); draw();       // cut-through toolpaths follow it
   });

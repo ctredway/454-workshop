@@ -62,6 +62,7 @@ function tplMakeToolpaths(plan){
     tpGenerate(tp);
     tpList().push(tp); made.push(tp); ids.push(tp.id);
   });
+  tpParamsApply();                                            // their parameters, as this drawing has them
   persist();
   renderToolpathPanel();
   return made;

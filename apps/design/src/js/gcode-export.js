@@ -21,6 +21,13 @@ function tpExport(checked){
 function tpDepthGate(anyway, go){
   if (!camReady()){ go(); return; }
   var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });
+  var broken = chosen.filter(function (tp) { return tpExprProblem(tp); });
+  if (broken.length){
+    uiDialog({title: 'Parameters can’t be worked out', note: true,
+              body: broken.map(function (tp) { return '• ' + tp.name + ': ' + tpExprProblem(tp) + '.'; }).join('\n') +
+                    '\n\nNothing was saved. Put the parameter right (in fx), or edit the toolpath and type a number.'});
+    return;
+  }
   var past = chosen.filter(function (tp) { return tpPastNow(tp); });
   var unchecked = tpDepthUnchecked() ? chosen.filter(function (tp) { return !tp.through; }) : [];
   if (!past.length && !unchecked.length){ go(); return; }

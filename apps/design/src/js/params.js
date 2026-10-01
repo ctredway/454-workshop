@@ -109,6 +109,7 @@ function paramRename(p, to){
   };
   paramsArr().forEach(function (q) { if (q !== p) q.expr = swap(q.expr); });
   (DOC.dims || []).forEach(function (d) { if (d.expr) d.expr = swap(d.expr); });
+  tpList().forEach(function (tp) { Object.keys(tp.exprs || {}).forEach(function (k) { tp.exprs[k].e = swap(tp.exprs[k].e); }); });
   p.name = to;
 }
 // Why a name can't be used for a parameter (or '' if it can): other than the given one
@@ -124,5 +125,11 @@ function paramNameProblem(name, except){
 function paramUsers(p){
   var n = p.name.toLowerCase();
   return {params: paramsArr().filter(function (q) { return q !== p && paramNamesIn(q.expr).indexOf(n) >= 0; }).map(function (q) { return q.name; }),
-          dims: (DOC.dims || []).filter(function (d) { return d.expr && paramNamesIn(d.expr).indexOf(n) >= 0; }).length};
+          dims: (DOC.dims || []).filter(function (d) { return d.expr && paramNamesIn(d.expr).indexOf(n) >= 0; }).length,
+          tps: tpList().filter(function (tp) { return Object.keys(tp.exprs || {}).some(function (k) { return paramNamesIn(tp.exprs[k].e).indexOf(n) >= 0; }); }).map(function (tp) { return tp.name; })};
+}
+// "2 dimensions, dado and the toolpath Pocket"
+function paramUsersSay(u){
+  return [u.dims ? u.dims + (u.dims === 1 ? ' dimension' : ' dimensions') : '', u.params.join(', '),
+          (u.tps || []).length ? ((u.tps.length === 1 ? 'the toolpath ' : 'the toolpaths ') + u.tps.join(', ')) : ''].filter(Boolean).join(' and ');
 }

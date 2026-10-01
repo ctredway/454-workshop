@@ -48,10 +48,10 @@ function paramsSayFailed(failed){
 // "to the edge", or an expression that uses parameters or arithmetic. Returns {v}, {v, edge}, {v, expr, unit} or {why}.
 function dimReadTyped(raw){
   var t = String(raw).trim();
-  var plain = lenIn(t);
+  var plain = lenInPlain(t);
   if (!isNaN(plain)) return {v: plain};
   if (/^[eE]/.test(t) || /[eE]$/.test(t)){                     // "25e" or "e 25": to the edge, as before
-    var ve = lenIn(t.replace(/^[eE]\s*|\s*[eE]$/g, '').trim());
+    var ve = lenInPlain(t.replace(/^[eE]\s*|\s*[eE]$/g, '').trim());
     if (!isNaN(ve)) return {v: ve, edge: true};
   }
   var unit = stockUnits(), r = paramTry(t, unit);

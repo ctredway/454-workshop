@@ -36,8 +36,8 @@ function paramPanelRender(){
     ex.title = 'A number, or arithmetic using other parameters, like thickness + 0.2. Numbers are ' + (p.unit === 'in' ? 'inches' : 'mm') + ' unless they say otherwise (18mm, 3/4in).';
     ex.addEventListener('change', function () { paramPanelSetExpr(p, ex.value.trim(), ex); });
     var sh = paramShow(p), val = cell('span', 'pval' + (sh.bad ? ' bad' : ''), sh.txt);
-    var users = paramUsers(p), n = users.dims + users.params.length;
-    val.title = n ? 'Used by ' + [users.dims ? users.dims + (users.dims === 1 ? ' dimension' : ' dimensions') : '', users.params.join(', ')].filter(Boolean).join(' and ') : 'Not used yet';
+    var users = paramUsers(p), n = users.dims + users.params.length + users.tps.length;
+    val.title = n ? 'Used by ' + paramUsersSay(users) : 'Not used yet';
     var del = cell('button', 'pdel', '✕'); del.title = 'Delete ' + p.name; del.setAttribute('aria-label', 'Delete ' + p.name);
     del.addEventListener('click', function () { paramPanelDelete(p); });
     row.appendChild(nm); row.appendChild(ex); row.appendChild(val); row.appendChild(del);
@@ -50,8 +50,9 @@ function paramPanelRender(){
   document.getElementById('paramNewUnit').textContent = unitTag();
 }
 // Apply after a change: every dimension follows; say what couldn't
-function paramPanelApplied(said){
+function paramPanelApplied(said, pastBefore){
   var failed = paramsApplyDims();
+  tpParamsApply(); tpPastNotice(pastBefore || []); renderToolpathPanel();
   persist(); draw(); paramPanelRender();
   paramPanelSay(said, false);
   paramsSayFailed(failed);
@@ -68,9 +69,10 @@ function paramPanelSetExpr(p, expr, input){
   if (expr === p.expr && p.unit === stockUnits()) return;
   var why = paramExprProblem(p, expr);
   if (why){ paramPanelSay(why + ' Nothing changed.', true); input.value = p.expr; return; }
+  var pastBefore = tpPastIds();
   pushUndo();
   p.expr = expr; p.unit = stockUnits();                     // typed in the units shown now
-  paramPanelApplied(p.name + ' is now ' + expr + '.');
+  paramPanelApplied(p.name + ' is now ' + expr + '.', pastBefore);
 }
 function paramPanelRename(p, to, input){
   if (to === p.name) return;
@@ -84,9 +86,8 @@ function paramPanelRename(p, to, input){
 }
 function paramPanelDelete(p){
   var u = paramUsers(p);
-  if (u.dims || u.params.length){
-    paramPanelSay(p.name + ' is used by ' + [u.dims ? u.dims + (u.dims === 1 ? ' dimension' : ' dimensions') : '', u.params.join(', ')].filter(Boolean).join(' and ') +
-                  '. Change those first, then delete it.', true);
+  if (u.dims || u.params.length || u.tps.length){
+    paramPanelSay(p.name + ' is used by ' + paramUsersSay(u) + '. Change those first, then delete it.', true);
     return;
   }
   pushUndo();

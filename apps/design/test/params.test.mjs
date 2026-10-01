@@ -67,7 +67,7 @@ test('names: what’s allowed; renaming changes every use, but not units after n
   assert.deepEqual(JSON.parse(JSON.stringify(D.DOC.params.map((p) => p.expr))), ['18', 'ply + 0.2', '2mm + ply']);
   assert.equal(D.DOC.dims[0].expr, 'ply * 2');
   near(D.paramValue('dado'), 18.2);
-  assert.deepEqual(JSON.parse(JSON.stringify(D.paramUsers(D.paramByName('ply')))), { params: ['dado', 'mmx'], dims: 1 });
+  assert.deepEqual(JSON.parse(JSON.stringify(D.paramUsers(D.paramByName('ply')))), { params: ['dado', 'mmx'], dims: 1, tps: [] });
 });
 test('saved with the drawing, and Undo puts them back', () => {
   params([['thickness', '18']]);
