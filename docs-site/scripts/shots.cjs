@@ -257,4 +257,36 @@ SHOTS.push(
     await camMake([0], 'inlay', { dia: 12.7, vAngle: 60, inlay: 'pocket', inlayD: 3 }); await camMake([0], 'inlay', { dia: 12.7, vAngle: 60, inlay: 'plug', inlayD: 3 });`, 'all'),
 );
 
+// ---- parameters, the depth check and the start point ----
+// A cabinet side with a dado for its shelf, and the shelf: the dado's width and the shelf's length come from
+// parameters, typed into the dimensions as a user types them. The Parameters list is open beside the drawing.
+SHOTS.push({ name: 'design-parameters', page: 'design.html', size: [1700, 860],
+  setup: `toast = function () {};
+    drawing(960, 460, [{ t: 'rect', x: 30, y: 30, w: 300, h: 400 }, { t: 'rect', x: 30, y: 220, w: 300, h: 18 }, { t: 'rect', x: 370, y: 30, w: 564, h: 300 }]);
+    DOC.stock.t = 18;
+    DOC.params = [{ name: 'thickness', expr: '18', unit: 'mm', note: 'the plywood, measured' }, { name: 'width', expr: '600', unit: 'mm', note: 'outside to outside' },
+      { name: 'shelf', expr: 'width - 2 * thickness', unit: 'mm', note: 'fits between the sides' }, { name: 'dado_depth', expr: 'thickness / 3', unit: 'mm', note: '' }];
+    const side = DOC.ents[0], dado = DOC.ents[1], sh = DOC.ents[2];
+    addDim({ kind: 'side', a: entId(dado), at: hintOf(dado, { x: 30, y: 229 }) });
+    addDim({ kind: 'side', a: entId(sh), at: hintOf(sh, { x: 650, y: 30 }) });
+    addDim({ kind: 'side', a: entId(side), at: hintOf(side, { x: 180, y: 430 }) });
+    const type = (i, txt) => { DRAW = { stage: 'dimValue', di: i }; DIMSEL = i; toolCommitText(txt); };
+    type(0, 'thickness'); type(1, 'shelf');
+    DRAW = null; DIMSEL = -1; SEL = []; setTool('select');
+    document.getElementById('tpCollapse').click(); await wait(250);
+    const sr = stockRect(); VIEW.scale = 0.85; VIEW.ox = 90 - sr.x0 * VIEW.scale; VIEW.oy = cvRect().height / 2 + (sr.y0 + sr.y1) / 2 * VIEW.scale; draw();
+    document.getElementById('paramsBtn').click(); await wait(300);
+    return union(region(sr.x0 - 85, sr.y0, sr.x1, sr.y1, 14), box('#paramPanel', 10));` });
+// Two pockets in 12 mm material: one half the material deep, from a parameter, and one typed as 15 mm,
+// which goes through. The panel's cards, and what Save G-code says first.
+const PAST = CAM + `drawing(200, 120, [rounded(20, 20, 70, 80, 8), rounded(110, 20, 70, 80, 8)]); DOC.params = [];
+  await camMake([0], 'pocket', { depth: 'material / 2' }); await camMake([1], 'pocket', { depth: 15 }); showAll();
+  document.querySelectorAll('.toast, #toasts > *').forEach((t) => t.remove()); await wait(200);`;
+SHOTS.push(
+  { name: 'cam-depth-check', page: 'design.html', size: [1400, 1000], setup: PAST, capture: { selector: '#tpPanel', pad: 0 } },
+  { name: 'cam-save-past', page: 'design.html', size: [1400, 900], setup: PAST + ` tpExport(); await wait(500); return openDialogBox();` },
+  camShot('cam-start-point', `drawing(160, 100, [rounded(20, 15, 120, 70, 10)]); await camMake([0], 'outside', { through: true, keepOpen: true });
+    cutStartClick({ x: 110, y: 85 }); await wait(100); cutApply(); await wait(300);`, '4, 2, 156, 98, 12', true),
+);
+
 module.exports = { PRELUDE, SHOTS };

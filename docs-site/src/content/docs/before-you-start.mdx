@@ -26,10 +26,18 @@ and says so plainly when something looks wrong, but software can't see your mach
 Design's toolpaths are the part most likely to have mistakes, and each one is marked **beta**. Before cutting
 a job made in Design:
 
-1. Run **Check** (the magnifier with a tick, at the top of the Toolpaths panel), and read each toolpath's notes.
-2. Look at **Preview in wood**: does the finished piece look as you expect?
-3. Open it in 454 Control with **Preview in 454 Control**: its 3D view and checks look at the G-code itself.
-4. Air-cut it.
+1. **Set the material's thickness** in Job setup, from a measurement, not the label. Design checks every
+   toolpath's depth against it, and can't check anything without it.
+2. Run **Check** (the magnifier with a tick, at the top of the Toolpaths panel), and read each toolpath's notes.
+3. Look at **Preview in wood**: does the finished piece look as you expect?
+4. Open it in 454 Control with **Preview in 454 Control**: its 3D view and checks look at the G-code itself.
+5. Air-cut it.
+
+**Design warns when a cut would go past the bottom of the material.** Any toolpath that does is marked ⚠ on its
+card, with how far it goes into the spoilboard, and **Save G-code** stops and names it before saving. You can
+still save, because cutting into the spoilboard is sometimes meant, but you won't do it without being told.
+The warning is only as good as the thickness you entered, and it knows nothing about clamps, screws or where
+the material really sits: it doesn't replace the air-cut.
 
 See the [CAM reference](cam-reference.html) for what each setting does.
 

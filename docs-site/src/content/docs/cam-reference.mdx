@@ -14,6 +14,9 @@ import camDrill from '../../assets/shots/cam-drill.png';
 import camChamfer from '../../assets/shots/cam-chamfer.png';
 import camVcarve from '../../assets/shots/cam-vcarve.png';
 import camInlay from '../../assets/shots/cam-inlay.png';
+import camDepthCheck from '../../assets/shots/cam-depth-check.png';
+import camSavePast from '../../assets/shots/cam-save-past.png';
+import camStartPoint from '../../assets/shots/cam-start-point.png';
 
 Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a walkthrough from drawing to G-code, see the [Design quick start](design-quickstart.html).
 
@@ -39,6 +42,10 @@ list them first, with **Cancel** or **Save anyway** (cutting into the spoilboard
 that puts a toolpath through, such as a thinner material or a [parameter](design-tools#parameters), names it
 straight away. A through cut's own overcut is meant, so it isn't flagged. If the material's thickness isn't
 set, depths can't be checked, and Save G-code says so.
+
+<Shot src={camDepthCheck} alt="The Toolpaths panel with two pocket cards. The first reads Depth 6.00 mm = material / 2. The second reads Depth 15.00 mm, with a warning row: goes 15.00 mm deep, through the 12.00 mm material and 3.00 mm into the spoilboard." caption="Two pockets in 12 mm material. The first takes its depth from the material, so it can't go through. The second was typed as 15 mm, and its card says what that means." />
+
+<Shot src={camSavePast} alt="A window titled Cutting past the material, naming the pocket that goes 15.00 mm deep, with the buttons Cancel and Save anyway." caption="Save G-code stops first and names each toolpath that goes past the bottom. Cancel to fix it, or Save anyway if cutting into the spoilboard is what you want." />
 
 **Depth and tabs from parameters.** The **Depth**, tab **Length** and tab **Thickness** boxes take a
 parameter, or arithmetic with one: `material / 2`, `dado_depth`, `tab_thk`. The toolpath remembers it (its
@@ -213,6 +220,8 @@ start** and click the outline where you want it: on an edge that's cleaned up an
 from a detail, so the small mark where each pass begins lands somewhere harmless. One start per shape: click
 again to move it. Press **Done** when finished, or **Automatic** to go back. The start shows on the drawing as a
 ring with a dot. Lead-ins, ramps and tabs work from the chosen start, and a start on a tab never cuts into it.
+
+<Shot src={camStartPoint} alt="An outside profile around a rounded plate, with a ring and a dot on the outline's top edge, towards the right." caption="A chosen start: the ring with a dot, on the top edge. Each pass of this profile begins there." />
 
 ### Tabs
 

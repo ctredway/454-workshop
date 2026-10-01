@@ -5,6 +5,8 @@ description: "Drawing parts to cut, opening VCarve projects, and getting your to
 
 import { Steps } from '@astrojs/starlight/components';
 import Compare from '../../components/Compare.astro';
+import Shot from '../../components/Shot.astro';
+import parameters from '../../assets/shots/design-parameters.png';
 
 Drawing parts to cut, opening VCarve projects, and getting your tool library in. If you know Fusion’s sketch tools, most of this will feel familiar on purpose. For every tool in detail, see [Design tools](design-tools.html); for the rest of the screen, [Design workspace](design-workspace.html).
 
@@ -55,6 +57,38 @@ The letter keys match Fusion’s sketch shortcuts where Fusion has one. Mirror a
 - **Dimensions drive the drawing.** Press <kbd>D</kbd>, click two things, and type the distance you want: the first thing you clicked moves. Double-click a dimension to change it.
 - **Construction lines** (<kbd>X</kbd>) are for reference and alignment. They are never cut.
 - **Lost the drawing?** Press <kbd>Home</kbd> to fit everything back in view.
+
+### Sizes that change together: parameters
+
+When several sizes depend on one number, such as the plywood's real thickness, give that number a name and use
+the name in your dimensions. Change it once, and everything that uses it follows.
+
+<Steps>
+
+1. **Press fx** (beside Dimension) and add a parameter: the name `thickness`, the value `18`.
+2. **Use it in a dimension.** Press <kbd>D</kbd>, click a dado's side twice for its width, and type `thickness`
+   instead of a number. The dimension shows **18.00 = thickness**.
+3. **Use arithmetic where you need it.** A shelf between two sides of a 600 mm cabinet is `600 - 2 * thickness`.
+4. **Change the number.** The sheet measures 17.5? Press **fx**, change `thickness` to `17.5`, and the dado
+   narrows and the shelf grows to fit. One <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes it all back.
+
+</Steps>
+
+<Shot src={parameters} alt="A cabinet side with a dado across it, and a shelf beside it. The dado's dimension reads 18.00 = thickness and the shelf's reads 564.00 = shelf. The Parameters list beside them holds thickness, width, shelf and dado_depth." caption="The dado is as wide as thickness, and the shelf is width - 2 * thickness long. Change thickness, and both follow." />
+
+- **`material`** is always there: the material's thickness from Job setup.
+- **Toolpaths can use them too.** A pocket's depth can be `material / 2` or `dado_depth`, and it's recalculated
+  when the number changes. Design warns if that ever takes a cut past the bottom of the material.
+- **Only what's dimensioned follows.** A shape with no dimension on it stays the size you drew it.
+
+<Compare kind="same" title="Same as Fusion">
+
+Parameters work like Fusion's user parameters: named values, arithmetic between them, and dimensions that follow.
+They are saved with the drawing.
+
+</Compare>
+
+See [Parameters](design-tools.html#parameters) for units, renaming and what's refused.
 
 ## 3. Open a VCarve project
 

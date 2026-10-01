@@ -17,6 +17,7 @@ import filletBar from '../../assets/shots/design-fillet-bar.png';
 import offset from '../../assets/shots/design-offset.png';
 import textPanel from '../../assets/shots/design-text-panel.png';
 import nestPanel from '../../assets/shots/design-nest-panel.png';
+import parameters from '../../assets/shots/design-parameters.png';
 
 
 Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
@@ -357,6 +358,8 @@ Selecting two shapes and pressing <kbd>D</kbd> works the same way: click each sh
 The **fx** button, beside Dimension. Parameters are named sizes, saved with the drawing: `thickness`,
 `dado`, `shelf_gap`. Use one in a dimension, and when you change the parameter, every dimension using it
 follows, so a change of plywood is one edit instead of a dozen.
+
+<Shot src={parameters} alt="A cabinet side with a dado across it, and a shelf beside it. The dado's dimension reads 18.00 = thickness and the shelf's reads 564.00 = shelf. The Parameters list beside them holds thickness 18, width 600, shelf as width - 2 * thickness, and dado_depth as thickness / 3." caption="A cabinet side with its dado, and the shelf. The dado is as wide as thickness, and the shelf is width - 2 * thickness long. Change thickness to 17.5 and the dado narrows and the shelf grows to 565." />
 
 1. Press **fx**, type a name and a value, and press **Add**. A value can be a number (`18.3`, `3/4`), or
    arithmetic using other parameters: `thickness + 0.2`, `(height - 3 * thickness) / 2`.
