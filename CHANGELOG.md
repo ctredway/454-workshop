@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.28 — parameters; cutting past the material is always said
+- Includes Design 0.111.0 and 0.112.0: parameters (the fx button) used in dimensions and in toolpath depths and
+  tabs; arithmetic in every length box; and a warning, wherever it's seen and before saving, for any toolpath
+  that goes past the bottom of the material.
+
 ### 0.6.2-beta.27 — a beta copy gets the next beta
 - **A beta version starts on the Beta update channel.** Every copy used to start on Stable, and while every
   release is a pre-release, Stable offers nothing: someone who installed a beta would never have been offered
