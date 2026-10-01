@@ -63,6 +63,7 @@ function wirePanel(){
   doUngroupSelectionRef = doUngroupSelection;
 
   document.getElementById('nestBtn').addEventListener('click', openNestDialog);
+  document.getElementById('paramsBtn').addEventListener('click', paramPanelOpen);
   document.getElementById('flipHBtn').addEventListener('click', function(){ flipBtnRef(true); });
   document.getElementById('flipVBtn').addEventListener('click', function(){ flipBtnRef(false); });
   document.getElementById('curvesBtn').addEventListener('click', curvesBtnClick);

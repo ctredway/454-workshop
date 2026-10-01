@@ -352,6 +352,35 @@ Sets exact distances and sizes, and keeps a dimension on the drawing that update
 Selecting two shapes and pressing <kbd>D</kbd> works the same way: click each shape on the edge you mean when you select it.
 :::
 
+### Parameters
+
+The **fx** button, beside Dimension. Parameters are named sizes, saved with the drawing: `thickness`,
+`dado`, `shelf_gap`. Use one in a dimension, and when you change the parameter, every dimension using it
+follows, so a change of plywood is one edit instead of a dozen.
+
+1. Press **fx**, type a name and a value, and press **Add**. A value can be a number (`18.3`, `3/4`), or
+   arithmetic using other parameters: `thickness + 0.2`, `(height - 3 * thickness) / 2`.
+2. In a dimension, type the parameter's name, or arithmetic with it (`dado * 2`), instead of a number. The
+   dimension shows it, like **18.50 = dado**.
+3. Change a value in the list, and every dimension using it, and the shapes they drive, follow. One
+   <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes the whole change back.
+
+**`material`** is always there: the material's thickness from Settings. A dado that's `material + 0.2`
+follows when you change the sheet you're cutting.
+
+- **Units:** numbers mean the units the drawing showed when you typed them, and a number can say its own:
+  `18mm`, `3/4in`, `3/4"`. Each parameter keeps its units, so switching the drawing between mm and
+  inches doesn't change any sizes.
+- **Typing a plain number** into a linked dimension unlinks it. Measurements typed as before still work:
+  `12 1/2` is twelve and a half, and `E` still means edge to edge.
+- **Renaming** a parameter changes it everywhere it's used. One that's in use can't be deleted until the
+  dimensions and parameters using it are changed.
+- **Mistakes are refused**, with what's wrong: a name that doesn't exist, a bracket left open, or a
+  parameter that would depend on itself. Nothing changes until it's put right.
+- **Only what's dimensioned follows.** A dimension sets the size or distance it measures, nothing more: if a
+  shelf should stay against a side when the sides move, give it a distance to that side too. A dimension
+  that's been moved by hand, or can't be what its parameters say, is marked **&#9888;**.
+
 ### Copy
 
 Shortcut: <kbd>M</kbd>

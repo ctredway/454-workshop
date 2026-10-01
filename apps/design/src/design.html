@@ -31,6 +31,24 @@
     <div id="msgList"></div>
   </div>
 
+  <div id="paramModal" hidden>
+    <div id="paramPanel" role="dialog" aria-labelledby="paramTitle">
+      <div class="modalHead"><h3 id="paramTitle">Parameters</h3><button class="modalX" id="paramX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <p class="snote">Named sizes, saved with the drawing. Type a name into a dimension (or arithmetic, like
+        <b>dado * 2</b>): change the parameter here, and every dimension using it follows.</p>
+      <div id="paramList"></div>
+      <p class="snote" id="paramEmpty">No parameters yet. Add one below, like <b>thickness</b> = 18.</p>
+      <div class="prow padd">
+        <input type="text" id="paramNewName" class="pname" placeholder="name" aria-label="New parameter&#39;s name" spellcheck="false">
+        <input type="text" id="paramNewExpr" class="pexpr" placeholder="value, like 18 or thickness + 0.2" aria-label="New parameter&#39;s value" spellcheck="false">
+        <span class="pval" id="paramNewUnit"></span>
+        <button id="paramAdd">Add</button>
+      </div>
+      <p class="snote" id="paramSay" role="status" aria-live="polite"></p>
+      <div class="srow" style="margin-top:12px"><span class="grow"></span><button id="paramDone" class="primary">Done</button></div>
+    </div>
+  </div>
+
   <div id="nestModal" hidden>
     <div id="nestPanel" role="dialog" aria-labelledby="nestTitle">
       <div class="modalHead"><h3 id="nestTitle">Nest parts</h3><button class="modalX" id="nestX" title="Close (Esc)" aria-label="Close">✕</button></div>
@@ -593,6 +611,7 @@
 @@include js/relations.js
 @@include js/dimension-apply.js
 @@include js/dimension-params.js
+@@include js/params-panel.js
 @@include js/move.js
 @@include js/ui-settings.js
 @@include js/tool-panel.js

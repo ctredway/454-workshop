@@ -35,6 +35,7 @@ var ICON = {
  subtract:'<svg viewBox="0 0 18 18"><path d="M9 4.97 A4.5 4.5 0 1 0 9 13.03 A4.5 4.5 0 0 1 9 4.97 Z"/><circle cx="11" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/></svg>',
  intersect:'<svg viewBox="0 0 18 18"><circle cx="7" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/><circle cx="11" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/><path d="M9 4.97 A4.5 4.5 0 0 1 9 13.03 A4.5 4.5 0 0 1 9 4.97 Z"/></svg>',
  join:'<svg viewBox="0 0 18 18"><path d="M3 14 L8 9"/><path d="M10 7 L15 3"/><circle cx="9" cy="8" r="2.2" opacity=".6"/></svg>',
+ params:'<svg viewBox="0 0 18 18"><path d="M7.5 3.5 C5.5 3.5 6 6 5.5 9 C5 12 5.5 14.5 3 14.5"/><path d="M3.5 8 H8"/><path d="M10 7.5 L15 13 M15 7.5 L10 13"/></svg>',
  dim:'<svg viewBox="0 0 18 18"><path d="M2 5 V13 M16 5 V13"/><path d="M2 9 H16"/><path d="M4.5 7 L2 9 L4.5 11 M13.5 7 L16 9 L13.5 11"/></svg>',
  flipH:'<svg viewBox="0 0 18 18"><path d="M9 2 V16" stroke-dasharray="2 2"/><path d="M7 4 L2 13 H7 Z"/><path d="M11 4 L16 13 H11 Z" opacity=".5"/></svg>',
  flipV:'<svg viewBox="0 0 18 18"><path d="M2 9 H16" stroke-dasharray="2 2"/><path d="M4 7 L13 2 V7 Z"/><path d="M4 11 L13 16 V11 Z" opacity=".5"/></svg>',
@@ -103,6 +104,7 @@ var PANEL_BTNS = {
  textCurveBtn:{id:'textCurveBtn', icon:'textCurve', title:'Text on curve \u2014 select a text and a line, arc, circle or outline, then press this to lay the letters along it'},
  curvesBtn:{id:'curvesBtn', icon:'curves', title:'Convert to curves \u2014 turn selected text into ordinary shapes you can trim, offset and cut'},
  offsetT:{tool:'offset', icon:'offs', title:'Offset (O) \u2014 select or click shapes, then type the distance: + outward, \u2212 inward (open shapes: + is left of travel)'},
+ paramsBtn:{id:'paramsBtn', icon:'params', title:'Parameters \u2014 named sizes like thickness or shelf_gap. Type one into a dimension, and when you change it here, every dimension using it follows.'},
  dimT:{tool:'dim', icon:'dim', title:'Dimension (D) \u2014 click a shape, then another, and type the distance: the second shape moves. Click one shape twice for its own size. Dimensions stay on the drawing and keep themselves up to date.'},
  nodeT:{tool:'node', icon:'node', title:'Edit nodes (N) \u2014 click a polyline to show its points; drag a point to move it, click a point or segment to type exact values'},
  groupBtn:{id:'groupBtn', icon:'group', title:'Group (Ctrl+G) \u2014 bundle the selected vectors into one object. All geometry is kept; it just selects and moves as one piece.'},
@@ -136,7 +138,7 @@ var PANEL_BTNS = {
 var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
+ {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},
  {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}

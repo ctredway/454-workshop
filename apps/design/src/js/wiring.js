@@ -6,7 +6,7 @@ function wire(){
   buildToolPanel();
   wirePanel();
   unsavedWire();
-  clipWire(); selBoxWire(); woodWire(); tplWire();
+  clipWire(); selBoxWire(); woodWire(); tplWire(); paramPanelWire();
   keysWire();
   fit();
 
@@ -16,8 +16,11 @@ function wire(){
     else {
       var t = parseStockLen(raw, stockUnits());
       if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
+      // dimensions using "material" follow it (and Undo takes the reshaping back)
+      if ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; })) pushUndo();
       DOC.stock.t = t;
     }
+    paramsSayFailed(paramsApplyDims());
     syncStockUI(); persist(); renderToolpathPanel(); draw();       // cut-through toolpaths follow it
   });
   document.getElementById('stkZ').addEventListener('change', function(e){
@@ -760,6 +763,7 @@ function wire(){
   window.addEventListener('keydown', function(e){
     if (!document.getElementById('textModal').hidden) return;   // the text dialog owns the keyboard
     if (!document.getElementById('nestModal').hidden) return;   // so does the nesting dialog
+    if (!document.getElementById('paramModal').hidden) return;  // and the parameters list
     if (!document.getElementById('libModal').hidden) return;    // and the tool library
     if (!document.getElementById('toolModal').hidden) return;   // and tool details
     if (!document.getElementById('dlgModal').hidden) return;    // and an in-app dialog

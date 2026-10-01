@@ -792,6 +792,23 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.111.0 — parameters
+- **Parameters**, as in Fusion: named sizes saved with the drawing (the **fx** button beside Dimension). A
+  value is a number or arithmetic using other parameters (`dado = thickness + 0.2`,
+  `gap = (height - 3 * thickness) / 2`). Type a name, or arithmetic with one, into a dimension, and it
+  remembers it (shown as **18.50 = dado**): change the parameter and every dimension using it, and the shapes,
+  follow, as one Undo. `material` is the material's thickness from Settings, and dimensions using it follow a
+  change of thickness.
+- Each parameter keeps the units it was typed in, and numbers can say theirs (`18mm`, `3/4in`), so switching
+  between mm and inches changes no sizes. What could be typed before still means the same (`12 1/2`, `3/4`,
+  `E` for edge to edge). Mistakes are said plainly and refused: an unknown name, an open bracket, dividing by
+  zero, a parameter that depends on itself. Renaming changes every use; one in use can't be deleted.
+- Dimensions that affect each other are applied until they all hold; any that can't, or that were moved by
+  hand, are marked &#9888;.
+- Tested (26 tests): the arithmetic and units; a cabinet layout following thickness and width changes; the
+  list (add, change, rename, delete, refusing mistakes and loops, Undo); the material's thickness. Each
+  checked by breaking it on purpose (32 ways). Tried in the desktop app.
+
 ### 0.110.0 — choose where a profile starts
 - **Set start** in the toolpath editor, for profiles: click a shape's outline and its cut starts there, at the
   nearest point on the cutter's path, instead of at a corner. Put the mark where each pass begins somewhere
