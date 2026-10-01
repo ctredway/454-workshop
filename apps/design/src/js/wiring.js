@@ -511,6 +511,11 @@ function wire(){
     var rd = new FileReader();
     rd.onload = function(){
       var buf = rd.result;
+      if (c2dIs(buf)){                                    // Carbide Create .c2d
+        try { c2dOpen(buf, f.name); }
+        catch (errC){ toast('err', 'Couldn’t open ' + f.name, 'It looks like a Carbide Create project, but 454 couldn’t read it: ' + errC.message + ' Exporting it from Carbide Create as SVG or DXF will open here.'); }
+        return;
+      }
       var head = new Uint8Array(buf, 0, 4);
       if (head[0] === 0xD0 && head[1] === 0xCF && head[2] === 0x11 && head[3] === 0xE0){
         // VCarve .crv
@@ -544,7 +549,7 @@ function wire(){
         var d = JSON.parse(txt2);
         if (d && d.stock && d.ents) openDrawing(d, f.name);          // unsaved.js: puts an unsaved drawing aside
         else toast('err', 'Not a 454 Design file', 'This looks like JSON, but not a drawing 454 Design saved.');
-      }catch(err2){ toast('err', 'Unknown file type', 'Open a 454 Design drawing or a VCarve .crv, or import a .dxf or .svg.'); }
+      }catch(err2){ toast('err', 'Unknown file type', 'Open a 454 Design drawing, a VCarve .crv or a Carbide Create .c2d, or import a .dxf or .svg.'); }
     };
     rd.readAsArrayBuffer(f);
   }

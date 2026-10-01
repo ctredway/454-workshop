@@ -13,3 +13,4 @@
 *.zip binary
 *.vtdb binary
 *.crv binary
+*.c2d binary

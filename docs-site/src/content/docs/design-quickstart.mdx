@@ -111,6 +111,22 @@ VCarve’s toolpaths show here as a read-only list. 454 Design doesn’t run the
 
 </Compare>
 
+### Open a Carbide Create project
+
+**Open** a `.c2d` file. The shapes come across as you drew them, on their layers, with the material's size and
+thickness, and Design switches to the units the project shows (inches or millimetres).
+
+- **Toolpaths aren't brought in yet.** The message after opening says how many the project has: make them
+  again in the Toolpaths panel. Your Carbide Create file isn't changed.
+- **Curves become many short straight lines**, within 0.02 mm of the curve. Circles and plain rectangles stay
+  circles and rectangles.
+- **Zero** is taken as the lower-left corner and the top of the material. If the project has it elsewhere,
+  the message says so: set it in Job setup.
+- **Save** asks where to save, since a 454 drawing is a different file (`.454.json`).
+
+It reads projects saved by Carbide Create 7 (tested with build 870). If one won't open, export it from
+Carbide Create as SVG or DXF, which open here, and [tell us](before-you-start.html#when-something-goes-wrong).
+
 ## Trace an image
 
 For logos and black-and-white artwork: **drop the image** on the drawing (PNG, JPG and most other image types), or open it like any other file. The **Trace image** panel shows the outlines live over the picture:

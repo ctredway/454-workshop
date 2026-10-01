@@ -22,7 +22,7 @@
     <button id="jobBtn" class="hdrIcon" title="Job setup — material size and thickness, units, where X, Y and Z zero are" aria-label="Job setup"><svg viewBox="0 0 18 18" aria-hidden="true"><rect x="2" y="5" width="14" height="9" rx="1"/><path d="M2 9h14M5 5V3M13 5V3"/><circle cx="2.2" cy="14" r="1.3"/></svg></button>
     <button id="settingsBtn" class="hdrIcon" title="Settings — appearance, display colours" aria-label="Settings"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="2.6"/><path d="M9 1.6v2.2M9 14.2v2.2M16.4 9h-2.2M3.8 9H1.6M14.2 3.8l-1.6 1.6M5.4 12.6l-1.6 1.6M14.2 14.2l-1.6-1.6M5.4 5.4 3.8 3.8"/></svg></button>
     <a id="openControl" href="index.html" target="_blank" rel="noopener" title="Open 454 Control (the machine sender) in a new tab">454 Control ↗</a>
-    <input type="file" id="loadFile" accept=".json,.crv,.dxf,.svg,.png,.jpg,.jpeg,.gif,.bmp,.webp" multiple hidden>
+    <input type="file" id="loadFile" accept=".json,.crv,.c2d,.dxf,.svg,.png,.jpg,.jpeg,.gif,.bmp,.webp" multiple hidden>
   </header>
 
   <div id="toastWrap"></div>
@@ -295,7 +295,7 @@
     <div id="tpCount" class="tpCountLine"></div>
     <p id="tpBeta" hidden><b>Beta.</b> Toolpaths are new and still being tested. Check every job in 454 Control&rsquo;s
       preview and run it in the air before cutting material. <a href="docs/cam-reference.html" target="_blank" rel="noopener">What to check</a></p>
-    <p class="tpNote" id="tpEmpty">No toolpaths yet. Open a VCarve project (.crv) that has toolpaths, and they&rsquo;ll be listed here.</p>
+    <p class="tpNote" id="tpEmpty">No toolpaths yet. Select shapes on the drawing and press <b>+</b> to make one. A VCarve project (.crv) that has toolpaths lists them here.</p>
     <p class="tpNote" id="tpSrcNote">Read from the VCarve project, in the order VCarve lists them. They show how the job was set up; 454 Design can&rsquo;t cut them yet, and editing the drawing doesn&rsquo;t update them.</p>
     <p class="tpNote" id="tpCamMissing" hidden style="color:var(--amber)">The toolpath tools didn’t load: <code>geom.js</code> and <code>cam.js</code> need to be in the same folder as this <code>design.html</code>.</p>
     <p class="tpNote" id="tpLibNote"></p>
@@ -589,6 +589,7 @@
 @@include js/dialogs.js
 @@include js/tool-details.js
 @@include js/crv-import.js
+@@include js/c2d-import.js
 @@include js/dxf-import.js
 @@include js/svg-import.js
 @@include js/vector-import.js

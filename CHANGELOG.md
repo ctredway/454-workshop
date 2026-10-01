@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.31 — open Carbide Create projects
+- Includes Design 0.114.0: `.c2d` files open, with their shapes, layers and material. The Open window lists
+  `.c2d` files.
+
 ### 0.6.2-beta.30 — add sheets to a project
 - Includes Design 0.113.0: sheets can be added, renamed and deleted, each with its own shapes, toolpaths and
   G-code; and only the shown sheet's toolpaths are drawn.
@@ -820,6 +824,27 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.114.0 — open Carbide Create projects (.c2d): shapes, layers and material
+- **Open a `.c2d` file** and its shapes come across on their layers (hidden and locked ones too), with the
+  material's size and thickness, in the units the project shows. Circles and plain rectangles stay circles and
+  rectangles; other shapes become outlines, with curves followed within 0.02 mm. Each shape keeps Carbide
+  Create's ID, for bringing toolpaths in next. **Toolpaths aren't brought in yet**, and the message after
+  opening says how many the project has.
+- **How it's read.** A `.c2d` (Carbide Create 7, build 870) is an SQLite database whose items are JSON text
+  packed with zlib; found by reading two files Clint saved. Design reads the database and unpacks the text
+  itself (`c2d-import.js`), read-only, with no library added, so it works offline and in a browser. Carbide
+  Create's own G-code inside the file is encrypted and isn't read.
+- **What it can't read is said, not guessed:** zero somewhere other than the lower-left corner and the top, a
+  kind of point it doesn't know, shapes with nothing to draw, items it couldn't read. A file it can't open
+  says so and suggests exporting SVG or DXF.
+- **Opening one doesn't touch the last drawing's file.** The drawing before is kept for Recover, Save asks
+  where to save, and it offers the project's own name.
+- The Toolpaths panel's "No toolpaths yet" note says how to make one (it only mentioned VCarve projects).
+- Tested (7 tests): unpacking against Node's zlib (every packing level, 70 KB of noise); the database reader
+  against Node's SQLite (three page sizes, 700 rows, a 300 KB value); the two real files; projects made in the
+  test for lines, curves, open paths, several outlines, layers, a turned rectangle and a rounded one; what
+  can't be read; opening. Checked by breaking it on purpose (38 ways). Opened both files in the desktop app.
 
 ### 0.113.0 — add sheets to a project
 - **A project can have several sheets**, one for each piece of material. Design could show the sheets of a

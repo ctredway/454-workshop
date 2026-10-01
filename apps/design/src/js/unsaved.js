@@ -190,8 +190,8 @@ function saveDrawing(asNew){
 
 // ---- opening: the browser's Open window where there is one, so a drawing opened here can be saved back to
 // its file with Save; otherwise (Firefox, Safari) the page's file picker, as before.
-var OPEN_TYPES = [{ description: 'Drawings, VCarve projects, DXF, SVG and images',
-  accept: { 'application/octet-stream': ['.json', '.crv', '.dxf', '.svg'], 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'] } }];
+var OPEN_TYPES = [{ description: 'Drawings, VCarve and Carbide Create projects, DXF, SVG and images',
+  accept: { 'application/octet-stream': ['.json', '.crv', '.c2d', '.dxf', '.svg'], 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'] } }];
 function openFiles(){
   var DF = desktopFiles();
   if (DF){                                            // the desktop app: by path, so Save can go back to it

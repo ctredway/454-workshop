@@ -11,7 +11,7 @@
 'use strict';
 
 const OPEN_FILTERS = [
-  { name: 'Drawings, VCarve projects, DXF, SVG and images', extensions: ['json', 'crv', 'dxf', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] },
+  { name: 'Drawings, VCarve and Carbide Create projects, DXF, SVG and images', extensions: ['json', 'crv', 'c2d', 'dxf', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] },
   { name: 'All files', extensions: ['*'] },
 ];
 const SAVE_FILTERS = [{ name: '454 Design drawing', extensions: ['json'] }];
