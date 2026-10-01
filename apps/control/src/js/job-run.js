@@ -110,6 +110,9 @@ function jobStart(opts){
     uiNote('Machine isn’t ready', 'A job can only start from Idle. The machine is ' + SERIAL.state + ' — home or unlock it first.');
     return;
   }
+  // A nudge still on from a job that didn't finish (an alarm, a failed probe): off before this one is
+  // described, well ahead of its first line, so the controller's answer isn't counted as the job's.
+  znRemove('before this job');
   var bb = modelBBox(MODEL);
   var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
   var errs = all.filter(function(i){ return i.sev === 'err'; }).length;
@@ -346,6 +349,7 @@ function jobClockTick(){
 function jobDone(){
   jobClockTick();
   JOB.active = false;
+  znRemove('now the job has finished');                // a nudge is for this job only
   var total = (performance.now() - JOB.startedAt) / 1000, c = JOB.clock || {machine: total, tool: 0, hold: 0, probe: 0};
   var machine = Math.max(0, c.machine - (JOB.spinupAdded || 0)), est = JOB.estimate || 0;
   var diff = est > 0 ? (machine - est) / est * 100 : null;

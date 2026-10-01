@@ -33,6 +33,7 @@ function jobStartFrom(target){
   if (JOB.active) return;
   if (SERIAL.state !== 'Idle'){ uiNote('Machine isn’t ready', 'Recovery can only start from Idle. The machine is ' + SERIAL.state + '.'); return; }
   if (!SERIAL.homedSeen){ uiNote('Home first', 'Recovery needs a homed machine. Your work zero is stored in the controller and survives homing, so you won\u2019t need to re-zero.'); return; }
+  znRemove('before resuming');                          // the Adjust panel starts at Z +0.00: the controller must too
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
   var st = stateAtLine(snapped);

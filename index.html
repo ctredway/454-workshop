@@ -872,7 +872,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.31.20';
+var CONTROL_VERSION = '0.31.21';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -2948,11 +2948,29 @@ function znAdjust(d){
   if (!JOB.active){ logC('err', 'Z nudge applies during a running job'); return; }
   ZN.val = (d === 0) ? 0 : Math.round((ZN.val + d) * 100) / 100;
   var tlo = (PROBE.tlo || 0) + ZN.val;
-  JOB.list.splice(JOB.idx, 0, {text: 'G43.1 Z' + tlo.toFixed(3), ln: 0, syn: true});
+  // A nudge still waiting to be sent (the controller's buffer is full on long cuts) sits next in line:
+  // this one replaces it. Adding another in front would send them newest first, and the oldest would
+  // be the one left in force, with the panel showing the newest.
+  var next = JOB.list[JOB.idx];
+  if (next && next.zn) next.text = 'G43.1 Z' + tlo.toFixed(3);
+  else JOB.list.splice(JOB.idx, 0, {text: 'G43.1 Z' + tlo.toFixed(3), ln: 0, syn: true, zn: true});
   JOB.total = JOB.list.length;
   logC('sys', 'Z nudge ' + (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm (G43.1 queued, lands within buffered moves)');
   znDisplay();
   jobFill();
+}
+// A Z nudge lasts for the job it was made in. Left in the controller it shifts the next job by the same
+// amount with nothing on screen saying so: the Adjust panel starts every job at Z +0.00. So it comes off
+// when the job finishes, and before another starts if the last one ended some other way. The tool's own
+// length offset, from the BitSetter, stays.
+function znRemove(when){
+  if (!ZN.val) return;
+  var was = ZN.val;
+  ZN.val = 0; znDisplay();
+  if (!SERIAL.connected) return;
+  sendLine('G43.1 Z' + (PROBE.tlo || 0).toFixed(3));
+  logC('sys', 'Z nudge of ' + (was >= 0 ? '+' : '') + was.toFixed(2) + ' mm taken off ' + when +
+       ': the next job cuts at the depths in its file. Nudge again in that job if it needs it.');
 }
 
 function tcAutoNote(){
@@ -4688,6 +4706,9 @@ function jobStart(opts){
     uiNote('Machine isn’t ready', 'A job can only start from Idle. The machine is ' + SERIAL.state + ' — home or unlock it first.');
     return;
   }
+  // A nudge still on from a job that didn't finish (an alarm, a failed probe): off before this one is
+  // described, well ahead of its first line, so the controller's answer isn't counted as the job's.
+  znRemove('before this job');
   var bb = modelBBox(MODEL);
   var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
   var errs = all.filter(function(i){ return i.sev === 'err'; }).length;
@@ -4924,6 +4945,7 @@ function jobClockTick(){
 function jobDone(){
   jobClockTick();
   JOB.active = false;
+  znRemove('now the job has finished');                // a nudge is for this job only
   var total = (performance.now() - JOB.startedAt) / 1000, c = JOB.clock || {machine: total, tool: 0, hold: 0, probe: 0};
   var machine = Math.max(0, c.machine - (JOB.spinupAdded || 0)), est = JOB.estimate || 0;
   var diff = est > 0 ? (machine - est) / est * 100 : null;
@@ -4984,6 +5006,7 @@ function jobStartFrom(target){
   if (JOB.active) return;
   if (SERIAL.state !== 'Idle'){ uiNote('Machine isn’t ready', 'Recovery can only start from Idle. The machine is ' + SERIAL.state + '.'); return; }
   if (!SERIAL.homedSeen){ uiNote('Home first', 'Recovery needs a homed machine. Your work zero is stored in the controller and survives homing, so you won\u2019t need to re-zero.'); return; }
+  znRemove('before resuming');                          // the Adjust panel starts at Z +0.00: the controller must too
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
   var st = stateAtLine(snapped);

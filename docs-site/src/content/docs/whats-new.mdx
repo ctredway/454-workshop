@@ -21,6 +21,10 @@ The full record, in more detail than most people want, is the
   Carbide Create come in as editable 454 toolpaths; what can't be converted for certain is left out and named.
   Check every toolpath, and air-cut, before cutting. See the
   [Design quick start](design-quickstart.html#open-a-carbide-create-project).
+- **Fixed: a Z nudge stayed on after its job.** Nudging Z in Control's Adjust panel during a job shifted the
+  next job by the same amount, with the panel reading Z +0.00. A nudge now ends when its job does. If you
+  nudged in an earlier version and haven't set Z zero since, set it again before cutting.
+- **Fixed: nudge buttons pressed quickly** could leave an older nudge in force than the one shown.
 
 ## 0.6.2-beta.30
 

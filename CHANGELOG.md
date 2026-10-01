@@ -30,6 +30,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ### 0.6.2-beta.31 — open Carbide Create projects
 - Includes Design 0.114.0: `.c2d` files open, with their shapes, layers and material. The Open window lists
   `.c2d` files.
+- Includes Control 0.31.21: a Z nudge ends with its job, and quick presses leave the newest nudge on.
 
 ### 0.6.2-beta.30 — add sheets to a project
 - Includes Design 0.113.0: sheets can be added, renamed and deleted, each with its own shapes, toolpaths and
@@ -466,6 +467,22 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.31.21 — a Z nudge ends with its job
+- **(machine) Fixed: a Z nudge from the Adjust panel stayed on after the job finished.** The nudge is held in
+  the controller as part of the tool length offset, and nothing took it off at the end. The next job started
+  with the Adjust panel reading Z +0.00 and the controller still shifted: nudge up 1 mm in one job, and the
+  next cut 1 mm shallow; nudge down, and the next cut too deep. Setting Z zero again cleared it, which is why
+  it could go unnoticed. Now the nudge comes off when the job finishes, and the log says so. If a job ends
+  some other way (an alarm, a failed probe), it comes off before the next job or a resume is offered. The
+  tool's own offset from the BitSetter is kept.
+- **(machine) Fixed: nudge buttons pressed quickly could leave the wrong nudge in force.** On long cuts the
+  controller's buffer is full, so a nudge waits its turn. Each new press was put in front of the ones already
+  waiting, so they were sent newest first, and the oldest was the one left on, while the panel showed the
+  newest total. Now a press replaces the nudge that is still waiting, so one line goes, with the newest total.
+- **Tested** (`apps/control/test/z-nudge.test.mjs`, 10 tests): Control's own job code runs against a stand-in
+  machine that records every line sent. Checked by breaking the code 11 ways; every one was caught. Starting
+  and resuming a job can't be run in these tests, so for those two the test reads the source for the call.
 
 ### 0.31.20 — Control starts again
 - **Fixed: 454 Control didn't start at all in 0.31.19** (desktop beta.20 to beta.22). A message added in 0.31.19,

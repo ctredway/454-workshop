@@ -15,11 +15,29 @@ function znAdjust(d){
   if (!JOB.active){ logC('err', 'Z nudge applies during a running job'); return; }
   ZN.val = (d === 0) ? 0 : Math.round((ZN.val + d) * 100) / 100;
   var tlo = (PROBE.tlo || 0) + ZN.val;
-  JOB.list.splice(JOB.idx, 0, {text: 'G43.1 Z' + tlo.toFixed(3), ln: 0, syn: true});
+  // A nudge still waiting to be sent (the controller's buffer is full on long cuts) sits next in line:
+  // this one replaces it. Adding another in front would send them newest first, and the oldest would
+  // be the one left in force, with the panel showing the newest.
+  var next = JOB.list[JOB.idx];
+  if (next && next.zn) next.text = 'G43.1 Z' + tlo.toFixed(3);
+  else JOB.list.splice(JOB.idx, 0, {text: 'G43.1 Z' + tlo.toFixed(3), ln: 0, syn: true, zn: true});
   JOB.total = JOB.list.length;
   logC('sys', 'Z nudge ' + (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm (G43.1 queued, lands within buffered moves)');
   znDisplay();
   jobFill();
+}
+// A Z nudge lasts for the job it was made in. Left in the controller it shifts the next job by the same
+// amount with nothing on screen saying so: the Adjust panel starts every job at Z +0.00. So it comes off
+// when the job finishes, and before another starts if the last one ended some other way. The tool's own
+// length offset, from the BitSetter, stays.
+function znRemove(when){
+  if (!ZN.val) return;
+  var was = ZN.val;
+  ZN.val = 0; znDisplay();
+  if (!SERIAL.connected) return;
+  sendLine('G43.1 Z' + (PROBE.tlo || 0).toFixed(3));
+  logC('sys', 'Z nudge of ' + (was >= 0 ? '+' : '') + was.toFixed(2) + ' mm taken off ' + when +
+       ': the next job cuts at the depths in its file. Nudge again in that job if it needs it.');
 }
 
 function tcAutoNote(){
