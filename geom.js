@@ -120,6 +120,23 @@
         // up at once if even the box is beyond the distance the caller cares about.
         var bdx = Math.max(minx - px, 0, px - maxx), bdy = Math.max(miny - py, 0, py - maxy);
         if (cap !== undefined && Math.hypot(bdx, bdy) > cap) return cap + cell;
+        // A short outline, or a point outside the outline's box: measure to every segment. The grid below is
+        // for a point among many segments. From outside, it walks ring after ring of cells to reach across the
+        // outline, which for a ten-point star was thousands of measurements where ten will do, and a V-carve
+        // or a pocket with islands asks this millions of times. The answer is the same one. Where the grid's
+        // answer would depend on the order it looks in (two different points equally near), or on the cap
+        // (nothing within it), the grid is still used, so nothing changes.
+        if (last <= 24 || ((bdx > 0 || bdy > 0) && last <= 600)){
+          var bq = null, tie = false;
+          for (var s1 = 0; s1 < last; s1++){
+            var a1 = path[s1], b1 = path[(s1 + 1) % n];
+            var q1 = closestOnSeg(px, py, a1[0], a1[1], b1[0], b1[1]), d1 = dist(px, py, q1[0], q1[1]);
+            if (d1 < best){ best = d1; bq = q1; tie = false; }
+            else if (d1 === best && (q1[0] !== bq[0] || q1[1] !== bq[1])) tie = true;
+          }
+          if (bq && !tie && !(cap !== undefined && best > cap)){ self.lastNear = bq; return best; }
+          best = Infinity;
+        }
         var bx = Math.floor((px - minx) / cell), by = Math.floor((py - miny) / cell);
         var ring = Math.max(0, -bx, bx - (gw - 1), -by, by - (gh - 1));   // first ring that reaches the grid
         function visit(cx2, cy2){

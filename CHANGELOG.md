@@ -825,7 +825,29 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
-### 0.114.0 — open Carbide Create projects (.c2d): shapes, text, layers, material and zero
+### 0.114.0 — open Carbide Create projects (.c2d); pockets with islands and big V-carves calculate much faster
+- **Pockets with islands, and V-carves over many shapes, are calculated 5 to 20 times faster, and cut exactly
+  as before.** Found by opening real Carbide Create projects: a pocket with eight letters in it took 17 seconds
+  (now 1), a V-carve of 50 stars took 22 seconds (now a third of a second), and one of 333 shapes didn't finish
+  in three minutes (now 23 seconds). During that time Design doesn't respond. Three causes, in `cam.js` and
+  `geom.js`:
+  - Measuring from a point to an outline it's outside of walked a grid of cells, ring after ring, to reach
+    across the outline: thousands of measurements for a ten-point star. A short outline, or one the point is
+    outside, is now measured segment by segment.
+  - A pocket snapped every point of every ring to the nearest wall by measuring to every island, however far.
+    It now looks only as far as the ring's own distance first.
+  - A V-carve asked "what's the nearest outline?" of every outline, to learn only whether any was nearer than
+    a given distance. It now stops at the first that is, trying the point's own outline first.
+- **Proven identical.** The engine before and after was run side by side on 59 pockets and V-carves: every
+  toolpath the real projects make (the two largest carvings in four parts each, since the old engine would take
+  hours on the whole), and made-up ones covering islands of every kind, raster clearing, clean-up after a
+  larger bit, a finishing allowance, conventional cutting, a depth limit, a flat tip and an inlay's start
+  depth. Every result was the same, move for move. Where the old way's answer could depend on the order it
+  looked in (two different points equally near), the old way is still used. The comparison was itself checked
+  by breaking the new code on purpose (7 ways caught: up to 46 of the 59 results then differ; an eighth, the
+  pocket's fall-back to the full look, is never needed by any of the 59, so removing it changes nothing there).
+- New tests (10, `nearest-point.test.mjs`): the nearest point on outlines of 4 to 2000 segments, from inside,
+  outside and far away, against a plain measure-everything reference, with and without a cap.
 - **Open a `.c2d` file** and its shapes come across on their layers (hidden and locked ones too), with the
   material's size and thickness, in the units the project shows. Each shape keeps Carbide Create's ID, for
   its toolpaths.
@@ -845,9 +867,8 @@ The controller is the authority on the machine, so anything it reports is used r
   in whole; a start depth; a bit given by its tip. And always: bits are sizes, not library tools, so check each
   toolpath and air-cut.
 - **The drawing shows first; toolpaths are calculated after, one at a time.** A V-carve over hundreds of
-  shapes can take minutes, and a pocket with text in it 17 seconds, during which Design doesn't respond. That
-  is the CAM engine's speed, not the import's (the same toolpaths made by hand take as long), and is the next
-  thing to look at. Opening another drawing meanwhile drops the ones not yet calculated.
+  shapes still takes half a minute, during which Design doesn't respond (see the speed-up below). Opening
+  another drawing meanwhile drops the ones not yet calculated.
 - **Both kinds of file.** Current Carbide Create (7, build 8xx) saves an SQLite database whose items are JSON
   text packed with zlib. Older versions (seen: builds 464, 648, 756) save one JSON text with the 3D model's
   bytes after it. The shapes are described the same way in both. Design reads the database and unpacks the text

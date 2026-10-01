@@ -92,7 +92,7 @@ function c2dToolpaths(ex){
   return out;
 }
 // Build converted toolpaths one at a time, with a pause between, so the drawing shows first and the panel fills
-// in as each is done: a V-carve over hundreds of shapes, or a pocket round text, can take a minute or more.
+// in as each is done: a V-carve over hundreds of shapes can take half a minute.
 // Returns a promise, kept when all are built (or the drawing has been replaced).
 function c2dBuild(tps){
   return new Promise(function (done) {

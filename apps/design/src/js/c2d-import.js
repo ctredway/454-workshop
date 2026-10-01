@@ -362,7 +362,7 @@ function c2dOpen(buf, name){
   var lines = r.left.map(function (l) { return '• Not brought in: ' + l.name + '. ' + l.why.charAt(0).toUpperCase() + l.why.slice(1) + '. Make it again in the Toolpaths panel.'; })
     .concat(r.tpNotes.map(function (n) { return '• ' + n; })).concat(r.notes.map(function (n) { return '• ' + n; }));
   if (r.made) lines.push('• The toolpaths are 454’s own, made from Carbide Create’s settings: bits come as sizes, not tools from your library. Check each one, and air-cut before cutting material.',
-                         '• They’re being calculated now, one at a time. A large V-carve, or a pocket with text in it, can take a minute or more, and 454 won’t respond while it works one out.');
+                         '• They’re being calculated now, one at a time. A carving over hundreds of shapes can take half a minute, and 454 won’t respond while it works one out.');
   // a short notice when there's nothing to check; a window to read when there is
   if (!lines.length) toast('ok', 'Opened ' + name, said);
   else uiDialog({title: 'Opened ' + name, body: said + '\n\n' + lines.join('\n'), ok: 'OK', note: true});

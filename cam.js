@@ -378,12 +378,23 @@
     if (maxD - last > r * 0.75) levels.push(Math.max(r + tol + allow, maxD - r * 0.5));
 
     var idx = bounds.map(function (b) { return G.pathIndex(b, true); });
-    function nearestWall(px, py){
-      var best = Infinity, bp = null;
-      for (var t = 0; t < idx.length; t++){
-        idx[t].lastNear = null;
-        var d = idx[t].dist(px, py, Math.max(r, maxD) * 2);
-        if (d < best && idx[t].lastNear){ best = d; bp = idx[t].lastNear; }
+    // The nearest point on any wall. `near` is about how far that is (a ring's level): walls whose whole box is
+    // further away than that can't hold it, and measuring to every island every time is what made a pocket with
+    // lettering in it take 17 seconds. The first look goes only that far, plus the slack an index can miss by
+    // (two of its cells); if what it finds is within `near`, it's the answer the full look would give. If not,
+    // the full look is done, as before.
+    var farCap = Math.max(r, maxD) * 2, missBy = 0;
+    idx.forEach(function (ix) { if (ix.cell > missBy) missBy = ix.cell; });
+    function nearestWall(px, py, near){
+      var caps = near > 0 && near + res * 4 + missBy * 2 < farCap ? [near + res * 4 + missBy * 2, farCap] : [farCap];
+      for (var c = 0; c < caps.length; c++){
+        var best = Infinity, bp = null;
+        for (var t = 0; t < idx.length; t++){
+          idx[t].lastNear = null;
+          var d = idx[t].dist(px, py, caps[c]);
+          if (d < best && idx[t].lastNear){ best = d; bp = idx[t].lastNear; }
+        }
+        if (c === caps.length - 1 || (bp && best <= near + res * 4)) break;
       }
       return {d: best, p: bp};
     }
@@ -397,7 +408,7 @@
     // conventional), and put every point exactly `level` from the nearest wall.
     function prepare(loop, level){
       var snapped = loop.map(function (p) {
-        var nw = nearestWall(p[0], p[1]);
+        var nw = nearestWall(p[0], p[1], level);
         if (!nw.p || nw.d < 1e-9) return p;
         var k = level / nw.d;
         return [nw.p[0] + (p[0] - nw.p[0]) * k, nw.p[1] + (p[1] - nw.p[1]) * k];
@@ -649,24 +660,28 @@
     loops.forEach(function (l) { l.forEach(function (p) { span = Math.max(span, Math.abs(p[0]), Math.abs(p[1])); }); });
     // a flat tip starts the cone half its width out: the cone reaches radius r at depth (r - tip/2) / tan
     var rCap = o.maxDepth > 0 ? halfTip + Math.max(0, o.maxDepth - sd) * tanH : Infinity, rLimit = Math.min(rCap, 4 * span + 10);
-    function nearest(x, y, cap){
-      var best = Infinity;
-      for (var t = 0; t < idx.length; t++){ var d = idx[t].dist(x, y, cap); if (d < best) best = d; }
-      return best;
+    // Is every outline at least `need` away from (x, y), looking no further than cap? It stops at the first that
+    // isn't, and tries the outline the point came from first, since that's the likeliest. (This used to measure
+    // to every outline every time and compare the nearest: the same answer, but a carve over hundreds of shapes
+    // took minutes.)
+    function clearOf(x, y, cap, need, own){
+      if (idx[own].dist(x, y, cap) < need) return false;
+      for (var t = 0; t < idx.length; t++) if (t !== own && idx[t].dist(x, y, cap) < need) return false;
+      return true;
     }
     // the largest circle touching the outline at p, grown along the inward normal (nx, ny)
     var tol = 0.002;
-    function inscribed(px, py, nx, ny){
+    function inscribed(px, py, nx, ny, own){
       var lo = 0, hi = rLimit;
-      if (nearest(px + nx * hi, py + ny * hi, hi + 1) >= hi - tol) return hi;
+      if (clearOf(px + nx * hi, py + ny * hi, hi + 1, hi - tol, own)) return hi;
       for (var it = 0; it < 32 && hi - lo > 1e-4; it++){
         var mid = (lo + hi) / 2;
-        if (nearest(px + nx * mid, py + ny * mid, mid + 1) >= mid - tol) lo = mid; else hi = mid;
+        if (clearOf(px + nx * mid, py + ny * mid, mid + 1, mid - tol, own)) lo = mid; else hi = mid;
       }
       return lo;
     }
     var paths = [], flatHit = false, deepest = 0;
-    loops.forEach(function (l) {
+    loops.forEach(function (l, own) {
       var n = l.length, pts = [];
       function push(x, y, r){
         if (r >= rCap - 1e-6) flatHit = true;
@@ -689,7 +704,7 @@
           var k = Math.max(1, Math.ceil(Math.abs(da) / (8 * Math.PI / 180)));
           for (var q = 0; q <= k; q++){
             var an = a0 + da * q / k, fx = Math.cos(an), fy = Math.sin(an);
-            var rr = inscribed(a[0], a[1], fx, fy);
+            var rr = inscribed(a[0], a[1], fx, fy, own);
             push(a[0] + fx * rr, a[1] + fy * rr, rr);
           }
         }
@@ -697,7 +712,7 @@
         var steps = Math.max(1, Math.ceil(len / o.step));
         for (var sI = 1; sI < steps; sI++){
           var t = sI / steps, px = a[0] + dx * t, py = a[1] + dy * t;
-          var r = inscribed(px, py, nx, ny);
+          var r = inscribed(px, py, nx, ny, own);
           push(px + nx * r, py + ny * r, r);
         }
       }
