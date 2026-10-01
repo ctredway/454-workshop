@@ -57,17 +57,15 @@
       <button id="rbAdjust" title="Feed / spindle / Z adjustments">Adjust</button>
       </span>
       <div id="ovRow">
-        <span class="ovLbl" id="ovF">F 100%</span>
-        <button data-ov="f-10">−10</button><button data-ov="f-1">−1</button><button data-ov="f0">100</button><button data-ov="f+1">+1</button><button data-ov="f+10">+10</button>
-        <span class="ovSep"></span>
-        <span class="ovLbl" id="ovS">S 100%</span>
-        <button data-ov="s-10">−10</button><button data-ov="s-1">−1</button><button data-ov="s0">100</button><button data-ov="s+1">+1</button><button data-ov="s+10">+10</button>
-        <span class="ovSep"></span>
-        <span class="ovLbl">rapid</span>
-        <button data-ov="r25">25</button><button data-ov="r50">50</button><button data-ov="r100">100</button>
-        <span class="ovSep"></span>
-        <span class="ovLbl" id="znLbl">Z +0.00</span>
-        <button data-zn="-0.1">−0.1</button><button data-zn="-0.02">−0.02</button><button data-zn="0">0</button><button data-zn="0.02">+0.02</button><button data-zn="0.1">+0.1</button>
+        <span class="ovGrp"><span class="ovLbl" id="ovF">F 100%</span>
+        <button data-ov="f-10">−10</button><button data-ov="f-1">−1</button><button data-ov="f0">100</button><button data-ov="f+1">+1</button><button data-ov="f+10">+10</button></span>
+        <span class="ovGrp"><span class="ovLbl" id="ovS">S 100%</span>
+        <button data-ov="s-10">−10</button><button data-ov="s-1">−1</button><button data-ov="s0">100</button><button data-ov="s+1">+1</button><button data-ov="s+10">+10</button></span>
+        <span class="ovGrp"><span class="ovLbl">rapid</span>
+        <button data-ov="r25">25</button><button data-ov="r50">50</button><button data-ov="r100">100</button></span>
+        <span class="ovGrp"><span class="ovLbl" id="znLbl">Z +0.00</span>
+        <button data-zn="-0.1">−0.1</button><button data-zn="-0.02">−0.02</button><button data-zn="0">0</button><button data-zn="0.02">+0.02</button><button data-zn="0.1">+0.1</button></span>
+        <label class="ovKeep" title="Unticked: every job starts with feed, spindle and rapid at 100% and no Z nudge. Ticked: the next job starts with these as they are when this one ends, after asking. Setting Z zero always clears the Z nudge."><input type="checkbox" id="ovKeep"> Keep for the next job</label>
       </div>
     </div>
     <div id="legend">

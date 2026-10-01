@@ -142,6 +142,19 @@ At each change, the machine lifts, moves to the tool-change position, stops the 
 new tool; with **Re-zero at each change**, it then asks you to set Z zero again, with the BitZero or by
 jogging.
 
+**Adjusting a running job.** While a job runs, **Adjust** in the bar over the preview opens a row of buttons:
+
+| | What it changes |
+| --- | --- |
+| **F** | The feed rate, as a percentage of what the file asks for: 10 or 1 at a time, or back to 100. |
+| **S** | The spindle speed, the same way (VFD spindles only; a router's speed is on its dial). |
+| **rapid** | How fast the machine travels between cuts: 25%, 50% or 100%. |
+| **Z** | A nudge up (+) or down (−) of the whole job, 0.02 or 0.1 mm at a time, for a cut that is a little too deep or not quite through. It takes effect a few moves later, once the moves already handed to the machine are done. |
+
+Every job starts with all four at normal: 100% and no nudge. What you adjust in one job ends with that job.
+To carry it into the next job, tick **Keep for the next job**. The next job then asks before it starts,
+listing what it would keep, and **Back to normal** there clears it. Setting Z zero always clears the Z nudge.
+
 **Recover** restarts a stopped job from a line, for example after a broken bit: type the line in **from
 line**, or scrub the preview to the spot. Control rebuilds the job's state up to that line, moves back
 carefully, and lets you back out at any point.

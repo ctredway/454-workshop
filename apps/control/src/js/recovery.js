@@ -33,7 +33,8 @@ function jobStartFrom(target){
   if (JOB.active) return;
   if (SERIAL.state !== 'Idle'){ uiNote('Machine isn’t ready', 'Recovery can only start from Idle. The machine is ' + SERIAL.state + '.'); return; }
   if (!SERIAL.homedSeen){ uiNote('Home first', 'Recovery needs a homed machine. Your work zero is stored in the controller and survives homing, so you won\u2019t need to re-zero.'); return; }
-  znRemove('before resuming');                          // the Adjust panel starts at Z +0.00: the controller must too
+  if (!ADJ.keep) znRemove('before resuming');           // the Adjust panel starts at Z +0.00: the controller must too
+  else { znApply(); adjRestore(); }                     // kept: the controller drops both in a reset
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
   var st = stateAtLine(snapped);
@@ -100,6 +101,7 @@ function jobStartFrom(target){
             (st.spindle ? 'spindle + ' + PROFILE.spindle.spinup + 's dwell \u2192 ' : '') +
             (seg0.rapid || st.z >= -0.001 ? 'rapid to Z' : 'rapid to Z+2, feed-plunge to Z') + ' \u2192 stream.\n' +
             toolLine +
+            (adjKeptText() ? '⚠ Kept from before (Adjust panel): ' + adjKeptText() + '.\n' : '') +
             (st.uncertain ? '\u26a0 The file uses machine-coordinate, offset or work-coordinate commands before this line \u2014 the computed position may be wrong. Air-check first.\n' : '') +
             '\nProceed?';
   uiDialog({title:'Resume from line ' + snapped + '?', body:msg, ok:'Resume'}).then(function(go){
@@ -110,8 +112,7 @@ function jobStartFrom(target){
   JOB.total = JOB.list.length; JOB.idx = 0; JOB.acked = 0;
   JOB.inflight = []; JOB.startedAt = performance.now(); JOB.lastLn = snapped;
   JOB.useBS = useBS;
-  ZN.val = 0; znDisplay();
-  sendRT(0x90); sendRT(0x99); sendRT(0x95);
+  adjBegin();
   bzCloseModal(); jogModalClose();
   fitView(); animateView(0, 0.02);
   playing = false; updatePlayBtn();

@@ -55,6 +55,7 @@ function wireMachine(){
   document.querySelectorAll('#ovRow button[data-zn]').forEach(function(b){
     b.addEventListener('click', function(){ znAdjust(parseFloat(b.dataset.zn)); });
   });
+  document.getElementById('ovKeep').addEventListener('change', function(){ adjKeepSet(this.checked); });
   document.getElementById('jobRecover').addEventListener('click', function(){
     var el = document.getElementById('recLine');
     var ln = parseInt(el.value || el.placeholder, 10);

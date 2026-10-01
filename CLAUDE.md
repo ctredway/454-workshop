@@ -121,6 +121,11 @@ without a published release looks to them like a newest release with nothing in 
   M4** (default 7 s; a saved setting is never lowered), a lift before a spindle stop (never downwards), at a
   tool change a lift, a stop, and a restart if the file assumes the spindle is running, and at the end lift,
   stop, back to XY zero, park, with the file's M2 or M30 last.
+- **Every job starts with feed, spindle and rapid at 100% and no Z nudge** (`overrides.js`). The nudge lives in
+  the controller's tool length offset (G43.1), so it's taken off when the job finishes; left on, it shifts the
+  next job with the panel reading Z +0.00 (a square cut 1 mm shallow that way). **Keep for the next job**
+  carries them over, and the next job asks first. Never send a line between Start and the job's first line:
+  its answer would be counted as the job's.
 - **Setting Z zero cancels the controller's tool length offset (G49) first**, by every route, so an old
   BitSetter offset can't be built into the new zero. (One once made a job cut 20 mm too deep.)
 - **The BitSetter searches fast** (the speed that coasts at most 0.5 mm, from `$122`), then measures slowly.

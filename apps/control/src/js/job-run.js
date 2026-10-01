@@ -112,7 +112,21 @@ function jobStart(opts){
   }
   // A nudge still on from a job that didn't finish (an alarm, a failed probe): off before this one is
   // described, well ahead of its first line, so the controller's answer isn't counted as the job's.
-  znRemove('before this job');
+  if (!ADJ.keep) znRemove('before this job');
+  else if (adjKeptText() && !opts.keepChosen){
+    // "Keep for the next job" is ticked, and the Adjust panel can't be reached between jobs: ask here.
+    uiDialog({title: 'Start with the last job’s adjustments?',
+              body: '“Keep for the next job” is ticked in the Adjust panel, so this job would start with:\n\n' +
+                    '   ' + adjKeptText() + '\n\n' +
+                    '• Keep them: this job starts with them, as the last one ended.\n' +
+                    '• Back to normal: feed, spindle and rapid at 100%, no Z nudge, and the tick comes off.',
+              ok: 'Keep them', alt: 'Back to normal', cancel: 'Cancel'}).then(function (v) {
+      if (v === 'alt') adjKeepSet(false);
+      if (v === true || v === 'alt') jobStart(Object.assign({}, opts, {keepChosen: true}));
+    });
+    return;
+  }
+  else { znApply(); adjRestore(); }
   var bb = modelBBox(MODEL);
   var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
   var errs = all.filter(function(i){ return i.sev === 'err'; }).length;
@@ -175,7 +189,7 @@ function jobStart(opts){
                     '\u2022 Set up the BitSetter to have every tool measured automatically, or\n' +
                     '\u2022 re-zero Z yourself at each change: the tool-change prompt will ask you to, with the BitZero or by jogging.',
               ok: 'Re-zero at each change', alt: 'Set up the BitSetter', cancel: 'Cancel'}).then(function (v) {
-      if (v === true) jobStart({rezeroChosen: true});
+      if (v === true) jobStart(Object.assign({}, opts, {rezeroChosen: true}));
       else if (v === 'alt'){
         document.getElementById('setModal').hidden = false;
         var accTab = document.querySelector('#smTabs button[data-sm="smAcc"]');
@@ -238,6 +252,7 @@ function jobStart(opts){
   if (list.parked) endBits.push('then park at ' + list.parked.name + ' (X' + list.parked.x.toFixed(1) + ' Y' + list.parked.y.toFixed(1) + ')');
   msg += 'At the end: ' + endBits.join(', ') + '.\n';
   msg += highStartNote;
+  if (adjKeptText()) msg += '⚠ Kept from the last job (Adjust panel): ' + adjKeptText() + '.\n';
   if (!PROFILE.run.highStart)
     msg += '*** START & STOP HIGH IS OFF — the machine will travel at whatever height the file uses and will not lift before stopping the spindle. Turn it on in Machine settings unless you have a reason. ***\n';
   msg += '\nWork zero set? Right tool loaded? Hand near the e-stop?\n' +
@@ -255,8 +270,8 @@ function jobStart(opts){
   JOB.estimate = MODEL.totalTime; JOB.name = document.getElementById('fileName').textContent;
   JOB.useBS = useBS;
   JOB.parkPending = false;
-  ZN.val = 0; PROBE.tlo = 0; znDisplay();
-  sendRT(0x90); sendRT(0x99); sendRT(0x95); // overrides to 100% for determinism
+  PROBE.tlo = 0;
+  adjBegin();                                // feed, spindle, rapid and the Z nudge: back to normal, or the last job's if kept
   bzCloseModal();
   fitView();
   animateView(0, 0.02); // snap to Top for the run \u2014 camera stays free afterward
@@ -349,7 +364,7 @@ function jobClockTick(){
 function jobDone(){
   jobClockTick();
   JOB.active = false;
-  znRemove('now the job has finished');                // a nudge is for this job only
+  if (!ADJ.keep) znRemove('now the job has finished'); // a nudge is for this job only, unless it's kept
   var total = (performance.now() - JOB.startedAt) / 1000, c = JOB.clock || {machine: total, tool: 0, hold: 0, probe: 0};
   var machine = Math.max(0, c.machine - (JOB.spinupAdded || 0)), est = JOB.estimate || 0;
   var diff = est > 0 ? (machine - est) / est * 100 : null;

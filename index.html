@@ -247,7 +247,9 @@
   #ovRow.on{display:flex}
   #ovRow .ovLbl{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:52px;text-align:right}
   #ovRow button{padding:3px 8px;font-family:var(--mono);font-size:11.5px}
-  #ovRow .ovSep{width:10px}
+  #ovRow{column-gap:16px}
+  #ovRow .ovGrp{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}   /* a label never parts from its buttons */
+  #ovRow .ovKeep{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
   .iconBtn{padding:6px 8px;line-height:0}
   .iconBtn svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .iconBtn.primary svg{stroke:#1a1407}
@@ -320,17 +322,15 @@
       <button id="rbAdjust" title="Feed / spindle / Z adjustments">Adjust</button>
       </span>
       <div id="ovRow">
-        <span class="ovLbl" id="ovF">F 100%</span>
-        <button data-ov="f-10">−10</button><button data-ov="f-1">−1</button><button data-ov="f0">100</button><button data-ov="f+1">+1</button><button data-ov="f+10">+10</button>
-        <span class="ovSep"></span>
-        <span class="ovLbl" id="ovS">S 100%</span>
-        <button data-ov="s-10">−10</button><button data-ov="s-1">−1</button><button data-ov="s0">100</button><button data-ov="s+1">+1</button><button data-ov="s+10">+10</button>
-        <span class="ovSep"></span>
-        <span class="ovLbl">rapid</span>
-        <button data-ov="r25">25</button><button data-ov="r50">50</button><button data-ov="r100">100</button>
-        <span class="ovSep"></span>
-        <span class="ovLbl" id="znLbl">Z +0.00</span>
-        <button data-zn="-0.1">−0.1</button><button data-zn="-0.02">−0.02</button><button data-zn="0">0</button><button data-zn="0.02">+0.02</button><button data-zn="0.1">+0.1</button>
+        <span class="ovGrp"><span class="ovLbl" id="ovF">F 100%</span>
+        <button data-ov="f-10">−10</button><button data-ov="f-1">−1</button><button data-ov="f0">100</button><button data-ov="f+1">+1</button><button data-ov="f+10">+10</button></span>
+        <span class="ovGrp"><span class="ovLbl" id="ovS">S 100%</span>
+        <button data-ov="s-10">−10</button><button data-ov="s-1">−1</button><button data-ov="s0">100</button><button data-ov="s+1">+1</button><button data-ov="s+10">+10</button></span>
+        <span class="ovGrp"><span class="ovLbl">rapid</span>
+        <button data-ov="r25">25</button><button data-ov="r50">50</button><button data-ov="r100">100</button></span>
+        <span class="ovGrp"><span class="ovLbl" id="znLbl">Z +0.00</span>
+        <button data-zn="-0.1">−0.1</button><button data-zn="-0.02">−0.02</button><button data-zn="0">0</button><button data-zn="0.02">+0.02</button><button data-zn="0.1">+0.1</button></span>
+        <label class="ovKeep" title="Unticked: every job starts with feed, spindle and rapid at 100% and no Z nudge. Ticked: the next job starts with these as they are when this one ends, after asking. Setting Z zero always clears the Z nudge."><input type="checkbox" id="ovKeep"> Keep for the next job</label>
       </div>
     </div>
     <div id="legend">
@@ -2936,8 +2936,71 @@ var OV_BYTES = {'f0':0x90,'f+10':0x91,'f-10':0x92,'f+1':0x93,'f-1':0x94,
                 'r100':0x95,'r50':0x96,'r25':0x97,
                 's0':0x99,'s+10':0x9A,'s-10':0x9B,'s+1':0x9C,'s-1':0x9D};
 function sendOverride(key){
+  ADJ.want = null;                                     // a press by hand: stop putting the last job's back
   var b = OV_BYTES[key];
   if (b !== undefined && SERIAL.connected) sendRT(b);
+}
+// Every job starts with feed, spindle and rapid at 100% and no Z nudge, unless "Keep for the next job" is
+// ticked in the Adjust panel. Then the next job starts with the last job's, after asking. The tick isn't
+// saved: 454 Control always opens with it off.
+//   keep: the tick.  ov: [feed, rapid, spindle] % as the controller last reported them during a job.
+//   want: the percentages being put back at the start of a job, until the controller reports them.
+var ADJ = {keep: false, ov: null, want: null, tries: 0};
+function adjKeepSet(on){
+  ADJ.keep = !!on;
+  var el = document.getElementById('ovKeep');
+  if (el) el.checked = ADJ.keep;
+}
+// What a job would start with, in words; '' when everything is at normal or nothing is kept.
+function adjKeptText(){
+  if (!ADJ.keep) return '';
+  var o = ADJ.ov || [100, 100, 100], out = [];
+  if (o[0] !== 100) out.push('feed ' + o[0] + '%');
+  if (o[2] !== 100) out.push('spindle ' + o[2] + '%');
+  if (o[1] !== 100) out.push('rapid ' + o[1] + '%');
+  if (ZN.val) out.push('Z nudge ' + (ZN.val > 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm');
+  return out.join(', ');
+}
+// The controller reported its percentages. During a job they're remembered. (A file's M2 or M30 puts
+// them back to 100% in the controller as the job ends, so they can't be read afterwards.)
+function adjSeen(){
+  if (ADJ.want) adjChase();
+  else if (JOB.active && SERIAL.ov) ADJ.ov = SERIAL.ov.slice(0, 3);
+}
+// Putting kept percentages back: one step for each report from the controller, towards what's wanted.
+// Not all at once: the controller notes "a step was asked for", not how many, so steps sent together
+// count as one. It reports its percentages straight after each change, and that brings the next step.
+function adjChase(){
+  var w = ADJ.want, o = SERIAL.ov;
+  if (!w || !o) return;
+  var step = function (d) { return d >= 10 ? '+10' : d <= -10 ? '-10' : d > 0 ? '+1' : '-1'; };
+  var key = o[0] !== w[0] ? 'f' + step(w[0] - o[0]) : o[2] !== w[2] ? 's' + step(w[2] - o[2]) : o[1] !== w[1] ? 'r' + w[1] : null;
+  if (key === null){
+    ADJ.want = null;
+    if (ADJ.tries) logC('sys', 'kept from the last job: feed ' + w[0] + '%, spindle ' + w[2] + '%, rapid ' + w[1] + '%');
+    return;
+  }
+  if (OV_BYTES[key] === undefined || ++ADJ.tries > 60){
+    ADJ.want = null;
+    logC('err', 'couldn’t put the last job’s feed and spindle percentages back: they are at feed ' + o[0] + '%, spindle ' + o[2] + '%, rapid ' + o[1] + '%. Set them in the Adjust panel.');
+    return;
+  }
+  if (SERIAL.connected) sendRT(OV_BYTES[key]);
+}
+// Kept percentages start going back before the "start?" window, while the machine is idle, so they're
+// in place by the time the job moves. Only a report from the controller starts it: what was last heard
+// (SERIAL.ov) may be from before the file's M30 put everything to 100%.
+function adjRestore(){
+  ADJ.tries = 0;
+  ADJ.want = ADJ.keep && ADJ.ov ? ADJ.ov.slice(0, 3) : null;
+}
+// A job is starting (or resuming). Nothing kept: everything back to normal.
+function adjBegin(){
+  if (!ADJ.keep){
+    ADJ.want = null; ZN.val = 0;
+    sendRT(0x90); sendRT(0x99); sendRT(0x95);          // feed, spindle, rapid: 100%
+  }
+  znDisplay();
 }
 var ZN = {val:0};
 function znDisplay(){
@@ -2962,7 +3025,7 @@ function znAdjust(d){
 // A Z nudge lasts for the job it was made in. Left in the controller it shifts the next job by the same
 // amount with nothing on screen saying so: the Adjust panel starts every job at Z +0.00. So it comes off
 // when the job finishes, and before another starts if the last one ended some other way. The tool's own
-// length offset, from the BitSetter, stays.
+// length offset, from the BitSetter, stays. ("Keep for the next job" leaves it on, and the next job asks.)
 function znRemove(when){
   if (!ZN.val) return;
   var was = ZN.val;
@@ -2971,6 +3034,11 @@ function znRemove(when){
   sendLine('G43.1 Z' + (PROBE.tlo || 0).toFixed(3));
   logC('sys', 'Z nudge of ' + (was >= 0 ? '+' : '') + was.toFixed(2) + ' mm taken off ' + when +
        ': the next job cuts at the depths in its file. Nudge again in that job if it needs it.');
+}
+// A kept nudge, sent again before a job: the controller drops it when it's reset (End job, the red STOP).
+function znApply(){
+  if (!ZN.val || !SERIAL.connected) return;
+  sendLine('G43.1 Z' + ((PROBE.tlo || 0) + ZN.val).toFixed(3));
 }
 
 function tcAutoNote(){
@@ -3413,7 +3481,7 @@ function parseStatus(s){
       SERIAL.wco = {x:v[0], y:v[1], z:v[2]};
     } else if (k === 'FS'){ SERIAL.feed = v[0]; SERIAL.speed = v[1]; }
     else if (k === 'F'){ SERIAL.feed = v[0]; }
-    else if (k === 'Ov'){ SERIAL.ov = v; }
+    else if (k === 'Ov'){ SERIAL.ov = v; adjSeen(); }
   }
   // The position, using this report's work offset: GRBL lists MPos before WCO, so working it out as MPos
   // was read used the previous offset, and after zeroing the work position lagged one report behind.
@@ -4708,7 +4776,21 @@ function jobStart(opts){
   }
   // A nudge still on from a job that didn't finish (an alarm, a failed probe): off before this one is
   // described, well ahead of its first line, so the controller's answer isn't counted as the job's.
-  znRemove('before this job');
+  if (!ADJ.keep) znRemove('before this job');
+  else if (adjKeptText() && !opts.keepChosen){
+    // "Keep for the next job" is ticked, and the Adjust panel can't be reached between jobs: ask here.
+    uiDialog({title: 'Start with the last job’s adjustments?',
+              body: '“Keep for the next job” is ticked in the Adjust panel, so this job would start with:\n\n' +
+                    '   ' + adjKeptText() + '\n\n' +
+                    '• Keep them: this job starts with them, as the last one ended.\n' +
+                    '• Back to normal: feed, spindle and rapid at 100%, no Z nudge, and the tick comes off.',
+              ok: 'Keep them', alt: 'Back to normal', cancel: 'Cancel'}).then(function (v) {
+      if (v === 'alt') adjKeepSet(false);
+      if (v === true || v === 'alt') jobStart(Object.assign({}, opts, {keepChosen: true}));
+    });
+    return;
+  }
+  else { znApply(); adjRestore(); }
   var bb = modelBBox(MODEL);
   var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
   var errs = all.filter(function(i){ return i.sev === 'err'; }).length;
@@ -4771,7 +4853,7 @@ function jobStart(opts){
                     '\u2022 Set up the BitSetter to have every tool measured automatically, or\n' +
                     '\u2022 re-zero Z yourself at each change: the tool-change prompt will ask you to, with the BitZero or by jogging.',
               ok: 'Re-zero at each change', alt: 'Set up the BitSetter', cancel: 'Cancel'}).then(function (v) {
-      if (v === true) jobStart({rezeroChosen: true});
+      if (v === true) jobStart(Object.assign({}, opts, {rezeroChosen: true}));
       else if (v === 'alt'){
         document.getElementById('setModal').hidden = false;
         var accTab = document.querySelector('#smTabs button[data-sm="smAcc"]');
@@ -4834,6 +4916,7 @@ function jobStart(opts){
   if (list.parked) endBits.push('then park at ' + list.parked.name + ' (X' + list.parked.x.toFixed(1) + ' Y' + list.parked.y.toFixed(1) + ')');
   msg += 'At the end: ' + endBits.join(', ') + '.\n';
   msg += highStartNote;
+  if (adjKeptText()) msg += '⚠ Kept from the last job (Adjust panel): ' + adjKeptText() + '.\n';
   if (!PROFILE.run.highStart)
     msg += '*** START & STOP HIGH IS OFF — the machine will travel at whatever height the file uses and will not lift before stopping the spindle. Turn it on in Machine settings unless you have a reason. ***\n';
   msg += '\nWork zero set? Right tool loaded? Hand near the e-stop?\n' +
@@ -4851,8 +4934,8 @@ function jobStart(opts){
   JOB.estimate = MODEL.totalTime; JOB.name = document.getElementById('fileName').textContent;
   JOB.useBS = useBS;
   JOB.parkPending = false;
-  ZN.val = 0; PROBE.tlo = 0; znDisplay();
-  sendRT(0x90); sendRT(0x99); sendRT(0x95); // overrides to 100% for determinism
+  PROBE.tlo = 0;
+  adjBegin();                                // feed, spindle, rapid and the Z nudge: back to normal, or the last job's if kept
   bzCloseModal();
   fitView();
   animateView(0, 0.02); // snap to Top for the run \u2014 camera stays free afterward
@@ -4945,7 +5028,7 @@ function jobClockTick(){
 function jobDone(){
   jobClockTick();
   JOB.active = false;
-  znRemove('now the job has finished');                // a nudge is for this job only
+  if (!ADJ.keep) znRemove('now the job has finished'); // a nudge is for this job only, unless it's kept
   var total = (performance.now() - JOB.startedAt) / 1000, c = JOB.clock || {machine: total, tool: 0, hold: 0, probe: 0};
   var machine = Math.max(0, c.machine - (JOB.spinupAdded || 0)), est = JOB.estimate || 0;
   var diff = est > 0 ? (machine - est) / est * 100 : null;
@@ -5006,7 +5089,8 @@ function jobStartFrom(target){
   if (JOB.active) return;
   if (SERIAL.state !== 'Idle'){ uiNote('Machine isn’t ready', 'Recovery can only start from Idle. The machine is ' + SERIAL.state + '.'); return; }
   if (!SERIAL.homedSeen){ uiNote('Home first', 'Recovery needs a homed machine. Your work zero is stored in the controller and survives homing, so you won\u2019t need to re-zero.'); return; }
-  znRemove('before resuming');                          // the Adjust panel starts at Z +0.00: the controller must too
+  if (!ADJ.keep) znRemove('before resuming');           // the Adjust panel starts at Z +0.00: the controller must too
+  else { znApply(); adjRestore(); }                     // kept: the controller drops both in a reset
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
   var st = stateAtLine(snapped);
@@ -5073,6 +5157,7 @@ function jobStartFrom(target){
             (st.spindle ? 'spindle + ' + PROFILE.spindle.spinup + 's dwell \u2192 ' : '') +
             (seg0.rapid || st.z >= -0.001 ? 'rapid to Z' : 'rapid to Z+2, feed-plunge to Z') + ' \u2192 stream.\n' +
             toolLine +
+            (adjKeptText() ? '⚠ Kept from before (Adjust panel): ' + adjKeptText() + '.\n' : '') +
             (st.uncertain ? '\u26a0 The file uses machine-coordinate, offset or work-coordinate commands before this line \u2014 the computed position may be wrong. Air-check first.\n' : '') +
             '\nProceed?';
   uiDialog({title:'Resume from line ' + snapped + '?', body:msg, ok:'Resume'}).then(function(go){
@@ -5083,8 +5168,7 @@ function jobStartFrom(target){
   JOB.total = JOB.list.length; JOB.idx = 0; JOB.acked = 0;
   JOB.inflight = []; JOB.startedAt = performance.now(); JOB.lastLn = snapped;
   JOB.useBS = useBS;
-  ZN.val = 0; znDisplay();
-  sendRT(0x90); sendRT(0x99); sendRT(0x95);
+  adjBegin();
   bzCloseModal(); jogModalClose();
   fitView(); animateView(0, 0.02);
   playing = false; updatePlayBtn();
@@ -5206,6 +5290,7 @@ function wireMachine(){
   document.querySelectorAll('#ovRow button[data-zn]').forEach(function(b){
     b.addEventListener('click', function(){ znAdjust(parseFloat(b.dataset.zn)); });
   });
+  document.getElementById('ovKeep').addEventListener('change', function(){ adjKeepSet(this.checked); });
   document.getElementById('jobRecover').addEventListener('click', function(){
     var el = document.getElementById('recLine');
     var ln = parseInt(el.value || el.placeholder, 10);

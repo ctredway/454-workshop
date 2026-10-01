@@ -24,7 +24,7 @@ function parseStatus(s){
       SERIAL.wco = {x:v[0], y:v[1], z:v[2]};
     } else if (k === 'FS'){ SERIAL.feed = v[0]; SERIAL.speed = v[1]; }
     else if (k === 'F'){ SERIAL.feed = v[0]; }
-    else if (k === 'Ov'){ SERIAL.ov = v; }
+    else if (k === 'Ov'){ SERIAL.ov = v; adjSeen(); }
   }
   // The position, using this report's work offset: GRBL lists MPos before WCO, so working it out as MPos
   // was read used the previous offset, and after zeroing the work position lagged one report behind.

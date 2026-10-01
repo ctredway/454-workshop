@@ -3,8 +3,71 @@ var OV_BYTES = {'f0':0x90,'f+10':0x91,'f-10':0x92,'f+1':0x93,'f-1':0x94,
                 'r100':0x95,'r50':0x96,'r25':0x97,
                 's0':0x99,'s+10':0x9A,'s-10':0x9B,'s+1':0x9C,'s-1':0x9D};
 function sendOverride(key){
+  ADJ.want = null;                                     // a press by hand: stop putting the last job's back
   var b = OV_BYTES[key];
   if (b !== undefined && SERIAL.connected) sendRT(b);
+}
+// Every job starts with feed, spindle and rapid at 100% and no Z nudge, unless "Keep for the next job" is
+// ticked in the Adjust panel. Then the next job starts with the last job's, after asking. The tick isn't
+// saved: 454 Control always opens with it off.
+//   keep: the tick.  ov: [feed, rapid, spindle] % as the controller last reported them during a job.
+//   want: the percentages being put back at the start of a job, until the controller reports them.
+var ADJ = {keep: false, ov: null, want: null, tries: 0};
+function adjKeepSet(on){
+  ADJ.keep = !!on;
+  var el = document.getElementById('ovKeep');
+  if (el) el.checked = ADJ.keep;
+}
+// What a job would start with, in words; '' when everything is at normal or nothing is kept.
+function adjKeptText(){
+  if (!ADJ.keep) return '';
+  var o = ADJ.ov || [100, 100, 100], out = [];
+  if (o[0] !== 100) out.push('feed ' + o[0] + '%');
+  if (o[2] !== 100) out.push('spindle ' + o[2] + '%');
+  if (o[1] !== 100) out.push('rapid ' + o[1] + '%');
+  if (ZN.val) out.push('Z nudge ' + (ZN.val > 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm');
+  return out.join(', ');
+}
+// The controller reported its percentages. During a job they're remembered. (A file's M2 or M30 puts
+// them back to 100% in the controller as the job ends, so they can't be read afterwards.)
+function adjSeen(){
+  if (ADJ.want) adjChase();
+  else if (JOB.active && SERIAL.ov) ADJ.ov = SERIAL.ov.slice(0, 3);
+}
+// Putting kept percentages back: one step for each report from the controller, towards what's wanted.
+// Not all at once: the controller notes "a step was asked for", not how many, so steps sent together
+// count as one. It reports its percentages straight after each change, and that brings the next step.
+function adjChase(){
+  var w = ADJ.want, o = SERIAL.ov;
+  if (!w || !o) return;
+  var step = function (d) { return d >= 10 ? '+10' : d <= -10 ? '-10' : d > 0 ? '+1' : '-1'; };
+  var key = o[0] !== w[0] ? 'f' + step(w[0] - o[0]) : o[2] !== w[2] ? 's' + step(w[2] - o[2]) : o[1] !== w[1] ? 'r' + w[1] : null;
+  if (key === null){
+    ADJ.want = null;
+    if (ADJ.tries) logC('sys', 'kept from the last job: feed ' + w[0] + '%, spindle ' + w[2] + '%, rapid ' + w[1] + '%');
+    return;
+  }
+  if (OV_BYTES[key] === undefined || ++ADJ.tries > 60){
+    ADJ.want = null;
+    logC('err', 'couldn’t put the last job’s feed and spindle percentages back: they are at feed ' + o[0] + '%, spindle ' + o[2] + '%, rapid ' + o[1] + '%. Set them in the Adjust panel.');
+    return;
+  }
+  if (SERIAL.connected) sendRT(OV_BYTES[key]);
+}
+// Kept percentages start going back before the "start?" window, while the machine is idle, so they're
+// in place by the time the job moves. Only a report from the controller starts it: what was last heard
+// (SERIAL.ov) may be from before the file's M30 put everything to 100%.
+function adjRestore(){
+  ADJ.tries = 0;
+  ADJ.want = ADJ.keep && ADJ.ov ? ADJ.ov.slice(0, 3) : null;
+}
+// A job is starting (or resuming). Nothing kept: everything back to normal.
+function adjBegin(){
+  if (!ADJ.keep){
+    ADJ.want = null; ZN.val = 0;
+    sendRT(0x90); sendRT(0x99); sendRT(0x95);          // feed, spindle, rapid: 100%
+  }
+  znDisplay();
 }
 var ZN = {val:0};
 function znDisplay(){
@@ -29,7 +92,7 @@ function znAdjust(d){
 // A Z nudge lasts for the job it was made in. Left in the controller it shifts the next job by the same
 // amount with nothing on screen saying so: the Adjust panel starts every job at Z +0.00. So it comes off
 // when the job finishes, and before another starts if the last one ended some other way. The tool's own
-// length offset, from the BitSetter, stays.
+// length offset, from the BitSetter, stays. ("Keep for the next job" leaves it on, and the next job asks.)
 function znRemove(when){
   if (!ZN.val) return;
   var was = ZN.val;
@@ -38,6 +101,11 @@ function znRemove(when){
   sendLine('G43.1 Z' + (PROBE.tlo || 0).toFixed(3));
   logC('sys', 'Z nudge of ' + (was >= 0 ? '+' : '') + was.toFixed(2) + ' mm taken off ' + when +
        ': the next job cuts at the depths in its file. Nudge again in that job if it needs it.');
+}
+// A kept nudge, sent again before a job: the controller drops it when it's reset (End job, the red STOP).
+function znApply(){
+  if (!ZN.val || !SERIAL.connected) return;
+  sendLine('G43.1 Z' + ((PROBE.tlo || 0) + ZN.val).toFixed(3));
 }
 
 function tcAutoNote(){

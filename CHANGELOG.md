@@ -30,7 +30,8 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ### 0.6.2-beta.31 — open Carbide Create projects
 - Includes Design 0.114.0: `.c2d` files open, with their shapes, layers and material. The Open window lists
   `.c2d` files.
-- Includes Control 0.31.21: a Z nudge ends with its job, and quick presses leave the newest nudge on.
+- Includes Control 0.31.21: a Z nudge ends with its job, quick presses leave the newest nudge on, and
+  **Keep for the next job** carries the Adjust panel's settings over when you want that.
 
 ### 0.6.2-beta.30 — add sheets to a project
 - Includes Design 0.113.0: sheets can be added, renamed and deleted, each with its own shapes, toolpaths and
@@ -468,7 +469,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
-### 0.31.21 — a Z nudge ends with its job
+### 0.31.21 — a Z nudge ends with its job, unless you keep it
 - **(machine) Fixed: a Z nudge from the Adjust panel stayed on after the job finished.** The nudge is held in
   the controller as part of the tool length offset, and nothing took it off at the end. The next job started
   with the Adjust panel reading Z +0.00 and the controller still shifted: nudge up 1 mm in one job, and the
@@ -480,9 +481,24 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   controller's buffer is full, so a nudge waits its turn. Each new press was put in front of the ones already
   waiting, so they were sent newest first, and the oldest was the one left on, while the panel showed the
   newest total. Now a press replaces the nudge that is still waiting, so one line goes, with the newest total.
-- **Tested** (`apps/control/test/z-nudge.test.mjs`, 10 tests): Control's own job code runs against a stand-in
-  machine that records every line sent. Checked by breaking the code 11 ways; every one was caught. Starting
-  and resuming a job can't be run in these tests, so for those two the test reads the source for the call.
+  Found on the machine: a square set 0.25 in deep came out 0.21 in, 1 mm shallow, after a nudge in the job
+  before it.
+- **(machine) Keep for the next job**, a tick box in the Adjust panel, off whenever Control opens. Off, every
+  job starts with feed, spindle and rapid at 100% and no nudge, as before. On, the nudge stays when the job
+  finishes, and the next job (or a resume) starts with the last job's feed, spindle, rapid and nudge. Because
+  the Adjust panel can't be reached between jobs, starting a job with anything kept asks first, listing it:
+  **Keep them**, **Back to normal** (which also takes the tick off) or Cancel. The Start window lists what
+  was kept as well.
+  - The percentages have to be put back, because a file's M2 or M30 sets them to 100% in the controller.
+    Control remembers what the controller reported during the job and steps back to it, one step for each
+    report: the controller notes that a step was asked for, not how many, so steps sent together count as one.
+    It starts before the Start window, while the machine is idle. A press by hand stops it.
+  - A kept nudge is sent again before the job, since a reset (End job, the red STOP) drops it.
+- **The Adjust row keeps each label with its buttons** when it wraps onto more lines.
+- **Tested** (`apps/control/test/z-nudge.test.mjs`, 28 tests): Control's own job code runs against a stand-in
+  machine that records every line sent and steps its percentages the way GRBL does. Checked by breaking the
+  code 45 ways; every one was caught. A job's start runs here as far as the question; past it, and for a
+  resume, the test reads the source for the calls. Not yet run on a machine.
 
 ### 0.31.20 — Control starts again
 - **Fixed: 454 Control didn't start at all in 0.31.19** (desktop beta.20 to beta.22). A message added in 0.31.19,
