@@ -638,12 +638,11 @@ function cutApply(){
   list.forEach(function (x, i) { if (x.id === tp.id) at = i; });
   if (multiSheet()){
     // a toolpath's shapes must all be on one sheet: its G-code is cut on that sheet's material
-    var sheetsUsed = [];
-    tp.ents.forEach(function (id) { var e = entById(id); if (e && e.layer && sheetsUsed.indexOf(e.layer) < 0) sheetsUsed.push(e.layer); });
+    var sheetsUsed = sheetsOfEnts(tp.ents);
     if (sheetsUsed.length > 1){
       UNDO.pop();                                            // nothing changed: drop the undo step recorded above
       toast('err', 'Those shapes are on different sheets', 'Each sheet is cut from its own material, so a toolpath\u2019s shapes must all be on one sheet (' +
-            sheetsUsed.map(function (id) { return layerById(id).name; }).join(', ') + '). Make one toolpath per sheet.');
+            sheetsUsed.map(sheetTitle).join(', ') + '). Make one toolpath per sheet.');
       return;
     }
     tp.sheet = sheetsUsed[0] || DOC.activeSheet;

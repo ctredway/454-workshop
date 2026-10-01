@@ -15,7 +15,7 @@ function svgExport(){
     if (e.t === 'text'){ var tc = typeof textToCurves === 'function' ? textToCurves(e) : null; if (tc) add(tc, layer); return; }
     items.push({e: e, layer: layer});
   }
-  DOC.ents.forEach(function (e) { add(e, e.con ? '__con' : (e.layer || '')); });
+  DOC.ents.forEach(function (e) { if (entOnSheet(e)) add(e, e.con ? '__con' : (e.layer || '')); });
   if (!items.length) return null;
   var bb = null;
   items.forEach(function (it) { var b = entBBox(it.e); bb = bb ? {x0: Math.min(bb.x0, b.x0), y0: Math.min(bb.y0, b.y0), x1: Math.max(bb.x1, b.x1), y1: Math.max(bb.y1, b.y1)} : b; });

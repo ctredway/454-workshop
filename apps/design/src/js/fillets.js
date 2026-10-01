@@ -21,7 +21,7 @@ function filletAt(w){
   }
   // an arc joining two separate lines
   DOC.ents.forEach(function (e, ai) {
-    if (e.t !== 'arc') return;
+    if (e.t !== 'arc' || !entOnSheet(e)) return;
     var d = arcHitDist(e, w); if (!(d < tol)) return;
     var sw = arcSweepOf(e.a0, e.a1, e.ccw), a1 = e.a0 + (e.ccw ? 1 : -1) * sw;
     var E0 = {x: e.cx + e.r * Math.cos(e.a0), y: e.cy + e.r * Math.sin(e.a0)}, E1 = {x: e.cx + e.r * Math.cos(a1), y: e.cy + e.r * Math.sin(a1)};
@@ -160,7 +160,7 @@ function unfillet(f){
   var allStraight = pts.every(function (q) { return Math.abs(q[2]) < 1e-9; });
   var ne = allStraight ? {t: 'poly', pts: pts.map(function (q) { return [q[0], q[1]]; }), closed: f.closed}
                        : {t: 'path', pts: pts, closed: f.closed};
-  ['tp', 'con', '_id', 'layer', 'vcId', 'vcSheet'].forEach(function (k2) { if (old[k2] !== undefined) ne[k2] = old[k2]; });
+  ['tp', 'con', '_id', 'layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (old[k2] !== undefined) ne[k2] = old[k2]; });
   DOC.ents.splice(f.i, 1, ne);
   return true;
 }
@@ -185,7 +185,7 @@ function doFillet(w, r){
       if (pick.e.tp) ne.tp = true;
       if (pick.e.con) ne.con = true;
       if (pick.e._id) ne._id = pick.e._id;
-      ['layer', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
+      ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
       pushUndo(); DOC.ents.splice(pick.i, 1, ne); return true;
     }
     doFillet.lastMiss = dogboneVertex.why === 'curved' ? 'curved' : (dogboneVertex.why === 'flat' ? 'flat' : 'fit');
@@ -195,7 +195,7 @@ function doFillet(w, r){
   // 2) two line entities near the click
   var near = [];
   DOC.ents.forEach(function(e2, i2){
-    if (e2.t !== 'line') return;
+    if (e2.t !== 'line' || !entOnSheet(e2)) return;
     var d = distToSeg(w.x, w.y, e2.x1, e2.y1, e2.x2, e2.y2);
     if (d < tol*1.6) near.push({i:i2, d:d});
   });

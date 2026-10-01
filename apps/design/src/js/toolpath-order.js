@@ -7,6 +7,13 @@ function tpMoveTo(from, to){
   list.splice(to, 0, item);
   persist(); renderToolpathPanel(); draw();
 }
+// The toolpath before (dir -1) or after (1) this one on the same sheet, as a place in the list; -1 if there's none.
+// Other sheets' toolpaths are in the list too, unseen: moving past one of those would look like nothing happened.
+function tpNeighbour(idx, dir){
+  var list = tpList(), mine = list[idx] ? tpSheetOf(list[idx]) : null;
+  for (var i = idx + dir; i >= 0 && i < list.length; i += dir) if (tpSheetOf(list[i]) === mine) return i;
+  return -1;
+}
 function tpIndex(id){ var at = -1; tpList().forEach(function (x, i) { if (x.id === id) at = i; }); return at; }
 // Anything cut inside a part after that part's outside profile may be cutting a part that is
 // already loose. Only a nudge: with tabs it can be fine, but drilling first is the safe habit.
@@ -16,7 +23,7 @@ function tpOrderNote(tp, idx){
   if (tp.exclude) return null;
   for (var i = 0; i < idx; i++){
     var prior = list[i];
-    if (prior.side !== 'outside' || prior.exclude) continue;
+    if (prior.side !== 'outside' || prior.exclude || tpSheetOf(prior) !== tpSheetOf(tp)) continue;   // another sheet is another piece of material
     var inside = tp.ents.some(function (id) {
       if (prior.ents.indexOf(id) >= 0) return true;        // the very edge that was cut free (a chamfer on it, say)
       var probe = tp.side === 'drill' ? tpDrillPoints([id])[0] : null;

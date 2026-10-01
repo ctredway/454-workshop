@@ -20,6 +20,7 @@ function dxfExport(){
     ents.push({e: e, layer: layerName});
   }
   DOC.ents.forEach(function (e) {
+    if (!entOnSheet(e)) return;                         // the sheet being shown
     var L = layerById(e.layer), nm = lname(L ? L.name : '0');
     if (e.con) nm = useLayer('Construction', {visible: true, locked: false, color: 8});
     else if (e.tp) nm = useLayer('VCarve toolpath preview', {visible: true, locked: false, color: 30});

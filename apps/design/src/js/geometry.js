@@ -93,7 +93,7 @@ function xCircleCircle(c1x,c1y,r1, c2x,c2y,r2){
 function lineCuts(idx){
   var e = DOC.ents[idx], out = [];
   DOC.ents.forEach(function(o, oi){
-    if (oi === idx) return;
+    if (oi === idx || !entOnSheet(o)) return;
     primsOf(o).forEach(function(pr){
       if (pr.c === 0){
         var h = xLineLine(e.x1,e.y1,e.x2,e.y2, pr.x1,pr.y1,pr.x2,pr.y2);
@@ -121,7 +121,7 @@ function circCuts(idx){
     if (isArc ? (sp > 1e-9 && sp < sw - 1e-9) : (sp < sw - 1e-9)) out.push(sp);
   }
   DOC.ents.forEach(function(o, oi){
-    if (oi === idx) return;
+    if (oi === idx || !entOnSheet(o)) return;
     primsOf(o).forEach(function(pr){
       if (pr.c === 0){
         xLineCircle(pr.x1,pr.y1,pr.x2,pr.y2, e.cx,e.cy,e.r).forEach(function(h){

@@ -16,6 +16,7 @@ var LAYER_ICONS = {
 };
 function layerById(id){ return (DOC.layers || []).filter(function (l) { return l.id === id; })[0] || null; }
 function layersInit(){
+  sheetsInit();                                        // sheets first: older drawings kept them as layers
   if (!DOC.layers || !DOC.layers.length) DOC.layers = [{id: 'L1', name: 'Layer 1', visible: true, locked: false}];
   if (!layerById(DOC.activeLayer)) DOC.activeLayer = DOC.layers[0].id;
   DOC.images = DOC.images || []; DOC.imageData = DOC.imageData || {};
@@ -36,8 +37,8 @@ function layerNew(name, atBottom){
   if (atBottom) DOC.layers.unshift(L); else DOC.layers.push(L);   // the bottom is drawn underneath
   return L.id;
 }
-function entVisible(e){ var L = layerById(e.layer); return !L || L.visible; }
-function entEditable(e){ var L = layerById(e.layer); return !L || (L.visible && !L.locked); }
+function entVisible(e){ var L = layerById(e.layer); return (!L || L.visible) && entOnSheet(e); }
+function entEditable(e){ var L = layerById(e.layer); return (!L || (L.visible && !L.locked)) && entOnSheet(e); }
 function layerCount(id){ return DOC.ents.filter(function (e) { return e.layer === id; }).length; }
 function layerImages(id){ return DOC.images.filter(function (im) { return im.layer === id; }); }
 function renderLayers(){

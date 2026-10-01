@@ -170,7 +170,7 @@ function runNest(parts, qty, opts){
   var inParts = {};
   parts.forEach(function(pt){ pt.members.forEach(function(i){ inParts[i] = true; }); });
   DOC.ents.forEach(function(e, i){
-    if (inParts[i] || e.con || e.tp) return;
+    if (inParts[i] || e.con || e.tp || !entOnSheet(e)) return;
     var g = {polys:[], segs:[]}; nestGeom(e, g);
     if (!g.polys.length && !g.segs.length) return;
     var mk = nestMask(g, {x:0, y:0}, 0, c);
@@ -273,7 +273,7 @@ var NEST = null;   // {parts} while the nesting dialog is open
 function openNestDialog(){
   var idxs = SEL.length ? SEL.slice()
            : DOC.ents.map(function(_, i){ return i; }).filter(function(i){ return !DOC.ents[i].con && !DOC.ents[i].tp; });
-  idxs = idxs.filter(function(i){ return DOC.ents[i] && !DOC.ents[i].con && !DOC.ents[i].tp; });
+  idxs = idxs.filter(function(i){ return DOC.ents[i] && !DOC.ents[i].con && !DOC.ents[i].tp && entOnSheet(DOC.ents[i]); });
   if (!idxs.length){ toast('info', 'Nothing to nest', 'Draw or import some parts first, then select them (or select nothing to nest everything).'); return; }
   var parts = nestParts(idxs);
   NEST = {parts:parts};

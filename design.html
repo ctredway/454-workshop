@@ -469,6 +469,8 @@
   footer b{color:var(--ink);font-weight:500}
   #hint{color:var(--faint);font-family:var(--sans)}
   #tpSheetBar{padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+  #tpSheetBar select,#tpSheetBar input{flex:1;min-width:0}
+  #tpSheetBar [hidden]{display:none}                  /* the buttons' own display would override [hidden] too */
   #tpSheetBar[hidden]{display:none}                   /* its own rule: an inline display would override [hidden] */
 </style>
 </head>
@@ -765,7 +767,11 @@
       title="Turn VCarve's toolpaths into 454 toolpaths you can edit, reorder and save as G-code">Make these editable</button></div>
     <div id="tpSheetBar" hidden>
       <label for="tpSheet">Sheet</label>
-      <select id="tpSheet" style="flex:1" title="Each sheet is its own job: its own toolpaths and its own G-code"></select></div>
+      <select id="tpSheet" title="Each sheet is its own piece of material: its own shapes, toolpaths and G-code"></select>
+      <input type="text" id="tpSheetName" hidden autocomplete="off" spellcheck="false" aria-label="Sheet name">
+      <button id="tpSheetAdd" class="tpIcon" aria-label="Add a sheet" title="Add a sheet: another piece of material, with its own shapes, toolpaths and G-code"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
+      <button id="tpSheetRename" class="tpIcon" hidden aria-label="Rename this sheet" title="Rename this sheet"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l.9-3.3L10.8 2.8l2.4 2.4-6.9 6.9z M9.4 4.2l2.4 2.4"/></svg></button>
+      <button id="tpSheetDel" class="tpIcon danger" hidden aria-label="Delete this sheet" title="Delete this sheet, with its shapes and toolpaths"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.2 4.5V3h3.6v1.5M4.4 4.5l.7 8.5h5.8l.7-8.5"/></svg></button></div>
     <div id="tpList"></div>
     <a id="tpDocs" href="docs/cam-reference.html" target="_blank" rel="noopener" style="display:block;padding:10px 12px;font-size:12px;color:var(--muted)">CAM reference &#8599;</a>
     </div>
@@ -1013,7 +1019,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.112.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.113.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1674,6 +1680,7 @@ function pickDim(sx, sy){
   var best = -1, bestD = 8;                          // within 8 screen px
   for (var i = 0; i < DOC.dims.length; i++){
     var d = DOC.dims[i], hh = d._hit;
+    if (!dimOnSheet(d)) continue;
     if (hh && Math.abs(sx - hh.x) < hh.w/2 && Math.abs(sy - hh.y) < hh.h/2) return i;   // the value itself wins
     var an = dimAnchor(d);
     if (!an || d.kind !== 'pair') continue;
@@ -2048,7 +2055,7 @@ function allEdges(){
   var sr = stockRect();
   [[sr.x0,sr.y0,sr.x1,sr.y0],[sr.x1,sr.y0,sr.x1,sr.y1],
    [sr.x1,sr.y1,sr.x0,sr.y1],[sr.x0,sr.y1,sr.x0,sr.y0]].forEach(function(ed){ out.push({ed:ed, ent:-1}); });
-  DOC.ents.forEach(function(e,i){ entityEdges(e).forEach(function(ed){ out.push({ed:ed, ent:i}); }); });
+  DOC.ents.forEach(function(e,i){ if (entOnSheet(e)) entityEdges(e).forEach(function(ed){ out.push({ed:ed, ent:i}); }); });
   return out;
 }
 function distToSeg(px,py, x1,y1,x2,y2){
@@ -2129,12 +2136,14 @@ function docForStorage(pretty){
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
 function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), vcConverted: !!DOC.vcConverted, stock: DOC.stock,
-  layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images}); }
+  layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null}); }
 function docRestore(str){
   var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
   DOC.vcConverted = !!s.vcConverted;
   if (s.stock) DOC.stock = s.stock;
   if (s.layers){ DOC.layers = s.layers; DOC.activeLayer = s.activeLayer; DOC.images = s.images || []; }
+  if (s.sheets) DOC.sheets = s.sheets; else delete DOC.sheets;      // which sheet is shown isn't an edit: kept if it's still there
+  sheetsInit();
   if (typeof renderLayers === 'function') setTimeout(renderLayers, 0);
   // Showing, hiding and ticking aren't edits, so undo leaves them as they are now.
   var keep = {};
@@ -2292,7 +2301,7 @@ function hoverFillet(w){
   // two-line corner?
   var near = [];
   DOC.ents.forEach(function(e2, i2){
-    if (e2.t !== 'line') return;
+    if (e2.t !== 'line' || !entOnSheet(e2)) return;
     var d = distToSeg(w.x, w.y, e2.x1, e2.y1, e2.x2, e2.y2);
     if (d < tol*1.6) near.push(d);
   });
@@ -3643,7 +3652,10 @@ function tpNewId(){ return 'tp' + Date.now().toString(36) + Math.floor(Math.rand
 function tpSignature(ids){
   return ids.map(function (id) {
     var e = entById(id);
-    return e ? snapJSON(e) : 'gone';
+    if (!e) return 'gone';
+    if (e.sheet === undefined) return snapJSON(e);
+    var c = {}; for (var k in e) if (k !== 'sheet') c[k] = e[k];   // which sheet it's on doesn't change how it's cut
+    return snapJSON(c);
   }).join('|');
 }
 function tpOutlines(ids){ return tpOutlinesById(ids).map(function (o) { return o.loop; }); }
@@ -3876,12 +3888,12 @@ function vecFix(issue){
 // count, since those are what toolpaths cut; construction lines are left out, so anything drawn
 // purely for reference can be made construction (X) and it stops being reported.
 function tpUncutIssues(){
-  var list = tpList();
+  var list = tpList().filter(tpOnSheet);
   if (!list.length) return [];
   var used = {}, usedOff = {};
   list.forEach(function (tp) { (tp.ents || []).forEach(function (id) { (tp.exclude ? usedOff : used)[id] = 1; }); });
   var cand = DOC.ents.filter(function (e) {
-    if (e.con || e.tp || e.t === 'text') return false;
+    if (e.con || e.tp || e.t === 'text' || !entOnSheet(e)) return false;
     return e.t === 'circle' || e.t === 'rect' || ((e.t === 'poly' || e.t === 'path') && e.closed);
   });
   var never = [], offOnly = [];
@@ -3909,7 +3921,7 @@ function tpUncutIssues(){
   return out;
 }
 function vecCheckAll(){
-  var ids = DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text'; }).map(entId);
+  var ids = DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text' && entOnSheet(e); }).map(entId);
   var issues = vecCheck(ids).concat(tpUncutIssues());
   if (!issues.length){
     toast('ok', 'The drawing looks ready to cut', ids.length + ' shapes checked: nothing open, nothing doubled, nothing crossing' +
@@ -3926,7 +3938,7 @@ function vecCheckAll(){
             ok: fixable.length ? 'Fix what can be fixed' : 'OK', cancel: 'Leave it', note: !fixable.length}).then(function (go) {
     if (!go || !fixable.length) return;
     fixable.forEach(function (i) { if (i.kind !== 'join' || i.chain) vecFix(i); });
-    var left = vecCheck(DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text'; }).map(entId));
+    var left = vecCheck(DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text' && entOnSheet(e); }).map(entId));
     SEL = [];
     toast(left.length ? 'info' : 'ok', 'Fixed ' + fixable.length + (fixable.length === 1 ? ' problem' : ' problems'),
           left.length ? left.length + ' still need you: ' + left.map(function (i) { return i.text.split('.')[0]; }).join('; ') + '.' : 'The drawing is ready to cut.');
@@ -4879,12 +4891,11 @@ function cutApply(){
   list.forEach(function (x, i) { if (x.id === tp.id) at = i; });
   if (multiSheet()){
     // a toolpath's shapes must all be on one sheet: its G-code is cut on that sheet's material
-    var sheetsUsed = [];
-    tp.ents.forEach(function (id) { var e = entById(id); if (e && e.layer && sheetsUsed.indexOf(e.layer) < 0) sheetsUsed.push(e.layer); });
+    var sheetsUsed = sheetsOfEnts(tp.ents);
     if (sheetsUsed.length > 1){
       UNDO.pop();                                            // nothing changed: drop the undo step recorded above
       toast('err', 'Those shapes are on different sheets', 'Each sheet is cut from its own material, so a toolpath\u2019s shapes must all be on one sheet (' +
-            sheetsUsed.map(function (id) { return layerById(id).name; }).join(', ') + '). Make one toolpath per sheet.');
+            sheetsUsed.map(sheetTitle).join(', ') + '). Make one toolpath per sheet.');
       return;
     }
     tp.sheet = sheetsUsed[0] || DOC.activeSheet;
@@ -4923,6 +4934,13 @@ function tpMoveTo(from, to){
   list.splice(to, 0, item);
   persist(); renderToolpathPanel(); draw();
 }
+// The toolpath before (dir -1) or after (1) this one on the same sheet, as a place in the list; -1 if there's none.
+// Other sheets' toolpaths are in the list too, unseen: moving past one of those would look like nothing happened.
+function tpNeighbour(idx, dir){
+  var list = tpList(), mine = list[idx] ? tpSheetOf(list[idx]) : null;
+  for (var i = idx + dir; i >= 0 && i < list.length; i += dir) if (tpSheetOf(list[i]) === mine) return i;
+  return -1;
+}
 function tpIndex(id){ var at = -1; tpList().forEach(function (x, i) { if (x.id === id) at = i; }); return at; }
 // Anything cut inside a part after that part's outside profile may be cutting a part that is
 // already loose. Only a nudge: with tabs it can be fine, but drilling first is the safe habit.
@@ -4932,7 +4950,7 @@ function tpOrderNote(tp, idx){
   if (tp.exclude) return null;
   for (var i = 0; i < idx; i++){
     var prior = list[i];
-    if (prior.side !== 'outside' || prior.exclude) continue;
+    if (prior.side !== 'outside' || prior.exclude || tpSheetOf(prior) !== tpSheetOf(tp)) continue;   // another sheet is another piece of material
     var inside = tp.ents.some(function (id) {
       if (prior.ents.indexOf(id) >= 0) return true;        // the very edge that was cut free (a chamfer on it, say)
       var probe = tp.side === 'drill' ? tpDrillPoints([id])[0] : null;
@@ -5071,7 +5089,7 @@ function tpJob(){
   notes.push('XY zero: ' + ORIGIN_NAMES[originKey()] + ' of the material');
   var safeZ = tpSurface() + 6, gc = Cam.toGcodeJob(parts, {safeZ: safeZ, notes: notes});
   var base = (DOC.name || UICFG.lastGcodeName || 'toolpaths').replace(/\.(nc|gcode|tap|ngc)$/i, '');
-  if (multiSheet()) base += ' - ' + layerById(DOC.activeSheet).name;       // one file per sheet, named for it
+  if (multiSheet()) base += ' - ' + sheetTitle(DOC.activeSheet);       // one file per sheet, named for it
   var tools = {}; parts.forEach(function (p) { tools[p.tool] = 1; });
   var nt = Object.keys(tools).length;
   var total = multiSheet() ? tpList().filter(function (tp) { return tpSheetOf(tp) === DOC.activeSheet; }).length : tpList().length;
@@ -5176,6 +5194,7 @@ function dxfExport(){
     ents.push({e: e, layer: layerName});
   }
   DOC.ents.forEach(function (e) {
+    if (!entOnSheet(e)) return;                         // the sheet being shown
     var L = layerById(e.layer), nm = lname(L ? L.name : '0');
     if (e.con) nm = useLayer('Construction', {visible: true, locked: false, color: 8});
     else if (e.tp) nm = useLayer('VCarve toolpath preview', {visible: true, locked: false, color: 30});
@@ -5270,7 +5289,7 @@ function svgExport(){
     if (e.t === 'text'){ var tc = typeof textToCurves === 'function' ? textToCurves(e) : null; if (tc) add(tc, layer); return; }
     items.push({e: e, layer: layer});
   }
-  DOC.ents.forEach(function (e) { add(e, e.con ? '__con' : (e.layer || '')); });
+  DOC.ents.forEach(function (e) { if (entOnSheet(e)) add(e, e.con ? '__con' : (e.layer || '')); });
   if (!items.length) return null;
   var bb = null;
   items.forEach(function (it) { var b = entBBox(it.e); bb = bb ? {x0: Math.min(bb.x0, b.x0), y0: Math.min(bb.y0, b.y0), x1: Math.max(bb.x1, b.x1), y1: Math.max(bb.y1, b.y1)} : b; });
@@ -5455,6 +5474,7 @@ var LAYER_ICONS = {
 };
 function layerById(id){ return (DOC.layers || []).filter(function (l) { return l.id === id; })[0] || null; }
 function layersInit(){
+  sheetsInit();                                        // sheets first: older drawings kept them as layers
   if (!DOC.layers || !DOC.layers.length) DOC.layers = [{id: 'L1', name: 'Layer 1', visible: true, locked: false}];
   if (!layerById(DOC.activeLayer)) DOC.activeLayer = DOC.layers[0].id;
   DOC.images = DOC.images || []; DOC.imageData = DOC.imageData || {};
@@ -5475,8 +5495,8 @@ function layerNew(name, atBottom){
   if (atBottom) DOC.layers.unshift(L); else DOC.layers.push(L);   // the bottom is drawn underneath
   return L.id;
 }
-function entVisible(e){ var L = layerById(e.layer); return !L || L.visible; }
-function entEditable(e){ var L = layerById(e.layer); return !L || (L.visible && !L.locked); }
+function entVisible(e){ var L = layerById(e.layer); return (!L || L.visible) && entOnSheet(e); }
+function entEditable(e){ var L = layerById(e.layer); return (!L || (L.visible && !L.locked)) && entOnSheet(e); }
 function layerCount(id){ return DOC.ents.filter(function (e) { return e.layer === id; }).length; }
 function layerImages(id){ return DOC.images.filter(function (im) { return im.layer === id; }); }
 function renderLayers(){
@@ -6060,13 +6080,13 @@ function vcMakeEditable(){
     var split = [];
     made.forEach(function (tp) {
       var bySheet = {};
-      tp.ents.forEach(function (id) { var e = entById(id); var k = e && e.layer ? e.layer : DOC.activeSheet; (bySheet[k] = bySheet[k] || []).push(id); });
+      tp.ents.forEach(function (id) { var e = entById(id); var k = e && sheetById(e.sheet) ? e.sheet : DOC.activeSheet; (bySheet[k] = bySheet[k] || []).push(id); });
       var keys = Object.keys(bySheet);
       if (keys.length <= 1){ tp.sheet = keys[0] || DOC.activeSheet; split.push(tp); return; }
       keys.forEach(function (k) {
         var t2 = JSON.parse(JSON.stringify(tp));
         t2.id = tpNewId(); t2.ents = bySheet[k]; t2.sheet = k;
-        t2.name = tp.name + ' (' + layerById(k).name + ')';
+        t2.name = tp.name + ' (' + sheetTitle(k) + ')';
         tpGenerate(t2); split.push(t2);
       });
     });
@@ -6144,7 +6164,7 @@ function jobSheetOpen(){
       if (m.g === 1 && m.x !== undefined && m.y !== undefined){ ext.x0 = Math.min(ext.x0, m.x); ext.x1 = Math.max(ext.x1, m.x); ext.y0 = Math.min(ext.y0, m.y); ext.y1 = Math.max(ext.y1, m.y); }
       if (m.g === 1 && z !== null) ext.z0 = Math.min(ext.z0, z); });
   });
-  var st = DOC.stock, sheetName = multiSheet() ? layerById(DOC.activeSheet).name : '';
+  var st = DOC.stock, sheetName = multiSheet() ? sheetTitle(DOC.activeSheet) : '';
   var jobName = (DOC.name || UICFG.lastGcodeName || 'Untitled job').replace(/\.(nc|gcode|tap|ngc|454\.json|json)$/i, '');
   var matName = UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? libMaterialName(UICFG.libMaterial) : '';
   var first = tools[0];
@@ -6212,7 +6232,6 @@ function jobSheetPicture(chosen, ext){
   out.push('<rect x="' + X(r.x0) + '" y="' + Y(r.y1) + '" width="' + ((r.x1 - r.x0) * sc).toFixed(1) + '" height="' + ((r.y1 - r.y0) * sc).toFixed(1) + '" fill="#f5f3ee" stroke="#9aa6b2" stroke-width="1"/>');
   DOC.ents.forEach(function (e) {
     if (e.tp || !entVisible(e)) return;
-    if (multiSheet() && e.layer && layerById(e.layer).sheet && e.layer !== DOC.activeSheet) return;
     var pl = vecPolyline(e); if (!pl || pl.pts.length < 2) return;
     out.push('<path d="M' + pl.pts.map(function (q) { return X(q[0]) + ' ' + Y(q[1]); }).join(' L') + (pl.closed ? 'Z' : '') + '" fill="none" stroke="#b9c1c9" stroke-width="1"/>');
   });
@@ -6394,9 +6413,9 @@ function renderMyToolpaths(){
       b.addEventListener('click', function (ev) { ev.stopPropagation(); fn(); });
       return b;
     }
-    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, idx - 1); });
-    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, idx + 1); });
-    up.disabled = idx === 0; dn.disabled = idx === all.length - 1;
+    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, tpNeighbour(idx, -1)); });
+    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, tpNeighbour(idx, 1)); });
+    up.disabled = tpNeighbour(idx, -1) < 0; dn.disabled = tpNeighbour(idx, 1) < 0;
     bar.appendChild(up); bar.appendChild(dn);
     var gap = document.createElement('span'); gap.style.flex = '1'; bar.appendChild(gap);
     var rc = btn('regen', stale ? 'Out of date: recalculate this toolpath from its shapes and the material as they are now'
@@ -6419,8 +6438,8 @@ function renderMyToolpaths(){
         {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); }},
         {label: tp.exclude ? 'Include in the G-code' : 'Leave out of the G-code', fn: function () { tp.exclude = !tp.exclude; persist(); renderToolpathPanel(); }},
         null,
-        {label: 'Run earlier', disabled: idx === 0, fn: function () { tpMoveTo(idx, idx - 1); }},
-        {label: 'Run later', disabled: idx === all.length - 1, fn: function () { tpMoveTo(idx, idx + 1); }},
+        {label: 'Run earlier', disabled: tpNeighbour(idx, -1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, -1)); }},
+        {label: 'Run later', disabled: tpNeighbour(idx, 1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, 1)); }},
         null,
         {label: 'Delete', danger: true, fn: function () { tpDelete(tp.id); }}
       ]);
@@ -6437,7 +6456,7 @@ function renderMyToolpaths(){
     box.appendChild(card);
   });
   var onSheet = multiSheet() ? tpList().filter(function (t2) { return tpSheetOf(t2) === DOC.activeSheet; }) : tpList();
-  var sheetName = multiSheet() ? layerById(DOC.activeSheet).name : '';
+  var sheetName = multiSheet() ? sheetTitle(DOC.activeSheet) : '';
   if (camReady() && multiSheet() && !onSheet.length){
     var none = document.createElement('div');
     none.className = 'tpEmptySheet';
@@ -6923,7 +6942,7 @@ function tplPlan(tpl){
     var names = Array.isArray(t.layers) ? t.layers : [], ents = [];
     DOC.ents.forEach(function (e) {
       var L = layerById(e.layer);
-      if (L && names.indexOf(L.name) >= 0 && !e.con && !e.tp) ents.push(entId(e));
+      if (L && names.indexOf(L.name) >= 0 && !e.con && !e.tp && entOnSheet(e)) ents.push(entId(e));
     });
     var skip = !(t.dia > 0) ? 'no bit size in the template'
              : !names.length ? 'no layer named in the template'
@@ -6952,7 +6971,7 @@ function tplMakeToolpaths(plan){
     if (tp.toolId && !libTool(tp.toolId)) delete tp.toolId;    // not in this library: the size alone
     if (p.t.restAfter !== undefined) tp.restFrom = ids[p.t.restAfter];
     if (tp.tabsOn){ tpAddEvenTabs(tp, tp.tabCount || 4); tp.tabsOn = tpTabTotal(tp) > 0; }
-    if (multiSheet()){ var e0 = entById(tp.ents[0]); tp.sheet = e0 && e0.layer ? e0.layer : DOC.activeSheet; }
+    if (multiSheet()){ var e0 = entById(tp.ents[0]); tp.sheet = e0 && sheetById(e0.sheet) ? e0.sheet : DOC.activeSheet; }
     tpGenerate(tp);
     tpList().push(tp); made.push(tp); ids.push(tp.id);
   });
@@ -7044,59 +7063,191 @@ function tplButtons(){
   tr.appendChild(ts); tr.appendChild(ta); box.appendChild(tr);
 }
 // ---- sheets ----
-// A multi-sheet VCarve project is several jobs sharing one drawing space. Each sheet is a layer
-// (marked sheet: true); one is shown at a time; each toolpath belongs to one sheet; Save G-code saves
-// the chosen sheet only, so a file can never put two sheets' parts on one piece of material.
-function sheetLayers(){ return (DOC.layers || []).filter(function (l) { return l.sheet; }); }
-function multiSheet(){ return sheetLayers().length > 1; }
+// A project can have several sheets: several pieces of material, cut one after another. They share one drawing
+// space and one Job setup (size, thickness, zero). Each shape is on one sheet (e.sheet); one sheet is shown at a
+// time; each toolpath belongs to one sheet; and Save G-code saves the chosen sheet only, so a file can never
+// put two sheets' parts on one piece of material. Sheets are separate from layers: every sheet has every layer.
+// A drawing with no DOC.sheets, or just one, is a single job. Sheets come from a multi-sheet VCarve project,
+// or from Add sheet.
+function sheetList(){ return DOC.sheets || []; }
+function sheetById(id){ return sheetList().filter(function (s) { return s.id === id; })[0] || null; }
+function sheetTitle(id){ var s = sheetById(id); return s ? s.name : ''; }
+function multiSheet(){ return sheetList().length > 1; }
+// Is this shape on the sheet being shown? (Always, in a single-sheet drawing.)
+function entOnSheet(e){ return !multiSheet() || !e.sheet || e.sheet === DOC.activeSheet; }
+// Keeps the sheets consistent; run wherever layersInit is, and before anything changes sheets.
+function sheetsInit(){
+  // drawings saved before 0.113.0 kept each sheet as a layer (sheet: true): its shapes move to an ordinary layer
+  var old = (DOC.layers || []).filter(function (l) { return l.sheet; });
+  if (old.length){
+    DOC.sheets = old.map(function (l) { return {id: l.id, name: l.name}; });      // the ids toolpaths already use
+    DOC.layers = DOC.layers.filter(function (l) { return !l.sheet; });
+    if (!DOC.layers.length) DOC.layers = [{id: 'L1', name: 'Layer 1', visible: true, locked: false}];
+    var isOld = {}; old.forEach(function (l) { isOld[l.id] = true; });
+    (DOC.ents || []).forEach(function (e) { if (isOld[e.layer]){ e.sheet = e.layer; e.layer = DOC.layers[0].id; } });
+    if (isOld[DOC.activeLayer]) DOC.activeLayer = DOC.layers[0].id;
+  }
+  if (!sheetList().length){ delete DOC.sheets; delete DOC.activeSheet; return; }
+  if (!sheetById(DOC.activeSheet)) DOC.activeSheet = DOC.sheets[0].id;
+  if (multiSheet()) (DOC.ents || []).forEach(function (e) { if (!sheetById(e.sheet)) e.sheet = DOC.activeSheet; });   // new shapes go on the sheet being shown
+}
 function sheetsFromCrv(ex){
   var used = [];
   (ex.contourSheets || []).forEach(function (id) { if (id && used.indexOf(id) < 0) used.push(id); });
   if (used.length < 2) return null;
   var named = {}; (ex.sheets || []).forEach(function (sh) { named[sh.id] = sh.name; });
-  var layers = used.map(function (id, k) {
-    return {id: 'S' + (k + 1), name: named[id] || ('Sheet ' + (k + 1)), visible: k === 0, locked: false, sheet: true, vcSheet: id};
-  });
-  DOC.layers = layers;
+  var sheets = used.map(function (id, k) { return {id: 'S' + (k + 1), name: named[id] || ('Sheet ' + (k + 1)), vcSheet: id}; });
+  DOC.sheets = sheets;
   DOC.ents.forEach(function (e) {
-    var L = e.vcSheet ? layers.filter(function (l) { return l.vcSheet === e.vcSheet; })[0] : null;
-    e.layer = (L || layers[0]).id;
+    var s = e.vcSheet ? sheets.filter(function (x) { return x.vcSheet === e.vcSheet; })[0] : null;
+    e.sheet = (s || sheets[0]).id;
   });
-  DOC.activeLayer = DOC.activeSheet = layers[0].id;
-  return layers;
+  DOC.activeSheet = sheets[0].id;
+  return sheets;
 }
 // the sheet a toolpath belongs to: its own, or where most of its shapes are
 function tpSheetOf(tp){
   if (!multiSheet()) return null;
-  if (tp.sheet) return tp.sheet;
+  if (tp.sheet && sheetById(tp.sheet)) return tp.sheet;
   var count = {};
-  (tp.ents || []).forEach(function (id) { var e = entById(id); if (e && e.layer) count[e.layer] = (count[e.layer] || 0) + 1; });
+  (tp.ents || []).forEach(function (id) { var e = entById(id); if (e && sheetById(e.sheet)) count[e.sheet] = (count[e.sheet] || 0) + 1; });
   var best = null; Object.keys(count).forEach(function (k) { if (!best || count[k] > count[best]) best = k; });
   return best || DOC.activeSheet;
 }
+function tpOnSheet(tp){ return !multiSheet() || tpSheetOf(tp) === DOC.activeSheet; }
+// the sheets its shapes are on (a toolpath's shapes must all be on one)
+function sheetsOfEnts(ids){
+  var out = [];
+  (ids || []).forEach(function (id) { var e = entById(id); if (e && sheetById(e.sheet) && out.indexOf(e.sheet) < 0) out.push(e.sheet); });
+  return out;
+}
+// a dimension shows with the shapes it measures
+function dimOnSheet(d){
+  if (!multiSheet()) return true;
+  var e = d && d.a !== undefined ? entById(d.a) : null;
+  return !e || entOnSheet(e);
+}
+// The toolpath editor is working on this sheet's shapes: sheets wait until it's closed
+function sheetBusy(){
+  if (typeof CUT === 'undefined' || !CUT) return false;
+  toast('info', 'Finish the toolpath first', 'Press Create or Cancel in the toolpath editor, then change sheets.');
+  sheetBar();
+  return true;
+}
 function sheetShow(id){
-  if (!multiSheet()) return;
-  sheetLayers().forEach(function (l) { l.visible = l.id === id; });
-  DOC.activeSheet = DOC.activeLayer = id;
-  SEL = [];
+  sheetsInit();
+  if (!multiSheet() || !sheetById(id) || sheetBusy()) return;
+  DOC.activeSheet = id;
+  SEL = []; CUTSEL = null; DIMSEL = null;
   persist(); renderLayers(); renderToolpathPanel(); draw();
 }
+// Add a sheet, and show it. The first time, what's drawn so far becomes Sheet 1.
+function sheetAdd(){
+  if (sheetBusy()) return null;
+  pushUndo();
+  sheetsInit();
+  if (!sheetList().length){ DOC.sheets = [{id: 'S1', name: 'Sheet 1'}]; DOC.activeSheet = 'S1'; }
+  var here = DOC.activeSheet;
+  DOC.ents.forEach(function (e) { if (!sheetById(e.sheet)) e.sheet = here; });              // everything so far stays where it is
+  tpList().forEach(function (tp) { if (!sheetById(tp.sheet)) tp.sheet = sheetsOfEnts(tp.ents)[0] || here; });
+  var n = 1; while (sheetById('S' + n)) n++;
+  var used = {}; DOC.sheets.forEach(function (s) { var m = /^Sheet (\d+)$/.exec(s.name); if (m) used[+m[1]] = true; });
+  var k = 1; while (used[k]) k++;
+  var s = {id: 'S' + n, name: 'Sheet ' + k};
+  DOC.sheets.push(s);
+  sheetShow(s.id);
+  toast('ok', s.name + ' added', 'It’s empty. Draw on it, or cut shapes from another sheet (Ctrl+X) and paste them here in place (Ctrl+Shift+V). ' +
+        'Every sheet uses the material in Job setup, and has its own toolpaths and its own G-code.');
+  return s.id;
+}
+// '' if the name can be used, or why not
+function sheetNameProblem(id, name){
+  if (!name) return 'A sheet needs a name.';
+  if (sheetList().some(function (s) { return s.id !== id && s.name.toLowerCase() === name.toLowerCase(); })) return 'There’s already a sheet called “' + name + '”.';
+  return '';
+}
+function sheetRename(id, name){
+  var s = sheetById(id); name = String(name || '').trim();
+  if (!s || name === s.name) return true;
+  var why = sheetNameProblem(id, name);
+  if (why){ toast('warn', 'Not renamed', why); return false; }
+  pushUndo();
+  s.name = name;
+  persist(); renderToolpathPanel();
+  return true;
+}
+function sheetCount(id){ return DOC.ents.filter(function (e) { return e.sheet === id && !e.tp; }).length; }
+// Delete a sheet with its shapes and toolpaths, after asking if there's anything on it. The last sheet stays.
+function sheetDelete(id){
+  sheetsInit();
+  var s = sheetById(id);
+  if (!s || !multiSheet() || sheetBusy()) return;
+  var n = sheetCount(id), tps = tpList().filter(function (tp) { return tpSheetOf(tp) === id; });
+  function go(){
+    pushUndo();
+    var goneTp = {}; tps.forEach(function (tp) { goneTp[tp.id] = true; });
+    var goneEnt = {}; DOC.ents.forEach(function (e) { if (e.sheet === id) goneEnt[entId(e)] = true; });
+    DOC.dims = (DOC.dims || []).filter(function (d) { return !(goneEnt[d.a] || goneEnt[d.b]); });
+    DOC.ents = DOC.ents.filter(function (e) { return e.sheet !== id; });
+    DOC.toolpaths = tpList().filter(function (tp) { return !goneTp[tp.id]; });
+    var at = DOC.sheets.indexOf(s);
+    DOC.sheets = DOC.sheets.filter(function (x) { return x.id !== id; });
+    if (DOC.activeSheet === id) DOC.activeSheet = DOC.sheets[Math.min(at, DOC.sheets.length - 1)].id;
+    SEL = []; CUTSEL = null; DIMSEL = null;
+    if (typeof tpRebuildAll === 'function') tpRebuildAll();
+    persist(); renderLayers(); renderToolpathPanel(); draw();
+  }
+  if (!n && !tps.length) return go();
+  var what = [n ? n + (n === 1 ? ' shape' : ' shapes') : '', tps.length ? tps.length + (tps.length === 1 ? ' toolpath' : ' toolpaths') : ''].filter(Boolean).join(' and ');
+  uiDialog({title: 'Delete “' + s.name + '”?', body: 'This deletes the sheet and the ' + what + ' on it. Undo brings them back.', ok: 'Delete', danger: true})
+    .then(function (yes) { if (yes) go(); });
+}
+// The Sheet bar at the top of the Toolpaths panel: choose, add, rename, delete
 function sheetBar(){
   var bar = document.getElementById('tpSheetBar');
   if (!bar) return;
-  var sh = sheetLayers();
-  bar.hidden = sh.length < 2;
-  if (sh.length < 2) return;
-  if (!sh.some(function (l) { return l.id === DOC.activeSheet; })) DOC.activeSheet = sh[0].id;
-  var sel = document.getElementById('tpSheet');
+  sheetsInit();
+  var sh = sheetList(), sel = document.getElementById('tpSheet');
+  bar.hidden = false;
+  sel.hidden = false;
+  var nameIn = document.getElementById('tpSheetName'); if (nameIn) nameIn.hidden = true;
   sel.innerHTML = '';
-  sh.forEach(function (l) {
-    var o2 = document.createElement('option'); o2.value = l.id;
-    var n2 = tpList().filter(function (tp) { return tpSheetOf(tp) === l.id; }).length;
-    o2.textContent = l.name + (n2 ? ' (' + n2 + (n2 === 1 ? ' toolpath)' : ' toolpaths)') : '');
+  (sh.length ? sh : [{id: '', name: 'Sheet 1'}]).forEach(function (s) {
+    var o2 = document.createElement('option'); o2.value = s.id;
+    var n2 = multiSheet() ? tpList().filter(function (tp) { return tpSheetOf(tp) === s.id; }).length : 0;
+    o2.textContent = s.name + (n2 ? ' (' + n2 + (n2 === 1 ? ' toolpath)' : ' toolpaths)') : '');
     sel.appendChild(o2);
   });
-  sel.value = DOC.activeSheet;
+  sel.value = sh.length ? DOC.activeSheet : '';
+  sel.disabled = sh.length < 2;
+  var ren = document.getElementById('tpSheetRename'), del = document.getElementById('tpSheetDel');
+  if (ren) ren.hidden = !sh.length;
+  if (del) del.hidden = sh.length < 2;
+}
+// Rename the sheet being shown, in place: the list becomes a box to type in
+function sheetRenameStart(){
+  var s = sheetById(DOC.activeSheet), sel = document.getElementById('tpSheet'), inp = document.getElementById('tpSheetName');
+  if (!s || !inp) return;
+  sel.hidden = true; inp.hidden = false; inp.value = s.name; inp.focus(); if (inp.select) inp.select();
+}
+function sheetRenameEnd(save){
+  var inp = document.getElementById('tpSheetName');
+  if (!inp || inp.hidden) return;
+  inp.hidden = true;
+  if (save) sheetRename(DOC.activeSheet, inp.value);
+  sheetBar();
+}
+function sheetWire(){
+  var on = function (id, ev, fn) { var el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  on('tpSheet', 'change', function (e) { sheetShow(e.target.value); });
+  on('tpSheetAdd', 'click', sheetAdd);
+  on('tpSheetRename', 'click', sheetRenameStart);
+  on('tpSheetDel', 'click', function () { sheetDelete(DOC.activeSheet); });
+  on('tpSheetName', 'keydown', function (e) {
+    if (e.key === 'Enter'){ e.preventDefault(); sheetRenameEnd(true); }
+    else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); sheetRenameEnd(false); }
+  });
+  on('tpSheetName', 'blur', function () { sheetRenameEnd(true); });
 }
 function renderToolpathPanel(){
   sheetBar();                                  // always current, even after opening another project
@@ -9218,6 +9369,7 @@ function clipInsert(clip, dx, dy, said){
     if (dx || dy) moveEntity(e, dx, dy);
     var L = layerById(e.layer);                       // its own layer if it's there to draw on; else the current one
     if (!L || !L.visible || L.locked) e.layer = DOC.activeLayer;
+    if (multiSheet()) e.sheet = DOC.activeSheet; else delete e.sheet;      // onto the sheet being shown
     sel.push(DOC.ents.length);
     DOC.ents.push(e);
     if (from) newId[from] = entId(e);
@@ -9619,7 +9771,7 @@ function draw(){
     }
     if (CUT && CUT.previewHoles && CUT.previewHoles.length) drawHoles(CUT.previewHoles, CUT.dia, true);
     if (DOC.toolpaths && !CUT) DOC.toolpaths.forEach(function (tp) {
-      if (tp.side !== 'drill' || !tp.holes) return;
+      if (tp.side !== 'drill' || !tp.holes || !tpOnSheet(tp)) return;
       if (CUTSEL && tp.id !== CUTSEL) return;
       if (tp.hidden && tp.id !== CUTSEL) return;
       drawHoles(tp.holes, tp.dia, tp.id === CUTSEL);
@@ -9643,7 +9795,7 @@ function draw(){
       // One selected: show only that one, highlighted, with its tabs. (The selected one's path used
       // not to be drawn at all: only its tabs, because the branches were chained so this never ran.)
       DOC.toolpaths.forEach(function (tp) {
-        if (!tp.moves || !tp.moves.length) return;
+        if (!tp.moves || !tp.moves.length || !tpOnSheet(tp)) return;
         if (CUTSEL && tp.id !== CUTSEL) return;
         if (tp.hidden && tp.id !== CUTSEL) return;                // hidden, unless it's the one picked
         drawMoves(tp.moves, tp.id === CUTSEL ? THEME.accent : cutCol, 'rgba(120,130,140,.35)');
@@ -9753,6 +9905,7 @@ function draw(){
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     DOC.dims.forEach(function(d, di){
+      if (!dimOnSheet(d)){ d._hit = null; return; }   // on another sheet
       var lab = dimLabel(d), anc = dimAnchor(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);
@@ -10231,7 +10384,7 @@ function xCircleCircle(c1x,c1y,r1, c2x,c2y,r2){
 function lineCuts(idx){
   var e = DOC.ents[idx], out = [];
   DOC.ents.forEach(function(o, oi){
-    if (oi === idx) return;
+    if (oi === idx || !entOnSheet(o)) return;
     primsOf(o).forEach(function(pr){
       if (pr.c === 0){
         var h = xLineLine(e.x1,e.y1,e.x2,e.y2, pr.x1,pr.y1,pr.x2,pr.y2);
@@ -10259,7 +10412,7 @@ function circCuts(idx){
     if (isArc ? (sp > 1e-9 && sp < sw - 1e-9) : (sp < sw - 1e-9)) out.push(sp);
   }
   DOC.ents.forEach(function(o, oi){
-    if (oi === idx) return;
+    if (oi === idx || !entOnSheet(o)) return;
     primsOf(o).forEach(function(pr){
       if (pr.c === 0){
         xLineCircle(pr.x1,pr.y1,pr.x2,pr.y2, e.cx,e.cy,e.r).forEach(function(h){
@@ -10387,7 +10540,7 @@ function trimPathEntity(idx, w){
   for (var fi = 0; fi < (closed ? FN : FN-1); fi++){
     var a = fpt(fi), b2 = fpt(fi+1);
     DOC.ents.forEach(function(o, oi){
-      if (oi === idx) return;
+      if (oi === idx || !entOnSheet(o)) return;
       primsOf(o).forEach(function(pr){
         if (pr.c === 0){
           var h = xLineLine(a.x,a.y,b2.x,b2.y, pr.x1,pr.y1,pr.x2,pr.y2);
@@ -10472,7 +10625,7 @@ function doExtend(w){
     var B = fromEnd2 ? {x:e.x2,y:e.y2} : {x:e.x1,y:e.y1};
     var best = null;
     DOC.ents.forEach(function(o, oi){
-      if (oi === idx) return;
+      if (oi === idx || !entOnSheet(o)) return;
       primsOf(o).forEach(function(pr){
         if (pr.c === 0){
           var h = xLineLine(A.x,A.y,B.x,B.y, pr.x1,pr.y1,pr.x2,pr.y2);
@@ -10495,7 +10648,7 @@ function doExtend(w){
     var dEnd = Math.hypot(w.x-q1.x, w.y-q1.y) < Math.hypot(w.x-q0.x, w.y-q0.y);
     var cand = [];
     DOC.ents.forEach(function(o, oi){
-      if (oi === idx) return;
+      if (oi === idx || !entOnSheet(o)) return;
       primsOf(o).forEach(function(pr){
         var pts = pr.c === 0 ? xLineCircle(pr.x1,pr.y1,pr.x2,pr.y2, e.cx,e.cy,e.r).filter(function(h){ return h.t > -1e-4 && h.t < 1+1e-4; })
                              : xCircleCircle(e.cx,e.cy,e.r, pr.cx,pr.cy,pr.r).filter(function(q){ return angOnArc(pr, Math.atan2(q.y-pr.cy, q.x-pr.cx)); });
@@ -10863,7 +11016,7 @@ function runNest(parts, qty, opts){
   var inParts = {};
   parts.forEach(function(pt){ pt.members.forEach(function(i){ inParts[i] = true; }); });
   DOC.ents.forEach(function(e, i){
-    if (inParts[i] || e.con || e.tp) return;
+    if (inParts[i] || e.con || e.tp || !entOnSheet(e)) return;
     var g = {polys:[], segs:[]}; nestGeom(e, g);
     if (!g.polys.length && !g.segs.length) return;
     var mk = nestMask(g, {x:0, y:0}, 0, c);
@@ -10966,7 +11119,7 @@ var NEST = null;   // {parts} while the nesting dialog is open
 function openNestDialog(){
   var idxs = SEL.length ? SEL.slice()
            : DOC.ents.map(function(_, i){ return i; }).filter(function(i){ return !DOC.ents[i].con && !DOC.ents[i].tp; });
-  idxs = idxs.filter(function(i){ return DOC.ents[i] && !DOC.ents[i].con && !DOC.ents[i].tp; });
+  idxs = idxs.filter(function(i){ return DOC.ents[i] && !DOC.ents[i].con && !DOC.ents[i].tp && entOnSheet(DOC.ents[i]); });
   if (!idxs.length){ toast('info', 'Nothing to nest', 'Draw or import some parts first, then select them (or select nothing to nest everything).'); return; }
   var parts = nestParts(idxs);
   NEST = {parts:parts};
@@ -11209,7 +11362,7 @@ function filletAt(w){
   }
   // an arc joining two separate lines
   DOC.ents.forEach(function (e, ai) {
-    if (e.t !== 'arc') return;
+    if (e.t !== 'arc' || !entOnSheet(e)) return;
     var d = arcHitDist(e, w); if (!(d < tol)) return;
     var sw = arcSweepOf(e.a0, e.a1, e.ccw), a1 = e.a0 + (e.ccw ? 1 : -1) * sw;
     var E0 = {x: e.cx + e.r * Math.cos(e.a0), y: e.cy + e.r * Math.sin(e.a0)}, E1 = {x: e.cx + e.r * Math.cos(a1), y: e.cy + e.r * Math.sin(a1)};
@@ -11348,7 +11501,7 @@ function unfillet(f){
   var allStraight = pts.every(function (q) { return Math.abs(q[2]) < 1e-9; });
   var ne = allStraight ? {t: 'poly', pts: pts.map(function (q) { return [q[0], q[1]]; }), closed: f.closed}
                        : {t: 'path', pts: pts, closed: f.closed};
-  ['tp', 'con', '_id', 'layer', 'vcId', 'vcSheet'].forEach(function (k2) { if (old[k2] !== undefined) ne[k2] = old[k2]; });
+  ['tp', 'con', '_id', 'layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (old[k2] !== undefined) ne[k2] = old[k2]; });
   DOC.ents.splice(f.i, 1, ne);
   return true;
 }
@@ -11373,7 +11526,7 @@ function doFillet(w, r){
       if (pick.e.tp) ne.tp = true;
       if (pick.e.con) ne.con = true;
       if (pick.e._id) ne._id = pick.e._id;
-      ['layer', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
+      ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
       pushUndo(); DOC.ents.splice(pick.i, 1, ne); return true;
     }
     doFillet.lastMiss = dogboneVertex.why === 'curved' ? 'curved' : (dogboneVertex.why === 'flat' ? 'flat' : 'fit');
@@ -11383,7 +11536,7 @@ function doFillet(w, r){
   // 2) two line entities near the click
   var near = [];
   DOC.ents.forEach(function(e2, i2){
-    if (e2.t !== 'line') return;
+    if (e2.t !== 'line' || !entOnSheet(e2)) return;
     var d = distToSeg(w.x, w.y, e2.x1, e2.y1, e2.x2, e2.y2);
     if (d < tol*1.6) near.push({i:i2, d:d});
   });
@@ -13761,7 +13914,7 @@ function wire(){
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
   document.getElementById('tpVcConvert').addEventListener('click', vcMakeEditable);
-  document.getElementById('tpSheet').addEventListener('change', function(e){ sheetShow(e.target.value); });
+  sheetWire();
   document.getElementById('tpRecalcAll').addEventListener('click', tpRecalcAll);
   document.getElementById('jsClose').addEventListener('click', jobSheetClose);
   document.getElementById('jsPrint').addEventListener('click', function(){ window.print(); });
@@ -14137,7 +14290,7 @@ function wire(){
     var sheetsMade = sheetsFromCrv(ex);
     syncStockUI(); persist(); fit();
     if (sheetsMade) toast('info', 'This project has ' + sheetsMade.length + ' sheets',
-      sheetsMade.map(function (l) { return l.name; }).join(', ') + ': each is on its own layer, with its own toolpaths and its own G-code. Choose the sheet at the top of the Toolpaths panel.');
+      sheetsMade.map(function (l) { return l.name; }).join(', ') + ': each has its own toolpaths and its own G-code. Choose the sheet at the top of the Toolpaths panel.');
     impClose();
     renderToolpathPanel();
     if (DOC.stock.t > 0)

@@ -63,7 +63,7 @@ version is in `src/js/version.js`.
 | `js/dimension-params.js` | 60 | Dimensions driven by parameters: remembered, applied again when they change |
 | `js/params-panel.js` | 126 | The Parameters list (fx): add, change, rename, delete |
 | `js/tp-params.js` | 86 | Parameters in toolpaths: depth and tabs remembered, recalculated, refused when they can't be worked out |
-| `js/sheets.js` | 55 | sheets (multi-sheet VCarve projects) |
+| `js/sheets.js` | 187 | sheets: add, rename, delete, show one; each shape, dimension and toolpath is on one sheet |
 | `js/toolpath-panel.js` | 116 | the Toolpaths panel |
 | `js/tool-library.js` | 187 | the tool library: reading VCarve’s, storage, lookups |
 | `js/tool-library-dialog.js` | 374 | the Tool library dialog, and editing the library |

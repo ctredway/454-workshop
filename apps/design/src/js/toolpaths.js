@@ -16,7 +16,10 @@ function tpNewId(){ return 'tp' + Date.now().toString(36) + Math.floor(Math.rand
 function tpSignature(ids){
   return ids.map(function (id) {
     var e = entById(id);
-    return e ? snapJSON(e) : 'gone';
+    if (!e) return 'gone';
+    if (e.sheet === undefined) return snapJSON(e);
+    var c = {}; for (var k in e) if (k !== 'sheet') c[k] = e[k];   // which sheet it's on doesn't change how it's cut
+    return snapJSON(c);
   }).join('|');
 }
 function tpOutlines(ids){ return tpOutlinesById(ids).map(function (o) { return o.loop; }); }

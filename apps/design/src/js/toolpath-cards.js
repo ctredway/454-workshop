@@ -100,9 +100,9 @@ function renderMyToolpaths(){
       b.addEventListener('click', function (ev) { ev.stopPropagation(); fn(); });
       return b;
     }
-    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, idx - 1); });
-    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, idx + 1); });
-    up.disabled = idx === 0; dn.disabled = idx === all.length - 1;
+    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, tpNeighbour(idx, -1)); });
+    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, tpNeighbour(idx, 1)); });
+    up.disabled = tpNeighbour(idx, -1) < 0; dn.disabled = tpNeighbour(idx, 1) < 0;
     bar.appendChild(up); bar.appendChild(dn);
     var gap = document.createElement('span'); gap.style.flex = '1'; bar.appendChild(gap);
     var rc = btn('regen', stale ? 'Out of date: recalculate this toolpath from its shapes and the material as they are now'
@@ -125,8 +125,8 @@ function renderMyToolpaths(){
         {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); }},
         {label: tp.exclude ? 'Include in the G-code' : 'Leave out of the G-code', fn: function () { tp.exclude = !tp.exclude; persist(); renderToolpathPanel(); }},
         null,
-        {label: 'Run earlier', disabled: idx === 0, fn: function () { tpMoveTo(idx, idx - 1); }},
-        {label: 'Run later', disabled: idx === all.length - 1, fn: function () { tpMoveTo(idx, idx + 1); }},
+        {label: 'Run earlier', disabled: tpNeighbour(idx, -1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, -1)); }},
+        {label: 'Run later', disabled: tpNeighbour(idx, 1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, 1)); }},
         null,
         {label: 'Delete', danger: true, fn: function () { tpDelete(tp.id); }}
       ]);
@@ -143,7 +143,7 @@ function renderMyToolpaths(){
     box.appendChild(card);
   });
   var onSheet = multiSheet() ? tpList().filter(function (t2) { return tpSheetOf(t2) === DOC.activeSheet; }) : tpList();
-  var sheetName = multiSheet() ? layerById(DOC.activeSheet).name : '';
+  var sheetName = multiSheet() ? sheetTitle(DOC.activeSheet) : '';
   if (camReady() && multiSheet() && !onSheet.length){
     var none = document.createElement('div');
     none.className = 'tpEmptySheet';

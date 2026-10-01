@@ -20,7 +20,7 @@ function allEdges(){
   var sr = stockRect();
   [[sr.x0,sr.y0,sr.x1,sr.y0],[sr.x1,sr.y0,sr.x1,sr.y1],
    [sr.x1,sr.y1,sr.x0,sr.y1],[sr.x0,sr.y1,sr.x0,sr.y0]].forEach(function(ed){ out.push({ed:ed, ent:-1}); });
-  DOC.ents.forEach(function(e,i){ entityEdges(e).forEach(function(ed){ out.push({ed:ed, ent:i}); }); });
+  DOC.ents.forEach(function(e,i){ if (entOnSheet(e)) entityEdges(e).forEach(function(ed){ out.push({ed:ed, ent:i}); }); });
   return out;
 }
 function distToSeg(px,py, x1,y1,x2,y2){

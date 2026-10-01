@@ -29,7 +29,7 @@ function tplPlan(tpl){
     var names = Array.isArray(t.layers) ? t.layers : [], ents = [];
     DOC.ents.forEach(function (e) {
       var L = layerById(e.layer);
-      if (L && names.indexOf(L.name) >= 0 && !e.con && !e.tp) ents.push(entId(e));
+      if (L && names.indexOf(L.name) >= 0 && !e.con && !e.tp && entOnSheet(e)) ents.push(entId(e));
     });
     var skip = !(t.dia > 0) ? 'no bit size in the template'
              : !names.length ? 'no layer named in the template'
@@ -58,7 +58,7 @@ function tplMakeToolpaths(plan){
     if (tp.toolId && !libTool(tp.toolId)) delete tp.toolId;    // not in this library: the size alone
     if (p.t.restAfter !== undefined) tp.restFrom = ids[p.t.restAfter];
     if (tp.tabsOn){ tpAddEvenTabs(tp, tp.tabCount || 4); tp.tabsOn = tpTabTotal(tp) > 0; }
-    if (multiSheet()){ var e0 = entById(tp.ents[0]); tp.sheet = e0 && e0.layer ? e0.layer : DOC.activeSheet; }
+    if (multiSheet()){ var e0 = entById(tp.ents[0]); tp.sheet = e0 && sheetById(e0.sheet) ? e0.sheet : DOC.activeSheet; }
     tpGenerate(tp);
     tpList().push(tp); made.push(tp); ids.push(tp.id);
   });

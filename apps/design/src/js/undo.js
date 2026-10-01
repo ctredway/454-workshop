@@ -24,12 +24,14 @@ function docForStorage(pretty){
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
 function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), vcConverted: !!DOC.vcConverted, stock: DOC.stock,
-  layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images}); }
+  layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null}); }
 function docRestore(str){
   var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
   DOC.vcConverted = !!s.vcConverted;
   if (s.stock) DOC.stock = s.stock;
   if (s.layers){ DOC.layers = s.layers; DOC.activeLayer = s.activeLayer; DOC.images = s.images || []; }
+  if (s.sheets) DOC.sheets = s.sheets; else delete DOC.sheets;      // which sheet is shown isn't an edit: kept if it's still there
+  sheetsInit();
   if (typeof renderLayers === 'function') setTimeout(renderLayers, 0);
   // Showing, hiding and ticking aren't edits, so undo leaves them as they are now.
   var keep = {};

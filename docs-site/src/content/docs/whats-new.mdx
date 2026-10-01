@@ -12,6 +12,18 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.30
+
+1 October 2026
+
+- **Add sheets to a project.** A project that needs more than one piece of material can have a sheet for each.
+  The **+** in the Sheet bar, at the top of the Toolpaths panel, adds one; the pencil renames it and the bin
+  deletes it. Each sheet has its own shapes, toolpaths and G-code file. Before, Design could only show the
+  sheets of a VCarve project. See [Sheets](design-workspace.html#sheets).
+- **Fixed: a multi-sheet project drew every sheet's toolpaths on top of each other (cutting).** Only the
+  shown sheet's toolpaths are drawn now. The G-code was always one sheet's.
+- Trim, Extend, Fillet, Nest, Check and the DXF and SVG exports now work on the sheet being shown only.
+
 ## 0.6.2-beta.29
 
 1 October 2026

@@ -326,7 +326,7 @@ function draw(){
     }
     if (CUT && CUT.previewHoles && CUT.previewHoles.length) drawHoles(CUT.previewHoles, CUT.dia, true);
     if (DOC.toolpaths && !CUT) DOC.toolpaths.forEach(function (tp) {
-      if (tp.side !== 'drill' || !tp.holes) return;
+      if (tp.side !== 'drill' || !tp.holes || !tpOnSheet(tp)) return;
       if (CUTSEL && tp.id !== CUTSEL) return;
       if (tp.hidden && tp.id !== CUTSEL) return;
       drawHoles(tp.holes, tp.dia, tp.id === CUTSEL);
@@ -350,7 +350,7 @@ function draw(){
       // One selected: show only that one, highlighted, with its tabs. (The selected one's path used
       // not to be drawn at all: only its tabs, because the branches were chained so this never ran.)
       DOC.toolpaths.forEach(function (tp) {
-        if (!tp.moves || !tp.moves.length) return;
+        if (!tp.moves || !tp.moves.length || !tpOnSheet(tp)) return;
         if (CUTSEL && tp.id !== CUTSEL) return;
         if (tp.hidden && tp.id !== CUTSEL) return;                // hidden, unless it's the one picked
         drawMoves(tp.moves, tp.id === CUTSEL ? THEME.accent : cutCol, 'rgba(120,130,140,.35)');
@@ -460,6 +460,7 @@ function draw(){
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     DOC.dims.forEach(function(d, di){
+      if (!dimOnSheet(d)){ d._hit = null; return; }   // on another sheet
       var lab = dimLabel(d), anc = dimAnchor(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);

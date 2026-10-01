@@ -107,6 +107,10 @@ without a published release looks to them like a newest release with nothing in 
   `toolpath-generate.js`; the CAM engine takes ramp length 0 as a plunge.)
 - **Copy and paste bring dimensions** (`clipboard.js`): a dimension whose shapes were all copied is pasted
   measuring the copies; one to a shape left behind stays. Ctrl+V pastes at the pointer, Ctrl+Shift+V in place.
+- **Sheets are separate from layers** (`sheets.js`): `DOC.sheets` lists them, each shape has `e.sheet`, each
+  toolpath `tp.sheet`, and one sheet is shown at a time (`entOnSheet`, `tpOnSheet`). Sheets share one drawing
+  space, so anything that looks at "the other shapes" must skip other sheets'. Save G-code saves the shown
+  sheet only. All sheets use Job setup's material. A drawing with no sheets, or one, is a single job.
 - **Design asks before closing an unsaved drawing** (not saved to a file since it changed; `unsaved.js`):
   the desktop app asks Save… / Don't save / Cancel, for the window, a quit and a restart to update.
   Don't save, New, or opening another drawing puts it aside; File → Recover last drawing brings it back.

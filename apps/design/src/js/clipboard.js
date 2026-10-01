@@ -102,6 +102,7 @@ function clipInsert(clip, dx, dy, said){
     if (dx || dy) moveEntity(e, dx, dy);
     var L = layerById(e.layer);                       // its own layer if it's there to draw on; else the current one
     if (!L || !L.visible || L.locked) e.layer = DOC.activeLayer;
+    if (multiSheet()) e.sheet = DOC.activeSheet; else delete e.sheet;      // onto the sheet being shown
     sel.push(DOC.ents.length);
     DOC.ents.push(e);
     if (from) newId[from] = entId(e);

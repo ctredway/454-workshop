@@ -289,4 +289,11 @@ SHOTS.push(
     cutStartClick({ x: 110, y: 85 }); await wait(100); cutApply(); await wait(300);`, '4, 2, 156, 98, 12', true),
 );
 
+// The Sheet bar, in a project with two sheets
+SHOTS.push({ name: 'design-sheets', page: 'design.html', size: [1400, 900],
+  setup: SIGN_SETUP + ` toast = function () {}; sheetAdd(); sheetRename('S1', 'Sign'); sheetRename('S2', 'Backer'); sheetShow('S1'); await wait(300);
+    document.querySelectorAll('.toast, #toasts > *').forEach((t) => t.remove());
+    const top = document.querySelector('#tpPanel').getBoundingClientRect(), bar = document.getElementById('tpSheetBar').getBoundingClientRect();
+    return { x: top.left, y: bar.top - 6, width: top.width, height: bar.height + 12 };` });
+
 module.exports = { PRELUDE, SHOTS };

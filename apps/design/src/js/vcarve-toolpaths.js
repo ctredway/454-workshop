@@ -194,13 +194,13 @@ function vcMakeEditable(){
     var split = [];
     made.forEach(function (tp) {
       var bySheet = {};
-      tp.ents.forEach(function (id) { var e = entById(id); var k = e && e.layer ? e.layer : DOC.activeSheet; (bySheet[k] = bySheet[k] || []).push(id); });
+      tp.ents.forEach(function (id) { var e = entById(id); var k = e && sheetById(e.sheet) ? e.sheet : DOC.activeSheet; (bySheet[k] = bySheet[k] || []).push(id); });
       var keys = Object.keys(bySheet);
       if (keys.length <= 1){ tp.sheet = keys[0] || DOC.activeSheet; split.push(tp); return; }
       keys.forEach(function (k) {
         var t2 = JSON.parse(JSON.stringify(tp));
         t2.id = tpNewId(); t2.ents = bySheet[k]; t2.sheet = k;
-        t2.name = tp.name + ' (' + layerById(k).name + ')';
+        t2.name = tp.name + ' (' + sheetTitle(k) + ')';
         tpGenerate(t2); split.push(t2);
       });
     });

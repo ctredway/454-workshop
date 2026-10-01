@@ -103,7 +103,7 @@ function trimPathEntity(idx, w){
   for (var fi = 0; fi < (closed ? FN : FN-1); fi++){
     var a = fpt(fi), b2 = fpt(fi+1);
     DOC.ents.forEach(function(o, oi){
-      if (oi === idx) return;
+      if (oi === idx || !entOnSheet(o)) return;
       primsOf(o).forEach(function(pr){
         if (pr.c === 0){
           var h = xLineLine(a.x,a.y,b2.x,b2.y, pr.x1,pr.y1,pr.x2,pr.y2);
@@ -188,7 +188,7 @@ function doExtend(w){
     var B = fromEnd2 ? {x:e.x2,y:e.y2} : {x:e.x1,y:e.y1};
     var best = null;
     DOC.ents.forEach(function(o, oi){
-      if (oi === idx) return;
+      if (oi === idx || !entOnSheet(o)) return;
       primsOf(o).forEach(function(pr){
         if (pr.c === 0){
           var h = xLineLine(A.x,A.y,B.x,B.y, pr.x1,pr.y1,pr.x2,pr.y2);
@@ -211,7 +211,7 @@ function doExtend(w){
     var dEnd = Math.hypot(w.x-q1.x, w.y-q1.y) < Math.hypot(w.x-q0.x, w.y-q0.y);
     var cand = [];
     DOC.ents.forEach(function(o, oi){
-      if (oi === idx) return;
+      if (oi === idx || !entOnSheet(o)) return;
       primsOf(o).forEach(function(pr){
         var pts = pr.c === 0 ? xLineCircle(pr.x1,pr.y1,pr.x2,pr.y2, e.cx,e.cy,e.r).filter(function(h){ return h.t > -1e-4 && h.t < 1+1e-4; })
                              : xCircleCircle(e.cx,e.cy,e.r, pr.cx,pr.cy,pr.r).filter(function(q){ return angOnArc(pr, Math.atan2(q.y-pr.cy, q.x-pr.cx)); });

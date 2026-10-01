@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.30 — add sheets to a project
+- Includes Design 0.113.0: sheets can be added, renamed and deleted, each with its own shapes, toolpaths and
+  G-code; and only the shown sheet's toolpaths are drawn.
+
 ### 0.6.2-beta.29 — "Job setup", not "Settings"; a button that did nothing
 - Includes Design 0.112.1: messages say the material's thickness is set in Job setup, where it is, and the
   "Set the material thickness first" window's button opens it (it did nothing before).
@@ -262,6 +266,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   cam.js and geom.js are public.
 
 ## Docs
+
+### Sheets (2026-10-01)
+- **Design workspace** has a Sheets section, with a picture of the Sheet bar; the CAM reference's note on
+  multi-sheet VCarve projects points to it. Every screenshot retaken, since the Toolpaths panel now always
+  shows the Sheet bar (11 changed).
 
 ### What's new; pictures of the newest features (2026-10-01)
 - **A What's new page**: each version's changes in a few plain lines, newest first, from beta.22, with changes
@@ -811,6 +820,30 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.113.0 — add sheets to a project
+- **A project can have several sheets**, one for each piece of material. Design could show the sheets of a
+  multi-sheet VCarve project, but there was no way to add one. The **Sheet** bar at the top of the Toolpaths
+  panel is now always there, with **+** (add), a pencil (rename) and a bin (delete). The first sheet added
+  makes what's drawn so far Sheet 1. New shapes go on the sheet being shown; cut and paste in place moves
+  shapes between sheets, with their dimensions. Every sheet uses the material in Job setup.
+- **Sheets are their own thing now, not layers.** A sheet used to be a layer, so a sheet couldn't have layers
+  of its own, and toolpath templates (matched by layer name) had nothing to match. Each shape now records its
+  sheet, and every sheet has every layer. Drawings saved the old way are converted when opened.
+- **Only the shown sheet's toolpaths are drawn.** The drawing showed every sheet's toolpath previews at once,
+  on top of each other. (The G-code was always the chosen sheet's only.)
+- **What's on another sheet is left alone**: Trim, Extend and Fillet don't cut against it; it can't be picked
+  or snapped to; Nest doesn't treat it as an obstacle or nest it; Check doesn't report it; DXF and SVG export
+  the shown sheet; a template applies to the shown sheet; moving a toolpath up or down moves it among its own
+  sheet's; and a profile on one sheet no longer warns about a pocket on another.
+- **Deleting a sheet** asks first if anything is on it, and removes its shapes, dimensions and toolpaths; Undo
+  brings them back. The last sheet can't be deleted. Sheets wait while the toolpath editor is open.
+- Adding a sheet doesn't mark toolpaths "the drawing changed": which sheet a shape is on doesn't change how
+  it's cut.
+- Tested (17 tests): adding, showing, renaming, deleting and undoing; toolpaths, Check and Save G-code per
+  sheet; paste; trim, extend, fillet and picking; templates; exports and nesting; toolpath order; old drawings; VCarve
+  projects. Each checked by breaking it on purpose (38 ways; one, a second safeguard for the same thing, can't
+  be told apart). Tried in the desktop app.
 
 ### 0.112.1 — "Job setup", not "Settings"
 - **Messages about the material's thickness, and Z zero, said to change them "in Settings".** They're in Job

@@ -360,7 +360,7 @@ Opening a VCarve `.crv` brings in its drawing, material and zero, and its toolpa
 
 **How shapes are found:** each toolpath in a VCarve project records which vectors it uses, by VCarve’s own IDs, and 454 reads that record. It doesn’t depend on where anything is, so it works even if parts were moved after VCarve last calculated. For a project without that record, 454 falls back to matching VCarve’s saved toolpath previews to the shapes; if nothing matches, the toolpath comes across with no shapes: open it with **Edit** and pick them. Inlay toolpaths aren’t converted yet.
 
-**Multi-sheet projects:** each sheet comes in as its own layer, named as in VCarve, with one shown at a time. Choose the sheet at the top of the Toolpaths panel: it shows that sheet, lists its toolpaths, and **Save G-code** saves that sheet only, named for it. Each sheet is its own job, cut from its own material, so a toolpath can’t mix shapes from different sheets.
+**Multi-sheet projects:** each sheet comes in as a sheet, named as in VCarve, with one shown at a time. Choose the sheet at the top of the Toolpaths panel: it shows that sheet, lists its toolpaths, and **Save G-code** saves that sheet only, named for it. Each sheet is its own job, cut from its own material, so a toolpath can’t mix shapes from different sheets. See [Sheets](design-workspace.html#sheets) for adding your own.
 
 <Compare kind="diff" title="Check converted jobs">
 

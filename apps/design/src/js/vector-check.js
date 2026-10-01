@@ -208,12 +208,12 @@ function vecFix(issue){
 // count, since those are what toolpaths cut; construction lines are left out, so anything drawn
 // purely for reference can be made construction (X) and it stops being reported.
 function tpUncutIssues(){
-  var list = tpList();
+  var list = tpList().filter(tpOnSheet);
   if (!list.length) return [];
   var used = {}, usedOff = {};
   list.forEach(function (tp) { (tp.ents || []).forEach(function (id) { (tp.exclude ? usedOff : used)[id] = 1; }); });
   var cand = DOC.ents.filter(function (e) {
-    if (e.con || e.tp || e.t === 'text') return false;
+    if (e.con || e.tp || e.t === 'text' || !entOnSheet(e)) return false;
     return e.t === 'circle' || e.t === 'rect' || ((e.t === 'poly' || e.t === 'path') && e.closed);
   });
   var never = [], offOnly = [];
@@ -241,7 +241,7 @@ function tpUncutIssues(){
   return out;
 }
 function vecCheckAll(){
-  var ids = DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text'; }).map(entId);
+  var ids = DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text' && entOnSheet(e); }).map(entId);
   var issues = vecCheck(ids).concat(tpUncutIssues());
   if (!issues.length){
     toast('ok', 'The drawing looks ready to cut', ids.length + ' shapes checked: nothing open, nothing doubled, nothing crossing' +
@@ -258,7 +258,7 @@ function vecCheckAll(){
             ok: fixable.length ? 'Fix what can be fixed' : 'OK', cancel: 'Leave it', note: !fixable.length}).then(function (go) {
     if (!go || !fixable.length) return;
     fixable.forEach(function (i) { if (i.kind !== 'join' || i.chain) vecFix(i); });
-    var left = vecCheck(DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text'; }).map(entId));
+    var left = vecCheck(DOC.ents.filter(function (e) { return !e.con && !e.tp && e.t !== 'text' && entOnSheet(e); }).map(entId));
     SEL = [];
     toast(left.length ? 'info' : 'ok', 'Fixed ' + fixable.length + (fixable.length === 1 ? ' problem' : ' problems'),
           left.length ? left.length + ' still need you: ' + left.map(function (i) { return i.text.split('.')[0]; }).join('; ') + '.' : 'The drawing is ready to cut.');

@@ -154,6 +154,7 @@ function pickDim(sx, sy){
   var best = -1, bestD = 8;                          // within 8 screen px
   for (var i = 0; i < DOC.dims.length; i++){
     var d = DOC.dims[i], hh = d._hit;
+    if (!dimOnSheet(d)) continue;
     if (hh && Math.abs(sx - hh.x) < hh.w/2 && Math.abs(sy - hh.y) < hh.h/2) return i;   // the value itself wins
     var an = dimAnchor(d);
     if (!an || d.kind !== 'pair') continue;

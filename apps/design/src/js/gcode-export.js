@@ -100,7 +100,7 @@ function tpJob(){
   notes.push('XY zero: ' + ORIGIN_NAMES[originKey()] + ' of the material');
   var safeZ = tpSurface() + 6, gc = Cam.toGcodeJob(parts, {safeZ: safeZ, notes: notes});
   var base = (DOC.name || UICFG.lastGcodeName || 'toolpaths').replace(/\.(nc|gcode|tap|ngc)$/i, '');
-  if (multiSheet()) base += ' - ' + layerById(DOC.activeSheet).name;       // one file per sheet, named for it
+  if (multiSheet()) base += ' - ' + sheetTitle(DOC.activeSheet);       // one file per sheet, named for it
   var tools = {}; parts.forEach(function (p) { tools[p.tool] = 1; });
   var nt = Object.keys(tools).length;
   var total = multiSheet() ? tpList().filter(function (tp) { return tpSheetOf(tp) === DOC.activeSheet; }).length : tpList().length;

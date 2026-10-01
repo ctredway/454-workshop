@@ -51,7 +51,7 @@ function hoverFillet(w){
   // two-line corner?
   var near = [];
   DOC.ents.forEach(function(e2, i2){
-    if (e2.t !== 'line') return;
+    if (e2.t !== 'line' || !entOnSheet(e2)) return;
     var d = distToSeg(w.x, w.y, e2.x1, e2.y1, e2.x2, e2.y2);
     if (d < tol*1.6) near.push(d);
   });

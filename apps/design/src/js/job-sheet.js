@@ -54,7 +54,7 @@ function jobSheetOpen(){
       if (m.g === 1 && m.x !== undefined && m.y !== undefined){ ext.x0 = Math.min(ext.x0, m.x); ext.x1 = Math.max(ext.x1, m.x); ext.y0 = Math.min(ext.y0, m.y); ext.y1 = Math.max(ext.y1, m.y); }
       if (m.g === 1 && z !== null) ext.z0 = Math.min(ext.z0, z); });
   });
-  var st = DOC.stock, sheetName = multiSheet() ? layerById(DOC.activeSheet).name : '';
+  var st = DOC.stock, sheetName = multiSheet() ? sheetTitle(DOC.activeSheet) : '';
   var jobName = (DOC.name || UICFG.lastGcodeName || 'Untitled job').replace(/\.(nc|gcode|tap|ngc|454\.json|json)$/i, '');
   var matName = UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? libMaterialName(UICFG.libMaterial) : '';
   var first = tools[0];
@@ -122,7 +122,6 @@ function jobSheetPicture(chosen, ext){
   out.push('<rect x="' + X(r.x0) + '" y="' + Y(r.y1) + '" width="' + ((r.x1 - r.x0) * sc).toFixed(1) + '" height="' + ((r.y1 - r.y0) * sc).toFixed(1) + '" fill="#f5f3ee" stroke="#9aa6b2" stroke-width="1"/>');
   DOC.ents.forEach(function (e) {
     if (e.tp || !entVisible(e)) return;
-    if (multiSheet() && e.layer && layerById(e.layer).sheet && e.layer !== DOC.activeSheet) return;
     var pl = vecPolyline(e); if (!pl || pl.pts.length < 2) return;
     out.push('<path d="M' + pl.pts.map(function (q) { return X(q[0]) + ' ' + Y(q[1]); }).join(' L') + (pl.closed ? 'Z' : '') + '" fill="none" stroke="#b9c1c9" stroke-width="1"/>');
   });

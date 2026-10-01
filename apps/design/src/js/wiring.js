@@ -117,7 +117,7 @@ function wire(){
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
   document.getElementById('tpVcConvert').addEventListener('click', vcMakeEditable);
-  document.getElementById('tpSheet').addEventListener('change', function(e){ sheetShow(e.target.value); });
+  sheetWire();
   document.getElementById('tpRecalcAll').addEventListener('click', tpRecalcAll);
   document.getElementById('jsClose').addEventListener('click', jobSheetClose);
   document.getElementById('jsPrint').addEventListener('click', function(){ window.print(); });
@@ -493,7 +493,7 @@ function wire(){
     var sheetsMade = sheetsFromCrv(ex);
     syncStockUI(); persist(); fit();
     if (sheetsMade) toast('info', 'This project has ' + sheetsMade.length + ' sheets',
-      sheetsMade.map(function (l) { return l.name; }).join(', ') + ': each is on its own layer, with its own toolpaths and its own G-code. Choose the sheet at the top of the Toolpaths panel.');
+      sheetsMade.map(function (l) { return l.name; }).join(', ') + ': each has its own toolpaths and its own G-code. Choose the sheet at the top of the Toolpaths panel.');
     impClose();
     renderToolpathPanel();
     if (DOC.stock.t > 0)

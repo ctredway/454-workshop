@@ -14,6 +14,7 @@ import editor from '../../assets/shots/design-toolpath-editor.png';
 import check from '../../assets/shots/design-check.png';
 import settings from '../../assets/shots/design-settings.png';
 import statusBar from '../../assets/shots/design-status-bar.png';
+import sheetsBar from '../../assets/shots/design-sheets.png';
 
 Everything in 454 Design around the drawing tools themselves: setting up the job, layers, your tools, the
 Toolpaths panel, checking the drawing, and Settings. For the drawing tools, see
@@ -67,8 +68,32 @@ while you work on the rest.
 - **With shapes selected**, a layer offers to move them onto it.
 - **The bin** deletes a layer; the last one can't be deleted. **+ Layer** adds one.
 
-A multi-sheet VCarve project brings each sheet in as its own layer; see the
-[CAM reference](cam-reference.html) for how sheets work.
+Layers and [sheets](#sheets) are separate: every sheet has every layer.
+
+## Sheets
+
+A project that needs more than one piece of material has a **sheet** for each: the sides of a cabinet on one,
+the shelves on another. The **Sheet** bar is at the top of the Toolpaths panel.
+
+<Shot src={sheetsBar} alt="The Sheet bar: the word Sheet, a list showing Sign (4 toolpaths), and three buttons: a plus, a pencil and a bin." caption="The Sheet bar: choose the sheet, add one, rename it or delete it." />
+
+- **Add a sheet** with the **+** beside the sheet's name. The first time, everything drawn so far becomes
+  **Sheet 1**, and the new **Sheet 2** is shown, empty.
+- **One sheet is shown at a time.** Choose it from the list. Its shapes, dimensions and toolpaths are the only
+  ones you see, select, snap to, trim against, nest, check and export.
+- **New shapes go on the sheet being shown.** To move shapes to another sheet, cut them (<kbd>Ctrl</kbd>+<kbd>X</kbd>),
+  change sheets, and paste in place (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>). Their dimensions come with
+  them; make their toolpaths again on the new sheet.
+- **Each sheet has its own toolpaths and its own G-code.** **Save G-code** saves the sheet being shown, in a
+  file named for it (`Cabinet - Sides.nc`), so a file can never put two sheets' parts on one piece of
+  material. A toolpath can't take shapes from two sheets. The job sheet and the previews cover the sheet being
+  shown too.
+- **The pencil** renames the sheet. **The bin** deletes it, with its shapes, dimensions and toolpaths, after
+  asking; <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings it back. The last sheet can't be deleted.
+- **Every sheet uses the material in Job setup**: the same size, thickness and zero. [Parameters](design-tools.html#parameters)
+  and layers are shared by all the sheets, so a toolpath template applies to each sheet by its layer names.
+
+A multi-sheet VCarve project opens with its sheets, named as in VCarve.
 
 ## The tool library
 
