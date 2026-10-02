@@ -46,6 +46,21 @@ function tpRename(tp, name){
   persist(); renderToolpathPanel();
   return true;
 }
+// The eye on a card: show or hide the toolpath on the drawing. A picked toolpath (its card is tinted: the one just
+// made or edited, or clicked) is drawn alone, and drawn even when hidden, so with one picked the eye changed its
+// icon and nothing on the drawing. Pressing an eye lets go of the pick, so the drawing shows what the eyes say.
+// Whether a toolpath is drawn: with one picked, only that one (hidden or not); with none picked, every one on the
+// sheet being shown that isn't hidden.
+function tpDrawn(tp){
+  if (!tpOnSheet(tp)) return false;
+  if (CUTSEL) return tp.id === CUTSEL;
+  return !tp.hidden;
+}
+function tpShowHide(tp){
+  tp.hidden = !tp.hidden;
+  CUTSEL = null;
+  persist(); renderToolpathPanel(); draw();
+}
 var TP_RENAMING = null;                                  // the id of the toolpath whose card shows a name box
 function tpRenameStart(tp){ TP_RENAMING = tp.id; renderToolpathPanel(); }
 // What a folded card must still say: anything that would stop the job or spoil the cut.
@@ -146,7 +161,7 @@ function renderMyToolpaths(){
     eye.title = tp.hidden ? 'Hidden on the drawing \u2014 click to show' : 'Shown on the drawing \u2014 click to hide';
     eye.setAttribute('aria-label', (tp.hidden ? 'Show ' : 'Hide ') + tp.name);
     eye.setAttribute('aria-pressed', tp.hidden ? 'false' : 'true');
-    eye.addEventListener('click', function (ev) { ev.stopPropagation(); tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); });
+    eye.addEventListener('click', function (ev) { ev.stopPropagation(); tpShowHide(tp); });
     h.appendChild(eye);
     card.appendChild(h);
     if (!tp.folded){
@@ -204,7 +219,7 @@ function renderMyToolpaths(){
         {label: 'Rename\u2026', fn: function () { tpRenameStart(tp); }},
         {label: tp.folded ? 'Show details' : 'Fold to the title', fn: function () { tp.folded = !tp.folded; persist(); renderToolpathPanel(); }},
         null,
-        {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); }},
+        {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tpShowHide(tp); }},
         {label: tp.exclude ? 'Include in the G-code' : 'Leave out of the G-code', fn: function () { tp.exclude = !tp.exclude; persist(); renderToolpathPanel(); }},
         null,
         {label: 'Run earlier', disabled: tpNeighbour(idx, -1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, -1)); }},

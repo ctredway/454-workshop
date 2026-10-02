@@ -326,9 +326,7 @@ function draw(){
     }
     if (CUT && CUT.previewHoles && CUT.previewHoles.length) drawHoles(CUT.previewHoles, CUT.dia, true);
     if (DOC.toolpaths && !CUT) DOC.toolpaths.forEach(function (tp) {
-      if (tp.side !== 'drill' || !tp.holes || !tpOnSheet(tp)) return;
-      if (CUTSEL && tp.id !== CUTSEL) return;
-      if (tp.hidden && tp.id !== CUTSEL) return;
+      if (tp.side !== 'drill' || !tp.holes || !tpDrawn(tp)) return;
       drawHoles(tp.holes, tp.dia, tp.id === CUTSEL);
     });
     drawTracePreview(ctx);
@@ -350,9 +348,7 @@ function draw(){
       // One selected: show only that one, highlighted, with its tabs. (The selected one's path used
       // not to be drawn at all: only its tabs, because the branches were chained so this never ran.)
       DOC.toolpaths.forEach(function (tp) {
-        if (!tp.moves || !tp.moves.length || !tpOnSheet(tp)) return;
-        if (CUTSEL && tp.id !== CUTSEL) return;
-        if (tp.hidden && tp.id !== CUTSEL) return;                // hidden, unless it's the one picked
+        if (!tp.moves || !tp.moves.length || !tpDrawn(tp)) return;
         drawMoves(tp.moves, tp.id === CUTSEL ? THEME.accent : cutCol, 'rgba(120,130,140,.35)');
       });
       if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL){ drawTabs(tp, false); drawStarts(tp, false); } });

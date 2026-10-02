@@ -28,6 +28,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ## 454 Workshop (the desktop app, in testing)
 
 ### 0.6.2-beta.33 — help inside the app; pictures in the toolpath editor's help
+- Includes Design 0.116.1: the eye on a toolpath's card hides and shows it on the drawing; it didn't before.
 - Includes Design 0.116.0 and Control 0.31.22: help inside the app. F1 opens the guides in a window over
   what you're doing, with search.
 - Includes Design 0.115.1: small pictures in the toolpath editor's help, for every kind of cut and for
@@ -875,6 +876,17 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.116.1 — the eye on a toolpath card hides it
+- **Fixed: the eye on a toolpath's card changed its icon and nothing on the drawing.** A toolpath that has just
+  been made or edited is the one picked (its card is tinted), a picked toolpath was drawn even when hidden,
+  and while one is picked the others aren't drawn at all. So hiding the one you had just made did nothing you
+  could see, and neither did hiding or showing any other. Pressing an eye now lets go of the pick, so the
+  drawing shows exactly what the eyes say. Clicking a hidden toolpath's card still shows it on its own.
+  The right-click menu's Hide and Show do the same. Found by Clint, using it.
+- The rule for which toolpaths are drawn is in one place (`tpDrawn`) instead of written twice in the drawing
+  code. Tested (4 new tests in `toolpath-names.test.mjs`; broken on purpose 12 ways, all caught) and checked
+  in the app by clicking the eye and counting the toolpath's pixels before and after.
 
 ### 0.116.0 — help inside the app
 - **F1, or the ? in the header, opens the guides in a window over 454 Design,** instead of sending you to a

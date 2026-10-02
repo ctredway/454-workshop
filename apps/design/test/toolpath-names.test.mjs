@@ -235,3 +235,63 @@ test('a folded card still says when its toolpath has a warning', () => {
   assert.ok(mark, 'the second is marked');
   assert.ok(mark.title.includes(D.tpPastSay(D.tpList()[1])), mark.title);
 });
+
+// ---- the eye: show or hide a toolpath on the drawing ----
+// (Nothing is drawn in these tests: tpDrawn is the rule the drawing follows for which toolpaths it draws.)
+const drawn = () => plain(Array.from(D.tpList(), (t) => D.tpDrawn(t)));
+const eye = (i) => fire(cards()[i].querySelector('.tpEye'), 'click');
+test('the eye hides a toolpath that was just made (it is picked, and a picked one used to stay drawn)', () => {
+  drawing();
+  const tp = make(0, 'pocket', 5);
+  assert.equal(D.CUTSEL, tp.id, 'just made: it is the one picked');
+  assert.deepEqual(drawn(), [true]);
+  eye(0);
+  assert.equal(D.tpList()[0].hidden, true);
+  assert.deepEqual(drawn(), [false], 'hidden means not drawn');
+  assert.equal(D.CUTSEL, null, 'pressing the eye lets go of the pick');
+  assert.equal(cards()[0].querySelector('.tpEye').getAttribute('aria-pressed'), 'false');
+  eye(0);
+  assert.equal(D.tpList()[0].hidden, false);
+  assert.deepEqual(drawn(), [true]);
+  assert.equal(cards()[0].querySelector('.tpEye').getAttribute('aria-pressed'), 'true');
+});
+test('with one toolpath picked, another one’s eye still does what it says', () => {
+  drawing();
+  make(0, 'pocket', 5); make(1, 'outside', 3);
+  D.run('CUTSEL = tpList()[0].id; renderToolpathPanel(); 1');
+  assert.deepEqual(drawn(), [true, false], 'picked: drawn alone');
+  eye(1);                                                  // hide the other one
+  assert.equal(D.CUTSEL, null);
+  assert.deepEqual(drawn(), [true, false], 'the first is shown, the second hidden');
+  eye(1);
+  assert.deepEqual(drawn(), [true, true], 'and shown again, both are drawn (it used to stay out of sight behind the pick)');
+});
+test('clicking a hidden toolpath’s card still shows it alone, and clicking again puts it away', () => {
+  drawing();
+  make(0, 'pocket', 5); make(1, 'outside', 3);
+  eye(1);
+  assert.deepEqual(drawn(), [true, false]);
+  fire(cards()[1], 'click');
+  assert.equal(D.CUTSEL, D.tpList()[1].id);
+  assert.deepEqual(drawn(), [false, true]);
+  fire(cards()[1], 'click');
+  assert.deepEqual(drawn(), [true, false]);
+  assert.equal(D.tpList()[1].hidden, true, 'it stayed hidden throughout');
+});
+test('a toolpath on another sheet is never drawn, picked or not', () => {
+  drawing();
+  const tp = make(0, 'pocket', 5);
+  D.run('CUTSEL = null; 1');
+  D.sheetAdd();                                            // the drawing's shapes stay on Sheet 1; Sheet 2 is shown
+  assert.equal(D.tpOnSheet(D.tpList()[0]), false);
+  assert.deepEqual(drawn(), [false]);
+  D.run('CUTSEL = tpList()[0].id; 1');
+  assert.deepEqual(drawn(), [false]);
+  D.run('CUTSEL = null; 1');
+});
+test('the drawing follows that rule, for cuts and for drilled holes, and has no rule of its own', async () => {
+  const fs = await import('node:fs');
+  const code = fs.readFileSync(new URL('../src/js/draw.js', import.meta.url), 'utf8');
+  assert.equal(code.split('!tpDrawn(tp)').length - 1, 2);
+  assert.ok(!code.includes('tp.hidden'));
+});
