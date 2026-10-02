@@ -376,6 +376,11 @@
   .tpDropOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tpStale{border-left-color:var(--err)}
   #tpPanel .tpHead b{flex:1}
+  #tpActs{display:flex;align-items:center;gap:6px;padding:4px 12px 6px}
+  #tpActs[hidden]{display:none}
+  #tpActs .tpActSep{width:1px;height:18px;margin:0 3px;background:var(--line)}
+  #tpActs .helpI{margin-left:auto}
+  #tpActs .tpIcon:disabled{opacity:.4;cursor:default}
   .tpIcon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:24px;padding:0;font-size:14px;line-height:1}
   .tpIcon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
   .tpIcon.danger:hover{color:var(--err);border-color:var(--err)}
@@ -837,6 +842,14 @@
       <button id="tpFoldAll" class="tpIcon" hidden aria-label="Fold all toolpaths to their titles" title="Fold every toolpath to its title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
       <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
       <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+    <div id="tpActs" hidden role="toolbar" aria-label="Preview, job sheet and templates">
+      <button id="tpWoodBtn" class="tpIcon" aria-label="Preview in wood" title="Preview in wood — the material as it will look after these toolpaths, cut by each bit’s real shape"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5L8 2.5l5.5 3v5L8 13.5l-5.5-3z"/><path d="M2.5 5.5L8 8.5l5.5-3M8 8.5v5"/></svg></button>
+      <button id="tpControlBtn" class="tpIcon" aria-label="Preview in 454 Control" title="Preview in 454 Control — load exactly this G-code into 454 Control: its 3D preview and playback, time estimate and checks. Nothing is sent to the machine."><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.8" width="12" height="8.4" rx="1.2"/><path d="M6.9 5.2v3.6L10 7z"/><path d="M5.5 13.6h5"/></svg></button>
+      <button id="tpJobSheetBtn" class="tpIcon" aria-label="Job sheet" title="Job sheet — everything about the job on one printable page: material, setup, tools, toolpaths and times"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h5.5L12 4.5V14H4z"/><path d="M9.5 2v2.5H12M6 7.5h4M6 10h4"/></svg></button>
+      <span class="tpActSep" aria-hidden="true"></span>
+      <button id="tplSaveBtn" class="tpIcon" aria-label="Save template" title="Save template — save these toolpaths’ settings (bits, depths, feeds, tabs, order) to a file, to make the same toolpaths in another drawing"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="4" width="7.5" height="9.5" rx="1"/><path d="M4.8 7.2h2.9M4.8 9.8h2.9"/><path d="M10.6 6.2h3.6M12.5 4.4l1.8 1.8-1.8 1.8"/></svg></button>
+      <button id="tplApplyBtn" class="tpIcon" aria-label="Apply template" title="Apply template — make toolpaths from a template: each one cuts the shapes on the layer of the same name as when it was saved"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="4" width="7.5" height="9.5" rx="1"/><path d="M4.8 7.2h2.9M4.8 9.8h2.9"/><path d="M14.4 6.2h-3.6M12.6 4.4l-1.8 1.8 1.8 1.8"/></svg></button>
+    </div>
     <div id="tpCount" class="tpCountLine"></div>
     <p id="tpBeta" hidden><b>Beta.</b> Toolpaths are new and still being tested. Check every job in 454 Control&rsquo;s
       preview and run it in the air before cutting material. <a href="docs/cam-reference.html" target="_blank" rel="noopener">What to check</a></p>
@@ -1117,7 +1130,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.117.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.118.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -5488,6 +5501,7 @@ var HELP_ICONS = [
   ['#paneLayers > .paneHead', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
   // the toolpaths, on the right
   ['#tpPanel .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
+  ['#tpActs', 'cam-reference.html#order-checking-and-saving', 'Preview the job in wood or in 454 Control, print a job sheet, and save these toolpaths\u2019 settings as a template for another drawing.'],
   ['#tpSheetBar > label', 'design-workspace.html#sheets', 'Each sheet is its own piece of material, with its own shapes, toolpaths and G-code. One sheet is shown at a time.'],
   // the toolpath editor
   ['#cutTitle', 'cam-reference.html#the-basics', 'A toolpath tells the machine what to cut: with which bit, how deep, and along which shapes. Click any setting below and the box at the bottom explains it.'],
@@ -7157,27 +7171,6 @@ function renderMyToolpaths(){
     ex.style.cssText = 'width:calc(100% - 20px);margin:4px 10px 10px';
     ex.addEventListener('click', tpExport);
     box.appendChild(ex);
-    var wd = document.createElement('button');
-    wd.textContent = 'Preview in wood';
-    wd.title = 'See the material as it will look after these toolpaths, cut by each bit\u2019s real shape';
-    wd.style.cssText = 'width:calc(100% - 20px);margin:0 10px 10px';
-    wd.disabled = nInc === 0;
-    wd.addEventListener('click', woodPreviewOpen);
-    box.appendChild(wd);
-    var pv = document.createElement('button');
-    pv.textContent = 'Preview in 454 Control';
-    pv.title = 'Load exactly this G-code into 454 Control: its 3D preview and playback, time estimate and checks. Nothing is sent to the machine.';
-    pv.style.cssText = 'width:calc(100% - 20px);margin:0 10px 10px';
-    pv.disabled = nInc === 0;
-    pv.addEventListener('click', tpPreview);
-    box.appendChild(pv);
-    var js = document.createElement('button');
-    js.textContent = 'Job sheet' + (sheetName ? ' for ' + sheetName : '') + '\u2026';
-    js.title = 'Everything about the job on one printable page: material, setup, tools, toolpaths and times';
-    js.style.cssText = 'width:calc(100% - 20px);margin:0 10px 10px';
-    js.disabled = nInc === 0;
-    js.addEventListener('click', jobSheetOpen);
-    box.appendChild(js);
   }
 }
 
@@ -7729,21 +7722,8 @@ function tplWire(){
 // The Save template… and Apply template… buttons, under the toolpaths: drawn whether or not there are any yet,
 // since a new drawing with none is where a template is applied
 function tplButtons(){
-  var box = document.getElementById('tpList');
-  if (!box || !camReady()) return;
-  var onSheet = multiSheet() ? tpList().filter(function (t2) { return tpSheetOf(t2) === DOC.activeSheet; }) : tpList();
-  var tr = document.createElement('div');
-  tr.style.cssText = 'display:flex;gap:8px;margin:0 10px 10px';
-  var ts = document.createElement('button');
-  ts.id = 'tplSaveBtn'; ts.textContent = 'Save template…'; ts.style.flex = '1';
-  ts.title = 'Save these toolpaths’ settings (bits, depths, feeds, tabs, order) to a file, to make the same toolpaths in another drawing';
-  ts.disabled = !onSheet.length;
-  ts.addEventListener('click', tplSave);
-  var ta = document.createElement('button');
-  ta.id = 'tplApplyBtn'; ta.textContent = 'Apply template…'; ta.style.flex = '1';
-  ta.title = 'Make toolpaths from a template: each one cuts the shapes on the layer of the same name as when it was saved';
-  ta.addEventListener('click', tplOpen);
-  tr.appendChild(ts); tr.appendChild(ta); box.appendChild(tr);
+  var ts = document.getElementById('tplSaveBtn');
+  if (ts) ts.disabled = !camReady() || !tpShownList().length;     // nothing to save until there's a toolpath on this sheet
 }
 // ---- sheets ----
 // A project can have several sheets: several pieces of material, cut one after another. They share one drawing
@@ -7932,6 +7912,17 @@ function sheetWire(){
   });
   on('tpSheetName', 'blur', function () { sheetRenameEnd(true); });
 }
+// The row of icons under the panel's name: Preview in wood, Preview in 454 Control, Job sheet, and the two template
+// buttons. The first three need a toolpath that's ticked for the G-code, on the sheet being shown.
+function tpActsUpdate(){
+  var row = document.getElementById('tpActs');
+  if (!row) return;
+  row.hidden = !camReady();
+  var shown = tpShownList(), none = !shown.some(function (t) { return !t.exclude; });
+  var forSheet = multiSheet() ? ' for ' + sheetTitle(DOC.activeSheet) : '';
+  ['tpWoodBtn', 'tpControlBtn', 'tpJobSheetBtn'].forEach(function (id) { document.getElementById(id).disabled = none; });
+  document.getElementById('tpJobSheetBtn').setAttribute('aria-label', 'Job sheet' + forSheet);
+}
 function renderToolpathPanel(){
   sheetBar();                                  // always current, even after opening another project
   var list = DOC.vcConverted ? [] : (DOC.vcToolpaths || []), pan = document.getElementById('tpPanel');
@@ -7952,6 +7943,7 @@ function renderToolpathPanel(){
   fa.title = allFolded ? 'Show every toolpath’s details' : 'Fold every toolpath to its title';
   fa.setAttribute('aria-label', allFolded ? 'Show all toolpaths’ details' : 'Fold all toolpaths to their titles');
   fa.setAttribute('aria-pressed', allFolded ? 'true' : 'false');
+  tpActsUpdate();
   var camMissing = document.getElementById('tpCamMissing');
   if (camMissing) camMissing.hidden = !(window.__camWanted && !camReady());
   document.getElementById('tpCheck').hidden = !camReady();
@@ -15240,6 +15232,11 @@ function wire(){
   document.getElementById('libModal').addEventListener('pointerdown', function(e){ if (e.target.id === 'libModal') libCloseDlg(); });
   libLoad().then(function(lib){ if (lib && lib.tools){ TOOLLIB = lib; renderToolpathPanel(); } });
   document.getElementById('tpFoldAll').addEventListener('click', tpFoldAll);
+  document.getElementById('tpWoodBtn').addEventListener('click', woodPreviewOpen);
+  document.getElementById('tpControlBtn').addEventListener('click', tpPreview);
+  document.getElementById('tpJobSheetBtn').addEventListener('click', jobSheetOpen);
+  document.getElementById('tplSaveBtn').addEventListener('click', tplSave);
+  document.getElementById('tplApplyBtn').addEventListener('click', tplOpen);
   document.getElementById('tpCollapse').addEventListener('click', function(){ UICFG.tpPanel = false; uiCfgSave(); renderToolpathPanel(); });
   document.getElementById('tpStrip').addEventListener('click', function(){ UICFG.tpPanel = true; uiCfgSave(); renderToolpathPanel(); });
   renderToolpathPanel();

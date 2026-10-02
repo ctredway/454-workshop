@@ -37,6 +37,7 @@ var HELP_ICONS = [
   ['#paneLayers > .paneHead', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
   // the toolpaths, on the right
   ['#tpPanel .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
+  ['#tpActs', 'cam-reference.html#order-checking-and-saving', 'Preview the job in wood or in 454 Control, print a job sheet, and save these toolpaths\u2019 settings as a template for another drawing.'],
   ['#tpSheetBar > label', 'design-workspace.html#sheets', 'Each sheet is its own piece of material, with its own shapes, toolpaths and G-code. One sheet is shown at a time.'],
   // the toolpath editor
   ['#cutTitle', 'cam-reference.html#the-basics', 'A toolpath tells the machine what to cut: with which bit, how deep, and along which shapes. Click any setting below and the box at the bottom explains it.'],

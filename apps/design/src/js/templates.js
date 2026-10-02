@@ -133,19 +133,6 @@ function tplWire(){
 // The Save template… and Apply template… buttons, under the toolpaths: drawn whether or not there are any yet,
 // since a new drawing with none is where a template is applied
 function tplButtons(){
-  var box = document.getElementById('tpList');
-  if (!box || !camReady()) return;
-  var onSheet = multiSheet() ? tpList().filter(function (t2) { return tpSheetOf(t2) === DOC.activeSheet; }) : tpList();
-  var tr = document.createElement('div');
-  tr.style.cssText = 'display:flex;gap:8px;margin:0 10px 10px';
-  var ts = document.createElement('button');
-  ts.id = 'tplSaveBtn'; ts.textContent = 'Save template…'; ts.style.flex = '1';
-  ts.title = 'Save these toolpaths’ settings (bits, depths, feeds, tabs, order) to a file, to make the same toolpaths in another drawing';
-  ts.disabled = !onSheet.length;
-  ts.addEventListener('click', tplSave);
-  var ta = document.createElement('button');
-  ta.id = 'tplApplyBtn'; ta.textContent = 'Apply template…'; ta.style.flex = '1';
-  ta.title = 'Make toolpaths from a template: each one cuts the shapes on the layer of the same name as when it was saved';
-  ta.addEventListener('click', tplOpen);
-  tr.appendChild(ts); tr.appendChild(ta); box.appendChild(tr);
+  var ts = document.getElementById('tplSaveBtn');
+  if (ts) ts.disabled = !camReady() || !tpShownList().length;     // nothing to save until there's a toolpath on this sheet
 }

@@ -271,6 +271,11 @@ function wire(){
   document.getElementById('libModal').addEventListener('pointerdown', function(e){ if (e.target.id === 'libModal') libCloseDlg(); });
   libLoad().then(function(lib){ if (lib && lib.tools){ TOOLLIB = lib; renderToolpathPanel(); } });
   document.getElementById('tpFoldAll').addEventListener('click', tpFoldAll);
+  document.getElementById('tpWoodBtn').addEventListener('click', woodPreviewOpen);
+  document.getElementById('tpControlBtn').addEventListener('click', tpPreview);
+  document.getElementById('tpJobSheetBtn').addEventListener('click', jobSheetOpen);
+  document.getElementById('tplSaveBtn').addEventListener('click', tplSave);
+  document.getElementById('tplApplyBtn').addEventListener('click', tplOpen);
   document.getElementById('tpCollapse').addEventListener('click', function(){ UICFG.tpPanel = false; uiCfgSave(); renderToolpathPanel(); });
   document.getElementById('tpStrip').addEventListener('click', function(){ UICFG.tpPanel = true; uiCfgSave(); renderToolpathPanel(); });
   renderToolpathPanel();

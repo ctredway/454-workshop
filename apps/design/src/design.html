@@ -295,6 +295,14 @@
       <button id="tpFoldAll" class="tpIcon" hidden aria-label="Fold all toolpaths to their titles" title="Fold every toolpath to its title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
       <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
       <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+    <div id="tpActs" hidden role="toolbar" aria-label="Preview, job sheet and templates">
+      <button id="tpWoodBtn" class="tpIcon" aria-label="Preview in wood" title="Preview in wood — the material as it will look after these toolpaths, cut by each bit’s real shape"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5L8 2.5l5.5 3v5L8 13.5l-5.5-3z"/><path d="M2.5 5.5L8 8.5l5.5-3M8 8.5v5"/></svg></button>
+      <button id="tpControlBtn" class="tpIcon" aria-label="Preview in 454 Control" title="Preview in 454 Control — load exactly this G-code into 454 Control: its 3D preview and playback, time estimate and checks. Nothing is sent to the machine."><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.8" width="12" height="8.4" rx="1.2"/><path d="M6.9 5.2v3.6L10 7z"/><path d="M5.5 13.6h5"/></svg></button>
+      <button id="tpJobSheetBtn" class="tpIcon" aria-label="Job sheet" title="Job sheet — everything about the job on one printable page: material, setup, tools, toolpaths and times"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2h5.5L12 4.5V14H4z"/><path d="M9.5 2v2.5H12M6 7.5h4M6 10h4"/></svg></button>
+      <span class="tpActSep" aria-hidden="true"></span>
+      <button id="tplSaveBtn" class="tpIcon" aria-label="Save template" title="Save template — save these toolpaths’ settings (bits, depths, feeds, tabs, order) to a file, to make the same toolpaths in another drawing"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="4" width="7.5" height="9.5" rx="1"/><path d="M4.8 7.2h2.9M4.8 9.8h2.9"/><path d="M10.6 6.2h3.6M12.5 4.4l1.8 1.8-1.8 1.8"/></svg></button>
+      <button id="tplApplyBtn" class="tpIcon" aria-label="Apply template" title="Apply template — make toolpaths from a template: each one cuts the shapes on the layer of the same name as when it was saved"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="4" width="7.5" height="9.5" rx="1"/><path d="M4.8 7.2h2.9M4.8 9.8h2.9"/><path d="M14.4 6.2h-3.6M12.6 4.4l-1.8 1.8 1.8 1.8"/></svg></button>
+    </div>
     <div id="tpCount" class="tpCountLine"></div>
     <p id="tpBeta" hidden><b>Beta.</b> Toolpaths are new and still being tested. Check every job in 454 Control&rsquo;s
       preview and run it in the air before cutting material. <a href="docs/cam-reference.html" target="_blank" rel="noopener">What to check</a></p>

@@ -28,6 +28,8 @@ Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a wa
 
 **The Toolpaths panel** sits on the right. Select shapes on the drawing, then press **New toolpath** (the + icon). The editor takes the panel's place while it's open, a little wider, so the drawing and its live preview stay in view. Its settings sit under headings (Tool, Depth, Passes, Entry and exit, Tabs), and only the ones that apply to the kind of cut are shown. Click or tab into any setting and the box above the buttons says what it does, with a small picture for stepover, ramp, lead in and tabs. Press **Create** to add the toolpath, or **Cancel**, and the list of toolpaths comes back. Each toolpath gets a card in the panel, where you can edit it, move it up or down, show or hide its preview, leave it out of the G-code, recalculate it, or delete it. Right-click a card for the same actions in a menu.
 
+**The row of icons** under the panel's name holds what you do with the whole job: **Preview in wood**, **Preview in 454 Control** and **Job sheet**, then **Save template** and **Apply template**. Rest the pointer on one to see its name; the ⓘ at the end of the row explains them. **Save G-code…** is the wide button under the list.
+
 **Naming a toolpath.** Type a name in the editor's **Name** box, or double-click the name on a card (or right-click it and choose **Rename…**), type, and press Enter. The name is shown on the card and the job sheet and written into the G-code, so 454 Control shows it too. Leave it empty and the toolpath is named after its kind of cut, such as "Outside profile"; the kind of cut is always shown on the line under the name.
 
 **Folding cards.** The small arrow at the left of a card folds it to its title, so a long list fits on the screen; the arrow opens it again. The button with three lines in the panel's header folds or opens every card at once. A folded card shows ⚠ beside its name when the toolpath has a warning, such as cutting past the material: hold the pointer over it to read why.
@@ -281,7 +283,7 @@ A new toolpath slots into the usual cutting order: **holes, chamfers, pockets, V
 
 ### Preview in wood
 
-**Preview in wood**, in the Toolpaths panel, shows the material as it will look after the ticked toolpaths,
+**Preview in wood**, the first icon in the row at the top of the Toolpaths panel, shows the material as it will look after the ticked toolpaths,
 as a block of wood in 3D: pockets with their floors and rounded corners, V-carving with its slopes, tabs
 holding the parts, and through-cuts showing the spoilboard underneath.
 
@@ -309,9 +311,9 @@ gets another file rather than moving its cuts earlier, so nothing is cut out of 
 part never comes before the carving on it). Each file says at the top which file it is. Run them in order,
 and keep Z zero and XY zero the same between them. It asks before replacing files already in the folder.
 
-**Templates:** for jobs you make again and again (signs, boxes, cutting boards), **Save template…** at the
-bottom of the Toolpaths panel saves the toolpaths' settings to a file: bits, depths, passes, feeds, tabs, ramps,
-finishing and their order, but not the shapes. **Apply template…** makes them again in another drawing. Each
+**Templates:** for jobs you make again and again (signs, boxes, cutting boards), **Save template** (the fourth icon in the row at the
+top of the Toolpaths panel) saves the toolpaths' settings to a file: bits, depths, passes, feeds, tabs, ramps,
+finishing and their order, but not the shapes. **Apply template** (the fifth icon) makes them again in another drawing. Each
 toolpath finds its shapes by the **name of the layer** they were on, so draw the parts of the job on layers
 named for what happens to them (say "Carve" and "Cut out"), and use the same names next time.
 
@@ -320,7 +322,7 @@ that name, or nothing on it). They're added after any toolpaths already there, w
 Undo takes them all back. Depths that cut through use the new drawing's material thickness, so set that
 first, and check each toolpath before cutting.
 
-**Preview in 454 Control** loads exactly the G-code Save G-code would write into 454 Control, for its 3D
+**Preview in 454 Control**, the second icon in that row, loads exactly the G-code Save G-code would write into 454 Control, for its 3D
 preview and playback, its time estimate (with your machine's acceleration) and its checks, with no file to
 save or open. Nothing is sent to the machine. If Control is already open, the job goes to it, without
 reloading it or disconnecting the machine; in the desktop app its window comes forward, and on the website
@@ -335,7 +337,7 @@ The G-code is plain GRBL: tool changes are M6 with a T number, which 454 Control
 
 ### Job sheet
 
-**Job sheet…**, under **Save G-code** in the Toolpaths panel, puts everything about the job on one
+**Job sheet**, the third icon in that row, puts everything about the job on one
 printable page, to keep at the machine: the material and its thickness, a picture of the job to scale
 with each toolpath numbered where it starts, a setup checklist (where to zero X, Y and Z, the first
 tool, how far the cutting reaches so clamps stay clear), the tools, every toolpath in cutting order with

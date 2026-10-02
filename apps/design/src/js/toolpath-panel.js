@@ -1,3 +1,14 @@
+// The row of icons under the panel's name: Preview in wood, Preview in 454 Control, Job sheet, and the two template
+// buttons. The first three need a toolpath that's ticked for the G-code, on the sheet being shown.
+function tpActsUpdate(){
+  var row = document.getElementById('tpActs');
+  if (!row) return;
+  row.hidden = !camReady();
+  var shown = tpShownList(), none = !shown.some(function (t) { return !t.exclude; });
+  var forSheet = multiSheet() ? ' for ' + sheetTitle(DOC.activeSheet) : '';
+  ['tpWoodBtn', 'tpControlBtn', 'tpJobSheetBtn'].forEach(function (id) { document.getElementById(id).disabled = none; });
+  document.getElementById('tpJobSheetBtn').setAttribute('aria-label', 'Job sheet' + forSheet);
+}
 function renderToolpathPanel(){
   sheetBar();                                  // always current, even after opening another project
   var list = DOC.vcConverted ? [] : (DOC.vcToolpaths || []), pan = document.getElementById('tpPanel');
@@ -18,6 +29,7 @@ function renderToolpathPanel(){
   fa.title = allFolded ? 'Show every toolpath’s details' : 'Fold every toolpath to its title';
   fa.setAttribute('aria-label', allFolded ? 'Show all toolpaths’ details' : 'Fold all toolpaths to their titles');
   fa.setAttribute('aria-pressed', allFolded ? 'true' : 'false');
+  tpActsUpdate();
   var camMissing = document.getElementById('tpCamMissing');
   if (camMissing) camMissing.hidden = !(window.__camWanted && !camReady());
   document.getElementById('tpCheck').hidden = !camReady();

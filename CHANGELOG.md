@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.35 — a tidier Toolpaths panel
+- Includes Design 0.118.0: the previews, the job sheet and the template buttons are a row of icons at the top
+  of the Toolpaths panel.
+
 ### 0.6.2-beta.34 — an ⓘ beside each section, in both apps
 - Includes Design 0.117.0: info icons on Design's section headings, with a tip on hover and the help window
   on click.
@@ -902,6 +906,19 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.118.0 — a row of icons at the top of the Toolpaths panel
+- **Preview in wood, Preview in 454 Control, Job sheet, Save template and Apply template are now icons in a
+  row under the panel's name,** instead of five wide buttons under the list of toolpaths. They looked out of
+  place there and took a lot of room. Rest the pointer on an icon and it says its name and what it does; the
+  ⓘ at the end of the row explains the row and opens the guide. **Save G-code…** stays the wide button under
+  the list: it's the one you came for.
+- The three that look at the job (the previews and the job sheet) can't be pressed until a toolpath on the
+  sheet being shown is ticked for the G-code, as before. Save template needs a toolpath; Apply template is
+  always there.
+- Nothing they do has changed. The row hides while the toolpath editor has the panel.
+- **Tested** (`apps/design/test/toolpath-actions.test.mjs`, 7 tests; broken on purpose 20 ways, all caught),
+  and tried in the app with real clicks.
 
 ### 0.117.0 — an ⓘ beside each section
 - **27 section headings in 454 Design have a small ⓘ.** Rest the pointer on it, or tab to it, and a tip of a

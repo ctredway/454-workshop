@@ -366,6 +366,11 @@
   .tpDropOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tpStale{border-left-color:var(--err)}
   #tpPanel .tpHead b{flex:1}
+  #tpActs{display:flex;align-items:center;gap:6px;padding:4px 12px 6px}
+  #tpActs[hidden]{display:none}
+  #tpActs .tpActSep{width:1px;height:18px;margin:0 3px;background:var(--line)}
+  #tpActs .helpI{margin-left:auto}
+  #tpActs .tpIcon:disabled{opacity:.4;cursor:default}
   .tpIcon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:24px;padding:0;font-size:14px;line-height:1}
   .tpIcon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
   .tpIcon.danger:hover{color:var(--err);border-color:var(--err)}
