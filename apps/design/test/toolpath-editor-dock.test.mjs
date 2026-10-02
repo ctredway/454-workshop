@@ -18,7 +18,7 @@ const plain = (v) => JSON.parse(JSON.stringify(v));
 const pan = () => el('tpPanel');
 const rows = () => [...el('cutPanel').querySelectorAll('.mirSlot')];
 const shownRows = () => rows().filter((r) => !r.hidden && !r.parentNode.hidden).map((r) => r.getAttribute('data-help'));
-const groups = () => [...el('cutPanel').querySelectorAll('.cutGroup')].filter((g) => !g.hidden).map((g) => g.querySelector('h4').textContent);
+const groups = () => [...el('cutPanel').querySelectorAll('.cutGroup')].filter((g) => !g.hidden).map((g) => g.querySelector('h4').firstChild.textContent);
 const help = () => el('cutHelpT').textContent;
 const lit = () => rows().filter((r) => r.classList.contains('helpOn')).map((r) => r.getAttribute('data-help'));
 
@@ -82,7 +82,7 @@ test('each kind of cut shows its own headings, and none with nothing under it', 
     set('cutType', type, 'change'); D.CUT.toolChosen = true; D.cutRender();
     assert.deepEqual(groups(), heads, type);
     for (const g of el('cutPanel').querySelectorAll('.cutGroup'))
-      assert.equal(g.hidden, ![...g.querySelectorAll('.mirSlot')].some((r) => !r.hidden), type + ': ' + g.querySelector('h4').textContent);
+      assert.equal(g.hidden, ![...g.querySelectorAll('.mirSlot')].some((r) => !r.hidden), type + ': ' + g.querySelector('h4').firstChild.textContent);
   }
   D.cutClose();
 });

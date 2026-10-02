@@ -167,8 +167,7 @@
   .smPane.active{display:block}
   #bzModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:65}
   #bzModal[hidden]{display:none}
-  .hlp{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;line-height:1;padding:0 3px}
-  .hlp:hover{color:var(--amber)}
+  .helpAt .helpI{margin-left:2px}                       /* an info icon, where the old help buttons were */
   #toolModal{position:fixed;inset:0;background:rgba(10,13,17,.72);display:flex;align-items:center;justify-content:center;z-index:95}
   #toolModal[hidden]{display:none}
   #toolPanel{background:var(--panel);border:2px solid var(--amber);border-radius:8px;width:min(520px,94vw);box-shadow:0 14px 48px rgba(0,0,0,.6)}

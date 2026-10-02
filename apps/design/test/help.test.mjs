@@ -230,3 +230,87 @@ test('every place Design and Control open their help at is one the docs’ build
   for (const app of ['design', 'control'])
     assert.deepEqual(missing(index, targets(fs.readFileSync(new URL('../../' + app + '/src/js/help-where.js', import.meta.url), 'utf8'))), [], app);
 });
+
+// ---- the info icons ----
+const ICONS = () => plain(D.HELP_ICONS);
+const icon = (sel) => { const h = D.document.querySelector(sel); return h ? [...h.children].find((c) => c.className === 'helpI') : null; };
+const send = (node, type) => node.dispatchEvent(new D.Event(type, { bubbles: true, cancelable: true }));
+const tipText = () => { const t = el('helpTip'); return !t || t.hidden ? null : el('helpTipText').textContent; };
+test('every heading on the list has its one icon, and asking again adds no second', () => {
+  for (const [sel, where, tip] of ICONS()) {
+    assert.equal(D.document.querySelectorAll(sel).length, 1, sel + ' is one heading in Design');
+    const b = icon(sel);
+    assert.ok(b, sel + ' has its icon');
+    assert.equal(b.getAttribute('data-help-at'), where);
+    assert.equal(b.getAttribute('data-help-tip'), tip);
+    assert.equal(b.getAttribute('aria-label'), tip + ' Click for the guide.', 'a screen reader hears the tip');
+    assert.equal(b.type, 'button');
+  }
+  const n = D.document.querySelectorAll('.helpI').length;
+  assert.equal(n, ICONS().length);
+  D.helpIconsApply(); D.helpIconsApply();
+  assert.equal(D.document.querySelectorAll('.helpI').length, n);
+});
+test('a tip is short, ends properly, and no two are the same', () => {
+  const tips = ICONS().map((r) => r[2]);
+  assert.equal(new Set(tips).size, tips.length);
+  for (const t of tips) {
+    assert.ok(t.length >= 40 && t.length <= 170, t.length + ': ' + t);
+    assert.ok(t.split('. ').length <= 2, 'two sentences at most: ' + t);
+    assert.match(t, /[a-z]\.$/, t);
+  }
+});
+test('resting the pointer on an icon, or tabbing to it, shows its tip; leaving hides it', () => {
+  const [sel, , tip] = ICONS()[0], b = icon(sel);
+  assert.equal(tipText(), null);
+  send(b, 'mouseenter');
+  assert.equal(tipText(), tip);
+  assert.match(el('helpTip').textContent, /Click for the guide$/);
+  send(b, 'mouseleave');
+  assert.equal(tipText(), null);
+  const [sel2, , tip2] = ICONS()[7], b2 = icon(sel2);
+  send(b2, 'focus');
+  assert.equal(tipText(), tip2, 'another icon, its own tip');
+  send(b2, 'blur');
+  assert.equal(tipText(), null);
+});
+test('clicking an icon opens the help at its section, and the heading it sits in doesn’t act on the click', async () => {
+  guides();
+  const sel = '.tGroup[data-group="create"] > h4', b = icon(sel), group = D.document.querySelector('.tGroup[data-group="create"]');
+  let heard = 0;
+  const count = () => { heard++; };
+  D.document.querySelector(sel).addEventListener('click', count);
+  D.document.querySelector(sel).addEventListener('mousedown', count);
+  const was = group.className;
+  send(b, 'mouseenter');
+  send(b, 'mousedown'); send(b, 'click');
+  D.document.querySelector(sel).removeEventListener('click', count);
+  D.document.querySelector(sel).removeEventListener('mousedown', count);
+  assert.equal(heard, 0, 'the group’s name didn’t hear it: nothing folds or starts to drag');
+  assert.equal(group.className, was);
+  assert.equal(D.helpIsOpen(), true);
+  assert.deepEqual([D.HELP.page, D.HELP.sec], ['design-tools.html', 'create-vectors']);
+  assert.equal(tipText(), null, 'and the tip is gone');
+  D.helpClose();
+});
+test('a heading whose words change keeps its icon', () => {
+  D.run(`DOC.toolpaths = []; DOC.ents = [{t: 'rect', x: 0, y: 0, w: 10, h: 10}]; SEL = [0]; 1`);
+  D.cutOpen(null);
+  assert.equal(el('cutTitle').firstChild.textContent, 'New toolpath');
+  assert.ok(icon('#cutTitle'));
+  D.CUT.editing = 'x'; D.cutClose();
+  D.helpHeading('cutTitle', 'Edit toolpath');
+  assert.equal(el('cutTitle').firstChild.textContent, 'Edit toolpath');
+  assert.ok(icon('#cutTitle'));
+  assert.equal(el('cutTitle').querySelectorAll('.helpI').length, 1);
+  // none of the headings with an icon has its words set any other way
+  const ids = ICONS().map((r) => r[0]).filter((s) => /^#[a-zA-Z]+$/.test(s)).map((s) => s.slice(1));
+  const code = fs.readdirSync(new URL('../src/js/', import.meta.url)).map((f) => fs.readFileSync(new URL('../src/js/' + f, import.meta.url), 'utf8')).join('\n');
+  for (const id of ids) assert.ok(!code.includes("getElementById('" + id + "').textContent ="), id + ' is set through helpHeading');
+});
+test('the tool panel is redrawn when its groups are moved: the icons come back', () => {
+  D.buildToolPanel();
+  for (const g of ['file', 'create', 'edit', 'align', 'guides', 'view']) assert.ok(icon('.tGroup[data-group="' + g + '"] > h4'), g);
+  assert.ok(icon('#paneLayers > .paneHead'));
+  assert.equal(D.document.querySelectorAll('.helpI').length, ICONS().length);
+});

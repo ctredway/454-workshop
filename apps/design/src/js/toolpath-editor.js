@@ -30,7 +30,7 @@ function cutOpen(existing){
   if (!existing) CUT.exprs = {};
   CUT.exprWhy = {};
   CUT.placing = false; CUT.placingStart = false;
-  document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
+  helpHeading('cutTitle', existing ? 'Edit toolpath' : 'New toolpath');
   document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
   // The name box holds only a name that was given. One that is just the kind of cut ("Outside profile")
   // shows greyed, and follows the kind if that's changed.

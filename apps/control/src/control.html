@@ -136,7 +136,7 @@
 
         <div id="mControls" class="disabledArea">
           <div class="mSection">
-            <h3>Machine <button class="hlp" data-h="serial" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <h3>Machine <span class="helpAt" data-k="serial"></span></h3>
             <div class="mRow">
               <button id="homeBtn">Home ($H)</button>
               <button id="unlockBtn">Unlock ($X)</button>
@@ -146,7 +146,7 @@
           </div>
 
           <div class="mSection">
-            <h3>Jog &amp; zero <button class="hlp" data-h="jogpanel" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <h3>Jog &amp; zero <span class="helpAt" data-k="jogpanel"></span></h3>
             <div class="mRow">
               <button id="jogOpen" class="primary">Open jog panel</button>
               <span style="color:var(--faint);font-size:12px">arrow keys &amp; PgUp/PgDn work while it's open</span>
@@ -154,14 +154,14 @@
           </div>
 
           <div class="mSection">
-            <h3>Probe <button class="hlp" data-h="probepanel" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <h3>Probe <span class="helpAt" data-k="probepanel"></span></h3>
             <div class="mRow">
               <button id="bzOpen">BitZero Z zero…</button>
             </div>
           </div>
 
           <div class="mSection">
-            <h3>Spindle <button class="hlp" data-h="spindlepanel" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <h3>Spindle <span class="helpAt" data-k="spindlepanel"></span></h3>
             <div class="mRow">
               <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
               <button id="spinOn">Start (M3)</button>
@@ -171,7 +171,7 @@
           </div>
 
           <div class="mSection">
-            <h3 class="qaHead">Quick actions <button class="hlp" data-h="quick" title="What is this?" aria-label="Help">ⓘ</button> <button id="qaAdd" class="qaAddBtn" title="Add a quick action">+ Add</button></h3>
+            <h3 class="qaHead">Quick actions <span class="helpAt" data-k="quick"></span> <button id="qaAdd" class="qaAddBtn" title="Add a quick action">+ Add</button></h3>
             <div id="qaList"></div>
             <div class="mRow" id="qaRunRow" style="display:none">
               <span id="qaStatus" style="color:var(--amber);font-size:12.5px;flex:1"></span>
@@ -180,7 +180,7 @@
           </div>
 
           <div class="mSection">
-            <h3>Run job <button class="hlp" data-h="runjob" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <h3>Run job <span class="helpAt" data-k="runjob"></span></h3>
             <div id="toolBanner"><b id="toolBannerTxt">Tool change</b><br>Waiting for the tool change — the prompt is on screen.</div>
             <div class="mRow">
               <button id="jobRun" class="primary">Run loaded file</button>
@@ -196,7 +196,7 @@
           </div>
 
           <div class="mSection" style="margin-bottom:4px">
-            <h3>Console <button class="hlp" data-h="console" title="What is this?" aria-label="Help">ⓘ</button></h3>
+            <h3>Console <span class="helpAt" data-k="console"></span></h3>
             <div id="consoleLog"></div>
             <input id="consoleIn" placeholder="type a command — Enter to send ($$, G0 X10, ?, !, ~)" autocomplete="off">
             <div class="mRow" style="margin-top:6px"><input type="checkbox" id="verboseChk"><label for="verboseChk">Show status reports and job acks</label></div>
@@ -258,7 +258,7 @@
       <span style="color:var(--faint)">mm</span>
     </div>
     <div class="mRow">
-      <button class="hlp" data-h="jog" title="What is this?" aria-label="Help">ⓘ</button><label>Fast XY</label><input type="number" id="jogFeedXY" value="3000" step="100">
+      <span class="helpAt" data-k="jog"></span><label>Fast XY</label><input type="number" id="jogFeedXY" value="3000" step="100">
       <label>Fast Z</label><input type="number" id="jogFeedZ" value="600" step="50">
       <span style="color:var(--faint)">mm/min</span>
     </div>
@@ -311,7 +311,7 @@
       <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Display</h3>
       <div class="mRow"><input type="checkbox" id="showRapids" checked><label for="showRapids">Show rapid moves</label></div>
       <div class="mRow"><input type="checkbox" id="showEnvelope"><label for="showEnvelope">Show work area outline</label></div>
-      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Work area <button class="hlp" data-h="workarea" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Work area <span class="helpAt" data-k="workarea"></span></h3>
       <div class="mRow">
         <select id="machinePreset">
           <option value="ctl">From the controller (automatic)</option>
@@ -330,22 +330,22 @@
         <label style="margin-left:8px">Depth Y</label><input type="number" id="envD" value="425"> <span style="color:var(--faint)">mm</span>
       </div>
       <div class="mRow">
-        <label>Job zero at</label><button class="hlp" data-h="jobzero" title="What is this?" aria-label="Help">ⓘ</button>
+        <label>Job zero at</label><span class="helpAt" data-k="jobzero"></span>
         <select id="originSel">
           <option value="corner">front-left corner of stock</option>
           <option value="center">center of stock</option>
         </select>
       </div>
       <div class="mRow"><input type="checkbox" id="checkEnvelope"><label for="checkEnvelope">Flag moves outside work area</label></div>
-      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Stock <button class="hlp" data-h="stock" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Stock <span class="helpAt" data-k="stock"></span></h3>
       <div class="mRow">
         <label>Thickness</label><input type="number" id="stockThk" value="0" step="0.5"> <span style="color:var(--faint)">mm</span>
       </div>
-      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Time estimate <button class="hlp" data-h="rapid" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Time estimate <span class="helpAt" data-k="rapid"></span></h3>
       <div class="mRow">
         <label>Rapid rate</label><input type="number" id="rapidRate" value="5000" step="100"> <span style="color:var(--faint)">mm/min — auto-set from the controller</span>
       </div>
-      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Controller config <button class="hlp" data-h="controllercfg" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Controller config <span class="helpAt" data-k="controllercfg"></span></h3>
       <div class="mRow"><button id="refreshCfg">Re-read ($$, $#)</button><span class="chip" id="cfgChip">read on connect</span></div>
       <div class="mRow"><button id="cfgCheck">Check controller settings</button></div>
       <div id="cfgTable" style="display:none;font-family:var(--mono);font-size:11.5px;line-height:18px;background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;padding:6px 8px;max-height:190px;overflow-y:auto"></div>
@@ -353,18 +353,18 @@
 
     <div class="smPane" id="smAcc">
       <div class="mRow">
-        <input type="checkbox" id="bsEnable"><label for="bsEnable">BitSetter</label><button class="hlp" data-h="bitsetter" title="What is this?" aria-label="Help">ⓘ</button>
+        <input type="checkbox" id="bsEnable"><label for="bsEnable">BitSetter</label><span class="helpAt" data-k="bitsetter"></span>
         <label style="margin-left:6px">machine X</label><input type="number" id="bsX" step="0.1" style="width:84px">
         <label>Y</label><input type="number" id="bsY" step="0.1" style="width:84px">
         <button id="bsCapture" title="Jog the tool over the BitSetter button, then store the current machine position">Capture position</button>
         <button id="bsTest" title="Touch off once to check the position and the switch. Changes nothing: no reference is taken and no offset applied.">Test</button>
       </div>
       <div class="mRow">
-        <input type="checkbox" id="bzEnable"><label for="bzEnable">BitZero</label><button class="hlp" data-h="bitzero" title="What is this?" aria-label="Help">ⓘ</button>
+        <input type="checkbox" id="bzEnable"><label for="bzEnable">BitZero</label><span class="helpAt" data-k="bitzero"></span>
         <select id="bzVersion"><option value="v1">v1</option><option value="v2">v2</option></select>
       </div>
       <div class="mRow">
-        <label>Spindle</label><button class="hlp" data-h="spindle" title="What is this?" aria-label="Help">ⓘ</button>
+        <label>Spindle</label><span class="helpAt" data-k="spindle"></span>
         <select id="spinType"><option value="router">Trim router</option><option value="vfd">VFD spindle</option></select>
         <label>spin-up</label><input type="number" id="spinupSec" value="7" step="0.5" min="0" style="width:64px"><span style="color:var(--faint)">s dwell after M3 or M4</span>
       </div>
@@ -372,16 +372,16 @@
 
     <div class="smPane" id="smJob">
       <div class="mRow">
-        <input type="checkbox" id="highStart" checked><label for="highStart">Start &amp; stop high — travel at the top before plunging, at the start and after every tool change, and lift clear before every spindle stop and at the end of the job. Leave this on: it is what keeps the bit above clamps and stock.</label><button class="hlp" data-h="highstart" title="What is this?" aria-label="Help">ⓘ</button>
+        <input type="checkbox" id="highStart" checked><label for="highStart">Start &amp; stop high — travel at the top before plunging, at the start and after every tool change, and lift clear before every spindle stop and at the end of the job. Leave this on: it is what keeps the bit above clamps and stock.</label><span class="helpAt" data-k="highstart"></span>
       </div>
       <div class="mRow">
         <label>Traverse height</label>
         <input type="number" id="travelZIn" value="5" step="1" min="1" max="30" style="width:64px"><span class="unit" style="color:var(--faint);font-size:12px">mm below top</span>
         <label style="margin-left:10px">Lift at tool changes and job end</label>
-        <input type="number" id="topZIn" value="2" step="0.5" min="0.5" max="20" style="width:64px"><span style="color:var(--faint);font-size:12px">mm below top</span><button class="hlp" data-h="travelz" title="What is this?" aria-label="Help">ⓘ</button>
+        <input type="number" id="topZIn" value="2" step="0.5" min="0.5" max="20" style="width:64px"><span style="color:var(--faint);font-size:12px">mm below top</span><span class="helpAt" data-k="travelz"></span>
         <span style="color:var(--faint)">mm below Z top — used by start/stop-high, go-to-zero, and BitSetter parking</span>
       </div>
-      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Parking <button class="hlp" data-h="park" title="What is this?" aria-label="Help">ⓘ</button></h3>
+      <h3 style="font-size:13px;font-weight:600;margin:14px 0 8px">Parking <span class="helpAt" data-k="park"></span></h3>
       <div class="mRow">
         <input type="checkbox" id="tcEnable" checked><label for="tcEnable">Move to a tool-change position</label>
         <label style="margin-left:6px">X</label><input type="number" id="tcX" step="0.1" style="width:76px" placeholder="auto">

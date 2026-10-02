@@ -6,7 +6,7 @@ var LIBUI = {sel:null, q:'', pick:null, edit:null, draft:null};           // pic
 function libOpen(selectId, onPick){
   if (selectId) LIBUI.sel = selectId;
   LIBUI.pick = onPick || null;
-  document.getElementById('libTitle').textContent = onPick ? 'Choose a tool' : 'Tool library';
+  helpHeading('libTitle', onPick ? 'Choose a tool' : 'Tool library');
   document.getElementById('libPickBar').hidden = !onPick;
   document.getElementById('libModal').hidden = false;
   libRender();
@@ -16,7 +16,7 @@ function libCloseDlg(){
   document.getElementById('libModal').hidden = true;
   LIBUI.pick = null;
   document.getElementById('libPickBar').hidden = true;
-  document.getElementById('libTitle').textContent = 'Tool library';
+  helpHeading('libTitle', 'Tool library');
 }
 function libPickNow(){
   if (!LIBUI.pick || !LIBUI.sel || !libTool(LIBUI.sel)) return;

@@ -163,7 +163,7 @@ function openTextModal(idx, at){
     TXT = {ent:e, isNew:false, before:JSON.stringify(e)};
   }
   fontObj(e.font);                                // start loading the font right away
-  document.getElementById('textTitle').textContent = TXT.isNew ? 'Add text' : 'Edit text';
+  helpHeading('textTitle', TXT.isNew ? 'Add text' : 'Edit text');
   document.getElementById('txtOK').textContent = TXT.isNew ? 'Place text' : 'Update text';
   document.getElementById('txtStr').value = e.str;
   refreshFontSelect(e.font);

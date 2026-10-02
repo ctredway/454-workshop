@@ -197,4 +197,60 @@ function helpWire(opts){
   var btn = document.getElementById('helpBtn');
   if (btn) btn.addEventListener('click', function () { helpOpen(); });
   window.addEventListener('keydown', helpKey, true);     // at the window, on the way down: before anything in the app hears it
+  helpIconsApply();
+}
+
+/* ---------------- the info icons ----------------
+   A small (i) beside a section's heading. Resting the pointer on it, or tabbing to it, shows a line or two about
+   the section; clicking it opens the help at that section of the guides. Each app lists its own in
+   opts.icons: [where to put it (a CSS selector for the heading), 'page.html#heading', the short tip]. */
+function helpIconsApply(){
+  (HELP.opts.icons || []).forEach(function (row) {
+    Array.prototype.forEach.call(document.querySelectorAll(row[0]), function (head) {
+      for (var c = head.firstChild; c; c = c.nextSibling) if (c.className === 'helpI') return;   // it has one already
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'helpI'; b.textContent = 'ⓘ';
+      b.setAttribute('data-help-at', row[1]);
+      b.setAttribute('data-help-tip', row[2]);
+      b.setAttribute('aria-label', row[2] + ' Click for the guide.');
+      b.setAttribute('draggable', 'false');
+      b.addEventListener('mouseenter', function () { helpTipShow(b); });
+      b.addEventListener('focus', function () { helpTipShow(b); });
+      b.addEventListener('mouseleave', helpTipHide);
+      b.addEventListener('blur', helpTipHide);
+      // the heading it sits in may do something of its own when clicked or dragged (fold a group, move it)
+      ['mousedown', 'dragstart', 'dblclick'].forEach(function (ev) { b.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+      b.addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); helpTipHide(); helpOpen(row[1]); });
+      head.appendChild(b);
+    });
+  });
+}
+// A heading whose words change ("New toolpath" / "Edit toolpath"): set them through here, and its icon is put back.
+// Setting a heading's text directly removes everything in it, the icon too.
+function helpHeading(id, text){
+  var h = document.getElementById(id);
+  if (!h) return;
+  h.textContent = text;
+  helpIconsApply();
+}
+function helpTipShow(b){
+  var t = document.getElementById('helpTip');
+  if (!t){
+    t = document.createElement('div'); t.id = 'helpTip'; t.setAttribute('role', 'tooltip');
+    t.innerHTML = '<span id="helpTipText"></span><span class="helpTipMore">Click for the guide</span>';
+    document.body.appendChild(t);
+  }
+  document.getElementById('helpTipText').textContent = b.getAttribute('data-help-tip');
+  t.hidden = false;
+  if (!b.getBoundingClientRect) return;
+  // under the icon, and inside the window
+  var r = b.getBoundingClientRect(), w = t.offsetWidth || 280, h = t.offsetHeight || 60;
+  var x = Math.max(8, Math.min(r.left, (window.innerWidth || 1200) - w - 8));
+  var y = r.bottom + 6;
+  if (y + h > (window.innerHeight || 800) - 8) y = Math.max(8, r.top - h - 6);
+  t.style.left = Math.round(x) + 'px'; t.style.top = Math.round(y) + 'px';
+}
+function helpTipHide(){
+  var t = document.getElementById('helpTip');
+  if (t) t.hidden = true;
 }

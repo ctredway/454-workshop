@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.34 — an ⓘ beside each section, in both apps
+- Includes Design 0.117.0: info icons on Design's section headings, with a tip on hover and the help window
+  on click.
+- Includes Control 0.31.23: Control's ⓘ buttons do the same, and what they used to say is now in the
+  Control reference.
+
 ### 0.6.2-beta.33 — help inside the app; pictures in the toolpath editor's help
 - Includes Design 0.116.1: the eye on a toolpath's card hides and shows it on the drawing; it didn't before.
 - Includes Design 0.116.0 and Control 0.31.22: help inside the app. F1 opens the guides in a window over
@@ -480,6 +486,26 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.31.23 — the ⓘ icons show a tip and open the guides
+- **Control's 19 ⓘ buttons now work the way Design's do.** Rest the pointer on one, or tab to it, for a tip
+  of a sentence or two; click it and the help window opens at that section of the guides. Before, each
+  opened a small box of text of its own.
+- **Nothing that those boxes said is lost.** Seven were already covered by the guides. The twelve about
+  Settings said more than the guides did, so each is now a section of the Control reference: Work area, Job
+  zero, Stock thickness, Time estimate, Controller config, BitSetter, BitZero, Spindle type and spin-up,
+  Start and stop high, Traverse height, Tool-change and end-of-job positions, Jog speeds. The app's own copy
+  of the text (`HELP_TEXT`) is removed: the guides are the one set of words.
+- **The BitZero section says to measure your own plate** (a v2 is about 15.5 mm), where the old box said only
+  to measure it.
+- **Fixed: the icons on the Machine tab couldn't be clicked before connecting.** That part of the screen is
+  switched off until a machine is connected, and the icons were switched off with it, which is when help
+  is wanted most. They work there now.
+- The list is `HELP_ICONS` in `apps/control/src/js/help-where.js`; each place in the page is a
+  `<span class="helpAt" data-k="...">`. The docs' build checks all 19 places exist in the guides.
+- **Tested** (`apps/control/test/help.test.mjs`, 8 tests, Control's real page in a stand-in browser; broken
+  on purpose 15 ways, all caught), and tried in the app with a real pointer on the Machine tab and on
+  each tab of Settings.
+
 ### 0.31.22 — help inside the app
 - **F1, or Help in the header, opens the guides in a window over 454 Control,** with a search box, instead of
   a separate window. It opens at what you're doing: connecting, loading a file, setting zero (with the jog
@@ -876,6 +902,26 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.117.0 — an ⓘ beside each section
+- **27 section headings in 454 Design have a small ⓘ.** Rest the pointer on it, or tab to it, and a tip of a
+  sentence or two says what the section is for. Click it and the help window opens at that section of the
+  guides. They're on the six tool groups and Layers on the left, the Toolpaths panel and the sheet bar on the
+  right, the toolpath editor's title and five headings, and the windows: Job setup (and its Machine part),
+  Settings, the tool library, Parameters, Nest parts, Add text, Preview in wood, Trace image, Offset, Mirror
+  and Import.
+- **Icons are on sections, not on every setting,** so the screen doesn't fill with them. Single settings in the
+  toolpath editor keep their click-for-help box.
+- **Clicking an icon doesn't act on the heading it sits in:** a tool group doesn't fold or start to drag.
+- The list is in one place (`HELP_ICONS` in `apps/design/src/js/help-where.js`: heading, place in the guides,
+  tip), and the docs' build checks every place exists, as it does for F1. The code is shared with 454 Control
+  (`helpIconsApply` in `apps/shared/help.js`), whose own icons move to it next.
+- Headings whose words change (New toolpath / Edit toolpath, Tool library / Choose a tool, Add text / Edit
+  text, the Import window's) are set through `helpHeading`, which puts the icon back.
+- The tool groups' names stay on one line beside the icon (slightly tighter letter spacing).
+- **Tested** (6 more tests in `help.test.mjs`; broken on purpose 26 ways: 25 caught, and the other is a call
+  Design doesn't need because its tool panel puts the icons in), and tried in the app with a real pointer
+  and keyboard.
 
 ### 0.116.1 — the eye on a toolpath card hides it
 - **Fixed: the eye on a toolpath's card changed its icon and nothing on the drawing.** A toolpath that has just

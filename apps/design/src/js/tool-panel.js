@@ -33,6 +33,7 @@ function buildToolPanel(){
       '<div id="layerList" role="list" aria-label="Layers"></div>' +
       '<button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>' +
     '</div>';
+  if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each group's name: this panel is redrawn when groups are moved
   host.querySelectorAll('.sideTab').forEach(function(t){
     t.addEventListener('click', function(){ sideTab(t.dataset.tab); });
     t.addEventListener('keydown', function(e){                  // arrow keys move between tabs

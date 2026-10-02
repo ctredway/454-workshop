@@ -19,3 +19,28 @@ function controlHelpWhere(){
   if (!MODEL || !MODEL.segs || !MODEL.segs.length) return 'control-quickstart.html#4-load-the-file';
   return 'control-quickstart.html';
 }
+
+// The info icons: where each goes (a place marked in the page: <span class="helpAt" data-k="...">), the part of
+// the guides it opens, and the line or two it shows when the pointer rests on it. A tip is two sentences at most:
+// it says what the thing is for, and the guide says the rest.
+var HELP_ICONS = [
+  ['.helpAt[data-k="serial"]', 'control-reference.html#connecting', 'Connects to the machine\u2019s controller over USB. After the first time the button says Reconnect and skips the list of ports.'],
+  ['.helpAt[data-k="jogpanel"]', 'control-reference.html#jog-and-zero', 'Moves the machine by hand and sets your work zero: where the job\u2019s X0, Y0 and Z0 are on the material.'],
+  ['.helpAt[data-k="probepanel"]', 'control-reference.html#probe', 'Sets Z zero at the top of the material with the BitZero touch plate. Check the result with a piece of paper before cutting.'],
+  ['.helpAt[data-k="spindlepanel"]', 'control-reference.html#spindle', 'Starts and stops the spindle by hand. It doesn\u2019t wait for the spindle to reach speed, so give it a few seconds before cutting.'],
+  ['.helpAt[data-k="quick"]', 'control-reference.html#quick-actions', 'Saved G-code for things you do often, such as raising Z or warming the spindle. The pencil edits one.'],
+  ['.helpAt[data-k="runjob"]', 'control-reference.html#running-a-job', 'Sends the loaded file to the machine. Start shows exactly what will happen before anything moves.'],
+  ['.helpAt[data-k="console"]', 'control-reference.html#console', 'Everything Control sends and everything the controller answers. Commands typed here are sent as they are, with no checks.'],
+  ['.helpAt[data-k="jog"]', 'control-reference.html#jog-speeds', 'How fast the machine moves when you jog in Fast mode, for XY and for Z. Keep Z slower: it\u2019s the axis that finds clamps.'],
+  ['.helpAt[data-k="workarea"]', 'control-reference.html#work-area', 'The size of the machine\u2019s cutting area, used to draw the table and to check that a job fits.'],
+  ['.helpAt[data-k="jobzero"]', 'control-reference.html#job-zero', 'Where the drawing\u2019s 0,0 sits on the stock, for the preview and the fit check. It doesn\u2019t move your machine\u2019s work zero.'],
+  ['.helpAt[data-k="stock"]', 'control-reference.html#stock-thickness', 'The material\u2019s thickness, used to flag cuts that go deeper than it. Leave it at 0 to turn the check off.'],
+  ['.helpAt[data-k="rapid"]', 'control-reference.html#time-estimate', 'How long a job will take, worked out the way the controller moves the machine. The rapid rate here changes the estimate only.'],
+  ['.helpAt[data-k="controllercfg"]', 'control-reference.html#controller-config', 'The controller\u2019s own settings, as read when you connect. Control only reads them, and can check them for trouble.'],
+  ['.helpAt[data-k="bitsetter"]', 'control-reference.html#bitsetter', 'The button the tool touches so the machine can measure its length, which keeps Z zero right through tool changes.'],
+  ['.helpAt[data-k="bitzero"]', 'control-reference.html#bitzero', 'The touch plate that sets Z zero. Measure its thickness yourself: every depth you cut is off by whatever this number is off.'],
+  ['.helpAt[data-k="spindle"]', 'control-reference.html#spindle-type-and-spin-up', 'Router or VFD, and how long Control waits after the spindle starts before cutting. A VFD needs longer than a router.'],
+  ['.helpAt[data-k="highstart"]', 'control-reference.html#start-and-stop-high', 'Keeps the bit above clamps and stock whenever it\u2019s travelling, and lifts it clear before the spindle stops. Leave it on.'],
+  ['.helpAt[data-k="travelz"]', 'control-reference.html#traverse-height', 'How far below the top of its travel the machine sits while it moves between cuts. Make it more if you have tall clamps.'],
+  ['.helpAt[data-k="park"]', 'control-reference.html#tool-change-and-end-of-job-positions', 'Where the machine goes for a tool change, and where it parks when a job ends. Both need a homed machine.']
+];

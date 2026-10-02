@@ -231,6 +231,100 @@ The gear in the header. Settings are saved as you change them, in your machine p
 - **Profile:** the theme (dark or light) and accent colour, and exporting or importing your machine profile,
   including a Carbide Motion `shapeoko.json`.
 
+### Work area
+
+The size of the machine's cutting area, used to draw the table in the 3D view and to check that a job fits.
+**From the controller** fills it in from the controller's own travel (`$130` and `$131`) each time you connect.
+Pick a machine from the list, or type a size, and Control keeps that instead, even if the controller reports
+something different; the console notes the difference when you connect. Choose **From the controller** again to
+go back.
+
+### Job zero
+
+Where the drawing's 0,0 sits on the stock: the front-left corner, or the middle. This only affects the preview
+and the check for moves outside the work area. It doesn't move your machine's work zero, which you set with the
+BitZero or by zeroing the axes.
+
+### Stock thickness
+
+The thickness of the material, used to flag cuts that go deeper than it, which usually means into the
+spoilboard. Set it when Z zero is the top of your material. Leave it at 0 to turn the check off.
+
+### Time estimate
+
+How long a job will take, worked out the way GRBL moves the machine. Once the controller's settings are read,
+the estimate uses its own limits: the maximum speed and acceleration of each axis (`$110` to `$112`, `$120` to
+`$122`) and junction deviation (`$11`), which sets how fast corners can be taken. Short moves and sharp corners
+take longer than their feed rate suggests, and the estimate allows for that.
+
+Before the settings are read, it assumes every move runs at its feed rate and rapids at the rapid rate set
+here, which underestimates jobs with lots of short moves. The rapid rate changes the estimate only: the
+machine's real rapid speed comes from the controller.
+
+### Controller config
+
+The controller's own `$` settings, read back when you connect: travel limits, homing, speeds and the spindle
+maximum. Control only reads them. They're changed in the controller itself, and Carbide Motion's setup wizard
+writes them for Shapeoko machines. **Check controller settings** compares the ones Control depends on against
+what it needs, and reports anything that looks wrong.
+
+### BitSetter
+
+The fixed button the tool touches so the machine can measure the tool's length. Jog the tool over the button
+and press **Capture position**; **Test** touches off once to check it, changing nothing.
+
+When you set Z zero, Control offers to measure that tool straight away. That makes it the reference: at Start
+the loaded tool is measured against it, and every new tool at each change, so the zero holds through tool
+changes, and a bit swapped before you press Start is caught instead of silently shifting Z. It needs a homed
+machine, because the button's position is in the machine's own coordinates.
+
+### BitZero
+
+The touch plate used to set your work zero. Control uses it for Z. Choose v1 or v2 and enter the plate's
+thickness, measured with calipers from its bottom face to the top face the tool touches: a BitZero v2 is about
+15.5 mm, but measure your own, because every depth you cut is off by whatever this number is off. The probe
+sets Z0 at the top of the stock: the height where the tool touched, less the thickness. Touch the pin to the
+plate to check the circuit before probing, and check the zero with a piece of paper before cutting.
+
+### Spindle type and spin-up
+
+Trim router or VFD spindle, and how long to wait after the spindle starts (M3 or M4) before any cutting move.
+Most G-code files don't include that wait, so Control adds one after each spindle start. Carbide Motion does
+the same, at about 2.5 s, which suits a router. A VFD spindle takes longer to reach speed: 7 s is the default
+here. Too short, and the bit enters the material before it's up to speed.
+
+### Start and stop high
+
+Keeps the tool high whenever it's travelling, not cutting. Leave it on. At the start of a job and after every
+tool change, the machine moves to the next XY position at the top of its travel before it plunges. Before every
+spindle stop, and at the end of the job, it lifts clear first. This is what stops a bit dragging across clamps
+and stock. A lift is skipped when the tool is already higher than the traverse height, so it never moves down.
+
+### Traverse height
+
+How far below the top of Z travel the machine sits when it's moving, not cutting, in the machine's own
+coordinates. It's used by Start and stop high, Go to XY zero, the BitSetter's moves and the end of the job.
+5 mm below the top is a good default; make it more if you have tall clamps.
+
+### Tool-change and end-of-job positions
+
+Two separate places the machine goes when you need to reach it.
+
+**Tool change:** it lifts to near the top of Z travel and moves here before asking for the new tool. With
+nothing captured it uses the front centre of the machine, worked out from the controller's travel, which is the
+easiest place to reach. Pick another preset or capture a position to change that.
+
+**End of a job:** as in Carbide Motion, it lifts, stops the spindle, returns to the job's XY zero, then parks.
+With nothing captured it parks at the back centre of the machine, out of your way; capture a position to park
+somewhere else.
+
+Both use the machine's own coordinates, so they need a homed machine.
+
+### Jog speeds
+
+The feed rates the jog buttons and arrow keys use in Fast mode, for XY and for Z separately. They apply to
+jogging only and have no effect on a running job. Keep Z slower than XY: it's the axis that finds clamps.
+
 ## Keyboard shortcuts
 
 | Keys | What they do |

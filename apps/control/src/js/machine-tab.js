@@ -121,10 +121,6 @@ function wireMachine(){
   document.getElementById('bzEstop').addEventListener('click', emergencyStop);
   document.getElementById('bzStart').addEventListener('click', bzStart);
   document.getElementById('cfgCheck').addEventListener('click', function(){ controllerCheckShow(false); });
-  document.body.addEventListener('click', function(e){            // help icons anywhere in the app
-    var b = e.target && e.target.closest ? e.target.closest('.hlp') : null;
-    if (b && b.dataset.h) showHelp(b.dataset.h);
-  });
   ['uiTheme','uiAccent','uiAccentHex'].forEach(function(id){
     document.getElementById(id).addEventListener('input', function(){
       readUIToProfile();

@@ -186,7 +186,7 @@ function wire(){
     cutRender();
   });
   cutHelpWire();
-  helpWire({context: designHelpWhere, own: /^(design-|cam-)/});                // F1 and the ? in the header
+  helpWire({context: designHelpWhere, own: /^(design-|cam-)/, icons: HELP_ICONS});                // F1 and the ? in the header
   document.getElementById('cutPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }
     else if (e.key === 'Enter'){ e.preventDefault(); cutApply(); }
@@ -400,7 +400,7 @@ function wire(){
   function vecDialog(list){
     IMP.mode = 'vec'; IMP.vec = list;
     var one = list.length === 1, anyDxf = list.some(function (v){ return !v.ex.svg; });
-    document.getElementById('impTitle').textContent = one ? (list[0].ex.svg ? 'Import SVG' : 'Import DXF') : 'Import ' + list.length + ' files';
+    helpHeading('impTitle', one ? (list[0].ex.svg ? 'Import SVG' : 'Import DXF') : 'Import ' + list.length + ' files');
     document.getElementById('impStock').textContent = list.map(function (v){
       var b = dxfBBox(v.ex.ents), sk = Object.keys(v.ex.skipped || {});
       return (one ? '' : v.name + ': ') + v.ex.ents.length + (v.ex.ents.length === 1 ? ' shape' : ' shapes') + ' \u00b7 ' +
@@ -526,7 +526,7 @@ function wire(){
           var ex = crvExtract(buf);
           if (!ex || (!ex.contours.length && !ex.preview.length)){ toast('err', 'Nothing to import', 'No vectors found in this .crv, or it\u2019s a version 454 can\u2019t read yet.'); return; }
           IMP.mode = 'crv'; IMP.ex = ex;
-          document.getElementById('impTitle').textContent = 'Import VCarve file';
+          helpHeading('impTitle', 'Import VCarve file');
           document.querySelectorAll('.impCrvRow').forEach(function(el){ el.hidden = false; });
           document.querySelectorAll('.impDxfRow').forEach(function(el){ el.hidden = true; });
           document.getElementById('impStock').textContent =

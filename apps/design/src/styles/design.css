@@ -169,6 +169,8 @@
   .tGroup h4 .caret{font-size:9px;transition:transform .12s;color:var(--faint)}
   .tGroup.collapsed h4 .caret{transform:rotate(-90deg)}
   .tGroup h4 .grip{margin-left:auto;color:var(--faint);font-size:11px;letter-spacing:1px}
+  .tGroup h4{white-space:nowrap;gap:4px;padding-right:6px;letter-spacing:.2px}   /* room for the (i): the name stays on one line */
+  .tGroup h4 .helpI{margin:0;padding:0 1px}
   .tGroup.dragOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:2px 8px 10px}
   .tGroup.collapsed .tGrid{display:none}

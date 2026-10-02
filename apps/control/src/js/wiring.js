@@ -112,7 +112,7 @@ var SAMPLE = [
 
 function wire(){
   initThree();
-  helpWire({context: controlHelpWhere, own: /^control-/});               // F1 and Help in the header: the guides, in a window over this one
+  helpWire({context: controlHelpWhere, own: /^control-/, icons: HELP_ICONS});               // F1 and Help in the header: the guides, in a window over this one
 
   document.getElementById('openBtn').addEventListener('click', function(){
     document.getElementById('fileInput').click();

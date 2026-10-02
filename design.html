@@ -179,6 +179,8 @@
   .tGroup h4 .caret{font-size:9px;transition:transform .12s;color:var(--faint)}
   .tGroup.collapsed h4 .caret{transform:rotate(-90deg)}
   .tGroup h4 .grip{margin-left:auto;color:var(--faint);font-size:11px;letter-spacing:1px}
+  .tGroup h4{white-space:nowrap;gap:4px;padding-right:6px;letter-spacing:.2px}   /* room for the (i): the name stays on one line */
+  .tGroup h4 .helpI{margin:0;padding:0 1px}
   .tGroup.dragOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:2px 8px 10px}
   .tGroup.collapsed .tGrid{display:none}
@@ -542,6 +544,13 @@
   #helpFrame[hidden],#helpNone[hidden]{display:none}
   #helpNone{flex:1;padding:28px;font-size:13px;line-height:1.6;color:var(--muted)}
   #helpNone a{color:var(--amber)}
+  /* the info icons, and the tip they show */
+  .helpI{display:inline-block;background:none;border:0;padding:0 3px;margin:0 0 0 5px;color:var(--muted);font:400 13px/1 var(--sans);letter-spacing:0;text-transform:none;vertical-align:baseline;cursor:help;opacity:.8}
+  .helpI:hover,.helpI:focus-visible{color:var(--amber);opacity:1}
+  .helpI{pointer-events:auto}                          /* still works in a part of the screen that's switched off (454 Control, before connecting): that's when help is wanted most */
+  #helpTip{position:fixed;z-index:390;max-width:280px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:0 5px 5px 0;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:12px;line-height:1.45;color:var(--ink);pointer-events:none}
+  #helpTip[hidden]{display:none}
+  #helpTip .helpTipMore{display:block;margin-top:4px;font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -864,7 +873,7 @@
           <option value="vcarve">V-carve (V-bit)</option>
           <option value="inlay">Inlay (V-bit pocket or plug)</option>
         </select></div>
-      <section class="cutGroup"><h4>Tool</h4>
+      <section class="cutGroup" data-grp="tool"><h4>Tool</h4>
       <button class="mirSlot" data-help="tool" id="cutTool" title="Choose from your tool library"><span class="mirLbl">Tool</span>
         <span class="mirVal" id="cutToolName" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Choose…</span></button>
       <div class="mirSlot" data-help="dia" style="cursor:default"><span class="mirLbl"><label for="cutDia">Diameter</label></span>
@@ -875,7 +884,7 @@
         <select id="cutDir" title="Climb milling usually leaves the better finish on a rigid machine; conventional can suit flexible setups or brittle material">
           <option value="climb">Climb</option><option value="conv">Conventional</option></select></div>
       </section>
-      <section class="cutGroup"><h4>Depth</h4>
+      <section class="cutGroup" data-grp="depth"><h4>Depth</h4>
       <div class="mirSlot" data-help="depth" style="cursor:default"><span class="mirLbl"><label for="cutDepth">Cut depth</label></span>
         <label id="cutThroughLbl" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-left:auto">
           <input type="checkbox" id="cutThrough"> through</label>
@@ -923,7 +932,7 @@
         <input id="cutInlayM" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the plug is carved; more than the start depth, so it stands proud to be planed off"></span>
       </div>
       </section>
-      <section class="cutGroup"><h4>Passes</h4>
+      <section class="cutGroup" data-grp="passes"><h4>Passes</h4>
       <div class="mirSlot" data-help="stepover" id="cutOverlapRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutStepover">Stepover</label></span>
         <input id="cutStepover" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How far apart the clearing passes are, as a share of the cutter diameter">
         <span class="mirVal">% of the cutter</span></div>
@@ -938,7 +947,7 @@
         leave <input id="cutAllow" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="0" title="Material left on the walls by the roughing passes"> <span class="mirVal" id="cutAllowU"></span>
         <label style="display:flex;align-items:center;gap:4px;margin-left:6px;font-size:12px;color:var(--muted)"><input type="checkbox" id="cutFinPass"> then finish it</label></div>
       </section>
-      <section class="cutGroup"><h4>Entry and exit</h4>
+      <section class="cutGroup" data-grp="entry"><h4>Entry and exit</h4>
       <div class="mirSlot" data-help="ramp" id="cutRampRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutRamp">Ramp in</label></span>
         <select id="cutRamp" title="Ramp: each pass slopes down into the material along the cut, instead of plunging straight down. Gentler on the cutter and the machine.">
           <option value="on">Ramp</option><option value="off">Plunge</option></select>
@@ -952,7 +961,7 @@
         <button id="cutStartPlace" title="Click the outline where each shape&#39;s cut should start" aria-pressed="false" style="font-size:11.5px;padding:2px 7px;margin-left:auto">Set start</button>
         <button id="cutStartClear" title="Let 454 Design choose where each cut starts" style="font-size:11.5px;padding:2px 7px">Automatic</button></div>
       </section>
-      <section class="cutGroup"><h4>Tabs</h4>
+      <section class="cutGroup" data-grp="tabs"><h4>Tabs</h4>
       <div class="mirSlot" data-help="tabs" id="cutTabRow" style="cursor:default">
         <input type="checkbox" id="cutTabsOn"><label for="cutTabsOn" class="mirLbl" style="color:var(--ink)">Add tabs</label>
         <span class="mirVal" id="cutTabCount" style="margin-left:auto"></span>
@@ -1108,7 +1117,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.116.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.117.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1402,7 +1411,7 @@ function openTextModal(idx, at){
     TXT = {ent:e, isNew:false, before:JSON.stringify(e)};
   }
   fontObj(e.font);                                // start loading the font right away
-  document.getElementById('textTitle').textContent = TXT.isNew ? 'Add text' : 'Edit text';
+  helpHeading('textTitle', TXT.isNew ? 'Add text' : 'Edit text');
   document.getElementById('txtOK').textContent = TXT.isNew ? 'Place text' : 'Update text';
   document.getElementById('txtStr').value = e.str;
   refreshFontSelect(e.font);
@@ -4372,7 +4381,7 @@ function cutOpen(existing){
   if (!existing) CUT.exprs = {};
   CUT.exprWhy = {};
   CUT.placing = false; CUT.placingStart = false;
-  document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
+  helpHeading('cutTitle', existing ? 'Edit toolpath' : 'New toolpath');
   document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
   // The name box holds only a name that was given. One that is just the kind of cut ("Outside profile")
   // shows greyed, and follows the kind if that's changed.
@@ -5383,6 +5392,62 @@ function helpWire(opts){
   var btn = document.getElementById('helpBtn');
   if (btn) btn.addEventListener('click', function () { helpOpen(); });
   window.addEventListener('keydown', helpKey, true);     // at the window, on the way down: before anything in the app hears it
+  helpIconsApply();
+}
+
+/* ---------------- the info icons ----------------
+   A small (i) beside a section's heading. Resting the pointer on it, or tabbing to it, shows a line or two about
+   the section; clicking it opens the help at that section of the guides. Each app lists its own in
+   opts.icons: [where to put it (a CSS selector for the heading), 'page.html#heading', the short tip]. */
+function helpIconsApply(){
+  (HELP.opts.icons || []).forEach(function (row) {
+    Array.prototype.forEach.call(document.querySelectorAll(row[0]), function (head) {
+      for (var c = head.firstChild; c; c = c.nextSibling) if (c.className === 'helpI') return;   // it has one already
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'helpI'; b.textContent = 'ⓘ';
+      b.setAttribute('data-help-at', row[1]);
+      b.setAttribute('data-help-tip', row[2]);
+      b.setAttribute('aria-label', row[2] + ' Click for the guide.');
+      b.setAttribute('draggable', 'false');
+      b.addEventListener('mouseenter', function () { helpTipShow(b); });
+      b.addEventListener('focus', function () { helpTipShow(b); });
+      b.addEventListener('mouseleave', helpTipHide);
+      b.addEventListener('blur', helpTipHide);
+      // the heading it sits in may do something of its own when clicked or dragged (fold a group, move it)
+      ['mousedown', 'dragstart', 'dblclick'].forEach(function (ev) { b.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+      b.addEventListener('click', function (e) { e.stopPropagation(); e.preventDefault(); helpTipHide(); helpOpen(row[1]); });
+      head.appendChild(b);
+    });
+  });
+}
+// A heading whose words change ("New toolpath" / "Edit toolpath"): set them through here, and its icon is put back.
+// Setting a heading's text directly removes everything in it, the icon too.
+function helpHeading(id, text){
+  var h = document.getElementById(id);
+  if (!h) return;
+  h.textContent = text;
+  helpIconsApply();
+}
+function helpTipShow(b){
+  var t = document.getElementById('helpTip');
+  if (!t){
+    t = document.createElement('div'); t.id = 'helpTip'; t.setAttribute('role', 'tooltip');
+    t.innerHTML = '<span id="helpTipText"></span><span class="helpTipMore">Click for the guide</span>';
+    document.body.appendChild(t);
+  }
+  document.getElementById('helpTipText').textContent = b.getAttribute('data-help-tip');
+  t.hidden = false;
+  if (!b.getBoundingClientRect) return;
+  // under the icon, and inside the window
+  var r = b.getBoundingClientRect(), w = t.offsetWidth || 280, h = t.offsetHeight || 60;
+  var x = Math.max(8, Math.min(r.left, (window.innerWidth || 1200) - w - 8));
+  var y = r.bottom + 6;
+  if (y + h > (window.innerHeight || 800) - 8) y = Math.max(8, r.top - h - 6);
+  t.style.left = Math.round(x) + 'px'; t.style.top = Math.round(y) + 'px';
+}
+function helpTipHide(){
+  var t = document.getElementById('helpTip');
+  if (t) t.hidden = true;
 }
 // Where the help opens (F1, or the ? in the header) when nothing more particular was asked for: the part of the
 // guides about what's on screen. Each address is a page of the docs and a heading on it; the docs' build checks
@@ -5409,6 +5474,42 @@ function designHelpWhere(){
   if (tpList().length) return 'cam-reference.html#the-basics';
   return 'design-quickstart.html';
 }
+
+// The info icons: where each goes (a heading), the part of the guides it opens, and the line or two it shows when
+// the pointer rests on it. Keep a tip to two sentences: it says what the section is for, the guide says the rest.
+var HELP_ICONS = [
+  // the tools, on the left
+  ['.tGroup[data-group="file"] > h4', 'design-tools.html#file', 'Start, open and save drawings, and export them as DXF or SVG for other programs.'],
+  ['.tGroup[data-group="create"] > h4', 'design-tools.html#create-vectors', 'The drawing tools: lines, rectangles, circles, curves and text. Type a size while you draw to make it exact.'],
+  ['.tGroup[data-group="edit"] > h4', 'design-tools.html#edit-vectors', 'Change shapes you\u2019ve drawn: round corners, trim, offset, mirror and join them, and add dimensions that set their sizes.'],
+  ['.tGroup[data-group="align"] > h4', 'design-tools.html#align-and-nest', 'Line shapes up with each other or with the material, space them evenly, and nest parts to waste less wood.'],
+  ['.tGroup[data-group="guides"] > h4', 'design-tools.html#guides', 'Guide lines to draw against, and the outline of your machine\u2019s cutting area.'],
+  ['.tGroup[data-group="view"] > h4', 'design-tools.html#view-and-history', 'Fit the material in the window, undo and redo, and measure between two points.'],
+  ['#paneLayers > .paneHead', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
+  // the toolpaths, on the right
+  ['#tpPanel .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
+  ['#tpSheetBar > label', 'design-workspace.html#sheets', 'Each sheet is its own piece of material, with its own shapes, toolpaths and G-code. One sheet is shown at a time.'],
+  // the toolpath editor
+  ['#cutTitle', 'cam-reference.html#the-basics', 'A toolpath tells the machine what to cut: with which bit, how deep, and along which shapes. Click any setting below and the box at the bottom explains it.'],
+  ['.cutGroup[data-grp="tool"] > h4', 'cam-reference.html#tools-and-materials', 'The bit this toolpath cuts with, and how fast it moves. Everything else is worked out from the bit\u2019s diameter.'],
+  ['.cutGroup[data-grp="depth"] > h4', 'cam-reference.html#the-basics', 'How deep the cut goes, and how much of that each pass takes.'],
+  ['.cutGroup[data-grp="passes"] > h4', 'cam-reference.html#finishing', 'How the bit works across the material: how far apart its passes are, and what it leaves for a last finishing pass.'],
+  ['.cutGroup[data-grp="entry"] > h4', 'cam-reference.html#ramps', 'How the bit gets down into the material and onto the line, and where on the outline it starts.'],
+  ['.cutGroup[data-grp="tabs"] > h4', 'cam-reference.html#tabs', 'Small bridges of wood left across the cut, which hold the part in place until the job is finished.'],
+  // the windows
+  ['#jobTitle', 'design-workspace.html#job-setup', 'The material\u2019s size and thickness, and where X, Y and Z zero are. Everything is measured from these, so they must match how you set the machine up.'],
+  ['#jobModal h4', 'design-quickstart.html#seeing-the-machines-cutting-area', 'Your machine\u2019s cutting area, drawn on the screen so you can see whether the job fits.'],
+  ['#settingsModal .modalHead > h3', 'design-workspace.html#settings', 'How 454 Design looks: light or dark, the accent colour, and the colours of the drawing.'],
+  ['#libTitle', 'design-workspace.html#the-tool-library', 'Your bits, with their tool numbers, feeds and speeds. A toolpath takes its settings from the tool you pick here.'],
+  ['#paramTitle', 'design-tools.html#parameters', 'Named sizes, such as the material\u2019s thickness, that dimensions and toolpath depths can use. Change one and everything that uses it follows.'],
+  ['#nestTitle', 'design-tools.html#nest-parts', 'Arranges the selected parts on the material to waste as little as possible, keeping a gap between them for the cutter.'],
+  ['#textTitle', 'design-tools.html#text', 'Adds lettering to the drawing. It stays editable as text, and a toolpath can cut it like any other shape.'],
+  ['#woodTitle', 'cam-reference.html#preview-in-wood', 'The material as it will look after these toolpaths, cut with each bit\u2019s real shape. Tabs show in amber.'],
+  ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
+  ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
+  ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],
+  ['#impTitle', 'design-tools.html#load', 'Brings a file into the drawing: its shapes, and its layers and material where the file has them. Choose whether it joins this drawing or replaces it.']
+];
 // Toolpaths run in the order listed. Moving one is undoable like any other edit.
 function tpMoveTo(from, to){
   var list = tpList();
@@ -8150,7 +8251,7 @@ var LIBUI = {sel:null, q:'', pick:null, edit:null, draft:null};           // pic
 function libOpen(selectId, onPick){
   if (selectId) LIBUI.sel = selectId;
   LIBUI.pick = onPick || null;
-  document.getElementById('libTitle').textContent = onPick ? 'Choose a tool' : 'Tool library';
+  helpHeading('libTitle', onPick ? 'Choose a tool' : 'Tool library');
   document.getElementById('libPickBar').hidden = !onPick;
   document.getElementById('libModal').hidden = false;
   libRender();
@@ -8160,7 +8261,7 @@ function libCloseDlg(){
   document.getElementById('libModal').hidden = true;
   LIBUI.pick = null;
   document.getElementById('libPickBar').hidden = true;
-  document.getElementById('libTitle').textContent = 'Tool library';
+  helpHeading('libTitle', 'Tool library');
 }
 function libPickNow(){
   if (!LIBUI.pick || !LIBUI.sel || !libTool(LIBUI.sel)) return;
@@ -14662,6 +14763,7 @@ function buildToolPanel(){
       '<div id="layerList" role="list" aria-label="Layers"></div>' +
       '<button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>' +
     '</div>';
+  if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each group's name: this panel is redrawn when groups are moved
   host.querySelectorAll('.sideTab').forEach(function(t){
     t.addEventListener('click', function(){ sideTab(t.dataset.tab); });
     t.addEventListener('keydown', function(e){                  // arrow keys move between tabs
@@ -15053,7 +15155,7 @@ function wire(){
     cutRender();
   });
   cutHelpWire();
-  helpWire({context: designHelpWhere, own: /^(design-|cam-)/});                // F1 and the ? in the header
+  helpWire({context: designHelpWhere, own: /^(design-|cam-)/, icons: HELP_ICONS});                // F1 and the ? in the header
   document.getElementById('cutPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }
     else if (e.key === 'Enter'){ e.preventDefault(); cutApply(); }
@@ -15267,7 +15369,7 @@ function wire(){
   function vecDialog(list){
     IMP.mode = 'vec'; IMP.vec = list;
     var one = list.length === 1, anyDxf = list.some(function (v){ return !v.ex.svg; });
-    document.getElementById('impTitle').textContent = one ? (list[0].ex.svg ? 'Import SVG' : 'Import DXF') : 'Import ' + list.length + ' files';
+    helpHeading('impTitle', one ? (list[0].ex.svg ? 'Import SVG' : 'Import DXF') : 'Import ' + list.length + ' files');
     document.getElementById('impStock').textContent = list.map(function (v){
       var b = dxfBBox(v.ex.ents), sk = Object.keys(v.ex.skipped || {});
       return (one ? '' : v.name + ': ') + v.ex.ents.length + (v.ex.ents.length === 1 ? ' shape' : ' shapes') + ' \u00b7 ' +
@@ -15393,7 +15495,7 @@ function wire(){
           var ex = crvExtract(buf);
           if (!ex || (!ex.contours.length && !ex.preview.length)){ toast('err', 'Nothing to import', 'No vectors found in this .crv, or it\u2019s a version 454 can\u2019t read yet.'); return; }
           IMP.mode = 'crv'; IMP.ex = ex;
-          document.getElementById('impTitle').textContent = 'Import VCarve file';
+          helpHeading('impTitle', 'Import VCarve file');
           document.querySelectorAll('.impCrvRow').forEach(function(el){ el.hidden = false; });
           document.querySelectorAll('.impDxfRow').forEach(function(el){ el.hidden = true; });
           document.getElementById('impStock').textContent =
