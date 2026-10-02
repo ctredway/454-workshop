@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 @@include styles/control.css
+@@include ../../shared/help.css
 </style>
 </head>
 <body>
@@ -25,6 +26,7 @@
       <button id="hdrResume" class="iconBtn" title="Cycle start / resume"><svg viewBox="0 0 16 16"><path d="M5.5 3.5 L12 8 L5.5 12.5 Z"/></svg></button>
     </div>
     <button id="updateBadge" type="button" hidden></button>
+    <button id="helpBtn" title="Search the guides without leaving 454 Control (F1)">Help</button>
     <a id="openDocs" href="docs/index.html" target="_blank" rel="noopener" title="Guides and reference, in a new tab">Docs ↗</a>
     <a id="openDesign" href="design.html" target="_blank" rel="noopener" title="Open 454 Design (the sketcher) in a new tab">454 Design ↗</a>
     <button id="settingsBtn" class="iconBtn" title="Settings"><svg viewBox="0 0 16 16"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="10.5" cy="4" r="1.6" fill="var(--panel)"/><circle cx="5.5" cy="8" r="1.6" fill="var(--panel)"/><circle cx="11.5" cy="12" r="1.6" fill="var(--panel)"/></svg></button>
@@ -575,6 +577,8 @@
 @@include js/code-panel.js
 @@include js/checks-panel.js
 @@include js/job-summary.js
+@@include ../../shared/help.js
+@@include js/help-where.js
 @@include js/wiring.js
 @@include js/machine-state.js
 @@include js/jogging.js

@@ -332,6 +332,7 @@
   #cutHelpPic .hw{fill:var(--line);stroke:none}
   #cutHelpPic .hc{fill:none;stroke:var(--amber);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
   #cutHelpPic .ha{fill:var(--amber);stroke:none}
+  #cutHelpPic .hk{fill:var(--accent-soft);stroke:var(--amber);stroke-width:1.3;stroke-linejoin:round}
   #cutHelpPic .hb{fill:none;stroke:var(--ink);stroke-width:1.3}
   #cutHelpPic .hd{fill:none;stroke:var(--muted);stroke-width:1}
   #cutHelpPic text{fill:var(--muted);font-size:9px;font-family:inherit}
@@ -512,6 +513,35 @@
   #tpSheetBar select,#tpSheetBar input{flex:1;min-width:0}
   #tpSheetBar [hidden]{display:none}                  /* the buttons' own display would override [hidden] too */
   #tpSheetBar[hidden]{display:none}                   /* its own rule: an inline display would override [hidden] */
+  /* ---- help, inside the app (apps/shared/help.js) ---- */
+  #helpModal{position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+  #helpModal[hidden]{display:none}
+  .helpBox{display:flex;flex-direction:column;width:min(1080px,94vw);height:min(820px,90vh);background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 14px 44px rgba(0,0,0,.5);overflow:hidden}
+  .helpHead{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .helpHead b{font-size:14px;color:var(--ink)}
+  #helpQ{flex:1;min-width:0;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:5px;color:var(--ink);font:inherit;font-size:13px}
+  #helpQ:focus{outline:none;border-color:var(--amber)}
+  #helpFull{font-size:12px;color:var(--muted);white-space:nowrap;text-decoration:none}
+  #helpFull:hover{color:var(--ink)}
+  #helpX{background:none;border:0;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px}
+  #helpX:hover{color:var(--ink)}
+  .helpBody{flex:1;min-height:0;display:flex}
+  #helpNav{flex:none;width:290px;overflow-y:auto;padding:8px;border-right:1px solid var(--line);background:var(--panel-deep)}
+  #helpNav button{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:5px;padding:6px 8px;color:var(--ink);font:inherit;font-size:12.5px;line-height:1.4;cursor:pointer}
+  #helpNav button:hover{background:var(--accent-faint)}
+  #helpNav button.on{border-color:var(--amber);background:var(--accent-soft)}
+  #helpNav button b{display:block;font-weight:600}
+  #helpNav .helpPg b{font-weight:600}
+  #helpNav .helpSec{padding:3px 8px 3px 20px;color:var(--muted)}
+  #helpNav .helpSec b{font-weight:400}
+  #helpNav .helpSec.on{color:var(--ink)}
+  #helpNav .helpIn{display:block;font-size:11px;color:var(--amber)}
+  #helpNav .helpSnip{display:block;margin-top:2px;font-size:11.5px;color:var(--muted)}
+  #helpNav .helpMsg{margin:4px 8px 8px;font-size:11.5px;line-height:1.45;color:var(--muted)}
+  #helpFrame{flex:1;min-width:0;border:0;background:var(--bg)}
+  #helpFrame[hidden],#helpNone[hidden]{display:none}
+  #helpNone{flex:1;padding:28px;font-size:13px;line-height:1.6;color:var(--muted)}
+  #helpNone a{color:var(--amber)}
 </style>
 </head>
 <body>
@@ -521,6 +551,7 @@
     <div class="sub" id="verSub">precision 2D sketcher</div>
     <div class="spacer"></div>
     <button id="updateBadge" type="button" hidden></button>
+    <button id="helpBtn" class="hdrIcon" title="Help — search the guides without leaving 454 Design (F1)" aria-label="Help"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.8"/><path d="M6.9 7.1a2.2 2.2 0 1 1 3.3 1.9c-.8.5-1.2.9-1.2 1.7M9 12.9v.2"/></svg></button>
     <a id="openDocs" class="hdrIcon" href="docs/index.html" target="_blank" rel="noopener" title="Docs — guides and reference, in a new tab" aria-label="Docs"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3.5h4.5A1.8 1.8 0 0 1 9 5v9a1.5 1.5 0 0 0-1.5-1.1H3z"/><path d="M15 3.5h-4.5A1.8 1.8 0 0 0 9 5v9a1.5 1.5 0 0 1 1.5-1.1H15z"/></svg></a>
     <button id="libBtn" class="hdrIcon" title="Tool library — your bits, tool numbers, and feeds and speeds" aria-label="Tool library"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M7 2.2h4v6.6l-2 4.4-2-4.4z"/><path d="M7 4.4h4M7 6.4h4M7 8.4h4" opacity=".75"/><path d="M9 13.2v2.6"/></svg></button>
     <button id="jobBtn" class="hdrIcon" title="Job setup — material size and thickness, units, where X, Y and Z zero are" aria-label="Job setup"><svg viewBox="0 0 18 18" aria-hidden="true"><rect x="2" y="5" width="14" height="9" rx="1"/><path d="M2 9h14M5 5V3M13 5V3"/><circle cx="2.2" cy="14" r="1.3"/></svg></button>
@@ -1077,7 +1108,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.115.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.116.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -5050,7 +5081,7 @@ var CUT_HELP_PIC = {
   stepover:
     '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit on one clearing pass, and on the next, overlapping it. The stepover is the distance between the two passes.">' +
     '<path class="hc" d="M10 22H110M10 42H110"/>' +
-    '<circle class="hb" cx="42" cy="22" r="14"/><circle class="hb" cx="42" cy="42" r="14" stroke-dasharray="3 3"/>' +
+    '<circle class="hk" cx="42" cy="22" r="14"/><circle class="hk" cx="42" cy="42" r="14" stroke-dasharray="3 3"/>' +
     '<path class="hd" d="M70 22V42M67 22H73M67 42H73"/><text x="76" y="35">stepover</text>' +
     '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
   ramp:
@@ -5070,6 +5101,41 @@ var CUT_HELP_PIC = {
   tabs: CUT_PIC_TABS,
   tabSize: CUT_PIC_TABS
 };
+// And one for each kind of cut: which side of the drawn line the bit runs, or what it leaves. hk is the bit.
+var CUT_TYPE_PIC = {
+  outside:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit runs round the outside of the drawn line, touching it, so the part inside keeps its drawn size.">' +
+    '<rect class="hb" x="40" y="15" width="56" height="34"/><text x="68" y="35" text-anchor="middle">part</text><rect class="hc" x="33" y="8" width="70" height="48" rx="7"/><circle class="hk" cx="33" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  inside:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit runs round the inside of the drawn line, touching it, so the opening keeps its drawn size.">' +
+    '<rect class="hb" x="26" y="8" width="72" height="48"/><text x="68" y="35" text-anchor="middle">opening</text><rect class="hc" x="33" y="15" width="58" height="34"/><circle class="hk" cx="33" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  on:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the middle of the bit follows the drawn line, so the cut is half the bit wide on each side of it.">' +
+    '<rect class="hb" x="30" y="11" width="64" height="42"/><rect class="hc" x="30" y="11" width="64" height="42" stroke-dasharray="5 4"/><circle class="hk" cx="30" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  pocket:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit clears the whole area inside the drawn line, in rings working outwards from the middle.">' +
+    '<rect class="hb" x="24" y="7" width="76" height="50"/><rect class="hc" x="31" y="14" width="62" height="36"/><rect class="hc" x="40" y="23" width="44" height="18"/><path class="hc" d="M49 32H75"/><circle class="hk" cx="31" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  drill:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: three drawn circles of different sizes, each drilled at its centre with a hole the size of the bit.">' +
+    '<circle class="hb" cx="26" cy="32" r="9"/><circle class="hb" cx="60" cy="32" r="14"/><circle class="hb" cx="96" cy="32" r="6"/><circle class="hk" cx="26" cy="32" r="5"/><circle class="hk" cx="60" cy="32" r="5"/><circle class="hk" cx="96" cy="32" r="5"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  chamfer:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: a V-bit runs along the top corner of the part and cuts it to a bevel.">' +
+    '<path class="hw" d="M6 30H84L98 44V58H6Z"/><path class="hk" d="M70 16L102 48L118 32V16Z"/><path class="hc" d="M84 30L98 44"/><text x="34" y="47" text-anchor="middle">part</text>' +
+    '<text x="60" y="68" text-anchor="middle">side view</text></svg>',
+  vcarve:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: a V-bit cuts a shallow groove where the shape is narrow and a deep one where it is wide.">' +
+    '<path class="hw" d="M6 26H22L30 34L38 26H58L78 46L98 26H114V58H6Z"/><path class="hc" d="M22 26L30 34L38 26M58 26L78 46L98 26"/><text x="30" y="20" text-anchor="middle">narrow</text><text x="78" y="20" text-anchor="middle">wide</text>' +
+    '<text x="60" y="68" text-anchor="middle">side view</text></svg>',
+  inlay:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: a pocket with sloping walls in the base, and above it the plug, cut to the same slope, ready to be glued in.">' +
+    '<path class="hw" d="M6 42H34L42 54H78L86 42H114V60H6Z"/><path class="hc" d="M34 42L42 54H78L86 42"/><path class="hk" d="M26 10H94V20H84L77 31H43L36 20H26Z"/><text x="60" y="23" text-anchor="middle">plug</text><path class="hd" d="M60 34V40M57 37L60 41L63 37"/>' +
+    '<text x="60" y="68" text-anchor="middle">side view</text></svg>'
+};
 var CUT_HELP_ON = null;                                  // the row whose help is showing; null shows the kind of cut's
 function cutHelpFor(key){
   if (key && key !== 'type' && CUT_HELP[key]) return CUT_HELP[key];
@@ -5085,7 +5151,8 @@ function cutHelpShow(key){
   var h = cutHelpFor(CUT_HELP_ON);
   document.getElementById('cutHelpT').textContent = h[0];
   document.getElementById('cutHelpB').textContent = h[1];
-  var pic = document.getElementById('cutHelpPic'), svg = (CUT_HELP_ON && CUT_HELP_PIC[CUT_HELP_ON]) || '';
+  var pic = document.getElementById('cutHelpPic'), onKind = !CUT_HELP_ON || CUT_HELP_ON === 'type';
+  var svg = (onKind ? CUT_TYPE_PIC[CUT && CUT.side] : CUT_HELP_PIC[CUT_HELP_ON]) || '';
   pic.innerHTML = svg; pic.hidden = !svg;
   Array.prototype.forEach.call(pan.querySelectorAll('.mirSlot.helpOn'), function (r) { r.classList.remove('helpOn'); });
   if (row) row.classList.add('helpOn');
@@ -5116,6 +5183,231 @@ function cutHelpWire(){
   var on = function (e) { var k = cutHelpRowOf(e.target); if (k) cutHelpShow(k); };
   pan.addEventListener('focusin', on);
   pan.addEventListener('click', on);
+}
+/* ---------------- help, inside the app ----------------
+   A window over 454 Design or 454 Control that shows the guides themselves (the docs' own pages, in a frame)
+   with a search box and a list of pages beside them, so a question is answered without leaving the app.
+   Shared by both apps: each build includes this file and help.css (apps/shared).
+
+   The pages and their search index (help-index.json, made by docs-site/scripts/help-index.mjs) sit where
+   the app's Docs link points. A copy with no guides beside it says so and offers the website's. */
+var HELP = {index: null, loading: null, failed: false, page: 'index.html', sec: '', opts: {}, was: null};
+var HELP_WEB = 'https://454workshop.com/docs/';
+
+// Where the guides are: the folder the app's own Docs link points into (the website's build moves it).
+function helpBase(){
+  var a = document.getElementById('openDocs'), href = a ? a.getAttribute('href') || '' : '';
+  return href.replace(/[^\/]*$/, '');
+}
+// A word as typed, cut back so "probing" and "probe" find each other, and "tabs" finds "tab"
+function helpStem(w){
+  var s = w.replace(/(ing|ed|es|e|s)$/, '');
+  return s.length >= 3 ? s : w;
+}
+function helpTerms(q){
+  return String(q || '').toLowerCase().split(/[^a-z0-9$.]+/).filter(function (w) { return w && w !== '.'; }).map(helpStem);
+}
+// The sections that have every word asked for, best first: a word in the heading counts for most, then the
+// page's name, then how often it's in the text. `own` (a pattern for page names) puts the app's own guides first:
+// "tabs" in 454 Design means the tabs that hold a part, not 454 Control's Machine tab.
+function helpSearch(index, q, own){
+  var terms = helpTerms(q), out = [];
+  if (!terms.length || !index) return out;
+  index.forEach(function (s, at) {
+    var title = s.title.toLowerCase(), page = s.pageTitle.toLowerCase(), text = s.text.toLowerCase(), score = 0, first = -1;
+    for (var i = 0; i < terms.length; i++){
+      var t = terms[i], got = 0, ti = title.indexOf(t);
+      if (ti >= 0) got += (title === t || helpStem(title) === t) ? 40 : (ti === 0 || /[^a-z0-9]/.test(title.charAt(ti - 1))) ? 20 : 12;
+      if (page.indexOf(t) >= 0) got += 5;
+      var n = 0, from = text.indexOf(t);
+      if (from >= 0 && (first < 0 || from < first)) first = from;
+      while (from >= 0 && n < 5){ n++; from = text.indexOf(t, from + t.length); }
+      got += n * 2;
+      if (!got) return;                                   // every word must be there
+      score += got;
+    }
+    if (s.level === 1) score += 2;                        // the top of a page, when it's about the thing
+    if (own && own.test(s.page)) score += 8;              // this app's own guides before the other app's
+    out.push({s: s, score: score, at: at, first: first});
+  });
+  out.sort(function (a, b) { return b.score - a.score || a.at - b.at; });
+  return out.slice(0, 40);
+}
+// A few words of the section round the first word found
+function helpSnippet(hit){
+  var text = hit.s.text, a = Math.max(0, hit.first - 50);
+  if (hit.first < 0) a = 0;
+  if (a > 0){ var sp = text.indexOf(' ', a); if (sp >= 0 && sp < a + 20) a = sp + 1; }
+  var b = Math.min(text.length, a + 150);
+  return (a > 0 ? '…' : '') + text.slice(a, b).trim() + (b < text.length ? '…' : '');
+}
+function helpIsOpen(){ var m = document.getElementById('helpModal'); return !!(m && !m.hidden); }
+
+function helpBuild(){
+  var m = document.getElementById('helpModal');
+  if (m) return m;
+  m = document.createElement('div'); m.id = 'helpModal'; m.hidden = true;
+  m.innerHTML =
+    '<div class="helpBox" role="dialog" aria-modal="true" aria-label="Help">' +
+      '<div class="helpHead"><b>Help</b>' +
+        '<input id="helpQ" type="search" autocomplete="off" spellcheck="false" placeholder="Search the guides: tabs, zero, probe…" aria-label="Search the guides">' +
+        '<a id="helpFull" target="_blank" rel="noopener" title="The same guides, in a window of their own">Open the docs ↗</a>' +
+        '<button id="helpX" title="Close (Esc)" aria-label="Close help">✕</button></div>' +
+      '<div class="helpBody"><nav id="helpNav" aria-label="Pages and search results"></nav>' +
+        '<iframe id="helpFrame" title="The guide"></iframe><div id="helpNone" hidden></div></div>' +
+    '</div>';
+  document.body.appendChild(m);
+  m.addEventListener('mousedown', function (e) { if (e.target === m) helpClose(); });
+  document.getElementById('helpX').addEventListener('click', helpClose);
+  document.getElementById('helpQ').addEventListener('input', helpRenderNav);
+  var navEl = document.getElementById('helpNav');
+  navEl.addEventListener('click', function (e) {
+    var b = e.target; while (b && b !== navEl && !(b.getAttribute && b.getAttribute('data-go'))) b = b.parentNode;
+    if (b && b !== navEl) helpGo(b.getAttribute('data-go'));
+  });
+  document.getElementById('helpFrame').addEventListener('load', helpFrameLoaded);
+  return m;
+}
+// The frame shows a page: it takes the app's light or dark theme, and the list marks where it is (the page
+// may have been reached by a link inside the guide).
+function helpFrameLoaded(){
+  var f = document.getElementById('helpFrame');
+  try {
+    var loc = f.contentWindow.location, name = (loc.pathname.split('/').pop() || 'index.html');
+    if (!/\.html$/.test(name)) name = name ? name + '.html' : 'index.html';
+    f.contentDocument.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+    if (name !== HELP.page){ HELP.page = name; HELP.sec = (loc.hash || '').slice(1); helpRenderNav(); }
+  } catch (e) {}                                          // a page from somewhere else: nothing to read
+}
+// "page.html#section": show it
+function helpGo(where){
+  var parts = String(where || 'index.html').split('#');
+  HELP.page = parts[0] || 'index.html'; HELP.sec = parts[1] || '';
+  var f = document.getElementById('helpFrame'), url = helpBase() + HELP.page + (HELP.sec ? '#' + HELP.sec : '');
+  if (!HELP.failed && f.getAttribute('src') !== url) f.setAttribute('src', url);
+  document.getElementById('helpFull').setAttribute('href', HELP.failed ? HELP_WEB : url);
+  helpRenderNav();
+}
+function helpRenderNav(){
+  var nav = document.getElementById('helpNav'), none = document.getElementById('helpNone'), frame = document.getElementById('helpFrame');
+  if (!nav) return;
+  nav.innerHTML = '';
+  none.hidden = !HELP.failed; frame.hidden = HELP.failed;
+  if (HELP.failed){
+    none.innerHTML = '';
+    var p = document.createElement('p');
+    p.textContent = 'The guides aren’t beside this copy of the app, so help can’t be shown here. They’re on the website:';
+    var a = document.createElement('a'); a.href = HELP_WEB; a.target = '_blank'; a.rel = 'noopener'; a.textContent = '454workshop.com/docs';
+    none.appendChild(p); none.appendChild(a);
+    return;
+  }
+  if (!HELP.index){ var w = document.createElement('p'); w.className = 'helpMsg'; w.textContent = 'Loading the guides…'; nav.appendChild(w); return; }
+  var q = document.getElementById('helpQ').value, terms = helpTerms(q);
+  function button(cls, go, title){
+    var b = document.createElement('button'); b.className = cls; b.setAttribute('data-go', go);
+    var t = document.createElement('b'); t.textContent = title; b.appendChild(t);
+    return b;
+  }
+  if (terms.length){
+    var hits = helpSearch(HELP.index, q, HELP.opts.own);
+    var say = document.createElement('p'); say.className = 'helpMsg';
+    say.textContent = hits.length ? hits.length + (hits.length === 1 ? ' place' : ' places') + ' in the guides' + (hits.length === 40 ? ' (the best 40)' : '')
+                                  : 'Nothing in the guides has “' + q.trim() + '”. Try another word, or pick a page:';
+    nav.appendChild(say);
+    hits.forEach(function (h) {
+      var b = button('helpHit', h.s.page + (h.s.id ? '#' + h.s.id : ''), h.s.title);
+      if (h.s.title !== h.s.pageTitle){ var inP = document.createElement('span'); inP.className = 'helpIn'; inP.textContent = h.s.pageTitle; b.appendChild(inP); }
+      var sn = document.createElement('span'); sn.className = 'helpSnip'; sn.textContent = helpSnippet(h); b.appendChild(sn);
+      if (h.s.page === HELP.page && (h.s.id || '') === HELP.sec) b.classList.add('on');
+      nav.appendChild(b);
+    });
+    if (hits.length) return;
+  }
+  // the pages, and under the one being read, its sections
+  var seen = {};
+  HELP.index.forEach(function (s) {
+    if (!seen[s.page]){
+      seen[s.page] = true;
+      var b = button('helpPg', s.page, s.pageTitle);
+      if (s.page === HELP.page){ b.classList.add('on'); b.setAttribute('aria-current', 'page'); }
+      nav.appendChild(b);
+    } else if (s.page === HELP.page && s.level === 2){
+      var c = button('helpSec', s.page + '#' + s.id, s.title);
+      if (s.id === HELP.sec) c.classList.add('on');
+      nav.appendChild(c);
+    }
+  });
+}
+function helpLoad(){
+  if (HELP.index || HELP.loading) return;
+  var fail = function () { HELP.loading = null; HELP.failed = true; helpGo(HELP.page + (HELP.sec ? '#' + HELP.sec : '')); };
+  if (typeof fetch !== 'function' || !helpBase()){ fail(); return; }
+  HELP.loading = fetch(helpBase() + 'help-index.json')
+    .then(function (r) { if (!r.ok) throw new Error('no index'); return r.json(); })
+    .then(function (ix) { if (!ix || !ix.length) throw new Error('empty index'); HELP.index = ix; HELP.loading = null; HELP.failed = false; helpRenderNav(); })
+    .catch(fail);
+}
+// Open the help: at "page.html#section", or where the app says is fitting for what's on screen.
+function helpOpen(where){
+  var m = helpBuild();
+  if (!where && HELP.opts.context) where = HELP.opts.context();
+  if (m.hidden) HELP.was = document.activeElement;
+  m.hidden = false;
+  document.getElementById('helpQ').value = '';
+  helpLoad();
+  helpGo(where || 'index.html');
+  var q = document.getElementById('helpQ'); if (q.focus) q.focus();
+}
+function helpClose(){
+  var m = document.getElementById('helpModal');
+  if (!m || m.hidden) return;
+  m.hidden = true;
+  if (HELP.was && HELP.was.focus && document.body.contains(HELP.was)) HELP.was.focus();
+  HELP.was = null;
+}
+// F1 and the ? button open it. While it's open, key presses stay with it: the app's own shortcuts (and, in
+// 454 Control, the jog keys) must not act on a key typed into the search box or pressed over the guide.
+// Only key presses are held back, never releases: a jog key held down when help opened still stops on release.
+function helpKey(e){
+  if (e.key === 'F1'){ e.preventDefault(); e.stopPropagation(); if (!helpIsOpen()) helpOpen(); return; }
+  if (!helpIsOpen()) return;
+  e.stopPropagation();
+  if (e.key === 'Escape'){ e.preventDefault(); helpClose(); }
+  else if (e.key === 'Enter' && e.target && e.target.id === 'helpQ'){
+    var first = document.querySelector('#helpNav .helpHit');
+    if (first){ e.preventDefault(); helpGo(first.getAttribute('data-go')); }
+  }
+}
+function helpWire(opts){
+  HELP.opts = opts || {};
+  var btn = document.getElementById('helpBtn');
+  if (btn) btn.addEventListener('click', function () { helpOpen(); });
+  window.addEventListener('keydown', helpKey, true);     // at the window, on the way down: before anything in the app hears it
+}
+// Where the help opens (F1, or the ? in the header) when nothing more particular was asked for: the part of the
+// guides about what's on screen. Each address is a page of the docs and a heading on it; the docs' build checks
+// that every one named here exists (docs-site/scripts/help-index.mjs).
+var HELP_FOR_CUT = {outside: 'cam-reference.html#profile', inside: 'cam-reference.html#profile', on: 'cam-reference.html#profile',
+                    pocket: 'cam-reference.html#pocket', drill: 'cam-reference.html#drill', chamfer: 'cam-reference.html#chamfer',
+                    vcarve: 'cam-reference.html#v-carve', inlay: 'cam-reference.html#inlay'};
+var HELP_FOR_WINDOW = [
+  ['jobModal', 'design-workspace.html#job-setup'],
+  ['libModal', 'design-workspace.html#the-tool-library'],
+  ['toolModal', 'design-workspace.html#the-tool-library'],
+  ['settingsModal', 'design-workspace.html#settings'],
+  ['nestModal', 'design-quickstart.html#5-nest-parts-on-the-material'],
+  ['textModal', 'design-tools.html#create-vectors'],
+  ['woodModal', 'cam-reference.html#order-checking-and-saving'],
+  ['jsModal', 'cam-reference.html#order-checking-and-saving']
+];
+function designHelpWhere(){
+  for (var i = 0; i < HELP_FOR_WINDOW.length; i++){
+    var w = document.getElementById(HELP_FOR_WINDOW[i][0]);
+    if (w && !w.hidden) return HELP_FOR_WINDOW[i][1];
+  }
+  if (CUT) return HELP_FOR_CUT[CUT.side] || 'cam-reference.html#the-basics';
+  if (tpList().length) return 'cam-reference.html#the-basics';
+  return 'design-quickstart.html';
 }
 // Toolpaths run in the order listed. Moving one is undoable like any other edit.
 function tpMoveTo(from, to){
@@ -10199,7 +10491,6 @@ function selectAll(){
 function keysWire(){
   window.addEventListener('keydown', function (e){
     if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return;
-    if (e.key === 'F1'){ e.preventDefault(); document.getElementById('openDocs').click(); return; }
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
     var k = e.key.toLowerCase(), t = e.target;
     var inField = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
@@ -14751,6 +15042,7 @@ function wire(){
     cutRender();
   });
   cutHelpWire();
+  helpWire({context: designHelpWhere, own: /^(design-|cam-)/});                // F1 and the ? in the header
   document.getElementById('cutPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }
     else if (e.key === 'Enter'){ e.preventDefault(); cutApply(); }

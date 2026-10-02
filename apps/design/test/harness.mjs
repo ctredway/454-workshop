@@ -16,7 +16,8 @@ const repo = path.join(src, '..', '..', '..');
 export function loadDesign({ cam = false, start = true } = {}) {
   const page = fs.readFileSync(path.join(src, 'design.html'), 'utf8');
   const files = [...page.matchAll(/^@@include (\S+)$/gm)].map((m) => m[1])
-    .filter((f) => f.startsWith('js/') && f !== 'js/cam-loader.js');           // the CAM engine loads separately
+    // Design's own code, and what it shares with 454 Control (apps/shared). The CAM engine loads separately.
+    .filter((f) => f.endsWith('.js') && (f.startsWith('js/') || f.startsWith('../../shared/')) && f !== 'js/cam-loader.js');
   const markup = page.replace(/^@@include .*$/gm, '').replace(/<script[\s\S]*?<\/script>/g, '');
   const { window, document } = parseHTML(markup);
   // as in a browser: a <select>'s value can be set (choosing the matching option) and read back

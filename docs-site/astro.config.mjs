@@ -15,6 +15,8 @@ export default defineConfig({
       description: 'How to use 454 Design and 454 Control: free CNC design, toolpaths and machine control for GRBL routers.',
       logo: { src: './src/assets/logo.svg', alt: '454' },
       favicon: '/favicon.svg',
+      // Shown inside the apps' help window (a frame): mark the page, so theme.css leaves only the article.
+      head: [{ tag: 'script', content: "if(window.self!==window.top)document.documentElement.classList.add('in-help');" }],
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/ctredway/454-workshop' }],
       editLink: { baseUrl: 'https://github.com/ctredway/454-workshop/edit/master/docs-site/' },
       customCss: ['@fontsource-variable/archivo/wdth.css', '@fontsource-variable/jetbrains-mono', './src/styles/theme.css'],

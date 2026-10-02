@@ -158,7 +158,8 @@ test('ramp, lead, tabs and stepover have a small picture beside the words; the o
   // which picture is showing, by what it says it shows (the tests' page writes markup a little differently)
   const says = (svg) => (/aria-label="([^"]*)"/.exec(svg) || [])[1] || '';
   const pic = () => ({ shown: !el('cutHelpPic').hidden, svg: says(el('cutHelpPic').innerHTML) });
-  assert.deepEqual(pic(), { shown: false, svg: '' }, 'the kind of cut: words only');
+  assert.deepEqual(pic(), { shown: true, svg: says(D.CUT_TYPE_PIC.outside) }, 'the kind of cut has its own picture');
+  assert.match(pic().svg, /^Seen from above: the bit runs round the outside of the drawn line/);
   el('cutTabsOn').checked = true; fire(el('cutTabsOn'), 'change'); D.cutRender();
   for (const [id, key] of [['cutRamp', 'ramp'], ['cutLead', 'lead'], ['cutTabsOn', 'tabs'], ['cutTabLen', 'tabSize']]) {
     fire(el(id), 'focusin');
@@ -173,7 +174,10 @@ test('ramp, lead, tabs and stepover have a small picture beside the words; the o
   assert.equal(pic().svg, says(D.CUT_HELP_PIC.stepover));
   assert.match(pic().svg, /^Seen from above: the bit on one clearing pass/);
   set('cutType', 'vcarve', 'change');                      // no stepover on a V-carve: back to the kind of cut
-  assert.deepEqual(pic(), { shown: false, svg: '' });
+  assert.equal(pic().svg, says(D.CUT_TYPE_PIC.vcarve));
+  fire(el('cutType'), 'focusin');                          // on the Cut row itself: the same
+  assert.equal(pic().svg, says(D.CUT_TYPE_PIC.vcarve));
+  for (const o of el('cutType').options) { set('cutType', o.value, 'change'); assert.equal(pic().svg, says(D.CUT_TYPE_PIC[o.value]), o.value); assert.equal(pic().shown, true); }
   D.cutClose();
 });
 test('every picture belongs to a setting, says what it shows, and is drawn in the page’s colours', () => {
@@ -186,6 +190,15 @@ test('every picture belongs to a setting, says what it shows, and is drawn in th
     assert.match(svg, /class="hc"/, k + ' shows where the bit goes');
   }
   assert.equal(pics.tabs, pics.tabSize, 'both tab rows show the same picture');
+  const kinds = plain(D.CUT_TYPE_PIC);
+  assert.deepEqual(Object.keys(kinds).sort(), plain(Object.keys(D.CUT_HELP_TYPE)).sort(), 'every kind of cut has one');
+  for (const [k, svg] of Object.entries(kinds)) {
+    assert.match(svg, /^<svg viewBox="0 0 120 72" role="img" aria-label="Seen from [^"]{40,}">.*<\/svg>$/, k);
+    assert.ok(!/(fill|stroke)="/.test(svg), k);
+  }
+  assert.equal(new Set(Object.values(kinds)).size, 8, 'each its own');
+  const said = Object.values(kinds).concat(Object.values(pics)).map((svg) => svg.split('aria-label="')[1].split('"')[0]);
+  assert.equal(new Set(said).size, 8 + 4, 'and each says something of its own (the two tab rows share one picture)');
 });
 test('tabs ticked on a profile don’t leave tab rows on a pocket', () => {
   drawing();

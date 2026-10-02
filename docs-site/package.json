@@ -5,7 +5,7 @@
   "description": "The 454 Workshop documentation, at 454workshop.com/docs. Astro Starlight.",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/help-index.mjs",
     "preview": "astro preview",
     "shots": "node scripts/shots.mjs"
   },

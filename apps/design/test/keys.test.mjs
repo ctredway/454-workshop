@@ -136,16 +136,21 @@ test('Ctrl+Shift+Z redoes (it used to undo); Ctrl+Z and Ctrl+Y as before', () =>
   D.press('z', { ctrl: true }); D.press('y', { ctrl: true });
   assert.equal(plain(D.run('DOC.ents')).length, 3);
 });
-test('F1 opens the docs; while a dialog is open, it has the keyboard', () => {
+test('F1 opens the help over the app, not the docs window; while a dialog is open, the dialog has the other keys', () => {
   const D = fresh();
   let opened = 0;
   D.document.getElementById('openDocs').click = () => { opened++; };
-  D.press('F1');
-  assert.equal(opened, 1);
+  const e = D.press('F1');
+  assert.equal(opened, 0, 'the separate docs window is for the Docs button now');
+  assert.equal(D.helpIsOpen(), true);
+  assert.equal(e.defaultPrevented, true);
+  D.helpClose();
   D.document.getElementById('settingsModal').hidden = false;
-  D.press('F1'); D.press('a', { ctrl: true });
-  assert.equal(opened, 1);
-  assert.deepEqual(plain(D.run('SEL')), []);
+  D.press('a', { ctrl: true });
+  assert.deepEqual(plain(D.run('SEL')), [], 'Ctrl+A doesn’t select behind a dialog');
+  D.press('F1');
+  assert.equal(D.helpIsOpen(), true, 'F1 works over a dialog');
+  assert.deepEqual([D.HELP.page, D.HELP.sec], ['design-workspace.html', 'settings'], 'and opens at that dialog’s guide');
 });
 
 // ---- in the desktop app: files by path, so Save goes back to the file a drawing came from ----

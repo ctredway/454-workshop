@@ -13,7 +13,6 @@ function selectAll(){
 function keysWire(){
   window.addEventListener('keydown', function (e){
     if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return;
-    if (e.key === 'F1'){ e.preventDefault(); document.getElementById('openDocs').click(); return; }
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
     var k = e.key.toLowerCase(), t = e.target;
     var inField = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);

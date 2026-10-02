@@ -34,6 +34,8 @@
   header .brand span{color:var(--ink)}                 /* the logo carries the colour; the app's name stays neutral */
   #openDocs{color:var(--muted);text-decoration:none;font-size:13px;padding:5px 8px;border-radius:5px}
   #openDocs:hover{color:var(--ink);background:var(--accent-faint)}
+  #helpBtn{background:none;border:0;color:var(--muted);font-size:13px;padding:5px 8px;border-radius:5px;cursor:pointer}
+  #helpBtn:hover{color:var(--ink);background:var(--accent-faint)}
   #openDesign{color:var(--amber);text-decoration:none;font-size:13px;font-weight:600;padding:5px 10px;border:1px solid var(--line);border-radius:5px;white-space:nowrap}
   #openDesign:hover{border-color:var(--amber);background:var(--accent-faint)}
   header .sub{color:var(--muted);font-size:12.5px}

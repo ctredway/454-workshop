@@ -79,3 +79,29 @@ h1#_top {
   --sl-color-purple: #3f7a2c;
   --sl-color-purple-high: #1f4a14;
 }
+
+/* Inside the apps' help window (a frame; astro.config.mjs marks the page): only the article. The window has
+   its own search and list of pages, so the header, the menu, "On this page" and the page footer go. */
+html.in-help {
+  --sl-nav-height: 0rem;
+  --sl-mobile-toc-height: 0rem;
+  --sl-sidebar-width: 0rem;
+  --sl-content-inline-start: 0rem;
+  scroll-padding-top: 0.75rem;
+}
+html.in-help .page > header.header,
+html.in-help nav.sidebar,
+html.in-help .right-sidebar-container,
+html.in-help mobile-starlight-toc,
+html.in-help .pagination-links,
+html.in-help footer .meta,
+html.in-help footer .kudos {
+  display: none !important;
+}
+html.in-help .main-frame {
+  padding-top: 0;
+  padding-inline-start: 0;
+}
+html.in-help .main-pane {
+  width: 100%;
+}

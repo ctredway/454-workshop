@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 @@include styles/design.css
+@@include ../../shared/help.css
 </style>
 </head>
 <body>
@@ -17,6 +18,7 @@
     <div class="sub" id="verSub">precision 2D sketcher</div>
     <div class="spacer"></div>
     <button id="updateBadge" type="button" hidden></button>
+    <button id="helpBtn" class="hdrIcon" title="Help — search the guides without leaving 454 Design (F1)" aria-label="Help"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.8"/><path d="M6.9 7.1a2.2 2.2 0 1 1 3.3 1.9c-.8.5-1.2.9-1.2 1.7M9 12.9v.2"/></svg></button>
     <a id="openDocs" class="hdrIcon" href="docs/index.html" target="_blank" rel="noopener" title="Docs — guides and reference, in a new tab" aria-label="Docs"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3.5h4.5A1.8 1.8 0 0 1 9 5v9a1.5 1.5 0 0 0-1.5-1.1H3z"/><path d="M15 3.5h-4.5A1.8 1.8 0 0 0 9 5v9a1.5 1.5 0 0 1 1.5-1.1H15z"/></svg></a>
     <button id="libBtn" class="hdrIcon" title="Tool library — your bits, tool numbers, and feeds and speeds" aria-label="Tool library"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M7 2.2h4v6.6l-2 4.4-2-4.4z"/><path d="M7 4.4h4M7 6.4h4M7 8.4h4" opacity=".75"/><path d="M9 13.2v2.6"/></svg></button>
     <button id="jobBtn" class="hdrIcon" title="Job setup — material size and thickness, units, where X, Y and Z zero are" aria-label="Job setup"><svg viewBox="0 0 18 18" aria-hidden="true"><rect x="2" y="5" width="14" height="9" rx="1"/><path d="M2 9h14M5 5V3M13 5V3"/><circle cx="2.2" cy="14" r="1.3"/></svg></button>
@@ -585,6 +587,8 @@
 @@include js/toolpath-generate.js
 @@include js/toolpath-editor.js
 @@include js/toolpath-help.js
+@@include ../../shared/help.js
+@@include js/help-where.js
 @@include js/toolpath-order.js
 @@include js/gcode-export.js
 @@include js/dxf-export.js

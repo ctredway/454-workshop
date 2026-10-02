@@ -112,6 +112,7 @@ var SAMPLE = [
 
 function wire(){
   initThree();
+  helpWire({context: controlHelpWhere, own: /^control-/});               // F1 and Help in the header: the guides, in a window over this one
 
   document.getElementById('openBtn').addEventListener('click', function(){
     document.getElementById('fileInput').click();
@@ -208,9 +209,8 @@ function wire(){
     if (!document.getElementById('dlgModal').hidden) return;  // an in-app dialog owns the keyboard
     if (!document.getElementById('toolModal').hidden) return; // so does the tool-change prompt
     // the shortcuts most programs have: Ctrl+O opens a G-code file (refused during a job, as the button is),
-    // F1 the docs. Nothing here moves the machine.
+    // (F1 opens the help: helpWire.) Nothing here moves the machine.
     if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'o'){ e.preventDefault(); document.getElementById('openBtn').click(); return; }
-    if (e.key === 'F1'){ e.preventDefault(); document.getElementById('openDocs').click(); return; }
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
     if (e.code === 'Space'){ e.preventDefault(); document.getElementById('btnPlay').click(); }
     else if (e.code === 'ArrowRight'){ stepLine(1); }

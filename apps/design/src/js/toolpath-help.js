@@ -52,7 +52,7 @@ var CUT_HELP_PIC = {
   stepover:
     '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit on one clearing pass, and on the next, overlapping it. The stepover is the distance between the two passes.">' +
     '<path class="hc" d="M10 22H110M10 42H110"/>' +
-    '<circle class="hb" cx="42" cy="22" r="14"/><circle class="hb" cx="42" cy="42" r="14" stroke-dasharray="3 3"/>' +
+    '<circle class="hk" cx="42" cy="22" r="14"/><circle class="hk" cx="42" cy="42" r="14" stroke-dasharray="3 3"/>' +
     '<path class="hd" d="M70 22V42M67 22H73M67 42H73"/><text x="76" y="35">stepover</text>' +
     '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
   ramp:
@@ -72,6 +72,41 @@ var CUT_HELP_PIC = {
   tabs: CUT_PIC_TABS,
   tabSize: CUT_PIC_TABS
 };
+// And one for each kind of cut: which side of the drawn line the bit runs, or what it leaves. hk is the bit.
+var CUT_TYPE_PIC = {
+  outside:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit runs round the outside of the drawn line, touching it, so the part inside keeps its drawn size.">' +
+    '<rect class="hb" x="40" y="15" width="56" height="34"/><text x="68" y="35" text-anchor="middle">part</text><rect class="hc" x="33" y="8" width="70" height="48" rx="7"/><circle class="hk" cx="33" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  inside:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit runs round the inside of the drawn line, touching it, so the opening keeps its drawn size.">' +
+    '<rect class="hb" x="26" y="8" width="72" height="48"/><text x="68" y="35" text-anchor="middle">opening</text><rect class="hc" x="33" y="15" width="58" height="34"/><circle class="hk" cx="33" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  on:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the middle of the bit follows the drawn line, so the cut is half the bit wide on each side of it.">' +
+    '<rect class="hb" x="30" y="11" width="64" height="42"/><rect class="hc" x="30" y="11" width="64" height="42" stroke-dasharray="5 4"/><circle class="hk" cx="30" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  pocket:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit clears the whole area inside the drawn line, in rings working outwards from the middle.">' +
+    '<rect class="hb" x="24" y="7" width="76" height="50"/><rect class="hc" x="31" y="14" width="62" height="36"/><rect class="hc" x="40" y="23" width="44" height="18"/><path class="hc" d="M49 32H75"/><circle class="hk" cx="31" cy="32" r="7"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  drill:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: three drawn circles of different sizes, each drilled at its centre with a hole the size of the bit.">' +
+    '<circle class="hb" cx="26" cy="32" r="9"/><circle class="hb" cx="60" cy="32" r="14"/><circle class="hb" cx="96" cy="32" r="6"/><circle class="hk" cx="26" cy="32" r="5"/><circle class="hk" cx="60" cy="32" r="5"/><circle class="hk" cx="96" cy="32" r="5"/>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  chamfer:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: a V-bit runs along the top corner of the part and cuts it to a bevel.">' +
+    '<path class="hw" d="M6 30H84L98 44V58H6Z"/><path class="hk" d="M70 16L102 48L118 32V16Z"/><path class="hc" d="M84 30L98 44"/><text x="34" y="47" text-anchor="middle">part</text>' +
+    '<text x="60" y="68" text-anchor="middle">side view</text></svg>',
+  vcarve:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: a V-bit cuts a shallow groove where the shape is narrow and a deep one where it is wide.">' +
+    '<path class="hw" d="M6 26H22L30 34L38 26H58L78 46L98 26H114V58H6Z"/><path class="hc" d="M22 26L30 34L38 26M58 26L78 46L98 26"/><text x="30" y="20" text-anchor="middle">narrow</text><text x="78" y="20" text-anchor="middle">wide</text>' +
+    '<text x="60" y="68" text-anchor="middle">side view</text></svg>',
+  inlay:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: a pocket with sloping walls in the base, and above it the plug, cut to the same slope, ready to be glued in.">' +
+    '<path class="hw" d="M6 42H34L42 54H78L86 42H114V60H6Z"/><path class="hc" d="M34 42L42 54H78L86 42"/><path class="hk" d="M26 10H94V20H84L77 31H43L36 20H26Z"/><text x="60" y="23" text-anchor="middle">plug</text><path class="hd" d="M60 34V40M57 37L60 41L63 37"/>' +
+    '<text x="60" y="68" text-anchor="middle">side view</text></svg>'
+};
 var CUT_HELP_ON = null;                                  // the row whose help is showing; null shows the kind of cut's
 function cutHelpFor(key){
   if (key && key !== 'type' && CUT_HELP[key]) return CUT_HELP[key];
@@ -87,7 +122,8 @@ function cutHelpShow(key){
   var h = cutHelpFor(CUT_HELP_ON);
   document.getElementById('cutHelpT').textContent = h[0];
   document.getElementById('cutHelpB').textContent = h[1];
-  var pic = document.getElementById('cutHelpPic'), svg = (CUT_HELP_ON && CUT_HELP_PIC[CUT_HELP_ON]) || '';
+  var pic = document.getElementById('cutHelpPic'), onKind = !CUT_HELP_ON || CUT_HELP_ON === 'type';
+  var svg = (onKind ? CUT_TYPE_PIC[CUT && CUT.side] : CUT_HELP_PIC[CUT_HELP_ON]) || '';
   pic.innerHTML = svg; pic.hidden = !svg;
   Array.prototype.forEach.call(pan.querySelectorAll('.mirSlot.helpOn'), function (r) { r.classList.remove('helpOn'); });
   if (row) row.classList.add('helpOn');

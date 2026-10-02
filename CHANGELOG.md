@@ -27,8 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.33 — pictures in the toolpath editor's help
-- Includes Design 0.115.1: small pictures beside the help for Stepover, Ramp in, Lead in/out and Tabs.
+### 0.6.2-beta.33 — help inside the app; pictures in the toolpath editor's help
+- Includes Design 0.116.0 and Control 0.31.22: help inside the app. F1 opens the guides in a window over
+  what you're doing, with search.
+- Includes Design 0.115.1: small pictures in the toolpath editor's help, for every kind of cut and for
+  Stepover, Ramp in, Lead in/out and Tabs.
 
 ### 0.6.2-beta.32 — name your toolpaths
 - Includes Design 0.115.0: toolpaths can be named, their cards fold to the title, and the toolpath editor
@@ -476,6 +479,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.31.22 — help inside the app
+- **F1, or Help in the header, opens the guides in a window over 454 Control,** with a search box, instead of
+  a separate window. It opens at what you're doing: connecting, loading a file, setting zero (with the jog
+  panel or the BitZero window open), settings, or running a job. Control's own guides come first in a search.
+- **(machine) While help is open, key presses don't reach Control,** so the jog keys can't move the machine
+  from behind it. Key releases always do: a jog key held down when help opened still stops when it's let go.
+- The Docs link is unchanged: it still opens the guides in their own window.
+
 ### 0.31.21 — a Z nudge ends with its job, unless you keep it
 - **(machine) Fixed: a Z nudge from the Adjust panel stayed on after the job finished.** The nudge is held in
   the controller as part of the tool length offset, and nothing took it off at the end. The next job started
@@ -865,8 +876,31 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.116.0 — help inside the app
+- **F1, or the ? in the header, opens the guides in a window over 454 Design,** instead of sending you to a
+  separate window. It shows the docs' own pages, so there is one set of words, with a search box and a list of
+  pages beside them.
+- **It opens at what you're doing:** the kind of cut in the toolpath editor (a pocket opens at Pocket), Job
+  setup, the tool library, nesting, settings; otherwise the toolpath basics or the quick start.
+- **Search** finds sections, not just pages. A word in a heading counts for most, every word typed must be
+  there, "probing" finds "probe", and Design's own guides come before Control's. Enter opens the first result.
+- **Keys stay with the help while it's open:** typing in the search box, or pressing Delete over the guide,
+  doesn't reach the drawing. Esc closes it.
+- **The docs page is shown trimmed** inside the window (no header, menu or footer), in the app's light or dark
+  theme. Links inside a guide work. **Open the docs** shows the same page in the docs' own window.
+- **A copy with no guides beside it** (design.html opened on its own) says so and links to the website.
+- **The search index is made when the docs are built** (`docs-site/scripts/help-index.mjs`: 182 sections of
+  12 pages), and that build now fails if either app opens its help at a heading that no longer exists, naming
+  it. The places are listed in each app's `help-where.js`.
+- Shared with 454 Control (`apps/shared/help.js`, `help.css`: both builds include them).
+- **Tested** (`apps/design/test/help.test.mjs`, 17 tests; broken on purpose 47 ways: 46 caught, the other
+  makes no difference), and tried in the app with real key presses in both Design and Control.
+
 ### 0.115.1 — small pictures in the toolpath editor's help
-- **Four settings now have a small picture beside their help:** Stepover (two passes of the bit from above,
+- **Every kind of cut has a small picture beside its help,** shown when the editor opens and whenever the Cut
+  row is chosen: outside, inside and on-the-line profiles and the pocket from above, showing which side of
+  the drawn line the bit runs; drilling from above; chamfer, V-carve and inlay from the side.
+- **Four settings have one too:** Stepover (two passes of the bit from above,
   and the distance between them), Ramp in (the bit sloping into the material, from the side, with the ramp
   length and one pass marked), Lead in/out (the cut round a part, with the arc coming on from the waste side),
   and Tabs (the cut stepping up over two tabs, with length and thickness marked). The others stay words only.
