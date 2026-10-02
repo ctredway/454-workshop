@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.33 — pictures in the toolpath editor's help
+- Includes Design 0.115.1: small pictures beside the help for Stepover, Ramp in, Lead in/out and Tabs.
+
 ### 0.6.2-beta.32 — name your toolpaths
 - Includes Design 0.115.0: toolpaths can be named, their cards fold to the title, and the toolpath editor
   takes over the Toolpaths panel, with headings and help for every setting.
@@ -861,6 +864,16 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.115.1 — small pictures in the toolpath editor's help
+- **Four settings now have a small picture beside their help:** Stepover (two passes of the bit from above,
+  and the distance between them), Ramp in (the bit sloping into the material, from the side, with the ramp
+  length and one pass marked), Lead in/out (the cut round a part, with the arc coming on from the waste side),
+  and Tabs (the cut stepping up over two tabs, with length and thickness marked). The others stay words only.
+- The pictures are drawn in the page's own colours, so they follow the light and dark themes, and each says
+  what it shows for a screen reader.
+- Tested in `toolpath-editor-dock.test.mjs` (10 tests now; broken on purpose 8 more ways, all caught), and each
+  picture was looked at enlarged in the app.
 
 ### 0.115.0 — name your toolpaths; fold their cards to the title; the editor takes over the panel and explains itself
 - **The toolpath editor takes over the Toolpaths panel** while it's open, as VCarve's does, instead of floating

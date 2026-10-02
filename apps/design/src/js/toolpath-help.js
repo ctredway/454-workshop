@@ -38,6 +38,40 @@ var CUT_HELP_TYPE = {
   vcarve: ['V-carve', 'A V-bit follows the middle of each shape, going deeper where the shape is wider, so corners come out sharp. For lettering and signs.'],
   inlay: ['Inlay', 'Cuts the two halves of a V-bit inlay: a pocket in the base, and a mirrored plug in the inlay piece, which is flipped over and glued in.']
 };
+// A small picture beside the words, for the settings that are easier seen than said. Drawn in the page's own
+// colours (design.css, #cutHelpPic): hw wood, hc where the bit goes, hb the bit or the drawn line, hd a measure.
+var CUT_PIC_TABS =
+  '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: the cut goes through the material, and steps up over two tabs. A tab’s length is measured along the cut, its thickness up from the bottom.">' +
+  '<rect class="hd" x="6" y="20" width="108" height="36" stroke-dasharray="3 3"/>' +
+  '<rect class="hw" x="18" y="44" width="22" height="12"/><rect class="hw" x="84" y="44" width="22" height="12"/>' +
+  '<path class="hc" d="M6 56H16V44H42V56H82V44H108V56H114"/>' +
+  '<path class="hd" d="M18 37H40M18 34V40M40 34V40"/><text x="29" y="31" text-anchor="middle">length</text>' +
+  '<path class="hd" d="M62 44V56M59 44H65M59 56H65"/><text x="62" y="39" text-anchor="middle">thickness</text>' +
+  '<text x="60" y="68" text-anchor="middle">side view</text></svg>';
+var CUT_HELP_PIC = {
+  stepover:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the bit on one clearing pass, and on the next, overlapping it. The stepover is the distance between the two passes.">' +
+    '<path class="hc" d="M10 22H110M10 42H110"/>' +
+    '<circle class="hb" cx="42" cy="22" r="14"/><circle class="hb" cx="42" cy="42" r="14" stroke-dasharray="3 3"/>' +
+    '<path class="hd" d="M70 22V42M67 22H73M67 42H73"/><text x="76" y="35">stepover</text>' +
+    '<text x="60" y="68" text-anchor="middle">top view</text></svg>',
+  ramp:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from the side: the bit slopes down into the material over the ramp length, then cuts level at the depth of the pass.">' +
+    '<rect class="hw" x="6" y="26" width="108" height="32"/>' +
+    '<path class="hc" d="M10 26L58 44H108"/><path class="ha" d="M112 44l-7 -3.5v7z"/>' +
+    '<path class="hd" d="M10 17H58M10 14V20M58 14V20"/><text x="34" y="11" text-anchor="middle">ramp length</text>' +
+    '<path class="hd" d="M70 26V44M67 26H73M67 44H73"/><text x="76" y="38">one pass</text>' +
+    '<text x="60" y="68" text-anchor="middle">side view</text></svg>',
+  lead:
+    '<svg viewBox="0 0 120 72" role="img" aria-label="Seen from above: the cut runs round the outside of the part, and the bit sweeps onto it in an arc from the waste side.">' +
+    '<rect class="hb" x="46" y="14" width="58" height="36"/><text x="75" y="35" text-anchor="middle">part</text>' +
+    '<rect class="hc" x="39" y="7" width="72" height="50" rx="7"/>' +
+    '<path class="hc" d="M19 46A20 20 0 0 0 39 26" stroke-dasharray="4 3"/><path class="ha" d="M39 21l-3.5 7h7z"/>' +
+    '<text x="4" y="58">lead in</text>' +
+    '<text x="75" y="68" text-anchor="middle">top view</text></svg>',
+  tabs: CUT_PIC_TABS,
+  tabSize: CUT_PIC_TABS
+};
 var CUT_HELP_ON = null;                                  // the row whose help is showing; null shows the kind of cut's
 function cutHelpFor(key){
   if (key && key !== 'type' && CUT_HELP[key]) return CUT_HELP[key];
@@ -53,6 +87,8 @@ function cutHelpShow(key){
   var h = cutHelpFor(CUT_HELP_ON);
   document.getElementById('cutHelpT').textContent = h[0];
   document.getElementById('cutHelpB').textContent = h[1];
+  var pic = document.getElementById('cutHelpPic'), svg = (CUT_HELP_ON && CUT_HELP_PIC[CUT_HELP_ON]) || '';
+  pic.innerHTML = svg; pic.hidden = !svg;
   Array.prototype.forEach.call(pan.querySelectorAll('.mirSlot.helpOn'), function (r) { r.classList.remove('helpOn'); });
   if (row) row.classList.add('helpOn');
 }

@@ -152,6 +152,41 @@ test('the help leaves a setting that the new kind of cut doesn’t have', () => 
   assert.equal(help(), 'Profile, outside', 'and a newly opened editor starts on the kind of cut again');
   D.cutClose();
 });
+test('ramp, lead, tabs and stepover have a small picture beside the words; the others have none', () => {
+  drawing();
+  open();
+  // which picture is showing, by what it says it shows (the tests' page writes markup a little differently)
+  const says = (svg) => (/aria-label="([^"]*)"/.exec(svg) || [])[1] || '';
+  const pic = () => ({ shown: !el('cutHelpPic').hidden, svg: says(el('cutHelpPic').innerHTML) });
+  assert.deepEqual(pic(), { shown: false, svg: '' }, 'the kind of cut: words only');
+  el('cutTabsOn').checked = true; fire(el('cutTabsOn'), 'change'); D.cutRender();
+  for (const [id, key] of [['cutRamp', 'ramp'], ['cutLead', 'lead'], ['cutTabsOn', 'tabs'], ['cutTabLen', 'tabSize']]) {
+    fire(el(id), 'focusin');
+    assert.equal(pic().shown, true, key);
+    assert.equal(pic().svg, says(D.CUT_HELP_PIC[key]), key);
+    assert.ok(el('cutHelpPic').querySelector('svg .hc'), key + ' is drawn');
+  }
+  fire(el('cutStep'), 'focusin');
+  assert.deepEqual(pic(), { shown: false, svg: '' }, 'Per pass has none, and the last one is gone');
+  set('cutType', 'pocket', 'change'); D.CUT.toolChosen = true; D.cutRender();
+  fire(el('cutStepover'), 'focusin');
+  assert.equal(pic().svg, says(D.CUT_HELP_PIC.stepover));
+  assert.match(pic().svg, /^Seen from above: the bit on one clearing pass/);
+  set('cutType', 'vcarve', 'change');                      // no stepover on a V-carve: back to the kind of cut
+  assert.deepEqual(pic(), { shown: false, svg: '' });
+  D.cutClose();
+});
+test('every picture belongs to a setting, says what it shows, and is drawn in the page’s colours', () => {
+  const pics = plain(D.CUT_HELP_PIC);
+  assert.deepEqual(Object.keys(pics).sort(), ['lead', 'ramp', 'stepover', 'tabSize', 'tabs']);
+  for (const [k, svg] of Object.entries(pics)) {
+    assert.ok(D.CUT_HELP[k], k + ' is a setting with help');
+    assert.match(svg, /^<svg viewBox="0 0 120 72" role="img" aria-label="[^"]{40,}">.*<\/svg>$/, k);
+    assert.ok(!/(fill|stroke)="/.test(svg), k + ': no colours of its own, so it follows the light and dark themes');
+    assert.match(svg, /class="hc"/, k + ' shows where the bit goes');
+  }
+  assert.equal(pics.tabs, pics.tabSize, 'both tab rows show the same picture');
+});
 test('tabs ticked on a profile don’t leave tab rows on a pocket', () => {
   drawing();
   open();

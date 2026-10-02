@@ -314,6 +314,17 @@
   #cutPanel #cutThroughLbl[hidden] + #cutDepth{margin-left:auto !important}
   #cutHelp{min-height:58px;padding:7px 10px;border-left:3px solid var(--amber);border-radius:0 5px 5px 0;background:var(--panel-deep);font-size:12px;line-height:1.5;color:var(--muted)}
   #cutHelp b{display:block;margin-bottom:2px;font-size:12.5px;color:var(--ink)}
+  #cutHelp{display:flex;gap:10px;align-items:flex-start}
+  #cutHelp > div{flex:1;min-width:0}
+  #cutHelpPic{flex:none;width:132px;line-height:0;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
+  #cutHelpPic[hidden]{display:none}
+  #cutHelpPic svg{display:block;width:100%;height:auto}
+  #cutHelpPic .hw{fill:var(--line);stroke:none}
+  #cutHelpPic .hc{fill:none;stroke:var(--amber);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  #cutHelpPic .ha{fill:var(--amber);stroke:none}
+  #cutHelpPic .hb{fill:none;stroke:var(--ink);stroke-width:1.3}
+  #cutHelpPic .hd{fill:none;stroke:var(--muted);stroke-width:1}
+  #cutHelpPic text{fill:var(--muted);font-size:9px;font-family:inherit}
   #cutPanel h3{font-size:14px}
   #cutPanel input[type=text]{width:66px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #cutPanel select{font-size:12px}
