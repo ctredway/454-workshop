@@ -63,10 +63,10 @@ part. Correctness beats speed. Prove changes; don't assume them.
 ## Building and testing
 
 ```sh
-npm ci                                            # root: the packages, and linkedom for Design's tests
+npm ci                                            # root: the packages, and linkedom for Design's and Control's tests
 npm run build                                     # the packages (plugin-api, gcode, grbl)
 npm test                                          # package tests, including the parser's golden tests
-node --test 'apps/control/test/*.test.mjs'        # Control: parser, job builder, BitSetter
+node --test 'apps/control/test/*.test.mjs'        # Control: parser, job builder, BitSetter, Z nudge, help (needs npm ci)
 node --test 'apps/design/test/*.test.mjs'         # Design: file formats and toolpaths, on its real sources
 cd apps/desktop && npm ci && npx vitest run       # the desktop app: updater, serial
 cd docs-site && npm ci && npm run build           # the docs (Node 22.12 or later)

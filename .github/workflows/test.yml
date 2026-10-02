@@ -11,11 +11,11 @@ jobs:
         run: node apps/control/build.mjs --check
       - name: 454 Design's design.html matches its source files (apps/design/src)
         run: node apps/design/build.mjs --check
-      - name: 454 Control's unit tests (the job builder)
-        run: node --test 'apps/control/test/*.test.mjs'
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - name: 454 Control's tests (the job builder, the Z nudge, and its help on its real page; needs npm ci for linkedom)
+        run: node --test 'apps/control/test/*.test.mjs'
       - name: 454 Design's tests (on its real source files; needs npm ci for linkedom)
         run: node --test 'apps/design/test/*.test.mjs'
       - name: The website builds, with every internal link checked (the same build Cloudflare runs)
