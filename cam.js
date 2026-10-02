@@ -828,15 +828,17 @@
       if (t.indexOf('.') >= 0) t = t.replace(/0+$/, '').replace(/\.$/, '');
       return t === '-0' ? '0' : t;
     }
+    // Text for a comment, on one line: a line break in a name would start a new line of G-code.
+    function say(t){ return String(t === undefined || t === null ? '' : t).replace(/[\u0000-\u001f\u007f]+/g, ' '); }
     out.push('(454 CAM)');
-    (o.notes || []).forEach(function (t) { out.push(';' + t); });   // assumptions worth seeing at the machine
+    (o.notes || []).forEach(function (t) { out.push(';' + say(t)); });   // assumptions worth seeing at the machine
     // Which bit each tool number is, as VCarve lists them: 454 Control reads this and names the bit at the start
     // and at each tool change ("Insert T2: 6.35 mm cutter"). Semicolon comments: a tool's name may have brackets.
     var listed = {}, toolList = [];
     parts.forEach(function (part) { if (part.tool !== undefined && !listed[part.tool]){ listed[part.tool] = 1; toolList.push(part); } });
     if (toolList.length){
       out.push(';Tools used in this file:');
-      toolList.forEach(function (part) { out.push(';' + part.tool + ' = ' + (part.toolName || 'tool ' + part.tool)); });
+      toolList.forEach(function (part) { out.push(';' + part.tool + ' = ' + say(part.toolName || 'tool ' + part.tool)); });
     }
     out.push('G21');                                    // millimetres
     out.push('G90');                                    // absolute
@@ -844,14 +846,14 @@
     parts.forEach(function (part) {
       if (part.tool !== tool){
         if (tool !== null){ out.push('G0 Z' + num(o.safeZ)); out.push('M5'); }
-        out.push(';Toolpath: ' + part.name);
-        if (part.toolName) out.push(';Tool: ' + part.toolName);
+        out.push(';Toolpath: ' + say(part.name));
+        if (part.toolName) out.push(';Tool: ' + say(part.toolName));
         out.push('M6 T' + part.tool);
         tool = part.tool; rpm = null;
         last = {x: null, y: null, z: null, f: null, g: null};  // position is unknown after a change
       } else {
-        out.push(';Toolpath: ' + part.name);
-        if (part.toolName) out.push(';Tool: ' + part.toolName);
+        out.push(';Toolpath: ' + say(part.name));
+        if (part.toolName) out.push(';Tool: ' + say(part.toolName));
       }
       if (part.rpm !== rpm){ out.push('M3 S' + part.rpm); rpm = part.rpm; }
       part.moves.forEach(function (m) {

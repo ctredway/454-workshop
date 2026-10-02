@@ -40,7 +40,7 @@ function c2dToolpaths(ex){
   ex.groups.forEach(function (g) { if (g && g.enabled === false) groupOff[g.uuid] = true; });
   var num = function (v) { var n = Math.abs(parseFloat(v)); return isFinite(n) ? n : 0; };   // depths are text in some versions, and negative in the oldest
   ex.toolpaths.forEach(function (T, i) {
-    var name = String(T.name || 'Toolpath ' + (i + 1)), kind = c2dTpKind(T), tool = T.tool || {}, sp = T.speeds || {};
+    var name = tpNameClean(T.name) || 'Toolpath ' + (i + 1), kind = c2dTpKind(T), tool = T.tool || {}, sp = T.speeds || {};
     if (kind.why){ out.left.push({name: name, why: kind.why}); return; }
     var side = kind.side, ents = [];
     (T.elements || []).forEach(function (el) { var id = el && byCc[el.uuid]; if (id && ents.indexOf(id) < 0) ents.push(id); });

@@ -32,6 +32,9 @@ function cutOpen(existing){
   CUT.placing = false; CUT.placingStart = false;
   document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
   document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
+  // The name box holds only a name that was given. One that is just the kind of cut ("Outside profile")
+  // shows greyed, and follows the kind if that's changed.
+  document.getElementById('cutName').value = existing && existing.name && existing.name !== tpAutoName(existing) ? existing.name : '';
   cutFillTools();
   cutToForm();
   document.getElementById('cutPanel').hidden = false;
@@ -161,6 +164,7 @@ function cutRenderHintExtra(){
   if (h && cutRender.extra && h.textContent.indexOf(cutRender.extra.trim()) < 0 && h.textContent.charAt(0) !== '\u26a0') h.textContent += cutRender.extra;
 }
 function cutRender(){
+  document.getElementById('cutName').placeholder = tpAutoName(CUT);
   tpGenerate.last = null;
   cutRenderInner(); cutRenderHintExtra();
   // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
@@ -615,7 +619,7 @@ function cutApply(){
   pushUndo();
   var tp = {
     id: CUT.editing || tpNewId(),
-    name: CUT.name || (CUT.side === 'drill' ? 'Drilling' : CUT.side === 'pocket' ? (CUT.restFrom ? 'Pocket clean-up' : 'Pocket') : CUT.side === 'chamfer' ? 'Chamfer' : CUT.side === 'vcarve' ? 'V-carve' : (CUT.side === 'inside' ? 'Inside' : CUT.side === 'on' ? 'On-line' : 'Outside') + ' profile'),
+    name: tpNameClean(document.getElementById('cutName').value) || tpAutoName(CUT),   // no name given: the kind of cut it is now
     type: CUT.side === 'drill' ? 'drill' : CUT.side === 'pocket' ? 'pocket' : CUT.side === 'chamfer' ? 'chamfer' : CUT.side === 'vcarve' ? 'vcarve' : 'profile', stepoverPct: CUT.stepoverPct || 40,
     vcMax: CUT.vcMax || 0, vTip: CUT.vTip || 0,
     chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge', toolChosen: !!CUT.toolChosen,
@@ -630,7 +634,7 @@ function cutApply(){
     startPts: cutStartsKept(),
     exprs: JSON.parse(JSON.stringify(CUT.exprs || {})),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
-    hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
+    hidden: !!CUT.hidden, exclude: !!CUT.exclude, folded: !!CUT.folded,   // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
   };
   tpGenerate(tp);

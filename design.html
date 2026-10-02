@@ -329,6 +329,19 @@
   .tpGrip{cursor:grab;color:var(--faint);font-size:14px;line-height:1;padding:0 4px 0 0;user-select:none}
   .tpGrip:hover{color:var(--ink)}
   .tpNm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .tpFold{background:none;border:0;padding:0 4px 0 0;margin-left:-3px;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;width:18px;flex:none}
+  .tpFold:hover{color:var(--ink)}
+  .tpFolded{padding-top:6px;padding-bottom:6px}
+  .tpName{flex-wrap:nowrap;gap:0}
+  .tpName > *{flex:none}
+  .tpName .tpNm,.tpName .tpNmEdit{flex:1 1 auto}
+  .tpName .tpEye{margin-left:6px}
+  .tpNm{cursor:text}
+  .tpNmEdit{flex:1;min-width:60px;background:var(--bg);border:1px solid var(--amber);border-radius:4px;color:var(--ink);font:inherit;padding:1px 5px}
+  .tpWarnMark{color:var(--amber);cursor:help;margin-left:2px}
+  #tpFoldAll[aria-pressed=true]{border-color:var(--amber);color:var(--amber)}
+  #cutPanel #cutFinRow{flex-wrap:wrap;row-gap:4px}      /* too wide once the panel scrolls, which made it scroll sideways too */
+  #cutPanel #cutName{flex:1 1 0;width:0;min-width:0;margin-left:10px;font-family:inherit}
   .tpDragging{opacity:.45}
   .tpDropOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tpStale{border-left-color:var(--err)}
@@ -754,6 +767,7 @@
     <div class="tpHead"><b>Toolpaths</b>
       <button id="tpCheck" class="tpIcon" hidden aria-label="Check the drawing" title="Check: look over the drawing before cutting — open shapes, pieces, doubles, crossings, and shapes no toolpath cuts"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2l3.3 3.3M5.3 7l1.2 1.2 2.3-2.4"/></svg></button>
       <button id="tpRecalcAll" class="tpIcon" hidden aria-label="Recalculate all toolpaths" title="Recalculate all: rebuild every toolpath from its shapes and the material as they are now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg></button>
+      <button id="tpFoldAll" class="tpIcon" hidden aria-label="Fold all toolpaths to their titles" title="Fold every toolpath to its title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
       <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
       <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
     <div id="tpCount" class="tpCountLine"></div>
@@ -792,6 +806,8 @@
     <div id="promptHint"></div>
     <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
       <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutName">Name</label></span>
+        <input type="text" id="cutName" maxlength="60" autocomplete="off" spellcheck="false" title="What to call this toolpath: on its card, on the job sheet and in the G-code. Left empty, it's named after the kind of cut."></div>
       <button class="mirSlot" id="cutShapes"><span class="mirLbl">Shapes</span><span class="mirVal" id="cutShapesVal">none</span></button>
       <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutType">Cut</label></span>
         <select id="cutType" style="margin-left:auto">
@@ -1019,7 +1035,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.114.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.115.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -4285,6 +4301,9 @@ function cutOpen(existing){
   CUT.placing = false; CUT.placingStart = false;
   document.getElementById('cutTitle').textContent = existing ? 'Edit toolpath' : 'New toolpath';
   document.getElementById('cutOk').textContent = existing ? 'Update' : 'Create';
+  // The name box holds only a name that was given. One that is just the kind of cut ("Outside profile")
+  // shows greyed, and follows the kind if that's changed.
+  document.getElementById('cutName').value = existing && existing.name && existing.name !== tpAutoName(existing) ? existing.name : '';
   cutFillTools();
   cutToForm();
   document.getElementById('cutPanel').hidden = false;
@@ -4414,6 +4433,7 @@ function cutRenderHintExtra(){
   if (h && cutRender.extra && h.textContent.indexOf(cutRender.extra.trim()) < 0 && h.textContent.charAt(0) !== '\u26a0') h.textContent += cutRender.extra;
 }
 function cutRender(){
+  document.getElementById('cutName').placeholder = tpAutoName(CUT);
   tpGenerate.last = null;
   cutRenderInner(); cutRenderHintExtra();
   // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
@@ -4868,7 +4888,7 @@ function cutApply(){
   pushUndo();
   var tp = {
     id: CUT.editing || tpNewId(),
-    name: CUT.name || (CUT.side === 'drill' ? 'Drilling' : CUT.side === 'pocket' ? (CUT.restFrom ? 'Pocket clean-up' : 'Pocket') : CUT.side === 'chamfer' ? 'Chamfer' : CUT.side === 'vcarve' ? 'V-carve' : (CUT.side === 'inside' ? 'Inside' : CUT.side === 'on' ? 'On-line' : 'Outside') + ' profile'),
+    name: tpNameClean(document.getElementById('cutName').value) || tpAutoName(CUT),   // no name given: the kind of cut it is now
     type: CUT.side === 'drill' ? 'drill' : CUT.side === 'pocket' ? 'pocket' : CUT.side === 'chamfer' ? 'chamfer' : CUT.side === 'vcarve' ? 'vcarve' : 'profile', stepoverPct: CUT.stepoverPct || 40,
     vcMax: CUT.vcMax || 0, vTip: CUT.vTip || 0,
     chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge', toolChosen: !!CUT.toolChosen,
@@ -4883,7 +4903,7 @@ function cutApply(){
     startPts: cutStartsKept(),
     exprs: JSON.parse(JSON.stringify(CUT.exprs || {})),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
-    hidden: !!CUT.hidden, exclude: !!CUT.exclude,          // editing a toolpath leaves these alone
+    hidden: !!CUT.hidden, exclude: !!CUT.exclude, folded: !!CUT.folded,   // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
   };
   tpGenerate(tp);
@@ -6340,16 +6360,61 @@ function tpKindName(tp){
   return tp.side === 'vcarve' ? 'V-carve' : tp.side === 'chamfer' ? 'Chamfer' : tp.side === 'pocket' ? 'Pocket' : tp.side === 'drill' ? 'Drilling'
        : tp.side === 'inside' ? 'Profile, inside' : tp.side === 'on' ? 'Profile, on the line' : 'Profile, outside';
 }
+// A toolpath's name until it's given one: the kind of cut it is.
+function tpAutoName(tp){
+  return tp.side === 'drill' ? 'Drilling' : tp.side === 'pocket' ? (tp.restFrom ? 'Pocket clean-up' : 'Pocket') : tp.side === 'chamfer' ? 'Chamfer'
+       : tp.side === 'vcarve' ? 'V-carve' : (tp.side === 'inside' ? 'Inside' : tp.side === 'on' ? 'On-line' : 'Outside') + ' profile';
+}
+// A name as typed or read from a file, made safe to keep: one line, 60 characters at most. It's written into
+// the G-code as a comment, where a line break would start a new line of G-code.
+function tpNameClean(s){
+  return String(s === undefined || s === null ? '' : s).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+}
+// Rename a toolpath; an empty name puts back the kind of cut. Nothing about the cut changes.
+function tpRename(tp, name){
+  var n = tpNameClean(name) || tpAutoName(tp);
+  if (n === tp.name) return false;
+  pushUndo();
+  tp.name = n;
+  persist(); renderToolpathPanel();
+  return true;
+}
+var TP_RENAMING = null;                                  // the id of the toolpath whose card shows a name box
+function tpRenameStart(tp){ TP_RENAMING = tp.id; renderToolpathPanel(); }
+// What a folded card must still say: anything that would stop the job or spoil the cut.
+function tpCardWarnings(tp, idx){
+  var out = tpRows(tp).filter(function (r) { return r[0].charAt(0) === '⚠' || r[0] === 'Note'; })
+                      .map(function (r) { return r[1]; });
+  var order = tpOrderNote(tp, idx);
+  if (order) out.push(order);
+  return out;
+}
+// The toolpaths shown (this sheet's): fold them all to their titles, or open them all if they already are.
+function tpShownList(){ return multiSheet() ? tpList().filter(function (t) { return tpSheetOf(t) === DOC.activeSheet; }) : tpList(); }
+function tpAllFolded(){ var l = tpShownList(); return l.length > 0 && l.every(function (t) { return t.folded; }); }
+function tpFoldAll(){
+  var fold = !tpAllFolded();
+  tpShownList().forEach(function (t) { t.folded = fold; });
+  persist(); renderToolpathPanel();
+}
 function renderMyToolpaths(){
   var box = document.getElementById('tpList');
-  var all = tpList();
+  var all = tpList(), renameBox = null;
   all.forEach(function (tp, idx) {
     if (multiSheet() && tpSheetOf(tp) !== DOC.activeSheet) return;   // other sheets' toolpaths: shown with their sheet
     var stale = tpStale(tp);
     var card = document.createElement('div');
-    card.className = 'tpCard tpMine' + (stale || !tpToolChosen(tp) ? ' tpStale' : '') + (tp.exclude ? ' tpExcluded' : '');
+    card.className = 'tpCard tpMine' + (stale || !tpToolChosen(tp) ? ' tpStale' : '') + (tp.exclude ? ' tpExcluded' : '') + (tp.folded ? ' tpFolded' : '');
     card.dataset.idx = idx;
     var h = document.createElement('div'); h.className = 'tpName';
+    // fold the card to its title, or open it
+    var fold = document.createElement('button'); fold.className = 'tpFold';
+    fold.textContent = tp.folded ? '▸' : '▾';
+    fold.title = tp.folded ? 'Show this toolpath’s details' : 'Fold to the title only';
+    fold.setAttribute('aria-label', (tp.folded ? 'Show the details of ' : 'Fold ') + tp.name);
+    fold.setAttribute('aria-expanded', tp.folded ? 'false' : 'true');
+    fold.addEventListener('click', function (ev) { ev.stopPropagation(); tp.folded = !tp.folded; persist(); renderToolpathPanel(); });
+    h.appendChild(fold);
     // include in the saved G-code
     var inc = document.createElement('input'); inc.type = 'checkbox'; inc.className = 'tpInc';
     inc.checked = !tp.exclude;
@@ -6374,8 +6439,38 @@ function renderMyToolpaths(){
     var num = document.createElement('span'); num.className = 'tpNum'; num.textContent = (idx + 1) + '';
     num.title = 'Runs ' + (idx === 0 ? 'first' : 'number ' + (idx + 1));
     h.appendChild(num);
-    var nm = document.createElement('span'); nm.className = 'tpNm'; nm.textContent = tp.name;
-    h.appendChild(nm);
+    if (TP_RENAMING === tp.id){
+      var ni = document.createElement('input'); ni.type = 'text'; ni.className = 'tpNmEdit'; ni.maxLength = 60;
+      ni.value = tp.name; ni.placeholder = tpAutoName(tp); ni.spellcheck = false;
+      ni.setAttribute('aria-label', 'Name of this toolpath');
+      var done = false, end = function (save) {
+        if (done) return; done = true;
+        TP_RENAMING = null;
+        if (!save || !tpRename(tp, ni.value)) renderToolpathPanel();
+      };
+      ['click', 'dblclick', 'mousedown'].forEach(function (evName) { ni.addEventListener(evName, function (ev) { ev.stopPropagation(); }); });
+      ni.addEventListener('keydown', function (ev) {
+        ev.stopPropagation();                             // typing a name isn't a shortcut
+        if (ev.key === 'Enter'){ ev.preventDefault(); end(true); }
+        else if (ev.key === 'Escape'){ ev.preventDefault(); end(false); }
+      });
+      ni.addEventListener('blur', function () { end(true); });
+      h.appendChild(ni); renameBox = ni;
+    } else {
+      var nm = document.createElement('span'); nm.className = 'tpNm'; nm.textContent = tp.name;
+      nm.title = tp.name + ' — double-click to rename';
+      nm.addEventListener('dblclick', function (ev) { ev.stopPropagation(); tpRenameStart(tp); });
+      h.appendChild(nm);
+    }
+    // What needs doing before it can be cut, if anything. Open, it's said beside the kind of cut; folded, in the mark.
+    var status = !tpToolChosen(tp) ? 'no tool chosen' : stale ? 'the drawing changed' : '';
+    var warns = tp.folded ? tpCardWarnings(tp, idx) : [];
+    if (tp.folded && status) warns.unshift(status === 'no tool chosen' ? 'No tool chosen: edit it and choose one' : 'The drawing changed since this was calculated: recalculate it');
+    if (warns.length){
+      var wb = document.createElement('span'); wb.className = 'tpWarnMark'; wb.textContent = '⚠';
+      wb.title = warns.join('\n'); wb.setAttribute('aria-label', 'Warning: ' + warns.join('. '));
+      h.appendChild(wb);
+    }
     // show or hide on the drawing
     var eye = document.createElement('button'); eye.className = 'tpEye' + (tp.hidden ? ' off' : '');
     eye.innerHTML = tp.hidden
@@ -6386,13 +6481,17 @@ function renderMyToolpaths(){
     eye.setAttribute('aria-pressed', tp.hidden ? 'false' : 'true');
     eye.addEventListener('click', function (ev) { ev.stopPropagation(); tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); });
     h.appendChild(eye);
-    var ty = document.createElement('span'); ty.className = 'tpType';
-    ty.textContent = !tpToolChosen(tp) ? 'no tool chosen' : stale ? 'the drawing changed' : (tp.side === 'vcarve' ? 'V-carve' : tp.side === 'chamfer' ? 'chamfer' : tp.side === 'pocket' ? 'pocket' : tp.side === 'drill' ? 'drilling' : tp.side === 'inside' ? 'inside' : tp.side === 'on' ? 'on the line' : 'outside');
-    h.appendChild(ty); card.appendChild(h);
+    card.appendChild(h);
+    if (!tp.folded){
 
+    // The kind of cut leads the line under the title, which leaves the title to the name: a toolpath can be
+    // called anything now, so the name no longer says what kind it is.
     var tl = document.createElement('div'); tl.className = 'tpTool';
+    var ty = document.createElement('span'); ty.className = 'tpType';
+    ty.textContent = status || (tp.side === 'vcarve' ? 'V-carve' : tp.side === 'chamfer' ? 'chamfer' : tp.side === 'pocket' ? 'pocket' : tp.side === 'drill' ? 'drilling' : tp.side === 'inside' ? 'inside' : tp.side === 'on' ? 'on the line' : 'outside');
+    tl.appendChild(ty);
     var t = tp.toolId ? libTool(tp.toolId) : null;
-    tl.textContent = (t ? t.name : fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter') + ' \u00b7 ' + tp.feed + ' mm/min';
+    tl.appendChild(document.createTextNode(' \u00b7 ' + (t ? t.name : fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter') + ' \u00b7 ' + tp.feed + ' mm/min'));
     card.appendChild(tl);
 
     var dl = document.createElement('dl'); dl.className = 'tpSet';
@@ -6427,6 +6526,7 @@ function renderMyToolpaths(){
     var del = btn('del', 'Delete this toolpath', 'Delete ' + tp.name, function () { tpDelete(tp.id); });
     del.classList.add('danger'); bar.appendChild(del);
     card.appendChild(bar);
+    }
 
     card.addEventListener('click', function () { CUTSEL = CUTSEL === tp.id ? null : tp.id; renderToolpathPanel(); draw(); });
     card.addEventListener('contextmenu', function (e) {
@@ -6434,6 +6534,8 @@ function renderMyToolpaths(){
       ctxMenuOpen(e.clientX, e.clientY, [
         {label: stale ? 'Recalculate (out of date)' : 'Recalculate', fn: function () { tpRecalc(tp); }},
         {label: 'Edit\u2026', fn: function () { setTool('select'); cutOpen(tp); }},
+        {label: 'Rename\u2026', fn: function () { tpRenameStart(tp); }},
+        {label: tp.folded ? 'Show details' : 'Fold to the title', fn: function () { tp.folded = !tp.folded; persist(); renderToolpathPanel(); }},
         null,
         {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tp.hidden = !tp.hidden; persist(); renderToolpathPanel(); draw(); }},
         {label: tp.exclude ? 'Include in the G-code' : 'Leave out of the G-code', fn: function () { tp.exclude = !tp.exclude; persist(); renderToolpathPanel(); }},
@@ -6455,6 +6557,7 @@ function renderMyToolpaths(){
     if (CUTSEL === tp.id) card.style.background = 'var(--accent-faint)';
     box.appendChild(card);
   });
+  if (renameBox){ if (renameBox.focus) renameBox.focus(); if (renameBox.select) renameBox.select(); }
   var onSheet = multiSheet() ? tpList().filter(function (t2) { return tpSheetOf(t2) === DOC.activeSheet; }) : tpList();
   var sheetName = multiSheet() ? sheetTitle(DOC.activeSheet) : '';
   if (camReady() && multiSheet() && !onSheet.length){
@@ -7262,6 +7365,11 @@ function renderToolpathPanel(){
   document.getElementById('tpNew').hidden = !camReady();
   document.getElementById('tpBeta').hidden = !camReady();                // CAM is in beta: say so where it's used
   document.getElementById('tpRecalcAll').hidden = !camReady() || !tpList().length;   // only when there's something to recalculate
+  var fa = document.getElementById('tpFoldAll'), allFolded = tpAllFolded();
+  fa.hidden = !camReady() || !tpShownList().length;
+  fa.title = allFolded ? 'Show every toolpath’s details' : 'Fold every toolpath to its title';
+  fa.setAttribute('aria-label', allFolded ? 'Show all toolpaths’ details' : 'Fold all toolpaths to their titles');
+  fa.setAttribute('aria-pressed', allFolded ? 'true' : 'false');
   var camMissing = document.getElementById('tpCamMissing');
   if (camMissing) camMissing.hidden = !(window.__camWanted && !camReady());
   document.getElementById('tpCheck').hidden = !camReady();
@@ -8661,7 +8769,7 @@ function c2dToolpaths(ex){
   ex.groups.forEach(function (g) { if (g && g.enabled === false) groupOff[g.uuid] = true; });
   var num = function (v) { var n = Math.abs(parseFloat(v)); return isFinite(n) ? n : 0; };   // depths are text in some versions, and negative in the oldest
   ex.toolpaths.forEach(function (T, i) {
-    var name = String(T.name || 'Toolpath ' + (i + 1)), kind = c2dTpKind(T), tool = T.tool || {}, sp = T.speeds || {};
+    var name = tpNameClean(T.name) || 'Toolpath ' + (i + 1), kind = c2dTpKind(T), tool = T.tool || {}, sp = T.speeds || {};
     if (kind.why){ out.left.push({name: name, why: kind.why}); return; }
     var side = kind.side, ents = [];
     (T.elements || []).forEach(function (el) { var id = el && byCc[el.uuid]; if (id && ents.indexOf(id) < 0) ents.push(id); });
@@ -14551,6 +14659,7 @@ function wire(){
   document.getElementById('libPickCancel').addEventListener('click', libCloseDlg);
   document.getElementById('libModal').addEventListener('pointerdown', function(e){ if (e.target.id === 'libModal') libCloseDlg(); });
   libLoad().then(function(lib){ if (lib && lib.tools){ TOOLLIB = lib; renderToolpathPanel(); } });
+  document.getElementById('tpFoldAll').addEventListener('click', tpFoldAll);
   document.getElementById('tpCollapse').addEventListener('click', function(){ UICFG.tpPanel = false; uiCfgSave(); renderToolpathPanel(); });
   document.getElementById('tpStrip').addEventListener('click', function(){ UICFG.tpPanel = true; uiCfgSave(); renderToolpathPanel(); });
   renderToolpathPanel();

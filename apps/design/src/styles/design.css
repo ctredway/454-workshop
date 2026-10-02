@@ -319,6 +319,19 @@
   .tpGrip{cursor:grab;color:var(--faint);font-size:14px;line-height:1;padding:0 4px 0 0;user-select:none}
   .tpGrip:hover{color:var(--ink)}
   .tpNm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .tpFold{background:none;border:0;padding:0 4px 0 0;margin-left:-3px;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;width:18px;flex:none}
+  .tpFold:hover{color:var(--ink)}
+  .tpFolded{padding-top:6px;padding-bottom:6px}
+  .tpName{flex-wrap:nowrap;gap:0}
+  .tpName > *{flex:none}
+  .tpName .tpNm,.tpName .tpNmEdit{flex:1 1 auto}
+  .tpName .tpEye{margin-left:6px}
+  .tpNm{cursor:text}
+  .tpNmEdit{flex:1;min-width:60px;background:var(--bg);border:1px solid var(--amber);border-radius:4px;color:var(--ink);font:inherit;padding:1px 5px}
+  .tpWarnMark{color:var(--amber);cursor:help;margin-left:2px}
+  #tpFoldAll[aria-pressed=true]{border-color:var(--amber);color:var(--amber)}
+  #cutPanel #cutFinRow{flex-wrap:wrap;row-gap:4px}      /* too wide once the panel scrolls, which made it scroll sideways too */
+  #cutPanel #cutName{flex:1 1 0;width:0;min-width:0;margin-left:10px;font-family:inherit}
   .tpDragging{opacity:.45}
   .tpDropOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tpStale{border-left-color:var(--err)}

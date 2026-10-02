@@ -290,6 +290,7 @@
     <div class="tpHead"><b>Toolpaths</b>
       <button id="tpCheck" class="tpIcon" hidden aria-label="Check the drawing" title="Check: look over the drawing before cutting — open shapes, pieces, doubles, crossings, and shapes no toolpath cuts"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2l3.3 3.3M5.3 7l1.2 1.2 2.3-2.4"/></svg></button>
       <button id="tpRecalcAll" class="tpIcon" hidden aria-label="Recalculate all toolpaths" title="Recalculate all: rebuild every toolpath from its shapes and the material as they are now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg></button>
+      <button id="tpFoldAll" class="tpIcon" hidden aria-label="Fold all toolpaths to their titles" title="Fold every toolpath to its title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
       <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
       <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
     <div id="tpCount" class="tpCountLine"></div>
@@ -328,6 +329,8 @@
     <div id="promptHint"></div>
     <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
       <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutName">Name</label></span>
+        <input type="text" id="cutName" maxlength="60" autocomplete="off" spellcheck="false" title="What to call this toolpath: on its card, on the job sheet and in the G-code. Left empty, it's named after the kind of cut."></div>
       <button class="mirSlot" id="cutShapes"><span class="mirLbl">Shapes</span><span class="mirVal" id="cutShapesVal">none</span></button>
       <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutType">Cut</label></span>
         <select id="cutType" style="margin-left:auto">

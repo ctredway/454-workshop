@@ -28,6 +28,10 @@ Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a wa
 
 **The Toolpaths panel** sits on the right. Select shapes on the drawing, then press **New toolpath** (the + icon). The editor opens beside the drawing with a live preview; press **Create** to add the toolpath, or **Cancel**. Each toolpath gets a card in the panel, where you can edit it, move it up or down, show or hide its preview, leave it out of the G-code, recalculate it, or delete it. Right-click a card for the same actions in a menu.
 
+**Naming a toolpath.** Type a name in the editor's **Name** box, or double-click the name on a card (or right-click it and choose **Rename…**), type, and press Enter. The name is shown on the card and the job sheet and written into the G-code, so 454 Control shows it too. Leave it empty and the toolpath is named after its kind of cut, such as "Outside profile"; the kind of cut is always shown on the line under the name.
+
+**Folding cards.** The small arrow at the left of a card folds it to its title, so a long list fits on the screen; the arrow opens it again. The button with three lines in the panel's header folds or opens every card at once. A folded card shows ⚠ beside its name when the toolpath has a warning, such as cutting past the material: hold the pointer over it to read why.
+
 **Recalculating** rebuilds a toolpath from its shapes and the material as they are now, keeping its own settings (tool, depths, feeds). The **Recalculate** button (↻) on each card is highlighted when a toolpath is out of date, because its shapes or the material changed since it was made; **Recalculate all** in the panel’s header does every toolpath at once. A toolpath keeps its own copy of the tool’s feeds and speeds, so after changing a tool in the library, edit the toolpath to pick up the new values.
 
 **Nothing is guessed.** A new toolpath starts with no tool and no depth, and **Create** stays disabled until you’ve chosen both. G-code can’t be saved while any toolpath has no tool. Z zero, the material’s thickness and where X0 Y0 sits all come from **Job setup**.

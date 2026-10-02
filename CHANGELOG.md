@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.32 — name your toolpaths
+- Includes Design 0.115.0: toolpaths can be named, and their cards fold to the title.
+
 ### 0.6.2-beta.31 — open Carbide Create projects
 - Includes Design 0.114.0: `.c2d` files open, with their shapes, layers and material. The Open window lists
   `.c2d` files.
@@ -857,6 +860,32 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.115.0 — name your toolpaths; fold their cards to the title
+- **A toolpath can be given a name.** The editor has a **Name** box, and on a card you can double-click the
+  name (or right-click → Rename…), type, and press Enter; Escape leaves it alone. The name is on the card and
+  the job sheet and in the G-code's `;Toolpath:` comment, which 454 Control shows. Left empty, a toolpath is
+  named after its kind of cut, as before. Renaming changes nothing about the cut and can be undone.
+- **Fixed: a toolpath kept its first name when its cut was changed.** An "Outside profile" edited into an
+  inside cut still said "Outside profile". A name that is only the kind of cut now follows the kind; a name
+  you gave stays.
+- **Cards fold to their titles.** The arrow at the left of a card folds it to one line (order handle, tick
+  box, number, name, eye); the new button in the panel's header folds or opens them all. What's folded is
+  kept with the drawing. Editing a folded toolpath leaves it folded.
+- **A folded card can't hide a warning.** It shows ⚠ beside the name when the toolpath goes past the material,
+  has a parameter that can't be worked out, has no tool, is out of date or is in the wrong order, and hovering
+  says which.
+- **The title is left to the name.** The kind of cut ("pocket", "outside") used to share the title line and
+  squeezed the name to a few letters. It now leads the line under the title, before the tool and feed; "no
+  tool chosen" and "the drawing changed" show there too.
+- **(machine) A name can't put a line into the G-code.** A name is written as a comment, where a line break
+  would begin a new line of G-code. Names are kept to one line and 60 characters when typed or read from a
+  Carbide Create project, and the G-code writer (`cam.js`) now strips line breaks from every name, tool name
+  and note it writes, whatever is in the drawing.
+- **Fixed: the toolpath editor scrolled sideways** once it was tall enough to scroll down: its Finishing row
+  was a little too wide. That row now wraps.
+- **Tested** (`apps/design/test/toolpath-names.test.mjs`, 14 tests), and tried in the app with a real
+  double-click and typing: Delete and Backspace in the name box edit the name and don't delete shapes.
 
 ### 0.114.0 — open Carbide Create projects (.c2d); pockets with islands and big V-carves calculate much faster
 - **Pockets with islands, and V-carves over many shapes, are calculated 5 to 20 times faster, and cut exactly

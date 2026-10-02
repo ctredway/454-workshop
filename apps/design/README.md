@@ -54,7 +54,7 @@ version is in `src/js/version.js`.
 | `js/vcarve-toolpaths.js` | 224 | turning VCarve’s toolpaths into editable 454 toolpaths |
 | `js/job-sheet.js` | 180 | the job sheet |
 | `js/context-menu.js` | 24 | the right-click menu |
-| `js/toolpath-cards.js` | 174 | the Toolpaths panel’s cards |
+| `js/toolpath-cards.js` | 270 | the Toolpaths panel’s cards: names, renaming, folding |
 | `js/preview-in-control.js` | 41 | Preview in 454 Control: handing the job to Control |
 | `js/wood-preview.js` | 168 | Preview in wood: the cut worked out from the moves and each bit's shape, shaded |
 | `js/wood-3d.js` | 175 | Preview in wood in 3D: the block from the simulation, and turning, moving and zooming it |
