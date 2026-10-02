@@ -306,8 +306,24 @@
 
   #cv{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
 
-  #cutPanel{position:absolute;top:12px;right:12px;z-index:9;width:250px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);max-height:calc(100% - 24px);overflow-y:auto}
+  /* The toolpath editor takes over the Toolpaths panel while it's open (as VCarve's does), wider, so the
+     drawing and its live preview stay in view. Its settings scroll; the help, summary and buttons stay put. */
+  #tpPanel.editing{width:min(440px,36vw);overflow:hidden}
+  #tpPanel{position:relative;z-index:7}                /* above the size bar over the drawing, which is wider than a narrow window's drawing */
+  #tpPanel.editing #tpBody,#tpPanel.editing #tpStrip{display:none}
+  #cutPanel{display:flex;flex-direction:column;height:100%;min-height:0;padding:10px 0 0}
   #cutPanel[hidden]{display:none}
+  #cutPanel .modalHead{padding:0 12px 6px}
+  #cutScroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding:0 12px 12px}
+  #cutFoot{flex:none;max-height:48%;overflow-y:auto;padding:10px 12px 12px;border-top:1px solid var(--line);background:var(--panel)}
+  .cutGroup{margin-top:14px}
+  .cutGroup[hidden]{display:none}
+  .cutGroup h4{margin:0;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+  #cutPanel .mirSlot.helpOn{border-color:var(--amber)}
+  #cutPanel .mirSlot input[type=text] + .mirVal{margin-left:0}        /* a unit sits beside its box, not at the far edge */
+  #cutPanel #cutThroughLbl[hidden] + #cutDepth{margin-left:auto !important}
+  #cutHelp{min-height:58px;padding:7px 10px;border-left:3px solid var(--amber);border-radius:0 5px 5px 0;background:var(--panel-deep);font-size:12px;line-height:1.5;color:var(--muted)}
+  #cutHelp b{display:block;margin-bottom:2px;font-size:12.5px;color:var(--ink)}
   #cutPanel h3{font-size:14px}
   #cutPanel input[type=text]{width:66px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #cutPanel select{font-size:12px}
@@ -789,6 +805,144 @@
     <div id="tpList"></div>
     <a id="tpDocs" href="docs/cam-reference.html" target="_blank" rel="noopener" style="display:block;padding:10px 12px;font-size:12px;color:var(--muted)">CAM reference &#8599;</a>
     </div>
+  <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
+      <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <div id="cutScroll">
+      <div class="mirSlot" data-help="name" style="cursor:default"><span class="mirLbl"><label for="cutName">Name</label></span>
+        <input type="text" id="cutName" maxlength="60" autocomplete="off" spellcheck="false" title="What to call this toolpath: on its card, on the job sheet and in the G-code. Left empty, it's named after the kind of cut."></div>
+      <button class="mirSlot" data-help="shapes" id="cutShapes"><span class="mirLbl">Shapes</span><span class="mirVal" id="cutShapesVal">none</span></button>
+      <div class="mirSlot" data-help="type" style="cursor:default"><span class="mirLbl"><label for="cutType">Cut</label></span>
+        <select id="cutType" style="margin-left:auto">
+          <option value="outside">Profile, outside</option>
+          <option value="inside">Profile, inside</option>
+          <option value="on">Profile, on the line</option>
+          <option value="pocket">Pocket (clear the area)</option>
+          <option value="drill">Drill at centres</option>
+          <option value="chamfer">Chamfer edges (V-bit)</option>
+          <option value="vcarve">V-carve (V-bit)</option>
+          <option value="inlay">Inlay (V-bit pocket or plug)</option>
+        </select></div>
+      <section class="cutGroup"><h4>Tool</h4>
+      <button class="mirSlot" data-help="tool" id="cutTool" title="Choose from your tool library"><span class="mirLbl">Tool</span>
+        <span class="mirVal" id="cutToolName" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Choose…</span></button>
+      <div class="mirSlot" data-help="dia" style="cursor:default"><span class="mirLbl"><label for="cutDia">Diameter</label></span>
+        <input id="cutDia" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal" id="cutUnit">mm</span></div>
+      <div class="mirSlot" data-help="feed" style="cursor:default"><span class="mirLbl"><label for="cutFeed" id="cutFeedLbl">Feed</label></span>
+        <input id="cutFeed" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal">mm/min</span></div>
+      <div class="mirSlot" data-help="dir" id="cutDirRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutDir">Direction</label></span>
+        <select id="cutDir" title="Climb milling usually leaves the better finish on a rigid machine; conventional can suit flexible setups or brittle material">
+          <option value="climb">Climb</option><option value="conv">Conventional</option></select></div>
+      </section>
+      <section class="cutGroup"><h4>Depth</h4>
+      <div class="mirSlot" data-help="depth" style="cursor:default"><span class="mirLbl"><label for="cutDepth">Cut depth</label></span>
+        <label id="cutThroughLbl" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-left:auto">
+          <input type="checkbox" id="cutThrough"> through</label>
+        <input id="cutDepth" type="text" inputmode="decimal" autocomplete="off" style="margin-left:6px"></div>
+      <div class="mirSlot" data-help="over" id="cutOverRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutOver">Overcut</label></span>
+        <input id="cutOver" type="text" inputmode="decimal" autocomplete="off" title="How far past the bottom of the material to cut, so parts come free cleanly"></div>
+      <div class="mirSlot" data-help="step" id="cutStepRow" style="cursor:default"><span class="mirLbl"><label for="cutStep">Per pass</label></span>
+        <input id="cutStep" type="text" inputmode="decimal" autocomplete="off"></div>
+      <div class="mirSlot" data-help="peck" id="cutPeckRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutPeck">Peck</label></span>
+        <input id="cutPeck" type="text" inputmode="decimal" autocomplete="off" title="How far to drill before lifting to clear chips. 0 drills in one plunge."></div>
+      <div class="mirSlot" data-help="cham" id="cutChamRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutChamW">Bevel width</label></span>
+        <input id="cutChamW" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How wide the bevel is on the top face">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutVAngle">Bit</label></span>
+        <input id="cutVAngle" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The V-bit's included angle">
+        <span class="mirVal">°</span>
+      </div>
+      <div class="mirSlot" data-help="chamMode" id="cutChamModeRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutChamMode">The line is</label></span>
+        <select id="cutChamMode" style="margin-left:auto;max-width:150px" title="Where the drawn line sits on the finished bevel">
+          <option value="edge">the part’s edge (tip on it)</option>
+          <option value="in">the bevel’s top, going inside</option>
+          <option value="out">the bevel’s top, going outside</option>
+        </select>
+      </div>
+      <div class="mirSlot" data-help="vc" id="cutVcRow" hidden style="cursor:default">
+        <span class="mirLbl"><label for="cutVcAngle">Bit</label></span>
+        <input id="cutVcAngle" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The V-bit's included angle">
+        <span class="mirVal">°</span>
+        <span class="mirLbl" style="margin-left:10px" id="cutVcMaxLbl"><label for="cutVcMax">Max depth</label></span>
+        <input id="cutVcMax" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="none" title="Optional: deeper than this, the carving gets a flat floor and the middle is left for a clearing toolpath">
+        <span class="mirLbl" style="margin-left:10px"><label for="cutVcTip">Tip</label></span>
+        <input id="cutVcTip" type="text" inputmode="decimal" autocomplete="off" style="width:40px" title="The width of the bit's flat tip, if it has one (engraving bits usually do)">
+      </div>
+      <div class="mirSlot" data-help="inlay" id="cutInlayRow" hidden style="cursor:default;flex-wrap:wrap;row-gap:6px">
+        <span class="mirLbl"><label for="cutInlayHalf">Cut the</label></span>
+        <select id="cutInlayHalf" title="The pocket goes in the base; the plug is cut from the inlay piece, mirrored, then flipped and glued in">
+          <option value="pocket">pocket (in the base)</option><option value="plug">plug (in the inlay piece)</option></select>
+        <span style="flex-basis:100%;height:0"></span>
+        <span class="mirLbl"><label for="cutInlayD" id="cutInlayDLbl">Pocket depth</label></span>
+        <input id="cutInlayD" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the pocket's flat floor is">
+        <span id="cutInlayPlugBits"><span class="mirLbl" style="margin-left:8px"><label for="cutInlayS">Start depth</label></span>
+        <input id="cutInlayS" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the plug's walls begin; the plug seats this deep in the pocket, leaving (pocket depth - start depth) for glue underneath">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutInlayM">Plug depth</label></span>
+        <input id="cutInlayM" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the plug is carved; more than the start depth, so it stands proud to be planed off"></span>
+      </div>
+      </section>
+      <section class="cutGroup"><h4>Passes</h4>
+      <div class="mirSlot" data-help="stepover" id="cutOverlapRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutStepover">Stepover</label></span>
+        <input id="cutStepover" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How far apart the clearing passes are, as a share of the cutter diameter">
+        <span class="mirVal">% of the cutter</span></div>
+      <div class="mirSlot" data-help="clear" id="cutClearRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutClear">Clearing</label></span>
+        <select id="cutClear" title="Offset rings work outwards from the middle; raster runs back and forth in straight lines, then round the walls">
+          <option value="offset">Offset rings</option><option value="raster">Raster</option></select>
+        <span id="cutRasterBits"><label for="cutRasterAng" style="margin-left:8px;color:var(--muted)">at</label>
+        <input id="cutRasterAng" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The angle of the raster lines: 0 runs left to right, 90 front to back"> °</span></div>
+      <div class="mirSlot" data-help="rest" id="cutRestRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutRest">Clean up after</label></span>
+        <select id="cutRest" style="margin-left:auto;max-width:190px" title="A pocket on the same shapes cut with a larger bit: this bit then goes only where that one couldn't reach, its corners and the parts too narrow for it"></select></div>
+      <div class="mirSlot" data-help="fin" id="cutFinRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutAllow">Finishing</label></span>
+        leave <input id="cutAllow" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="0" title="Material left on the walls by the roughing passes"> <span class="mirVal" id="cutAllowU"></span>
+        <label style="display:flex;align-items:center;gap:4px;margin-left:6px;font-size:12px;color:var(--muted)"><input type="checkbox" id="cutFinPass"> then finish it</label></div>
+      </section>
+      <section class="cutGroup"><h4>Entry and exit</h4>
+      <div class="mirSlot" data-help="ramp" id="cutRampRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutRamp">Ramp in</label></span>
+        <select id="cutRamp" title="Ramp: each pass slopes down into the material along the cut, instead of plunging straight down. Gentler on the cutter and the machine.">
+          <option value="on">Ramp</option><option value="off">Plunge</option></select>
+        <input id="cutRampLen" type="text" inputmode="decimal" autocomplete="off" style="width:52px;margin-left:6px" title="How far along the cut each pass slopes down. Leave it empty for 4 times the cutter's diameter (at least 4 mm)."> <span class="mirVal" id="cutRampU"></span></div>
+      <div class="mirSlot" data-help="lead" id="cutLeadRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutLead">Lead in/out</label></span>
+        <select id="cutLead" title="Sweep onto the line from the waste side and off it again, so no pass starts or stops on the finished wall">
+          <option value="none">None</option><option value="arc">Arc</option><option value="line">Line</option></select>
+        <input id="cutLeadSize" type="text" inputmode="decimal" autocomplete="off" style="width:44px;margin-left:6px" title="How far the lead reaches: the arc's radius, or the line's length"> <span class="mirVal" id="cutLeadU"></span></div>
+      <div class="mirSlot" data-help="start" id="cutStartRow" hidden style="cursor:default"><span class="mirLbl">Start</span>
+        <span class="mirVal" id="cutStartSay"></span>
+        <button id="cutStartPlace" title="Click the outline where each shape&#39;s cut should start" aria-pressed="false" style="font-size:11.5px;padding:2px 7px;margin-left:auto">Set start</button>
+        <button id="cutStartClear" title="Let 454 Design choose where each cut starts" style="font-size:11.5px;padding:2px 7px">Automatic</button></div>
+      </section>
+      <section class="cutGroup"><h4>Tabs</h4>
+      <div class="mirSlot" data-help="tabs" id="cutTabRow" style="cursor:default">
+        <input type="checkbox" id="cutTabsOn"><label for="cutTabsOn" class="mirLbl" style="color:var(--ink)">Add tabs</label>
+        <span class="mirVal" id="cutTabCount" style="margin-left:auto"></span>
+        <button id="cutTabPlace" title="Click the outline to add a tab, click a tab to remove it" aria-pressed="false" style="font-size:11.5px;padding:2px 7px">Edit tabs</button>
+      </div>
+      <div class="mirSlot" data-help="tabTools" id="cutTabTools" hidden style="cursor:default">
+        <span class="mirLbl">Add evenly</span>
+        <input id="cutTabs" type="number" min="1" max="20" step="1" value="4" style="width:40px" title="How many to add, spread evenly round each shape">
+        <button id="cutTabSpread" style="font-size:11.5px;padding:2px 7px" title="Add this many, spaced evenly, to every shape">Add</button>
+        <button id="cutTabClear" style="font-size:11.5px;padding:2px 7px;margin-left:auto" title="Remove every tab">Clear</button>
+      </div>
+      <div class="mirSlot" data-help="tabSize" id="cutTabSize" style="cursor:default">
+        <span class="mirLbl"><label for="cutTabLen">Length</label></span>
+        <input id="cutTabLen" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="The length of wood each tab leaves, along the middle of the cut, whatever the bit’s size">
+        <span class="mirLbl" style="margin-left:8px"><label for="cutTabThk">Thickness</label></span>
+        <input id="cutTabThk" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="The wood each tab leaves holding the part, measured up from the bottom of the material">
+      </div>
+      <div class="mirSlot" data-help="tabShape" id="cutTabShape" style="cursor:default">
+        <span class="mirLbl"><label for="cutTabStyle">Shape</label></span>
+        <select id="cutTabStyle" title="Flat tabs step straight up and down; 3D tabs taper up to their full thickness in the middle, which makes them easier to cut free and leaves a smaller mark">
+          <option value="flat">Flat</option><option value="3d">3D (tapered)</option>
+        </select>
+      </div>
+      </section>
+      </div>
+      <div id="cutFoot">
+      <div id="cutHelp" aria-live="polite"><b id="cutHelpT"></b><span id="cutHelpB"></span></div>
+      <p class="mirHint" id="cutHint"></p>
+      <div id="cutIssues"></div>
+      <div class="mirBtns"><button id="cutCancel">Cancel</button><button id="cutOk" class="primary">Create</button></div>
+      </div>
+  </div>
   </aside>
 
   <div id="canvasWrap">
@@ -804,129 +958,6 @@
       <label title="Turn the selection by this many degrees about the reference point: positive anticlockwise, negative clockwise">Rotate <input id="sbR" type="text" inputmode="decimal" autocomplete="off" placeholder="0">&deg;</label>
     </div>
     <div id="promptHint"></div>
-    <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
-      <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
-      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutName">Name</label></span>
-        <input type="text" id="cutName" maxlength="60" autocomplete="off" spellcheck="false" title="What to call this toolpath: on its card, on the job sheet and in the G-code. Left empty, it's named after the kind of cut."></div>
-      <button class="mirSlot" id="cutShapes"><span class="mirLbl">Shapes</span><span class="mirVal" id="cutShapesVal">none</span></button>
-      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutType">Cut</label></span>
-        <select id="cutType" style="margin-left:auto">
-          <option value="outside">Profile, outside</option>
-          <option value="inside">Profile, inside</option>
-          <option value="on">Profile, on the line</option>
-          <option value="pocket">Pocket (clear the area)</option>
-          <option value="drill">Drill at centres</option>
-          <option value="chamfer">Chamfer edges (V-bit)</option>
-          <option value="vcarve">V-carve (V-bit)</option>
-          <option value="inlay">Inlay (V-bit pocket or plug)</option>
-        </select></div>
-      <button class="mirSlot" id="cutTool" title="Choose from your tool library"><span class="mirLbl">Tool</span>
-        <span class="mirVal" id="cutToolName" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Choose…</span></button>
-      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutDia">Diameter</label></span>
-        <input id="cutDia" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal" id="cutUnit">mm</span></div>
-      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutDepth">Cut depth</label></span>
-        <label id="cutThroughLbl" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-left:auto">
-          <input type="checkbox" id="cutThrough"> through</label>
-        <input id="cutDepth" type="text" inputmode="decimal" autocomplete="off" style="margin-left:6px"></div>
-      <div class="mirSlot" id="cutOverRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutOver">Overcut</label></span>
-        <input id="cutOver" type="text" inputmode="decimal" autocomplete="off" title="How far past the bottom of the material to cut, so parts come free cleanly"></div>
-      <div class="mirSlot" id="cutStepRow" style="cursor:default"><span class="mirLbl"><label for="cutStep">Per pass</label></span>
-        <input id="cutStep" type="text" inputmode="decimal" autocomplete="off"></div>
-      <div class="mirSlot" id="cutChamRow" hidden style="cursor:default">
-        <span class="mirLbl"><label for="cutChamW">Bevel width</label></span>
-        <input id="cutChamW" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How wide the bevel is on the top face">
-        <span class="mirLbl" style="margin-left:8px"><label for="cutVAngle">Bit</label></span>
-        <input id="cutVAngle" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The V-bit's included angle">
-        <span class="mirVal">°</span>
-      </div>
-      <div class="mirSlot" id="cutVcRow" hidden style="cursor:default">
-        <span class="mirLbl"><label for="cutVcAngle">Bit</label></span>
-        <input id="cutVcAngle" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The V-bit's included angle">
-        <span class="mirVal">°</span>
-        <span class="mirLbl" style="margin-left:10px" id="cutVcMaxLbl"><label for="cutVcMax">Max depth</label></span>
-        <input id="cutVcMax" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="none" title="Optional: deeper than this, the carving gets a flat floor and the middle is left for a clearing toolpath">
-        <span class="mirLbl" style="margin-left:10px"><label for="cutVcTip">Tip</label></span>
-        <input id="cutVcTip" type="text" inputmode="decimal" autocomplete="off" style="width:40px" title="The width of the bit's flat tip, if it has one (engraving bits usually do)">
-      </div>
-      <div class="mirSlot" id="cutInlayRow" hidden style="cursor:default;flex-wrap:wrap;row-gap:6px">
-        <span class="mirLbl"><label for="cutInlayHalf">Cut the</label></span>
-        <select id="cutInlayHalf" title="The pocket goes in the base; the plug is cut from the inlay piece, mirrored, then flipped and glued in">
-          <option value="pocket">pocket (in the base)</option><option value="plug">plug (in the inlay piece)</option></select>
-        <span style="flex-basis:100%;height:0"></span>
-        <span class="mirLbl"><label for="cutInlayD" id="cutInlayDLbl">Pocket depth</label></span>
-        <input id="cutInlayD" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the pocket's flat floor is">
-        <span id="cutInlayPlugBits"><span class="mirLbl" style="margin-left:8px"><label for="cutInlayS">Start depth</label></span>
-        <input id="cutInlayS" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the plug's walls begin; the plug seats this deep in the pocket, leaving (pocket depth - start depth) for glue underneath">
-        <span class="mirLbl" style="margin-left:8px"><label for="cutInlayM">Plug depth</label></span>
-        <input id="cutInlayM" type="text" inputmode="decimal" autocomplete="off" style="width:44px" title="How deep the plug is carved; more than the start depth, so it stands proud to be planed off"></span>
-      </div>
-      <div class="mirSlot" id="cutChamModeRow" hidden style="cursor:default">
-        <span class="mirLbl"><label for="cutChamMode">The line is</label></span>
-        <select id="cutChamMode" style="margin-left:auto;max-width:150px" title="Where the drawn line sits on the finished bevel">
-          <option value="edge">the part’s edge (tip on it)</option>
-          <option value="in">the bevel’s top, going inside</option>
-          <option value="out">the bevel’s top, going outside</option>
-        </select>
-      </div>
-      <div class="mirSlot" id="cutOverlapRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutStepover">Stepover</label></span>
-        <input id="cutStepover" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="How far apart the clearing passes are, as a share of the cutter diameter">
-        <span class="mirVal">% of the cutter</span></div>
-      <div class="mirSlot" id="cutClearRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutClear">Clearing</label></span>
-        <select id="cutClear" title="Offset rings work outwards from the middle; raster runs back and forth in straight lines, then round the walls">
-          <option value="offset">Offset rings</option><option value="raster">Raster</option></select>
-        <span id="cutRasterBits"><label for="cutRasterAng" style="margin-left:8px;color:var(--muted)">at</label>
-        <input id="cutRasterAng" type="text" inputmode="decimal" autocomplete="off" style="width:36px" title="The angle of the raster lines: 0 runs left to right, 90 front to back"> °</span></div>
-      <div class="mirSlot" id="cutRestRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutRest">Clean up after</label></span>
-        <select id="cutRest" style="margin-left:auto;max-width:190px" title="A pocket on the same shapes cut with a larger bit: this bit then goes only where that one couldn't reach, its corners and the parts too narrow for it"></select></div>
-      <div class="mirSlot" id="cutPeckRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutPeck">Peck</label></span>
-        <input id="cutPeck" type="text" inputmode="decimal" autocomplete="off" title="How far to drill before lifting to clear chips. 0 drills in one plunge."></div>
-      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cutFeed" id="cutFeedLbl">Feed</label></span>
-        <input id="cutFeed" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal">mm/min</span></div>
-      <div class="mirSlot" id="cutDirRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutDir">Direction</label></span>
-        <select id="cutDir" title="Climb milling usually leaves the better finish on a rigid machine; conventional can suit flexible setups or brittle material">
-          <option value="climb">Climb</option><option value="conv">Conventional</option></select></div>
-      <div class="mirSlot" id="cutFinRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutAllow">Finishing</label></span>
-        leave <input id="cutAllow" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="0" title="Material left on the walls by the roughing passes"> <span class="mirVal" id="cutAllowU"></span>
-        <label style="display:flex;align-items:center;gap:4px;margin-left:6px;font-size:12px;color:var(--muted)"><input type="checkbox" id="cutFinPass"> then finish it</label></div>
-      <div class="mirSlot" id="cutRampRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutRamp">Ramp in</label></span>
-        <select id="cutRamp" title="Ramp: each pass slopes down into the material along the cut, instead of plunging straight down. Gentler on the cutter and the machine.">
-          <option value="on">Ramp</option><option value="off">Plunge</option></select>
-        <input id="cutRampLen" type="text" inputmode="decimal" autocomplete="off" style="width:52px;margin-left:6px" title="How far along the cut each pass slopes down. Leave it empty for 4 times the cutter's diameter (at least 4 mm)."> <span class="mirVal" id="cutRampU"></span></div>
-      <div class="mirSlot" id="cutLeadRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutLead">Lead in/out</label></span>
-        <select id="cutLead" title="Sweep onto the line from the waste side and off it again, so no pass starts or stops on the finished wall">
-          <option value="none">None</option><option value="arc">Arc</option><option value="line">Line</option></select>
-        <input id="cutLeadSize" type="text" inputmode="decimal" autocomplete="off" style="width:44px;margin-left:6px" title="How far the lead reaches: the arc's radius, or the line's length"> <span class="mirVal" id="cutLeadU"></span></div>
-      <div class="mirSlot" id="cutStartRow" hidden style="cursor:default"><span class="mirLbl">Start</span>
-        <span class="mirVal" id="cutStartSay"></span>
-        <button id="cutStartPlace" title="Click the outline where each shape&#39;s cut should start" aria-pressed="false" style="font-size:11.5px;padding:2px 7px;margin-left:auto">Set start</button>
-        <button id="cutStartClear" title="Let 454 Design choose where each cut starts" style="font-size:11.5px;padding:2px 7px">Automatic</button></div>
-      <div class="mirSlot" id="cutTabRow" style="cursor:default">
-        <input type="checkbox" id="cutTabsOn"><label for="cutTabsOn" class="mirLbl" style="color:var(--ink)">Add tabs</label>
-        <span class="mirVal" id="cutTabCount" style="margin-left:auto"></span>
-        <button id="cutTabPlace" title="Click the outline to add a tab, click a tab to remove it" aria-pressed="false" style="font-size:11.5px;padding:2px 7px">Edit tabs</button>
-      </div>
-      <div class="mirSlot" id="cutTabTools" hidden style="cursor:default">
-        <span class="mirLbl">Add evenly</span>
-        <input id="cutTabs" type="number" min="1" max="20" step="1" value="4" style="width:40px" title="How many to add, spread evenly round each shape">
-        <button id="cutTabSpread" style="font-size:11.5px;padding:2px 7px" title="Add this many, spaced evenly, to every shape">Add</button>
-        <button id="cutTabClear" style="font-size:11.5px;padding:2px 7px;margin-left:auto" title="Remove every tab">Clear</button>
-      </div>
-      <div class="mirSlot" id="cutTabSize" style="cursor:default">
-        <span class="mirLbl"><label for="cutTabLen">Length</label></span>
-        <input id="cutTabLen" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="The length of wood each tab leaves, along the middle of the cut, whatever the bit’s size">
-        <span class="mirLbl" style="margin-left:8px"><label for="cutTabThk">Thickness</label></span>
-        <input id="cutTabThk" type="text" inputmode="decimal" autocomplete="off" style="width:48px" title="The wood each tab leaves holding the part, measured up from the bottom of the material">
-      </div>
-      <div class="mirSlot" id="cutTabShape" style="cursor:default">
-        <span class="mirLbl"><label for="cutTabStyle">Shape</label></span>
-        <select id="cutTabStyle" title="Flat tabs step straight up and down; 3D tabs taper up to their full thickness in the middle, which makes them easier to cut free and leaves a smaller mark">
-          <option value="flat">Flat</option><option value="3d">3D (tapered)</option>
-        </select>
-      </div>
-      <p class="mirHint" id="cutHint"></p>
-      <div id="cutIssues"></div>
-      <div class="mirBtns"><button id="cutCancel">Cancel</button><button id="cutOk" class="primary">Create</button></div>
-    </div>
 
     <div id="offPanel" hidden role="dialog" aria-label="Offset">
       <div class="modalHead"><h3>Offset</h3><button class="modalX" id="offX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
@@ -4307,9 +4338,12 @@ function cutOpen(existing){
   cutFillTools();
   cutToForm();
   document.getElementById('cutPanel').hidden = false;
+  CUT_HELP_ON = null;                                  // the help starts on the kind of cut
+  renderToolpathPanel();                               // the editor takes over the Toolpaths panel
+  document.getElementById('cutScroll').scrollTop = 0;
   cutRender();
 }
-function cutClose(){ CUT = null; document.getElementById('cutPanel').hidden = true; draw(); }
+function cutClose(){ CUT = null; document.getElementById('cutPanel').hidden = true; renderToolpathPanel(); draw(); }
 function cutFillTools(){                             // show the chosen tool's name on the button
   var t = CUT && CUT.toolId ? libTool(CUT.toolId) : null;
   var mid = TOOLLIB ? libDefaultMachine() : null;
@@ -4433,6 +4467,11 @@ function cutRenderHintExtra(){
   if (h && cutRender.extra && h.textContent.indexOf(cutRender.extra.trim()) < 0 && h.textContent.charAt(0) !== '\u26a0') h.textContent += cutRender.extra;
 }
 function cutRender(){
+  cutRenderMain();
+  cutGroupsTidy();                                     // headings with nothing under them, for this kind of cut
+  cutHelpShow(CUT_HELP_ON);                            // the help follows the kind of cut
+}
+function cutRenderMain(){
   document.getElementById('cutName').placeholder = tpAutoName(CUT);
   tpGenerate.last = null;
   cutRenderInner(); cutRenderHintExtra();
@@ -4526,8 +4565,9 @@ function cutRenderInner(){
     return;
   }
   var nTabs = CUT.tabsOn ? tpTabTotal(CUT) : 0;
-  document.getElementById('cutTabSize').hidden = !CUT.tabsOn;
-  document.getElementById('cutTabTools').hidden = !(CUT.tabsOn && CUT.placing);
+  var noTabs = document.getElementById('cutTabRow').hidden;   // a kind of cut that has none: tabs ticked on a profile stay ticked when it's changed to a pocket
+  document.getElementById('cutTabSize').hidden = noTabs || !CUT.tabsOn;
+  document.getElementById('cutTabTools').hidden = noTabs || !(CUT.tabsOn && CUT.placing);
   document.getElementById('cutTabCount').textContent = CUT.tabsOn ? (nTabs ? nTabs + ' placed' : 'none yet') : '';
   document.getElementById('cutTabPlace').disabled = !CUT.tabsOn || !ok;
   document.getElementById('cutTabPlace').textContent = CUT.placing ? 'Done' : 'Edit tabs';
@@ -4944,6 +4984,91 @@ function cutTabShapeFollows(){
   shape._follows = true;
   shape.hidden = size.hidden;
   new MutationObserver(function (){ shape.hidden = size.hidden; }).observe(size, {attributes: true, attributeFilter: ['hidden']});
+}
+// ---- the toolpath editor's help ----
+// Click or tab into a setting and the box above the buttons says what it does, in a sentence or three. Each row
+// of the editor names its entry with data-help. "type" depends on the cut chosen.
+var CUT_HELP = {
+  name: ['Name', 'What this toolpath is called on its card, on the job sheet and in the G-code. Leave it empty and it’s named after the kind of cut.'],
+  shapes: ['Shapes', 'The shapes this toolpath cuts. While this is lit, click a shape on the drawing to add it, or one that’s already in to take it out.'],
+  tool: ['Tool', 'Pick the bit from your tool library. Its diameter, feed and speed are filled in below, and you can still change them for this toolpath alone.'],
+  dia: ['Diameter', 'The cutter’s diameter. Every position in the cut is worked out from it, so measure the bit if you aren’t sure: a 6.35 mm bit entered as 6 cuts an outside profile 0.35 mm too small.'],
+  feed: ['Feed', 'How fast the bit moves through the material while it cuts, in mm a minute. Too fast can break the bit; too slow rubs and burns the wood.'],
+  dir: ['Direction', 'Climb: the bit turns with the direction it travels, which usually leaves the cleaner wall on a rigid machine. Conventional: against it, which can suit a machine that flexes, or brittle material.'],
+  depth: ['Cut depth', 'How deep the cut goes, measured down from the top of the material. Tick through to go all the way: the material’s thickness from Job setup, plus the overcut. A parameter works here too, such as material / 2.'],
+  over: ['Overcut', 'How far past the bottom of the material a through cut goes, so the part comes free cleanly. The bit goes this far into the spoilboard.'],
+  step: ['Per pass', 'How much deeper each pass goes. Less is gentler on the bit and the machine, and takes longer. Half the bit’s diameter is a common start in wood.'],
+  peck: ['Peck', 'How far the drill goes before it lifts to clear the chips. 0 drills each hole in one plunge.'],
+  cham: ['Bevel', 'Bevel width: how wide the bevel is across the top face. Bit: the V-bit’s included angle, the angle between its two cutting edges (a “90° V-bit” is 90).'],
+  chamMode: ['The line is', 'Where the drawn line sits on the finished bevel: at the part’s edge, with the bit’s tip on it, or at the top of the bevel, with the bevel going inside or outside the line.'],
+  vc: ['V-carve', 'Bit: the V-bit’s included angle. Max depth, if you set one: the carving goes no deeper, and wider areas get a flat floor that a clearing toolpath can clean out. Tip: the width of the bit’s flat tip, if it has one.'],
+  inlay: ['Inlay', 'Pocket depth: how deep the pocket’s flat floor is. Start depth: how deep the plug’s walls begin; the plug seats this deep, and the gap left under it holds the glue. Plug depth: how deep the plug is carved, more than the start depth so it stands proud to be planed off.'],
+  stepover: ['Stepover', 'How far each clearing pass moves over from the last, as a share of the bit’s diameter. 40% is a good start. Smaller leaves a smoother floor and takes longer.'],
+  clear: ['Clearing', 'Offset rings work outwards from the middle, following the pocket’s shape. Raster runs back and forth in straight lines at the angle you give, then goes round the walls.'],
+  rest: ['Clean up after', 'Choose a pocket on the same shapes that’s cut with a larger bit. This bit then cuts only what that one couldn’t reach: the corners and the narrow parts.'],
+  fin: ['Finishing', 'Leaves this much on the walls while roughing. Tick “then finish it” to take it off in one last pass at full depth, which leaves a cleaner wall.'],
+  ramp: ['Ramp in', 'Ramp: each pass slopes down into the material along the cut, which is gentler on the bit than going straight down. The length is how far along the cut it slopes; empty means 4 times the bit’s diameter. Plunge goes straight down.'],
+  lead: ['Lead in and out', 'The bit comes onto the line from the waste side and leaves the same way, so no pass starts or stops on the finished wall. Arc sweeps on in a curve; Line comes straight in. The size is the arc’s radius or the line’s length. A cut that ramps in uses only the lead out.'],
+  start: ['Start', 'Where on each outline the cut begins. Press Set start, then click the outline. Automatic lets 454 Design choose.'],
+  tabs: ['Tabs', 'Small bridges of wood left across the cut, so the part can’t come loose and be thrown. Press Edit tabs, then click the outline to add one, or click a tab to remove it.'],
+  tabTools: ['Add evenly', 'Adds this many tabs to every shape, spaced evenly round it. Clear removes every tab.'],
+  tabSize: ['Tab size', 'Length: the wood each tab leaves along the cut, whatever the bit’s size. Thickness: the wood it leaves, measured up from the bottom of the material. Longer and thicker holds better, and takes more cleaning up.'],
+  tabShape: ['Tab shape', 'Flat tabs step straight up and down. 3D tabs taper up to their full thickness in the middle: easier to cut free, and a smaller mark.']
+};
+var CUT_HELP_TYPE = {
+  outside: ['Profile, outside', 'Cuts round the outside of the line, so the part comes out at the size you drew. Use it to cut a part out.'],
+  inside: ['Profile, inside', 'Cuts along the inside of the line, so the opening comes out at the size you drew. Use it for cut-outs, and for holes bigger than the bit.'],
+  on: ['Profile, on the line', 'The middle of the bit follows the line, so the cut is half the bit wide on each side of it. Use it for grooves and scoring, not for parts that must be to size.'],
+  pocket: ['Pocket', 'Clears everything inside the shape down to the depth, leaving a flat floor. A shape inside the shape is left standing, as an island.'],
+  drill: ['Drill at centres', 'Goes straight down at the centre of each circle. The hole is the size of the bit, whatever size the circle is drawn.'],
+  chamfer: ['Chamfer edges', 'Runs a V-bit along the line to cut a bevel on the edge.'],
+  vcarve: ['V-carve', 'A V-bit follows the middle of each shape, going deeper where the shape is wider, so corners come out sharp. For lettering and signs.'],
+  inlay: ['Inlay', 'Cuts the two halves of a V-bit inlay: a pocket in the base, and a mirrored plug in the inlay piece, which is flipped over and glued in.']
+};
+var CUT_HELP_ON = null;                                  // the row whose help is showing; null shows the kind of cut's
+function cutHelpFor(key){
+  if (key && key !== 'type' && CUT_HELP[key]) return CUT_HELP[key];
+  return CUT_HELP_TYPE[CUT && CUT.side] || CUT_HELP_TYPE.outside;
+}
+function cutHelpShow(key){
+  var pan = document.getElementById('cutPanel');
+  if (!pan) return;
+  // a row that has since been hidden (the cut was changed) has nothing to say
+  var row = key ? pan.querySelector('.mirSlot[data-help="' + key + '"]') : null;
+  if (row && (row.hidden || (row.parentNode && row.parentNode.hidden))) { row = null; key = null; }
+  CUT_HELP_ON = row ? key : null;
+  var h = cutHelpFor(CUT_HELP_ON);
+  document.getElementById('cutHelpT').textContent = h[0];
+  document.getElementById('cutHelpB').textContent = h[1];
+  Array.prototype.forEach.call(pan.querySelectorAll('.mirSlot.helpOn'), function (r) { r.classList.remove('helpOn'); });
+  if (row) row.classList.add('helpOn');
+}
+// Which row a click or a focus landed in
+function cutHelpRowOf(el){
+  while (el && el.id !== 'cutPanel'){
+    if (el.getAttribute && el.getAttribute('data-help')) return el.getAttribute('data-help');
+    el = el.parentNode;
+  }
+  return null;
+}
+// A heading with nothing under it for this kind of cut isn't shown.
+function cutGroupsTidy(){
+  var pan = document.getElementById('cutPanel');
+  if (!pan) return;
+  // the tab Shape row follows the size row a moment later (cutTabShapeFollows): here it must be right now
+  var size = document.getElementById('cutTabSize'), shape = document.getElementById('cutTabShape');
+  if (size && shape) shape.hidden = size.hidden;
+  Array.prototype.forEach.call(pan.querySelectorAll('.cutGroup'), function (g) {
+    var rows = g.querySelectorAll('.mirSlot'), any = false;
+    Array.prototype.forEach.call(rows, function (r) { if (!r.hidden) any = true; });
+    g.hidden = !any;
+  });
+}
+function cutHelpWire(){
+  var pan = document.getElementById('cutPanel');
+  var on = function (e) { var k = cutHelpRowOf(e.target); if (k) cutHelpShow(k); };
+  pan.addEventListener('focusin', on);
+  pan.addEventListener('click', on);
 }
 // Toolpaths run in the order listed. Moving one is undoable like any other edit.
 function tpMoveTo(from, to){
@@ -7356,7 +7481,9 @@ function renderToolpathPanel(){
   sheetBar();                                  // always current, even after opening another project
   var list = DOC.vcConverted ? [] : (DOC.vcToolpaths || []), pan = document.getElementById('tpPanel');
   if (!pan) return;
-  var open = UICFG.tpPanel !== false;                    // always present; open unless collapsed
+  var editing = !!CUT;                                   // the toolpath editor has the panel while it's open
+  var open = UICFG.tpPanel !== false || editing;         // always present; open unless collapsed
+  pan.classList.toggle('editing', editing);
   pan.classList.toggle('collapsed', !open);              // the canvas's size observer redraws it to fit
   document.getElementById('tpStrip').setAttribute('aria-expanded', open ? 'true' : 'false');
   document.getElementById('tpCollapse').setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -14576,6 +14703,7 @@ function wire(){
     CUT.placing = !CUT.placing; if (CUT.placing) CUT.placingStart = false;
     cutRender();
   });
+  cutHelpWire();
   document.getElementById('cutPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }
     else if (e.key === 'Enter'){ e.preventDefault(); cutApply(); }

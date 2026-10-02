@@ -2,7 +2,9 @@ function renderToolpathPanel(){
   sheetBar();                                  // always current, even after opening another project
   var list = DOC.vcConverted ? [] : (DOC.vcToolpaths || []), pan = document.getElementById('tpPanel');
   if (!pan) return;
-  var open = UICFG.tpPanel !== false;                    // always present; open unless collapsed
+  var editing = !!CUT;                                   // the toolpath editor has the panel while it's open
+  var open = UICFG.tpPanel !== false || editing;         // always present; open unless collapsed
+  pan.classList.toggle('editing', editing);
   pan.classList.toggle('collapsed', !open);              // the canvas's size observer redraws it to fit
   document.getElementById('tpStrip').setAttribute('aria-expanded', open ? 'true' : 'false');
   document.getElementById('tpCollapse').setAttribute('aria-expanded', open ? 'true' : 'false');

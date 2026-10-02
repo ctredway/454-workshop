@@ -185,6 +185,7 @@ function wire(){
     CUT.placing = !CUT.placing; if (CUT.placing) CUT.placingStart = false;
     cutRender();
   });
+  cutHelpWire();
   document.getElementById('cutPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }
     else if (e.key === 'Enter'){ e.preventDefault(); cutApply(); }

@@ -38,9 +38,12 @@ function cutOpen(existing){
   cutFillTools();
   cutToForm();
   document.getElementById('cutPanel').hidden = false;
+  CUT_HELP_ON = null;                                  // the help starts on the kind of cut
+  renderToolpathPanel();                               // the editor takes over the Toolpaths panel
+  document.getElementById('cutScroll').scrollTop = 0;
   cutRender();
 }
-function cutClose(){ CUT = null; document.getElementById('cutPanel').hidden = true; draw(); }
+function cutClose(){ CUT = null; document.getElementById('cutPanel').hidden = true; renderToolpathPanel(); draw(); }
 function cutFillTools(){                             // show the chosen tool's name on the button
   var t = CUT && CUT.toolId ? libTool(CUT.toolId) : null;
   var mid = TOOLLIB ? libDefaultMachine() : null;
@@ -164,6 +167,11 @@ function cutRenderHintExtra(){
   if (h && cutRender.extra && h.textContent.indexOf(cutRender.extra.trim()) < 0 && h.textContent.charAt(0) !== '\u26a0') h.textContent += cutRender.extra;
 }
 function cutRender(){
+  cutRenderMain();
+  cutGroupsTidy();                                     // headings with nothing under them, for this kind of cut
+  cutHelpShow(CUT_HELP_ON);                            // the help follows the kind of cut
+}
+function cutRenderMain(){
   document.getElementById('cutName').placeholder = tpAutoName(CUT);
   tpGenerate.last = null;
   cutRenderInner(); cutRenderHintExtra();
@@ -257,8 +265,9 @@ function cutRenderInner(){
     return;
   }
   var nTabs = CUT.tabsOn ? tpTabTotal(CUT) : 0;
-  document.getElementById('cutTabSize').hidden = !CUT.tabsOn;
-  document.getElementById('cutTabTools').hidden = !(CUT.tabsOn && CUT.placing);
+  var noTabs = document.getElementById('cutTabRow').hidden;   // a kind of cut that has none: tabs ticked on a profile stay ticked when it's changed to a pocket
+  document.getElementById('cutTabSize').hidden = noTabs || !CUT.tabsOn;
+  document.getElementById('cutTabTools').hidden = noTabs || !(CUT.tabsOn && CUT.placing);
   document.getElementById('cutTabCount').textContent = CUT.tabsOn ? (nTabs ? nTabs + ' placed' : 'none yet') : '';
   document.getElementById('cutTabPlace').disabled = !CUT.tabsOn || !ok;
   document.getElementById('cutTabPlace').textContent = CUT.placing ? 'Done' : 'Edit tabs';

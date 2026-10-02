@@ -28,7 +28,8 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ## 454 Workshop (the desktop app, in testing)
 
 ### 0.6.2-beta.32 — name your toolpaths
-- Includes Design 0.115.0: toolpaths can be named, and their cards fold to the title.
+- Includes Design 0.115.0: toolpaths can be named, their cards fold to the title, and the toolpath editor
+  takes over the Toolpaths panel, with headings and help for every setting.
 
 ### 0.6.2-beta.31 — open Carbide Create projects
 - Includes Design 0.114.0: `.c2d` files open, with their shapes, layers and material. The Open window lists
@@ -861,7 +862,26 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
-### 0.115.0 — name your toolpaths; fold their cards to the title
+### 0.115.0 — name your toolpaths; fold their cards to the title; the editor takes over the panel and explains itself
+- **The toolpath editor takes over the Toolpaths panel** while it's open, as VCarve's does, instead of floating
+  over the corner of the drawing. It's wider (440 px, less on a narrow window), the drawing and its live
+  preview stay in view, and the list of toolpaths comes back when you press Create, Update or Cancel. If the
+  panel was folded away, the editor still opens, and the panel folds away again afterwards.
+- **Its settings sit under headings:** Tool, Depth, Passes, Entry and exit, Tabs. A heading with nothing under
+  it for the kind of cut isn't shown (a V-carve shows Tool and Depth only). Feed and Direction moved up beside
+  the tool they belong to. Every control is the one it was; only the order and the grouping changed.
+- **Help for every setting.** Click or tab into a setting and a box above the buttons says what it does, in a
+  sentence or three, and its row is outlined. It starts on the kind of cut chosen ("Profile, outside: cuts
+  round the outside of the line, so the part comes out at the size you drew") and follows it when that's
+  changed. Written for all 26 rows and all 8 kinds of cut (`toolpath-help.js`).
+- **The help, the summary and the buttons stay put** at the bottom while the settings scroll, so the warning
+  that a cut goes past the material is always in view, and Create is never off the screen.
+- **A unit sits beside its box** (mm, mm/min, % of the cutter) instead of at the far edge of the row.
+- **Fixed: tab rows showed on a pocket** if tabs had been ticked while it was still a profile. Pockets have no
+  tabs.
+- **Fixed: on a narrow window the size bar over the drawing covered the top of the Toolpaths panel.**
+- **Tested** (`apps/design/test/toolpath-editor-dock.test.mjs`, 8 tests; broken on purpose 31 ways, all
+  caught), and looked at in the app for every kind of cut at two window sizes: nothing overflows.
 - **A toolpath can be given a name.** The editor has a **Name** box, and on a card you can double-click the
   name (or right-click → Rename…), type, and press Enter; Escape leaves it alone. The name is on the card and
   the job sheet and in the G-code's `;Toolpath:` comment, which 454 Control shows. Left empty, a toolpath is
