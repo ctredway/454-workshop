@@ -115,3 +115,34 @@ test('every place Control’s help opens at is in the guides (when they’re bui
   if (!fs.existsSync(dist)) return;                        // the docs' own build checks it
   assert.deepEqual(missing(JSON.parse(fs.readFileSync(dist, 'utf8')), list), []);
 });
+
+// ---- the desktop app's File and Help menus (they ask the page, through menuDo) ----
+test('File menu in Control: Open and Settings press their buttons; nothing happens while Control is asking something', () => {
+  const did = [];
+  C.el('openBtn').click = () => did.push('open');
+  C.el('settingsBtn').click = () => did.push('settings');
+  assert.equal(C.menuDo('open'), true);
+  assert.equal(C.menuDo('settings'), true);
+  assert.deepEqual(did, ['open', 'settings']);
+  assert.equal(C.menuDo('save'), false, 'Control has no Save');
+  for (const id of ['dlgModal', 'toolModal', 'homeModal', 'connModal']) {
+    C.el(id).hidden = false;
+    assert.equal(C.menuDo('open'), false, id + ' has the screen');
+    C.el(id).hidden = true;
+  }
+  C.el('openBtn').disabled = true;
+  assert.equal(C.menuDo('open'), false, 'a greyed-out button stays greyed out');
+  C.el('openBtn').disabled = false;
+  assert.deepEqual(did, ['open', 'settings']);
+});
+test('Help menu in Control: opens the help, and the File menu waits while it’s open', () => {
+  const did = [];
+  C.el('openBtn').click = () => did.push('open');
+  assert.equal(C.menuDo('help'), true);
+  assert.equal(C.helpIsOpen(), true);
+  assert.equal(C.menuDo('open'), false);
+  assert.equal(C.menuDo('help'), false, 'already open');
+  C.helpClose();
+  assert.equal(C.menuDo('open'), true);
+  assert.deepEqual(did, ['open']);
+});

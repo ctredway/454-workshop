@@ -186,6 +186,7 @@ function wire(){
     cutRender();
   });
   cutHelpWire();
+  cutPassesWire();
   helpWire({context: designHelpWhere, own: /^(design-|cam-)/, icons: HELP_ICONS});                // F1 and the ? in the header
   document.getElementById('cutPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }

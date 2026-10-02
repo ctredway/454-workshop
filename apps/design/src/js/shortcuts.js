@@ -10,6 +10,29 @@ function selectAll(){
   DOC.ents.forEach(function (e, i){ if (entEditable(e)) SEL.push(i); });
   draw(); if (typeof updateReadout === 'function') updateReadout();
 }
+// The desktop app's File and Help menus act through here, so a menu item does exactly what its button or its
+// keys do, and nothing while a dialog (or the help) has the screen: the same rule the keys follow.
+function menuDo(what){
+  if (typeof helpIsOpen === 'function' && helpIsOpen()) return false;
+  if (what === 'help'){ helpOpen(); return true; }
+  if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
+  var press = function (id){ var b = document.getElementById(id); if (b && !b.disabled) b.click(); };
+  if (what === 'new') newDrawing();
+  else if (what === 'open') openFiles();
+  else if (what === 'save') saveDrawing(false);
+  else if (what === 'saveAs') saveDrawing(true);
+  else if (what === 'recover') press('recoverBtn');
+  else if (what === 'dxf') press('dxfBtn');
+  else if (what === 'svg') press('svgBtn');
+  else if (what === 'jobSetup') press('jobBtn');
+  else if (what === 'settings') press('settingsBtn');
+  else if (what === 'gcode'){
+    if (camReady() && tpShownList().some(function (t){ return !t.exclude; })) tpExport();
+    else toast('info', 'No toolpaths to save', 'Make a toolpath first: select shapes, then press + in the Toolpaths panel.');
+  }
+  else return false;
+  return true;
+}
 function keysWire(){
   window.addEventListener('keydown', function (e){
     if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return;

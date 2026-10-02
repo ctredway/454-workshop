@@ -27,6 +27,28 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.36 — a File menu, and see every pass
+- **The menu bar is the usual one: File, Edit, View, Window, Help.** There was no File menu: one "454
+  Workshop" menu held the two apps, the docs, problem reports, About, updates, Close and Quit.
+  - **File** follows the window in front. In 454 Design: New, Open…, Save, Save As…, Recover last drawing;
+    Export DXF…, Export SVG…, Save G-code…; Job setup…, Settings…. In 454 Control: Open G-code file…,
+    Settings…. Close window and Exit are at the bottom of both.
+  - **Window** switches between 454 Design and 454 Control (still Ctrl+2 and Ctrl+1) and ticks the one in
+    front.
+  - **Help** has Help (F1), Docs, Report a problem…, Check for updates… and the Updates choices, and About
+    454 Workshop.
+  - **A menu item does what its button does.** The menu asks the page (`menuDo`, in each app), which presses
+    the same button or calls the same function the keys do, and does nothing while a dialog or the help has
+    the screen. The keys beside File's items are shown but left to the page, so Ctrl+S still follows the
+    page's own rules and can't run twice.
+  - The menu's layout is in `apps/desktop/src/app-menu.js`, with no Electron in it, so it's tested (10 tests);
+    the pages' side is tested in each app (6 tests). Broken on purpose 32 ways, all caught, and tried in the
+    real app: both File menus, a real Ctrl+N reaching the page once, and Help over an open dialog. A test
+    caught the docs' front page being taken for 454 Control, which would have given the docs window
+    Control's File menu.
+- Includes Design 0.119.0: the toolpath editor lists every pass and its depth, and the number of passes can
+  be typed; and the engine no longer cuts the final depth twice for some inch sizes.
+
 ### 0.6.2-beta.35 — a tidier Toolpaths panel
 - Includes Design 0.118.0: the previews, the job sheet and the template buttons are a row of icons at the top
   of the Toolpaths panel.
@@ -490,6 +512,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.31.24 — the desktop app's File and Help menus
+- 454 Control answers the desktop app's new menus (`menuDo`): File → Open G-code file… and Settings… press
+  their buttons (Open still refuses while a job runs), and Help opens the help. Nothing happens while Control
+  is asking something (a dialog, the tool-change prompt, homing or connecting) or the help is open.
+
 ### 0.31.23 — the ⓘ icons show a tip and open the guides
 - **Control's 19 ⓘ buttons now work the way Design's do.** Rest the pointer on one, or tab to it, for a tip
   of a sentence or two; click it and the help window opens at that section of the guides. Before, each
@@ -906,6 +933,34 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.119.0 — see every pass in the toolpath editor
+- **A Passes row in the toolpath editor,** under Per pass, for profiles and pockets. It shows how many passes
+  the cut takes and the depth each one reaches ("1.50 · 3.00 · 4.50 · 6.00 · 6.35 mm"), and follows Cut
+  depth, Through and Per pass as they change, so a change shows at once. With more than eight passes it shows
+  the first three and the last two.
+- **Type a number of passes** and the depth is divided into that many even passes: Per pass changes to match.
+  The step is rounded up at the box's precision, never down, so the passes asked for are the passes cut.
+- **A thin last pass is pointed out.** When the last pass would take less than half of Per pass (6.35 mm at
+  1.5 leaves 0.35 for the fifth), the row says so and offers **Make them even: 5 of 1.27**. It keeps the
+  number of passes, so no pass ever goes deeper than you set.
+- **(machine) Fixed: the cutting engine could cut the final depth twice.** It worked out the number of passes
+  by dividing the depth by the pass depth and rounding up, and for some everyday sizes the division comes
+  out a hair over a whole number: 19.05 / 6.35 (3/4 in deep at 1/4 in a pass) is 3.0000000000000004, which
+  rounded up to four. The fourth pass went round at the same depth as the third, taking nothing off: wasted
+  time, and the cards said "4 passes". 3/8 in and 3/4 in deep at 1/16, 1/8 or 1/4 in a pass were all
+  affected. A hair over no longer counts (`passCount` in `cam.js`). Nothing cut too deep or too shallow
+  because of this.
+  - Proven old against new on 2,610 profiles and pockets (plunged and ramped, with tabs, leads and finishing
+    passes, rings and raster): 2,585 identical move for move, and 25 where the only change is that repeated
+    last pass gone, with the same final depth. Depths a little over a whole number of passes (3.03 mm at
+    1 mm) still get their small last pass. The comparison was itself checked by breaking the fix 6 ways.
+- The cards, the hint and the "toolpath created" message count passes the same way, and say "1 pass".
+- 454 Design answers the desktop app's new File and Help menus (`menuDo` in `shortcuts.js`): each item does
+  what its button or keys do, and nothing while a dialog or the help has the screen. Save G-code from the menu
+  says so when there's no toolpath to save.
+- **Tested** (`apps/design/test/passes.test.mjs`, 14 tests, including that the depths listed are the depths
+  the engine's moves go to; broken on purpose 30 ways, all caught), and tried in the app with real typing.
 
 ### 0.118.0 — a row of icons at the top of the Toolpaths panel
 - **Preview in wood, Preview in 454 Control, Job sheet, Save template and Apply template are now icons in a

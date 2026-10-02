@@ -128,6 +128,20 @@
   //   ramp      {length} to lead into each pass, or null for a straight plunge
   //   startAt   [x, y] or null: start each pass at the point on the path nearest this (else a corner, or with
   //             leads the middle of the longest edge)
+  // How many passes it takes to reach a depth, each going passDepth deeper (the last one whatever is left).
+  // A division can come out a hair over a whole number: 19.05 / 6.35 (3/4 in at 1/4 in a pass) is
+  // 3.0000000000000004. Rounded up as it stood, that added a fourth pass which cut the last depth a second
+  // time, taking nothing off. So a hair over doesn't count.
+  function passCount(depth, passDepth){
+    return Math.max(1, Math.ceil(depth / passDepth - 1e-9));
+  }
+  // The depth each pass reaches, in order: what the profiles and pockets below cut.
+  function passDepths(depth, passDepth){
+    var out = [];
+    if (!(depth > 0) || !(passDepth > 0)) return out;
+    for (var p = 1, n = passCount(depth, passDepth); p <= n; p++) out.push(Math.min(depth, passDepth * p));
+    return out;
+  }
   function profile(opts){
     var o = Object.assign({
       side: 'outside', toolDia: 3.175, depth: 3, z0: 0, passDepth: 1,
@@ -154,7 +168,7 @@
                   .filter(function (l) { return l.length > 2; });
     if (!loops.length) return {moves: [], loops: 0, warning: 'the cutter is too big for this shape'};
 
-    var moves = [], passes = Math.max(1, Math.ceil(o.depth / o.passDepth));
+    var moves = [], passes = passCount(o.depth, o.passDepth);
     var tabTops = [];
 
     // LEADS: sweep onto the line from the waste side and off it again, so no pass starts or stops
@@ -464,7 +478,7 @@
     }
     var ringCount = ringsByLevel.reduce(function (s2, a2) { return s2 + a2.length; }, 0);
 
-    var moves = [], passes = Math.max(1, Math.ceil(o.depth / o.passDepth)), here = null;
+    var moves = [], passes = passCount(o.depth, o.passDepth), here = null;
     var clear = o.z0 + 1;                               // just above the surface, for short hops
     moves.push({g: 0, z: o.safeZ});
     function rotateTo(loop, p){                         // start the ring where we already are
@@ -875,5 +889,5 @@
   }
 
   return {profile: profile, pocket: pocket, vcarve: vcarve, drill: drill, orderNearest: orderNearest, toGcode: toGcode, toGcodeJob: toGcodeJob, loopLength: loopLength, orient: orient,
-          distanceAlong: distanceAlong, evenTabPoints: evenTabPoints, pointAt: pointAt};
+          distanceAlong: distanceAlong, evenTabPoints: evenTabPoints, pointAt: pointAt, passCount: passCount, passDepths: passDepths};
 });

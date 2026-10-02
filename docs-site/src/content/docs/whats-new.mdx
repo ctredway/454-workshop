@@ -12,6 +12,18 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.36
+
+2 October 2026
+
+- **A File menu.** The desktop app's menu bar is now the usual File, Edit, View, Window and Help. File has New,
+  Open, Save, Save As, the exports and Save G-code in Design, and Open G-code file in Control; Help has the help,
+  the docs, updates and About.
+- **See every pass.** The toolpath editor now shows how many passes a profile or pocket takes and the depth of
+  each one, as you change the depth or Per pass. Type a number of passes to divide the depth evenly.
+- **Fixed: some cuts went round the final depth twice.** For sizes such as 3/4 in deep at 1/4 in a pass, the
+  last pass was repeated at the same depth. It wasted time and cut nothing extra; it's gone.
+
 ## 0.6.2-beta.35
 
 2 October 2026

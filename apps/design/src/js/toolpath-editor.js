@@ -168,6 +168,7 @@ function cutRenderHintExtra(){
 }
 function cutRender(){
   cutRenderMain();
+  cutPassesRender();                                   // how many passes, and how deep each goes
   cutGroupsTidy();                                     // headings with nothing under them, for this kind of cut
   cutHelpShow(CUT_HELP_ON);                            // the help follows the kind of cut
 }
@@ -378,12 +379,12 @@ function cutRenderInner(){
       ? '\u26a0 ' + pv.warning.charAt(0).toUpperCase() + pv.warning.slice(1) + '.'
       : restSrc
       ? 'Cleans up after \u201c' + restSrc.name + '\u201d (' + fmtDisp(restSrc.dia) + ' ' + unitTag() + ' bit): only its corners and the parts too narrow for it, ' +
-        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + Math.ceil(tpDepth(restSrc) / CUT.step) + (Math.ceil(tpDepth(restSrc) / CUT.step) === 1 ? ' pass' : ' passes') +
+        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + tpPassCount(tpDepth(restSrc), CUT.step) + (tpPassCount(tpDepth(restSrc), CUT.step) === 1 ? ' pass' : ' passes') +
         (pv.restRuns ? ' (' + pv.restRuns + (pv.restRuns === 1 ? ' stretch' : ' stretches') + ').' : ': the larger bit reaches everywhere, so there\u2019s nothing left for this one.') +
         (CUT.pocketClear === 'raster' ? ' It follows the walls rather than raster lines.' : '')
       : grp.length + (grp.length === 1 ? ' pocket' : ' pockets') + (isl ? ' with ' + isl + (isl === 1 ? ' island' : ' islands') + ' left standing' : '') + '. ' +
         (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(CUT.over) : fmtDisp(tpDepth(CUT)) + ' ' + unitTag() + ' deep') +
-        ', ' + Math.ceil(tpDepth(CUT) / CUT.step) + (Math.ceil(tpDepth(CUT) / CUT.step) === 1 ? ' pass' : ' passes') +
+        ', ' + tpPassCount(tpDepth(CUT), CUT.step) + (tpPassCount(tpDepth(CUT), CUT.step) === 1 ? ' pass' : ' passes') +
         (CUT.pocketClear === 'raster'
            ? ', raster lines ' + fmtDisp(so) + ' ' + unitTag() + ' apart at ' + (CUT.rasterAngle || 0) + '\u00b0, then round the walls.'
            : ', rings ' + fmtDisp(so) + ' ' + unitTag() + ' apart.');
@@ -402,7 +403,7 @@ function cutRenderInner(){
     : (!ok ? 'Nothing here is a closed outline yet. See below for what can be fixed.'
            : noThk ? '\u26a0 Set the material thickness in Job setup before cutting through \u2014 until then this cuts only the overcut.'
            : (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) + ' overcut. ' : '') +
-             'Passes: ' + Math.ceil(tpDepth(CUT) / CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
+             'Passes: ' + tpPassCount(tpDepth(CUT), CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
              (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
   SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
   CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
@@ -671,7 +672,7 @@ function cutApply(){
   toast('ok', at >= 0 ? 'Toolpath updated' : 'Toolpath created',
         tp.type === 'drill'
           ? tp.name + ': ' + (tp.holes ? tp.holes.length : 0) + ' holes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' drill.'
-          : tp.name + ': ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter' + (tp.side === 'pocket' && tp.islands ? ', leaving ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : '') + '.');
+          : tp.name + ': ' + tpPassCount(tpDepth(tp), tp.step) + (tpPassCount(tpDepth(tp), tp.step) === 1 ? ' pass' : ' passes') + ' with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter' + (tp.side === 'pocket' && tp.islands ? ', leaving ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : '') + '.');
   if (clearMsg) toast('info', 'Clearing for the flat areas', clearMsg);
   cutClose();
   renderToolpathPanel();

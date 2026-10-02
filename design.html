@@ -322,6 +322,13 @@
   .cutGroup[hidden]{display:none}
   .cutGroup h4{margin:0;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
   #cutPanel .mirSlot.helpOn{border-color:var(--amber)}
+  #cutPassRow{flex-wrap:wrap;row-gap:5px}
+  #cutPassRow[hidden]{display:none}
+  #cutPasses{width:56px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #cutPassList{flex-basis:100%;font-family:var(--mono);font-size:11.5px;line-height:1.5;color:var(--ink)}
+  #cutPassNote{font-size:11.5px;color:var(--amber)}
+  #cutPassNote[hidden],#cutPassEven[hidden]{display:none}
+  #cutPassEven{margin-left:auto;font-size:11.5px;padding:2px 7px}
   #cutPanel .mirSlot input[type=text] + .mirVal{margin-left:0}        /* a unit sits beside its box, not at the far edge */
   #cutPanel #cutThroughLbl[hidden] + #cutDepth{margin-left:auto !important}
   #cutHelp{min-height:58px;padding:7px 10px;border-left:3px solid var(--amber);border-radius:0 5px 5px 0;background:var(--panel-deep);font-size:12px;line-height:1.5;color:var(--muted)}
@@ -906,6 +913,13 @@
         <input id="cutOver" type="text" inputmode="decimal" autocomplete="off" title="How far past the bottom of the material to cut, so parts come free cleanly"></div>
       <div class="mirSlot" data-help="step" id="cutStepRow" style="cursor:default"><span class="mirLbl"><label for="cutStep">Per pass</label></span>
         <input id="cutStep" type="text" inputmode="decimal" autocomplete="off"></div>
+      <div class="mirSlot" data-help="passes" id="cutPassRow" style="cursor:default">
+        <span class="mirLbl"><label for="cutPasses">Passes</label></span>
+        <input id="cutPasses" type="number" min="1" max="500" step="1" title="How many passes the cut takes. Type a number to divide the depth into that many even passes.">
+        <span id="cutPassList" title="The depth each pass reaches, measured down from the top of the material"></span>
+        <span id="cutPassNote" hidden></span>
+        <button id="cutPassEven" hidden title="Change Per pass so that every pass takes the same amount"></button>
+      </div>
       <div class="mirSlot" data-help="peck" id="cutPeckRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutPeck">Peck</label></span>
         <input id="cutPeck" type="text" inputmode="decimal" autocomplete="off" title="How far to drill before lifting to clear chips. 0 drills in one plunge."></div>
       <div class="mirSlot" data-help="cham" id="cutChamRow" hidden style="cursor:default">
@@ -1130,7 +1144,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.118.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.119.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -4532,6 +4546,7 @@ function cutRenderHintExtra(){
 }
 function cutRender(){
   cutRenderMain();
+  cutPassesRender();                                   // how many passes, and how deep each goes
   cutGroupsTidy();                                     // headings with nothing under them, for this kind of cut
   cutHelpShow(CUT_HELP_ON);                            // the help follows the kind of cut
 }
@@ -4742,12 +4757,12 @@ function cutRenderInner(){
       ? '\u26a0 ' + pv.warning.charAt(0).toUpperCase() + pv.warning.slice(1) + '.'
       : restSrc
       ? 'Cleans up after \u201c' + restSrc.name + '\u201d (' + fmtDisp(restSrc.dia) + ' ' + unitTag() + ' bit): only its corners and the parts too narrow for it, ' +
-        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + Math.ceil(tpDepth(restSrc) / CUT.step) + (Math.ceil(tpDepth(restSrc) / CUT.step) === 1 ? ' pass' : ' passes') +
+        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + tpPassCount(tpDepth(restSrc), CUT.step) + (tpPassCount(tpDepth(restSrc), CUT.step) === 1 ? ' pass' : ' passes') +
         (pv.restRuns ? ' (' + pv.restRuns + (pv.restRuns === 1 ? ' stretch' : ' stretches') + ').' : ': the larger bit reaches everywhere, so there\u2019s nothing left for this one.') +
         (CUT.pocketClear === 'raster' ? ' It follows the walls rather than raster lines.' : '')
       : grp.length + (grp.length === 1 ? ' pocket' : ' pockets') + (isl ? ' with ' + isl + (isl === 1 ? ' island' : ' islands') + ' left standing' : '') + '. ' +
         (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(CUT.over) : fmtDisp(tpDepth(CUT)) + ' ' + unitTag() + ' deep') +
-        ', ' + Math.ceil(tpDepth(CUT) / CUT.step) + (Math.ceil(tpDepth(CUT) / CUT.step) === 1 ? ' pass' : ' passes') +
+        ', ' + tpPassCount(tpDepth(CUT), CUT.step) + (tpPassCount(tpDepth(CUT), CUT.step) === 1 ? ' pass' : ' passes') +
         (CUT.pocketClear === 'raster'
            ? ', raster lines ' + fmtDisp(so) + ' ' + unitTag() + ' apart at ' + (CUT.rasterAngle || 0) + '\u00b0, then round the walls.'
            : ', rings ' + fmtDisp(so) + ' ' + unitTag() + ' apart.');
@@ -4766,7 +4781,7 @@ function cutRenderInner(){
     : (!ok ? 'Nothing here is a closed outline yet. See below for what can be fixed.'
            : noThk ? '\u26a0 Set the material thickness in Job setup before cutting through \u2014 until then this cuts only the overcut.'
            : (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) + ' overcut. ' : '') +
-             'Passes: ' + Math.ceil(tpDepth(CUT) / CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
+             'Passes: ' + tpPassCount(tpDepth(CUT), CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
              (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
   SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
   CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
@@ -5035,7 +5050,7 @@ function cutApply(){
   toast('ok', at >= 0 ? 'Toolpath updated' : 'Toolpath created',
         tp.type === 'drill'
           ? tp.name + ': ' + (tp.holes ? tp.holes.length : 0) + ' holes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' drill.'
-          : tp.name + ': ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter' + (tp.side === 'pocket' && tp.islands ? ', leaving ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : '') + '.');
+          : tp.name + ': ' + tpPassCount(tpDepth(tp), tp.step) + (tpPassCount(tpDepth(tp), tp.step) === 1 ? ' pass' : ' passes') + ' with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter' + (tp.side === 'pocket' && tp.islands ? ', leaving ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : '') + '.');
   if (clearMsg) toast('info', 'Clearing for the flat areas', clearMsg);
   cutClose();
   renderToolpathPanel();
@@ -5062,6 +5077,7 @@ var CUT_HELP = {
   depth: ['Cut depth', 'How deep the cut goes, measured down from the top of the material. Tick through to go all the way: the material’s thickness from Job setup, plus the overcut. A parameter works here too, such as material / 2.'],
   over: ['Overcut', 'How far past the bottom of the material a through cut goes, so the part comes free cleanly. The bit goes this far into the spoilboard.'],
   step: ['Per pass', 'How much deeper each pass goes. Less is gentler on the bit and the machine, and takes longer. Half the bit’s diameter is a common start in wood.'],
+  passes: ['Passes', 'How many passes it takes to reach the depth, and how deep each one goes, measured down from the top of the material. Type a number here and the depth is divided into that many even passes: Per pass changes to match.'],
   peck: ['Peck', 'How far the drill goes before it lifts to clear the chips. 0 drills each hole in one plunge.'],
   cham: ['Bevel', 'Bevel width: how wide the bevel is across the top face. Bit: the V-bit’s included angle, the angle between its two cutting edges (a “90° V-bit” is 90).'],
   chamMode: ['The line is', 'Where the drawn line sits on the finished bevel: at the part’s edge, with the bit’s tip on it, or at the top of the bevel, with the bevel going inside or outside the line.'],
@@ -5205,6 +5221,75 @@ function cutHelpWire(){
   var on = function (e) { var k = cutHelpRowOf(e.target); if (k) cutHelpShow(k); };
   pan.addEventListener('focusin', on);
   pan.addEventListener('click', on);
+}
+// ---- passes: how many, and how deep each goes ----
+// A profile or a pocket goes down in steps of "Per pass", the last step taking whatever is left. These are the
+// same sums the CAM engine does (Cam.passCount and Cam.passDepths in cam.js; a test holds the two together),
+// written here too so the editor and the cards can show them whether or not the engine is loaded.
+function tpPassCount(depth, step){
+  return depth > 0 && step > 0 ? Math.max(1, Math.ceil(depth / step - 1e-9)) : 0;
+}
+function tpPassDepths(depth, step){
+  var out = [];
+  for (var p = 1, n = tpPassCount(depth, step); p <= n; p++) out.push(Math.min(depth, step * p));
+  return out;
+}
+// The kinds of cut that go down this way. (A V-carve's depth follows the shape, a chamfer's the bevel, and a drill
+// pecks: they have their own rows.)
+function tpHasPasses(tp){
+  return !!tp && (tp.side === 'outside' || tp.side === 'inside' || tp.side === 'on' || tp.side === 'pocket');
+}
+// What to put in the Per pass box so that a depth is cut in n passes, as near even as the box's precision allows.
+// Rounded up at that precision, never down: n passes of a rounded-down step would stop short of the depth, and
+// the engine would add one more.
+function tpStepText(depth, n){
+  var dp = dispIn() ? 3 : 2, k = Math.pow(10, dp);
+  return (Math.ceil(toDisp(depth) / n * k - 1e-6) / k).toFixed(dp);
+}
+// The depths as a line of text: every one when there are few, the first three and the last two when there are many
+function tpPassSay(depths){
+  var f = function (d) { return fmtDisp(d); };
+  if (!depths.length) return '';
+  var shown = depths.length <= 8 ? depths.map(f).join(' · ')
+            : depths.slice(0, 3).map(f).join(' · ') + ' … ' + depths.slice(-2).map(f).join(' · ');
+  return shown + ' ' + unitTag();
+}
+// The editor's Passes row: the count (which can be typed), the depth of each pass, and, when the last pass would
+// take much less than the others, an offer to make them even.
+function cutPassesRender(){
+  var row = document.getElementById('cutPassRow');
+  if (!row || !CUT) return;
+  row.hidden = !tpHasPasses(CUT);
+  if (row.hidden) return;
+  var depth = tpDepth(CUT), step = CUT.step, n = tpPassCount(depth, step), depths = tpPassDepths(depth, step);
+  var box = document.getElementById('cutPasses');
+  if (document.activeElement !== box) box.value = n ? String(n) : '';
+  box.disabled = !(depth > 0);
+  document.getElementById('cutPassList').textContent = n ? tpPassSay(depths) : (depth > 0 ? '' : 'set the depth first');
+  var last = n > 1 ? depth - step * (n - 1) : step, even = document.getElementById('cutPassEven'), note = document.getElementById('cutPassNote');
+  var thin = n > 1 && last < step * 0.5 - 1e-9;
+  even.hidden = !thin; note.hidden = !thin;
+  if (thin){
+    note.textContent = 'The last pass takes only ' + fmtDisp(last) + ' ' + unitTag() + '.';
+    even.textContent = 'Make them even: ' + n + ' of ' + tpStepText(depth, n);
+  }
+}
+// A number typed in the Passes box, or Make them even: Per pass becomes the depth divided by that many
+function cutPassesSet(n){
+  if (!CUT || !tpHasPasses(CUT)) return;
+  var depth = tpDepth(CUT);
+  n = Math.round(n);
+  if (!(depth > 0) || !(n >= 1) || n > 500) return;
+  document.getElementById('cutStep').value = tpStepText(depth, n);
+  cutFromForm(); cutRender();
+}
+function cutPassesWire(){
+  var box = document.getElementById('cutPasses');
+  box.addEventListener('input', function () { cutPassesSet(parseFloat(box.value)); });
+  // the count shown is always the one the cut will really take (a very fine division can't be reached at the
+  // box's precision): put it right when the box is left
+  box.addEventListener('change', function () { if (CUT) box.value = String(tpPassCount(tpDepth(CUT), CUT.step) || ''); });
+  document.getElementById('cutPassEven').addEventListener('click', function () { if (CUT) cutPassesSet(tpPassCount(tpDepth(CUT), CUT.step)); });
 }
 /* ---------------- help, inside the app ----------------
    A window over 454 Design or 454 Control that shows the guides themselves (the docs' own pages, in a frame)
@@ -6917,7 +7002,7 @@ function tpRows(tp){
     var dTxt = tp.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(tp.over) + ' ' + unitTag() : fmtDisp(tpDepth(tp)) + ' ' + unitTag();
   if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
   else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
-  else row('Depth', dTxt + tpExprSay(tp, 'depth') + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
+  else row('Depth', dTxt + tpExprSay(tp, 'depth') + ' in ' + tpPassCount(tpDepth(tp), tp.step) + (tpPassCount(tpDepth(tp), tp.step) === 1 ? ' pass' : ' passes'));
   if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Job setup');
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
@@ -10595,6 +10680,29 @@ function selectAll(){
   SEL = [];
   DOC.ents.forEach(function (e, i){ if (entEditable(e)) SEL.push(i); });
   draw(); if (typeof updateReadout === 'function') updateReadout();
+}
+// The desktop app's File and Help menus act through here, so a menu item does exactly what its button or its
+// keys do, and nothing while a dialog (or the help) has the screen: the same rule the keys follow.
+function menuDo(what){
+  if (typeof helpIsOpen === 'function' && helpIsOpen()) return false;
+  if (what === 'help'){ helpOpen(); return true; }
+  if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
+  var press = function (id){ var b = document.getElementById(id); if (b && !b.disabled) b.click(); };
+  if (what === 'new') newDrawing();
+  else if (what === 'open') openFiles();
+  else if (what === 'save') saveDrawing(false);
+  else if (what === 'saveAs') saveDrawing(true);
+  else if (what === 'recover') press('recoverBtn');
+  else if (what === 'dxf') press('dxfBtn');
+  else if (what === 'svg') press('svgBtn');
+  else if (what === 'jobSetup') press('jobBtn');
+  else if (what === 'settings') press('settingsBtn');
+  else if (what === 'gcode'){
+    if (camReady() && tpShownList().some(function (t){ return !t.exclude; })) tpExport();
+    else toast('info', 'No toolpaths to save', 'Make a toolpath first: select shapes, then press + in the Toolpaths panel.');
+  }
+  else return false;
+  return true;
 }
 function keysWire(){
   window.addEventListener('keydown', function (e){
@@ -15147,6 +15255,7 @@ function wire(){
     cutRender();
   });
   cutHelpWire();
+  cutPassesWire();
   helpWire({context: designHelpWhere, own: /^(design-|cam-)/, icons: HELP_ICONS});                // F1 and the ? in the header
   document.getElementById('cutPanel').addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ e.preventDefault(); cutClose(); }

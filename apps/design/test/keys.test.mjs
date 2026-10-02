@@ -223,3 +223,61 @@ test('desktop: New forgets the file (Save asks); a dropped drawing is remembered
   D.press('s', { ctrl: true }); await flush();
   assert.equal(calls.at(-1), 'save C:/Drops/dropped.454.json');
 });
+
+// ---- the desktop app's File and Help menus (they ask the page, through menuDo) ----
+function menus() {
+  const D = fresh(), did = [];
+  D.newDrawing = () => did.push('new');
+  D.openFiles = () => did.push('open');
+  D.saveDrawing = (asNew) => did.push(asNew ? 'saveAs' : 'save');
+  D.tpExport = () => did.push('gcode');
+  for (const [id, name] of [['recoverBtn', 'recover'], ['dxfBtn', 'dxf'], ['svgBtn', 'svg'], ['jobBtn', 'jobSetup'], ['settingsBtn', 'settings']])
+    D.document.getElementById(id).click = () => did.push(name);
+  return { D, did };
+}
+test('File menu: each item does what its button or its keys do', () => {
+  const { D, did } = menus();
+  D.document.getElementById('recoverBtn').disabled = false;
+  for (const what of ['new', 'open', 'save', 'saveAs', 'recover', 'dxf', 'svg', 'jobSetup', 'settings']) {
+    did.length = 0;
+    assert.equal(D.menuDo(what), true, what);
+    assert.deepEqual(did, [what]);
+  }
+  assert.equal(D.menuDo('nonsense'), false);
+  assert.deepEqual(did, ['settings'], 'something it doesn’t know does nothing');
+});
+test('File menu: a greyed-out button stays greyed out from the menu', () => {
+  const { D, did } = menus();
+  D.document.getElementById('recoverBtn').disabled = true;
+  D.menuDo('recover');
+  assert.deepEqual(did, []);
+});
+test('File menu: Save G-code saves when there’s a toolpath to save, and says so when there isn’t', () => {
+  const { D, did } = menus();
+  D.camReady = () => true;
+  D.run('DOC.toolpaths = []; 1');
+  D.menuDo('gcode');
+  assert.deepEqual(did, [], 'nothing to save');
+  assert.match(D.document.body.textContent, /No toolpaths to save/);
+  D.run(`DOC.toolpaths = [{id: 't1', name: 'Cut', side: 'outside', ents: [], exclude: true}]; 1`);
+  D.menuDo('gcode');
+  assert.deepEqual(did, [], 'the only toolpath is left out of the G-code');
+  D.run('DOC.toolpaths[0].exclude = false; 1');
+  D.menuDo('gcode');
+  assert.deepEqual(did, ['gcode']);
+});
+test('the menus do nothing while a dialog or the help has the screen, as the keys don’t', () => {
+  const { D, did } = menus();
+  D.document.getElementById('jobModal').hidden = false;
+  for (const what of ['new', 'open', 'save', 'saveAs', 'dxf', 'gcode', 'settings']) assert.equal(D.menuDo(what), false, what);
+  assert.deepEqual(did, []);
+  assert.equal(D.menuDo('help'), true, 'but Help opens over a dialog, at that dialog’s guide');
+  assert.equal(D.helpIsOpen(), true);
+  assert.equal(D.menuDo('help'), false, 'already open');
+  D.document.getElementById('jobModal').hidden = true;
+  assert.equal(D.menuDo('new'), false, 'the help itself has the screen');
+  assert.deepEqual(did, []);
+  D.helpClose();
+  assert.equal(D.menuDo('new'), true);
+  assert.deepEqual(did, ['new']);
+});

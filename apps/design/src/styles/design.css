@@ -312,6 +312,13 @@
   .cutGroup[hidden]{display:none}
   .cutGroup h4{margin:0;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
   #cutPanel .mirSlot.helpOn{border-color:var(--amber)}
+  #cutPassRow{flex-wrap:wrap;row-gap:5px}
+  #cutPassRow[hidden]{display:none}
+  #cutPasses{width:56px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #cutPassList{flex-basis:100%;font-family:var(--mono);font-size:11.5px;line-height:1.5;color:var(--ink)}
+  #cutPassNote{font-size:11.5px;color:var(--amber)}
+  #cutPassNote[hidden],#cutPassEven[hidden]{display:none}
+  #cutPassEven{margin-left:auto;font-size:11.5px;padding:2px 7px}
   #cutPanel .mirSlot input[type=text] + .mirVal{margin-left:0}        /* a unit sits beside its box, not at the far edge */
   #cutPanel #cutThroughLbl[hidden] + #cutDepth{margin-left:auto !important}
   #cutHelp{min-height:58px;padding:7px 10px;border-left:3px solid var(--amber);border-radius:0 5px 5px 0;background:var(--panel-deep);font-size:12px;line-height:1.5;color:var(--muted)}

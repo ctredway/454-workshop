@@ -5,7 +5,7 @@ function tpRows(tp){
     var dTxt = tp.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(tp.over) + ' ' + unitTag() : fmtDisp(tpDepth(tp)) + ' ' + unitTag();
   if (tp.side === 'chamfer') row('Depth', 'tip ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
   else if (tp.side === 'drill') row('Depth', dTxt + (tp.peck > 0 ? ', pecking ' + fmtDisp(tp.peck) : ', one plunge'));
-  else row('Depth', dTxt + tpExprSay(tp, 'depth') + ' in ' + Math.ceil(tpDepth(tp) / tp.step) + ' passes');
+  else row('Depth', dTxt + tpExprSay(tp, 'depth') + ' in ' + tpPassCount(tpDepth(tp), tp.step) + (tpPassCount(tpDepth(tp), tp.step) === 1 ? ' pass' : ' passes'));
   if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Job setup');
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));

@@ -910,7 +910,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.31.23';
+var CONTROL_VERSION = '0.31.24';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -2525,6 +2525,19 @@ function controlHelpWhere(){
   if (!SERIAL.connected) return 'control-quickstart.html#1-open-and-connect';
   if (!MODEL || !MODEL.segs || !MODEL.segs.length) return 'control-quickstart.html#4-load-the-file';
   return 'control-quickstart.html';
+}
+
+// The desktop app's File and Help menus act through here: a menu item does what its button does (the Open button
+// refuses while a job is running), and nothing while the help or one of Control's own questions has the screen.
+function menuDo(what){
+  if (helpIsOpen()) return false;
+  if (what === 'help'){ helpOpen(); return true; }
+  var asking = ['dlgModal', 'toolModal', 'homeModal', 'connModal'].some(function (id){ var m = document.getElementById(id); return m && !m.hidden; });
+  if (asking) return false;
+  var id = what === 'open' ? 'openBtn' : what === 'settings' ? 'settingsBtn' : null, b = id ? document.getElementById(id) : null;
+  if (!b || b.disabled) return false;
+  b.click();
+  return true;
 }
 
 // The info icons: where each goes (a place marked in the page: <span class="helpAt" data-k="...">), the part of

@@ -89,8 +89,8 @@ test('each kind of cut shows its own headings, and none with nothing under it', 
 test('every setting has help written for it', () => {
   drawing();
   const keys = rows().map((r) => r.getAttribute('data-help'));
-  assert.equal(keys.length, 26);
-  assert.equal(new Set(keys).size, 26, 'each row its own');
+  assert.equal(keys.length, 27);
+  assert.equal(new Set(keys).size, 27, 'each row its own');
   for (const k of keys) {
     const h = k === 'type' ? null : D.CUT_HELP[k];
     if (k !== 'type') assert.ok(h && h[0] && h[1].length > 30, k);

@@ -359,6 +359,13 @@
         <input id="cutOver" type="text" inputmode="decimal" autocomplete="off" title="How far past the bottom of the material to cut, so parts come free cleanly"></div>
       <div class="mirSlot" data-help="step" id="cutStepRow" style="cursor:default"><span class="mirLbl"><label for="cutStep">Per pass</label></span>
         <input id="cutStep" type="text" inputmode="decimal" autocomplete="off"></div>
+      <div class="mirSlot" data-help="passes" id="cutPassRow" style="cursor:default">
+        <span class="mirLbl"><label for="cutPasses">Passes</label></span>
+        <input id="cutPasses" type="number" min="1" max="500" step="1" title="How many passes the cut takes. Type a number to divide the depth into that many even passes.">
+        <span id="cutPassList" title="The depth each pass reaches, measured down from the top of the material"></span>
+        <span id="cutPassNote" hidden></span>
+        <button id="cutPassEven" hidden title="Change Per pass so that every pass takes the same amount"></button>
+      </div>
       <div class="mirSlot" data-help="peck" id="cutPeckRow" hidden style="cursor:default"><span class="mirLbl"><label for="cutPeck">Peck</label></span>
         <input id="cutPeck" type="text" inputmode="decimal" autocomplete="off" title="How far to drill before lifting to clear chips. 0 drills in one plunge."></div>
       <div class="mirSlot" data-help="cham" id="cutChamRow" hidden style="cursor:default">
@@ -595,6 +602,7 @@
 @@include js/toolpath-generate.js
 @@include js/toolpath-editor.js
 @@include js/toolpath-help.js
+@@include js/toolpath-passes.js
 @@include ../../shared/help.js
 @@include js/help-where.js
 @@include js/toolpath-order.js

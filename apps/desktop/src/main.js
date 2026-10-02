@@ -252,31 +252,25 @@ function updateMenu() {
     ] },
   ];
 }
+const { menuTemplate, windowKind } = require('./app-menu');
+// The menu bar (app-menu.js): File, Edit, View, Window, Help. File follows the window in front, so the menu is
+// built again whenever another window comes to the front.
 function menu() {
   const focused = () => BrowserWindow.getFocusedWindow();
-  return Menu.buildFromTemplate([
-    { label: '454 Workshop', submenu: [
-      { label: '454 Control', accelerator: 'CmdOrCtrl+1', click: showControl },
-      { label: '454 Design', accelerator: 'CmdOrCtrl+2', click: showDesign },
-      { label: 'Docs', click: () => openDocs(ORIGIN + '/docs/index.html') },
-      // a GitHub form in the browser, with this build's version and the computer filled in (report.js)
-      { label: 'Report a problem\u2026', click: () => shell.openExternal(reportUrl({ version: app.getVersion(), os: osName(process.platform, require('os').release()) })) },
-      { type: 'separator' },
-      { label: 'About 454 Workshop', click: openAbout },
-      ...updateMenu(),
-      { type: 'separator' },
-      // closing goes through each window's own check: Control asks while the machine is busy, Design about an
-      // unsaved drawing
-      { label: 'Close window', accelerator: 'CmdOrCtrl+W', click: () => { const w = focused(); if (w) w.close(); } },
-      { role: 'quit', accelerator: 'CmdOrCtrl+Q' },
-    ] },
-    { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: 'View', submenu: [
-      { role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' },
-      { type: 'separator' }, { label: 'Toggle developer tools', accelerator: 'CmdOrCtrl+Shift+I', click: () => { const w = focused(); if (w) w.webContents.toggleDevTools(); } },
-    ] },
-  ]);
+  const front = focused();
+  const kind = front && !front.isDestroyed() ? (front === design ? 'design' : front === control ? 'control' : windowKind(front.webContents.getURL())) : 'other';
+  return Menu.buildFromTemplate(menuTemplate({ kind, updates: updateMenu(), act: {
+    // the page does it, through its own menuDo: the same thing its button or its keys do
+    page: (name) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo(' + JSON.stringify(name) + ')', true).catch(() => {}); },
+    showDesign, showControl,
+    docs: () => openDocs(ORIGIN + '/docs/index.html'),
+    report: () => shell.openExternal(reportUrl({ version: app.getVersion(), os: osName(process.platform, require('os').release()) })),
+    about: openAbout,
+    closeWindow: () => { const w = focused(); if (w) w.close(); },
+    devTools: () => { const w = focused(); if (w) w.webContents.toggleDevTools(); },
+  } }));
 }
+app.on('browser-window-focus', () => Menu.setApplicationMenu(menu()));
 
 // ---- tests only (never set in normal use): run a script in a page once it's up, save the result, quit
 function testHook() {

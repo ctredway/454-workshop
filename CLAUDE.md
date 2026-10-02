@@ -99,9 +99,15 @@ without a published release looks to them like a newest release with nothing in 
 
 ## How it behaves, on purpose
 
+- **The menu bar is File, Edit, View, Window, Help** (`apps/desktop/src/app-menu.js`, built again whenever
+  another window comes to the front). A menu item asks the page (`menuDo` in each app), which does what its
+  button or keys do and nothing while a dialog is open. Keys the pages handle are shown, not registered.
 - **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
   (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
   454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.
+- **Passes go down in steps of Per pass, the last taking what's left** (`passCount`, `passDepths` in `cam.js`;
+  `tpPassCount` in Design's `toolpath-passes.js` must agree, and a test holds them together). A division a
+  hair over a whole number (19.05 / 6.35) doesn't add a pass. The editor's Passes row shows every depth.
 - **Profiles and pockets ramp in by default** (4× the cutter's diameter, at least 4 mm, or a set length);
   **Ramp in: Plunge** goes straight down. A profile that ramps uses only its lead-out. (`tpRamp` in
   `toolpath-generate.js`; the CAM engine takes ramp length 0 as a plunge.)

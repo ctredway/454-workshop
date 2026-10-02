@@ -45,6 +45,7 @@ version is in `src/js/version.js`.
 | `js/toolpath-generate.js` | 189 | a toolpath’s moves, from its shapes: pockets, drilling, tabs |
 | `js/toolpath-editor.js` | 687 | the toolpath editor (it takes over the Toolpaths panel while open) |
 | `js/toolpath-help.js` | 85 | the editor’s help for each setting, and its headings |
+| `js/toolpath-passes.js` | 69 | how many passes a cut takes and how deep each goes; the editor’s Passes row |
 | `js/toolpath-order.js` | 55 | toolpath order, deleting, tool numbers |
 | `js/gcode-export.js` | 89 | Save G-code: the job’s G-code, after its checks |
 | `js/dxf-export.js` | 99 | Export DXF |

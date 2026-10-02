@@ -20,6 +20,19 @@ function controlHelpWhere(){
   return 'control-quickstart.html';
 }
 
+// The desktop app's File and Help menus act through here: a menu item does what its button does (the Open button
+// refuses while a job is running), and nothing while the help or one of Control's own questions has the screen.
+function menuDo(what){
+  if (helpIsOpen()) return false;
+  if (what === 'help'){ helpOpen(); return true; }
+  var asking = ['dlgModal', 'toolModal', 'homeModal', 'connModal'].some(function (id){ var m = document.getElementById(id); return m && !m.hidden; });
+  if (asking) return false;
+  var id = what === 'open' ? 'openBtn' : what === 'settings' ? 'settingsBtn' : null, b = id ? document.getElementById(id) : null;
+  if (!b || b.disabled) return false;
+  b.click();
+  return true;
+}
+
 // The info icons: where each goes (a place marked in the page: <span class="helpAt" data-k="...">), the part of
 // the guides it opens, and the line or two it shows when the pointer rests on it. A tip is two sentences at most:
 // it says what the thing is for, and the guide says the rest.

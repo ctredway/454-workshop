@@ -11,6 +11,7 @@ var CUT_HELP = {
   depth: ['Cut depth', 'How deep the cut goes, measured down from the top of the material. Tick through to go all the way: the material’s thickness from Job setup, plus the overcut. A parameter works here too, such as material / 2.'],
   over: ['Overcut', 'How far past the bottom of the material a through cut goes, so the part comes free cleanly. The bit goes this far into the spoilboard.'],
   step: ['Per pass', 'How much deeper each pass goes. Less is gentler on the bit and the machine, and takes longer. Half the bit’s diameter is a common start in wood.'],
+  passes: ['Passes', 'How many passes it takes to reach the depth, and how deep each one goes, measured down from the top of the material. Type a number here and the depth is divided into that many even passes: Per pass changes to match.'],
   peck: ['Peck', 'How far the drill goes before it lifts to clear the chips. 0 drills each hole in one plunge.'],
   cham: ['Bevel', 'Bevel width: how wide the bevel is across the top face. Bit: the V-bit’s included angle, the angle between its two cutting edges (a “90° V-bit” is 90).'],
   chamMode: ['The line is', 'Where the drawn line sits on the finished bevel: at the part’s edge, with the bit’s tip on it, or at the top of the bevel, with the bevel going inside or outside the line.'],
