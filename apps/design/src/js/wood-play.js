@@ -1,6 +1,7 @@
 /* ---------------- Preview in wood: watching it cut ----------------
    Play, pause and a slider under the picture. The same simulation as the finished preview (woodJob, woodJobTo in
-   wood-preview.js), cut a little at a time and drawn from above as it goes, with the cutter shown where it is.
+   wood-preview.js), cut a little at a time and drawn as it goes, with the bit shown where it is: in the 3D view,
+   which can be turned while it plays (wood3dCut, wood3dBit in wood-3d.js), or from above where 3D can't be shown.
    Played to the end, it's the finished preview's wood exactly (tested).
    Time is the job sheet's: feeds as programmed, rapids at JS_RAPID, no acceleration. A guide, not a promise.
    Wood can't be un-cut, so going back starts again from the nearest of a few copies of the wood kept on the way
@@ -123,12 +124,21 @@ function woodPlayShow(t){
   if (!P) return;
   var job = P.job;
   P.t = Math.max(0, Math.min(job.total, t));
-  woodFlat(true);
-  var first = !P.drawn, how = woodSeek(job, P.keeps, P.t);
-  if (first || how === 'all'){ P.last = null; woodPlayPut(P, 0, 0, job.nx - 1, job.ny - 1); P.drawn = true; }
-  else if (job.dirty) woodPlayPut(P, job.dirty.i0, job.dirty.j0, job.dirty.i1, job.dirty.j1);
+  var in3d = !!(woodPreviewOpen.in3d && WOOD3D && WOOD3D.m);
+  var all = !P.drawn || P.in3d !== in3d, how = woodSeek(job, P.keeps, P.t), at = woodAt(job, P.t);
+  if (how === 'all') all = true;
+  P.drawn = true; P.in3d = in3d;
+  if (in3d){
+    if (all) wood3dCut(job, null); else if (job.dirty) wood3dCut(job, job.dirty);
+    wood3dBit(job, at.x === null || at.part < 0 || P.t >= job.total ? null : at);      // finished: the piece alone
+    woodRender3D();
+  } else {
+    if (all){ P.last = null; woodPlayPut(P, 0, 0, job.nx - 1, job.ny - 1); }
+    else if (job.dirty) woodPlayPut(P, job.dirty.i0, job.dirty.j0, job.dirty.i1, job.dirty.j1);
+    woodPlayCutter(P, at);
+    document.getElementById('woodHow').textContent = 'From above. The ring is the cutter: blue while it’s in the wood.';
+  }
   job.dirty = null;
-  woodPlayCutter(P, woodAt(job, P.t));
   woodPlayUI();
 }
 function woodPlayUI(){
@@ -167,28 +177,10 @@ function woodPlayToggle(){
   woodPlayUI();
   P.raf = requestAnimationFrame(woodPlayFrame);
 }
-// The flat picture from above (where the cut is played), or the 3D view of the finished cut.
-function woodFlat(on){
-  var cv = document.getElementById('woodCv'), host = document.getElementById('wood3d'), can3d = !!woodPreviewOpen.in3d;
-  if (on === (woodFlat.on || false) && woodFlat.set) return;
-  woodFlat.on = on; woodFlat.set = true;
-  if (can3d){ host.hidden = on; cv.hidden = !on; document.getElementById('woodViews').hidden = on; }
-  document.getElementById('woodTo3d').hidden = !(on && can3d);
-  if (on) document.getElementById('woodHow').textContent = 'From above. The ring is the cutter: blue while it’s in the wood.';
-  else if (can3d) document.getElementById('woodHow').textContent = 'Drag to turn it, right-drag to move it, scroll to zoom.';
-}
-// Back to the finished cut in 3D.
-function woodPlayTo3d(){
-  var P = WOODPLAY;
-  if (P){ P.playing = false; P.t = P.job.total; }
-  woodFlat(false);
-  woodPlayUI();
-}
 // A new preview, or the window closed: forget the player.
 function woodPlayReset(){
   if (WOODPLAY && WOODPLAY.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(WOODPLAY.raf);
-  WOODPLAY = null; woodFlat.set = false; woodFlat.on = false;
-  var to3d = document.getElementById('woodTo3d'); if (to3d) to3d.hidden = true;
+  WOODPLAY = null;
 }
 // The preview has been worked out: set the speed that plays this job in about 45 seconds, and the clock.
 function woodPlayReady(){
@@ -207,7 +199,6 @@ function woodPlayWire(){
   });
   sel.addEventListener('change', function (){ if (WOODPLAY) WOODPLAY.speed = +sel.value || 1; });
   document.getElementById('woodPlay').addEventListener('click', woodPlayToggle);
-  document.getElementById('woodTo3d').addEventListener('click', woodPlayTo3d);
   document.getElementById('woodSeek').addEventListener('input', function (){
     var src = woodPreviewOpen.job;
     if (src) woodPlayShow(src.total * (+this.value || 0) / 1000);

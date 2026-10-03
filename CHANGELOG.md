@@ -954,28 +954,40 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ### 0.122.0 — Preview in wood: watch the job cut
 - **Play, Pause and a slider under Preview in wood.** It still opens on the finished piece. **Play** starts from
-  uncut wood and cuts the toolpaths in order, seen from above, with the cutter shown as a ring where it is: blue
-  while it's in the wood, white while it's above it. Drag the slider to any moment of the job, back or forward.
-  **3D view** goes back to the finished piece in 3D.
-- **What it's for:** seeing the order things are cut in and where the cutter travels between cuts, which the
+  uncut wood and cuts the toolpaths in order, in the 3D view, with the bit shown at its real size and shape (a
+  flat end, a ball, or a V at its angle), lifting and plunging as it will. Drag the slider to any moment of the
+  job, back or forward.
+- **Watch from any side while it plays.** Turning, moving and zooming the block work as before, and there's a
+  **view cube** in the corner, as in 454 Control: click a face (Top, Front, Right…), an edge or a corner to look
+  from there. **Reset view** puts it back as it opened. The cube takes the place of the Angled, Top and Front
+  buttons. The view never goes below the board, so Bottom gives the lowest side view.
+- **What it's for:** seeing the order things are cut in and where the bit travels between cuts, which the
   finished picture can't show: a part cut free before its pockets, a move through the wood, a profile started
   in the wrong place.
 - **The clock is the job sheet's time** (feeds as set, rapid moves at 5000 mm/min, no speeding up and slowing
   down), so a real job runs somewhat longer. **Speed** starts at whatever plays the whole job in about 45
   seconds or less, from real time to 1000×.
+- **Where 3D can't be shown** it plays from above, with a ring for the cutter: blue while it's in the wood,
+  white while it's above it.
 - **It's the same simulation as the finished preview,** cut a step at a time: `woodSim` was split into a job and
   its steps (`woodJob`, `woodJobTo`, `woodStamp`), and the finished preview is those steps run to the end. The
   split was proven against the old code on 400 made-up jobs (23.7 million cells of wood and every pixel of the
   picture, the same bit for bit; a deliberate change to either was noticed).
+- **The 3D block is moved a patch at a time** as the wood is cut (`woodMeshUpdate`, `woodMeshNormals`), not built
+  again each frame, and only that patch is sent to the graphics card. `woodMesh` itself was proven unchanged
+  (180 blocks, the same bit for bit).
 - Going back can't un-cut wood, so four copies of the wood are kept as play passes each fifth of the job, and
-  going back starts from the nearest. On a 600 × 400 mm board (2.5 million cells) a frame took 14 ms on
-  average and going back 150 ms.
-- Not yet: playing in the 3D view, saying which toolpath is cutting, and pausing where a rapid cuts wood.
+  going back starts from the nearest.
+- **Measured in the app:** on a 600 × 400 mm board (2.5 million cells) a frame in 3D took 5 ms on average and
+  30 ms at worst, and going back 73 ms. Played to the end, the block had every point where the finished
+  preview's has it.
+- Not yet: saying which toolpath is cutting, and pausing where a rapid cuts wood.
 - Asked for by Clint.
-- **Tested** (13 tests in a new `wood-play.test.mjs`: played to the end in uneven frames, or dragged back and
-  forth first, it is the finished preview's wood exactly; broken on purpose 22 ways, 17 caught, 2 more after
-  adding tests, and 3 that change nothing but speed or are the same code written differently), and looked at
-  in the app.
+- **Tested** (13 tests in a new `wood-play.test.mjs`, and 6 more in `wood-3d.test.mjs`: played to the end in
+  uneven frames, or dragged back and forth first, the wood is the finished preview's exactly; the block moved a
+  patch at a time is always what a fresh one would be, lighting included; the cube's clicks. Broken on purpose
+  42 ways: 36 caught, 2 more after adding tests, 3 that change nothing but speed or are the same code written
+  differently, and 1 that showed a line that could never run, which was taken out), and looked at in the app.
 
 ### 0.121.0 — the left panel folds away
 - **The left panel folds away, for more drawing room,** as the Toolpaths panel does on the right. **«** at the

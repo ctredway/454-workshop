@@ -226,11 +226,11 @@ function woodPreviewOpen(){
       var in3d = !!(ok && woodShow3D(sim));
       if (!in3d){ host.hidden = true; cv.hidden = false; }
       document.getElementById('woodViews').hidden = !in3d;
-      document.getElementById('woodHow').textContent = in3d ? 'Drag to turn it, right-drag to move it, scroll to zoom.'
+      document.getElementById('woodHow').textContent = in3d ? 'Drag to turn it, right-drag to move it, scroll to zoom. Click the cube to look from a side.'
         : ok ? 'The view from above: this computer can’t show it in 3D.'
         : 'The view from above: the 3D view needs a library that didn’t load (check the internet connection).';
       woodPreviewOpen.in3d = in3d;
-      if (woodFlat.on){ woodFlat.set = false; woodFlat(true); }     // Play was pressed before the 3D view was ready
+      if (WOODPLAY) woodPlayShow(WOODPLAY.t);                       // Play was pressed before the 3D view was ready
     });
   }, 30);
 }
