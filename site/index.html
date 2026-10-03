@@ -3,14 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>454 Workshop (beta): free CNC design, toolpaths and machine control</title>
-<meta name="description" content="Free, open-source software for GRBL CNC routers like the Shapeoko and Nomad, in beta: draw your parts and make their toolpaths in 454 Design, run the machine with 454 Control.">
-<meta property="og:title" content="454 Workshop">
-<meta property="og:description" content="Free, open-source design and machine control for GRBL CNC routers like the Shapeoko and Nomad.">
+<title>454 Workshop: free CNC CAD/CAM and G-code sender for Shapeoko (beta)</title>
+<meta name="description" content="Free, open-source CNC software for Shapeoko, Nomad and other GRBL routers: draw parts, make toolpaths, preview the cut in 3D, then run the machine. In beta.">
+<link rel="canonical" href="https://454workshop.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="454 Workshop">
+<meta property="og:title" content="454 Workshop: free CNC design, toolpaths and machine control">
+<meta property="og:description" content="Free, open-source CNC software for Shapeoko, Nomad and other GRBL routers: draw parts, make toolpaths, preview the cut in 3D, then run the machine. In beta.">
 <meta property="og:image" content="https://454workshop.com/images/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="454 Workshop: free design and machine control for CNC routers">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="454 Workshop: free CNC design, toolpaths and machine control">
+<meta name="twitter:description" content="Free, open-source CNC software for Shapeoko, Nomad and other GRBL routers: draw parts, make toolpaths, preview the cut in 3D, then run the machine. In beta.">
+<meta name="twitter:image" content="https://454workshop.com/images/og.png">
 <meta property="og:url" content="https://454workshop.com/">
 <meta name="theme-color" content="#14181d">
 <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
@@ -46,7 +53,7 @@
 
   /* hero: the headline, and 454 being cut */
   .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:36px 0 72px}
-  h1{margin:0;font-size:clamp(46px,7vw,86px);line-height:.95;font-weight:800;font-stretch:125%;letter-spacing:-.01em}
+  h1{margin:0 0 8px;font-size:clamp(28px,3.4vw,40px);line-height:1.1;font-weight:750;font-stretch:118%}   /* the page's one main heading, sized as an h2 */
   .tag{margin:18px 0 0;font-size:clamp(20px,2.3vw,26px);font-weight:600;font-stretch:110%;color:var(--brand)}
   .lede{margin:18px 0 0;max-width:34em;color:var(--muted)}
   .actions{margin-top:30px;display:flex;flex-wrap:wrap;gap:12px}
@@ -117,6 +124,27 @@
   }
   @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "454 Workshop",
+  "description": "Free, open-source CNC software for GRBL routers like the Shapeoko and Nomad. 454 Design draws parts and makes toolpaths (CAD/CAM); 454 Control is a G-code sender that homes, jogs, probes and runs the job.",
+  "url": "https://454workshop.com/",
+  "image": "https://454workshop.com/images/og.png",
+  "screenshot": ["https://454workshop.com/images/design.png", "https://454workshop.com/images/control.png"],
+  "applicationCategory": "DesignApplication",
+  "applicationSubCategory": "CNC CAD/CAM and G-code sender",
+  "operatingSystem": "Windows; any computer with Chrome or Edge",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "isAccessibleForFree": true,
+  "license": "https://opensource.org/licenses/MIT",
+  "downloadUrl": "https://github.com/ctredway/454-workshop/releases",
+  "softwareHelp": "https://454workshop.com/docs/",
+  "sameAs": "https://github.com/ctredway/454-workshop",
+  "author": {"@type": "Person", "name": "Clint Tredway"}
+}
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -131,11 +159,11 @@
   <main>
     <div class="hero">
       <div>
-        <h2>454 Workshop</h2>
+        <h1>454 Workshop</h1>
         <p class="tag">Draw it, toolpath it, cut it. <span class="beta" title="This is beta software: new, and still being tested">Beta</span></p>
-        <p class="lede">Free, open-source software for CNC routers running GRBL, like the Shapeoko and Nomad.
-          Draw your parts and make their toolpaths in 454 Design, then run the machine with 454 Control, right
-          in your browser.</p>
+        <p class="lede">Free, open-source design (CAD), toolpath (CAM) and machine control software for CNC
+          routers running GRBL, like the Shapeoko and Nomad. Draw your parts and make their toolpaths in 454
+          Design, then run the machine with 454 Control, right in your browser.</p>
         <div class="actions">
           <a class="btn primary" href="design/" target="_blank" rel="noopener">Open 454 Design<span class="sr"> (opens in a new tab)</span></a>
           <a class="btn plain" href="control/" target="_blank" rel="noopener">Open 454 Control<span class="sr"> (opens in a new tab)</span></a>
@@ -201,21 +229,22 @@
         <figure>
           <img src="images/design.png" width="1400" height="873" loading="lazy"
                alt="454 Design with a workshop sign drawn: a plate with holes, a pocket and the word Workshop">
-          <figcaption><b>454 Design</b><span>Draw your parts, or open them from VCarve and DXF files, and make their toolpaths.</span></figcaption>
+          <figcaption><b>454 Design</b><span>Draw your parts, or open them from VCarve, Carbide Create and DXF files, and make their toolpaths.</span></figcaption>
         </figure>
         <figure>
           <img src="images/control.png" width="1400" height="873" loading="lazy"
                alt="454 Control with a job loaded: a 3D preview of the toolpaths and the G-code beside it">
-          <figcaption><b>454 Control</b><span>Check every move of a job, then send it to the machine.</span></figcaption>
+          <figcaption><b>454 Control</b><span>A G-code sender for GRBL: check every move of a job, then send it to the machine.</span></figcaption>
         </figure>
       </div>
       <div class="does">
         <ul aria-label="What 454 Design does">
           <li>Lines, arcs, shapes and text, with snapping, fillets, offsets and dimensions</li>
           <li>Traces images into clean outlines, and keeps work organised in layers</li>
-          <li>Opens VCarve projects, including multi-sheet jobs, and your VCarve tool library</li>
+          <li>Opens VCarve and Carbide Create projects, including multi-sheet jobs, and your VCarve tool library</li>
           <li>Opens DXF files, and saves DXF and SVG for other software</li>
           <li>Toolpaths, in beta: profiles with tabs, pockets, drilling, chamfers, V-carving and inlays</li>
+          <li>Preview in wood: see the finished piece in 3D, and watch the job cut before you run it</li>
         </ul>
         <ul aria-label="What 454 Control does">
           <li>Homing, zeroing, jogging, and probing with a BitZero</li>

@@ -417,6 +417,18 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 - The docs' footer said "454 Werks", an old name; it now says 454 Workshop.
 
 ## 454workshop.com
+- **Easier for search engines to find and describe** (nothing changes in the apps):
+  - The front page's title and description use the words people search with: free, CNC, CAD/CAM, G-code
+    sender, Shapeoko, GRBL. Its text names them too: design (CAD), toolpath (CAM), a G-code sender for GRBL,
+    Carbide Create projects, and Preview in wood.
+  - The front page says it's software, free, for Windows and the browser, in the form search engines read
+    (schema.org `SoftwareApplication`), and names its own address (a canonical link).
+  - **454 Workshop** at the top is the page's one main heading again (`h1`), at the size it was set to.
+  - A **sitemap** (`/sitemap.xml`) lists the front page, Design, Control and every docs page, and
+    **`robots.txt`** points to it. The build checks every address in it is a page that's served.
+  - Design's and Control's pages on the website have descriptions, and cards for when they're shared.
+  - **Fixed: the docs named two addresses for each page.** Each page gave its own address with `.html`, which
+    the website sends on to the one without. They now name the one that's served.
 - **Download for Windows** on the front page: straight to the newest release's installer, with its version
   and size, found on GitHub when the page opens (GitHub's own "latest release" link skips betas, and every
   release is a beta for now). If GitHub can't be reached, it opens the Releases page. With it, what to do
