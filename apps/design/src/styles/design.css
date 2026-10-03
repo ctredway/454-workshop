@@ -163,6 +163,12 @@
   .sideTab[aria-selected="true"]{color:var(--ink);background:var(--panel);border-left-color:var(--amber)}
   .sidePane{width:176px;overflow-y:auto}
   .sidePane[hidden]{display:none}
+  .sideFold{margin-top:auto;padding:10px 0;border:0;border-radius:0;background:none;color:var(--muted);font-size:14px;cursor:pointer}
+  .sideFold:hover{color:var(--ink);background:rgba(255,255,255,.03)}
+  #toolPanel.folded .sidePane{display:none}
+  #toolPanel.folded .sideTabs{border-right:0}
+  #toolPanel.folded .sideTab[aria-selected="true"]{background:none;border-left-color:transparent;color:var(--muted)}
+  #toolPanel.folded .sideTab:hover{color:var(--ink)}
   .sidePane .paneHead{padding:9px 10px 5px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
   .tGroup{border-bottom:1px solid var(--line)}
   .tGroup h4{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);cursor:grab}

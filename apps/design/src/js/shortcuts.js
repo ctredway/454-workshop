@@ -18,7 +18,8 @@ function menuDo(what){
   if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
   var press = function (id){ var b = document.getElementById(id); if (b && !b.disabled) b.click(); };
   if (what === 'new') newDrawing();
-  else if (what === 'open') openFiles();
+  else if (what === 'open') openFiles('open');
+  else if (what === 'import') openFiles('import');
   else if (what === 'save') saveDrawing(false);
   else if (what === 'saveAs') saveDrawing(true);
   else if (what === 'recover') press('recoverBtn');
@@ -40,7 +41,8 @@ function keysWire(){
     var k = e.key.toLowerCase(), t = e.target;
     var inField = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
     if (k === 's'){ e.preventDefault(); saveDrawing(e.shiftKey); return; }
-    if (k === 'o' && !e.shiftKey){ e.preventDefault(); openFiles(); return; }
+    if (k === 'o' && !e.shiftKey){ e.preventDefault(); openFiles('open'); return; }
+    if (k === 'i' && !e.shiftKey){ e.preventDefault(); openFiles('import'); return; }
     if (k === 'n' && !e.shiftKey){ e.preventDefault(); newDrawing(); return; }
     if (inField) return;
     if (k === 'a' && !e.shiftKey){ e.preventDefault(); selectAll(); }

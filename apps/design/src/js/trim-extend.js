@@ -65,18 +65,25 @@ function doTrim(w){
   if (e.t === 'poly' || e.t === 'path'){
     return trimPathEntity(idx, w);
   }
+  // A rectangle trims as the closed outline it is (it used to be left out: nothing happened, and Trim said
+  // nothing crossed it). What's left is an open outline, as with any closed shape.
+  if (e.t === 'rect'){
+    return trimPathEntity(idx, w, {pts: [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]], closed: true});
+  }
   return false;
 }
 // Trim a poly/path where OTHER entities cross it: split into per-span parametric position,
 // find crossings, and remove the clicked piece between the two bounding crossings. A closed
 // path opens at the cut; an already-open path yields the two remaining pieces.
-function trimPathEntity(idx, w){
+// `as` (optional) is the shape's outline when it isn't a poly or path itself: {pts, closed} (a rectangle).
+function trimPathEntity(idx, w, as){
   var e = DOC.ents[idx];
   // work on a uniform vertex list with bulges (poly -> bulge 0)
-  var V = (e.t === 'poly') ? e.pts.map(function(q){ return [q[0], q[1], 0]; })
+  var V = as ? as.pts.map(function(q){ return [q[0], q[1], 0]; })
+       : (e.t === 'poly') ? e.pts.map(function(q){ return [q[0], q[1], 0]; })
                            : e.pts.map(function(q){ return [q[0], q[1], q[2]||0]; });
   var n = V.length;
-  var closed = !!e.closed;
+  var closed = as ? !!as.closed : !!e.closed;
   var nSpan = closed ? n : n-1;
   if (nSpan < 1) return false;
   // tessellate each span, tracking global arc-length param s and mapping s->point
@@ -119,9 +126,11 @@ function trimPathEntity(idx, w){
     });
   }
   if (cross.length < 1) return false;   // nothing crosses it -> not trimmable (do NOT delete)
+  // a closed outline needs two crossings to cut a piece out of; one (a shape just touching it) leaves nothing to remove
   cross.sort(function(a,b){ return a.pos-b.pos; });
   // dedupe near-identical crossings
   cross = cross.filter(function(c,i){ return i===0 || c.pos - cross[i-1].pos > 1e-3; });
+  if (closed && cross.length < 2) return false;
   // clicked position along the flat polyline
   var cw = null, cbest = 1e9;
   for (var fi2 = 0; fi2 < FN; fi2++){
@@ -158,9 +167,11 @@ function trimPathEntity(idx, w){
   var newEnts = [];
   if (closed){
     if (lo === null || hi === null){
-      // click before first / after last crossing: single wrap gap between last and first crossing
+      // the click is in the stretch that runs round past the outline's start, from the last crossing to the
+      // first: that's the piece that goes, and what's kept runs from the first crossing to the last. (This
+      // used to keep the clicked stretch and throw the rest away.)
       var A = cross[cross.length-1], B = cross[0];
-      var keep = slice(A.pos, B.pos + FN); // wrap
+      var keep = slice(B.pos, A.pos);
       if (keep.length >= 2) newEnts.push({t:'poly', pts:keep.map(function(q){return[q[0],q[1]];}), closed:false});
     } else {
       // keep the complement of lo..hi : from hi around to lo

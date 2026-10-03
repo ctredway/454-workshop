@@ -33,6 +33,8 @@ function uiCfgLoad(){
       if (c.nestRot) UICFG.nestRot = c.nestRot;
       if (c.stockUnits === 'in' || c.stockUnits === 'mm') UICFG.stockUnits = c.stockUnits;
       if (typeof c.tpPanel === 'boolean') UICFG.tpPanel = c.tpPanel;
+      if (typeof c.sidePanel === 'boolean') UICFG.sidePanel = c.sidePanel;
+      if (c.sideTab === 'layers' || c.sideTab === 'tools') UICFG.sideTab = c.sideTab;   // was saved, never read back
       if (c.libMachine) UICFG.libMachine = c.libMachine;
       if (typeof c.libMaterial === 'string') UICFG.libMaterial = c.libMaterial;
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
@@ -51,9 +53,29 @@ function orderedGroups(){
   PANEL_GROUPS.forEach(function(g){ if (byId[g.id]) out.push(g); }); // new groups append
   return out;
 }
+// The left panel folded down to its Tools and Layers tabs, for more drawing room (as the Toolpaths panel folds to
+// a strip on the right). Remembered between visits. Picking a tab opens it again.
+function sidePanelSet(open){
+  UICFG.sidePanel = !!open;
+  uiCfgSave();
+  sidePanelShow();
+}
+function sidePanelShow(){
+  var host = document.getElementById('toolPanel'), b = document.getElementById('sideFold');
+  if (!host) return;
+  var open = UICFG.sidePanel !== false;
+  host.classList.toggle('folded', !open);              // the canvas's size observer redraws it to fit
+  if (b){
+    b.textContent = open ? '«' : '»';
+    b.title = open ? 'Fold this panel away, for more drawing room' : 'Open this panel';
+    b.setAttribute('aria-label', open ? 'Fold the side panel away' : 'Open the side panel');
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+}
 // Which side-panel tab is showing: the drawing tools, or the layers. Remembered between visits.
 function sideTab(name){
   UICFG.sideTab = name === 'layers' ? 'layers' : 'tools';
+  if (UICFG.sidePanel === false){ UICFG.sidePanel = true; sidePanelShow(); }   // a tab picked while folded opens it
   uiCfgSave();
   var tools = document.getElementById('paneTools'), layers = document.getElementById('paneLayers');
   if (tools) tools.hidden = UICFG.sideTab !== 'tools';

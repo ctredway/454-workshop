@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld('desktop454', {
   },
   // Design's files, by path (src/design-files.js), so Save goes back to the file a drawing came from
   files: {
-    open: () => ipcRenderer.invoke('files:open'),                                   // [{path, name, data}]
+    open: (kind) => ipcRenderer.invoke('files:open', kind === 'import' ? 'import' : 'open'),   // [{path, name, data}]
     saveAs: (text, suggested) => ipcRenderer.invoke('files:saveAs', String(text), suggested || ''),   // {path, name} or null
     save: (p, text) => ipcRenderer.invoke('files:save', String(p), String(text)),    // {ok, name} or {ok: false, why}
     pathOf: (file) => { try { return webUtils.getPathForFile(file) || ''; } catch (e) { return ''; } },

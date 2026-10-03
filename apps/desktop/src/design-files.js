@@ -10,8 +10,13 @@
 // tested on their own (test/design-files.test.mjs).
 'use strict';
 
+// Open: a drawing, or a VCarve or Carbide Create project. Import: vectors to add to the drawing, or a picture to trace.
 const OPEN_FILTERS = [
-  { name: 'Drawings, VCarve and Carbide Create projects, DXF, SVG and images', extensions: ['json', 'crv', 'c2d', 'dxf', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] },
+  { name: 'Drawings, and VCarve and Carbide Create projects', extensions: ['json', 'crv', 'c2d'] },
+  { name: 'All files', extensions: ['*'] },
+];
+const IMPORT_FILTERS = [
+  { name: 'DXF and SVG drawings, and pictures to trace', extensions: ['dxf', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] },
   { name: 'All files', extensions: ['*'] },
 ];
 const SAVE_FILTERS = [{ name: '454 Design drawing', extensions: ['json'] }];
@@ -42,9 +47,10 @@ function createDesignFiles({ fs, path, dialog, listFile, log = () => {} }) {
     fs.renameSync(tmp, p);
   }
   return {
-    // the Open window: the chosen files, read, with their paths
-    async open(win) {
-      const r = await dialog.showOpenDialog(win, { title: 'Open', properties: ['openFile', 'multiSelections'], filters: OPEN_FILTERS });
+    // the Open window (or Import's): the chosen files, read, with their paths
+    async open(win, kind) {
+      const imp = kind === 'import';
+      const r = await dialog.showOpenDialog(win, { title: imp ? 'Import' : 'Open', properties: ['openFile', 'multiSelections'], filters: imp ? IMPORT_FILTERS : OPEN_FILTERS });
       if (r.canceled || !r.filePaths || !r.filePaths.length) return [];
       return r.filePaths.map((p) => {
         if (/\.json$/i.test(p)) remember(p);

@@ -38,6 +38,9 @@ function primsOf(e){
     for (var i=0;i<n-1;i++) out.push({c:0, x1:tp[i][0],y1:tp[i][1],x2:tp[i+1][0],y2:tp[i+1][1]});
     if (e.closed && n>1) out.push({c:0, x1:tp[n-1][0],y1:tp[n-1][1],x2:tp[0][0],y2:tp[0][1]});
   }
+  // a group's shapes (an imported DXF or SVG, a traced logo, a Carbide Create shape) are crossings like any other:
+  // without them, nothing could be trimmed or extended where one of them crossed
+  else if (e.t === 'group') (e.ents || []).forEach(function(c){ primsOf(c).forEach(function(pr){ out.push(pr); }); });
   else entityEdges(e).forEach(function(ed){ out.push({c:0, x1:ed[0],y1:ed[1],x2:ed[2],y2:ed[3]}); });
   return out;
 }

@@ -285,6 +285,7 @@ function draw(){
       if (!tp.tabsOn || !tp.tabPts) return;
       ctx.save();
       tp.ents.forEach(function (id) {
+        if (!entById(id)) return;                          // its shape was deleted: nothing to hold
         (tp.tabPts[id] || []).forEach(function (pt) {
           var c = w2s(pt[0], pt[1]), r = Math.max(4, (tp.tabLen || 4) / 2 * VIEW.scale);
           ctx.beginPath();
@@ -351,7 +352,11 @@ function draw(){
         if (!tp.moves || !tp.moves.length || !tpDrawn(tp)) return;
         drawMoves(tp.moves, tp.id === CUTSEL ? THEME.accent : cutCol, 'rgba(120,130,140,.35)');
       });
-      if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL){ drawTabs(tp, false); drawStarts(tp, false); } });
+      // Tabs on every toolpath drawn, so one shown again has its tabs. (They used to be drawn only on the one
+      // picked, and pressing an eye lets go of the pick: shown again, it had none until it was updated.)
+      // Only where the toolpath's path is drawn: none without one (its shapes deleted, say).
+      DOC.toolpaths.forEach(function (tp) { if (tp.moves && tp.moves.length && tpDrawn(tp)) drawTabs(tp, false); });
+      if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL) drawStarts(tp, false); });
     }
   })();
 

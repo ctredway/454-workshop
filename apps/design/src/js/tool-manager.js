@@ -62,7 +62,8 @@ function hoverTrim(w){
   var idx = pickEntity(w);
   if (idx === null) return {action:'none'};
   var e = DOC.ents[idx];
-  if (e.t === 'line' || e.t === 'circle' || e.t === 'arc' || e.t === 'poly' || e.t === 'path'){
+  if (e.t === 'group') return {action:'none', hint:'ungroup it first to trim it', at:{x:w.x, y:w.y}};
+  if (e.t === 'line' || e.t === 'circle' || e.t === 'arc' || e.t === 'poly' || e.t === 'path' || e.t === 'rect'){
     var gone = trimPreview(w);
     if (!gone || !gone.length) return {action:'none', hint:'nothing crosses this to trim to', at:{x:w.x, y:w.y}};
     return {action:'do', hint:'trim', idx:idx, cut:gone};

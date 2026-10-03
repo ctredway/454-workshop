@@ -159,3 +159,74 @@ test('Recover is off when there’s nothing to recover', () => {
   D.recoverDrawing();                                           // does nothing
   assert.equal(ents(D).length, 0);
 });
+
+// ---- New starts a drawing of its own: one sheet, no parameters, no name (Clint: six sheets stayed after New) ----
+const sheetCount = (D) => D.run('sheetList().length');
+function sixSheets(D) {
+  for (let i = 0; i < 5; i++) D.sheetAdd();
+  D.run('persist(); 1');
+}
+test('New after adding sheets: one sheet again, even when the sheets were all there was', () => {
+  const D = session();
+  sixSheets(D);
+  assert.equal(sheetCount(D), 6);
+  assert.equal(D.run('multiSheet()'), true);
+  assert.equal(D.docHasWork(), true, 'six sheets are work: New must act on them');
+  D.newDrawing();
+  assert.equal(D.run('multiSheet()'), false);
+  assert.ok(sheetCount(D) <= 1, 'one sheet: ' + sheetCount(D));
+  assert.equal(D.run('DOC.activeSheet === undefined || sheetById(DOC.activeSheet) !== null'), true, 'not showing a sheet that’s gone');
+  assert.equal(D.document.getElementById('tpSheet').disabled, true, 'the sheet bar has nothing to choose');
+  assert.ok((stored(D).sheets || []).length <= 1, 'and that’s what’s kept for next time');
+});
+test('after New, a sheet added puts the drawing’s shapes on a sheet that exists', () => {
+  const D = session();
+  sixSheets(D);
+  D.newDrawing();
+  drawLine(D, 7);
+  D.sheetAdd();
+  assert.equal(sheetCount(D), 2);
+  const ids = JSON.parse(D.run('JSON.stringify(sheetList().map(function (s) { return s.id; }))'));
+  assert.ok(ids.includes(ents(D)[0].sheet), 'the line is on ' + ents(D)[0].sheet + ', one of ' + ids.join(', '));
+  assert.ok(ids.includes(D.run('DOC.activeSheet')), 'and the sheet shown is one of them');
+});
+test('an empty drawing with one sheet listed is still empty: New leaves Recover’s drawing alone', () => {
+  const D = session();
+  drawLine(D, 44);
+  D.newDrawing();                                          // the line is put aside, for Recover
+  D.run(`DOC.sheets = [{id: 'S1', name: 'Sheet 1'}]; DOC.activeSheet = 'S1'; persist(); 1`);
+  assert.equal(D.docHasWork(), false);
+  D.newDrawing();
+  assert.equal(JSON.parse(D.localStorage.getItem('d454DesignAside')).doc.ents[0].x2, 44, 'still the line, not an empty drawing');
+});
+test('New after adding sheets with shapes on them: one sheet, and the old drawing is put aside with its sheets', () => {
+  const D = session();
+  drawLine(D, 5);
+  sixSheets(D);
+  drawLine(D, 6);
+  D.newDrawing();
+  assert.equal(ents(D).length, 0);
+  assert.equal(D.run('multiSheet()'), false);
+  const aside = JSON.parse(D.localStorage.getItem('d454DesignAside')).doc;
+  assert.equal(aside.sheets.length, 6, 'Recover brings them back');
+  D.recoverDrawing();
+  assert.equal(sheetCount(D), 6);
+});
+test('New clears the drawing’s parameters and name, and keeps the material', () => {
+  const D = session();
+  D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 610, h: 406, t: 18.8}); DOC.params = [{name: 'shelf', expr: '300', unit: 'mm'}]; DOC.name = 'Old sign'; persist(); 1`);
+  assert.equal(D.docHasWork(), true, 'a parameter is work');
+  D.newDrawing();
+  assert.deepEqual(JSON.parse(D.run('JSON.stringify(DOC.params || [])')), []);
+  assert.equal(D.run('DOC.name'), undefined, 'the old name doesn’t name the new drawing’s G-code');
+  assert.deepEqual(JSON.parse(D.run('JSON.stringify([DOC.stock.w, DOC.stock.h, DOC.stock.t])')), [610, 406, 18.8], 'the material stays, as it always has');
+});
+test('closing without saving a drawing with only sheets in it: the next session starts with one sheet', () => {
+  const A = session();
+  sixSheets(A);
+  A.run('markUnsaved(); 1');
+  assert.equal(A.drawingUnsaved(), true, 'unsaved sheets are something to ask about');
+  assert.equal(A.designCloseDiscard(), true);
+  const B = session(A);
+  assert.equal(B.run('multiSheet()'), false);
+});

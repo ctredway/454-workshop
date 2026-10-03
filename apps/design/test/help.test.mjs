@@ -310,7 +310,7 @@ test('a heading whose words change keeps its icon', () => {
 });
 test('the tool panel is redrawn when its groups are moved: the icons come back', () => {
   D.buildToolPanel();
-  for (const g of ['file', 'create', 'edit', 'align', 'guides', 'view']) assert.ok(icon('.tGroup[data-group="' + g + '"] > h4'), g);
+  for (const g of ['file', 'create', 'edit', 'align', 'guides']) assert.ok(icon('.tGroup[data-group="' + g + '"] > h4'), g);
   assert.ok(icon('#paneLayers > .paneHead'));
   assert.equal(D.document.querySelectorAll('.helpI').length, ICONS().length);
 });

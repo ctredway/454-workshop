@@ -21,7 +21,7 @@ describe('the menu bar', () => {
     expect(labels(build('design').menu)).not.toContain('454 Workshop');
   });
   it('File, in 454 Design: a drawing’s actions, then Job setup and Settings, then Close and Exit', () => {
-    expect(labels(sub(build('design').menu, 'File'))).toEqual(['New', 'Open…', 'Save', 'Save As…', 'Recover last drawing', '-',
+    expect(labels(sub(build('design').menu, 'File'))).toEqual(['New', 'Open…', 'Import…', 'Save', 'Save As…', 'Recover last drawing', '-',
       'Export DXF…', 'Export SVG…', 'Save G-code…', '-', 'Job setup…', 'Settings…', '-', 'Close window', 'Exit']);
   });
   it('File, in 454 Control: Open G-code file, Settings, Close and Exit', () => {
@@ -31,7 +31,7 @@ describe('the menu bar', () => {
     expect(labels(sub(build('other').menu, 'File'))).toEqual(['Close window', 'Exit']);
   });
   it('each File item asks the page for its own action', () => {
-    const want = { 'New': 'new', 'Open…': 'open', 'Save': 'save', 'Save As…': 'saveAs', 'Recover last drawing': 'recover', 'Export DXF…': 'dxf',
+    const want = { 'New': 'new', 'Open…': 'open', 'Import…': 'import', 'Save': 'save', 'Save As…': 'saveAs', 'Recover last drawing': 'recover', 'Export DXF…': 'dxf',
       'Export SVG…': 'svg', 'Save G-code…': 'gcode', 'Job setup…': 'jobSetup', 'Settings…': 'settings' };
     const { menu, did } = build('design');
     for (const [label, name] of Object.entries(want)) { did.length = 0; item(menu, 'File', label).click(); expect(did).toEqual(['page:' + name]); }
@@ -45,7 +45,7 @@ describe('the menu bar', () => {
   });
   it('the keys the pages already answer to are shown beside their items, and left to the pages', () => {
     const { menu } = build('design');
-    const shown = { 'New': 'CmdOrCtrl+N', 'Open…': 'CmdOrCtrl+O', 'Save': 'CmdOrCtrl+S', 'Save As…': 'CmdOrCtrl+Shift+S' };
+    const shown = { 'New': 'CmdOrCtrl+N', 'Open…': 'CmdOrCtrl+O', 'Import…': 'CmdOrCtrl+I', 'Save': 'CmdOrCtrl+S', 'Save As…': 'CmdOrCtrl+Shift+S' };
     for (const [label, key] of Object.entries(shown)) {
       expect(item(menu, 'File', label).accelerator).toBe(key);
       expect(item(menu, 'File', label).registerAccelerator, label + ': the page handles the key, with its own rules about open dialogs').toBe(false);

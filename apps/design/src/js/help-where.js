@@ -28,12 +28,11 @@ function designHelpWhere(){
 // the pointer rests on it. Keep a tip to two sentences: it says what the section is for, the guide says the rest.
 var HELP_ICONS = [
   // the tools, on the left
-  ['.tGroup[data-group="file"] > h4', 'design-tools.html#file', 'Start, open and save drawings, and export them as DXF or SVG for other programs.'],
+  ['.tGroup[data-group="file"] > h4', 'design-tools.html#file', 'Start, open, import and save drawings, export them for other programs, undo and redo, fit the view and measure.'],
   ['.tGroup[data-group="create"] > h4', 'design-tools.html#create-vectors', 'The drawing tools: lines, rectangles, circles, curves and text. Type a size while you draw to make it exact.'],
   ['.tGroup[data-group="edit"] > h4', 'design-tools.html#edit-vectors', 'Change shapes you\u2019ve drawn: round corners, trim, offset, mirror and join them, and add dimensions that set their sizes.'],
   ['.tGroup[data-group="align"] > h4', 'design-tools.html#align-and-nest', 'Line shapes up with each other or with the material, space them evenly, and nest parts to waste less wood.'],
   ['.tGroup[data-group="guides"] > h4', 'design-tools.html#guides', 'Guide lines to draw against, and the outline of your machine\u2019s cutting area.'],
-  ['.tGroup[data-group="view"] > h4', 'design-tools.html#view-and-history', 'Fit the material in the window, undo and redo, and measure between two points.'],
   ['#paneLayers > .paneHead', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
   // the toolpaths, on the right
   ['#tpPanel .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
@@ -58,5 +57,5 @@ var HELP_ICONS = [
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
   ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],
-  ['#impTitle', 'design-tools.html#load', 'Brings a file into the drawing: its shapes, and its layers and material where the file has them. Choose whether it joins this drawing or replaces it.']
+  ['#impTitle', 'design-tools.html#import', 'Brings a file into the drawing: its shapes, and its layers and material where the file has them. Choose whether it joins this drawing or replaces it.']
 ];

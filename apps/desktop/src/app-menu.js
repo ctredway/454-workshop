@@ -26,6 +26,7 @@ function menuTemplate({ kind, act, updates = [] }) {
   const file = kind === 'design' ? [
     page('New', 'new', 'CmdOrCtrl+N'),
     page('Open…', 'open', 'CmdOrCtrl+O'),
+    page('Import…', 'import', 'CmdOrCtrl+I'),
     page('Save', 'save', 'CmdOrCtrl+S'),
     page('Save As…', 'saveAs', 'CmdOrCtrl+Shift+S'),
     page('Recover last drawing', 'recover'),

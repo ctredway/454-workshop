@@ -34,7 +34,10 @@ function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} }
 function docHasWork(d){
   d = d || DOC;
   return !!((d.ents && d.ents.length) || (d.guides && d.guides.length) || (d.dims && d.dims.length) ||
-            (d.toolpaths && d.toolpaths.length) || (d.images && d.images.length));
+            (d.toolpaths && d.toolpaths.length) || (d.images && d.images.length) ||
+            // sheets added, or parameters made, are work too: without these, a drawing with only sheets in it
+            // looked empty, and New did nothing, so the sheets stayed
+            (d.sheets && d.sheets.length > 1) || (d.params && d.params.length));
 }
 function drawingUnsaved(){
   var u = UNSAVED !== null ? UNSAVED : lsGet(UNSAVED_KEY) === '1';
@@ -79,7 +82,12 @@ function syncRecoverBtn(){
 }
 
 // A drawing that isn't this one: New's empty drawing (the material and job setup stay), or one from a file.
+// Everything else that belongs to the drawing goes: a new one used to keep the old one's sheets, its
+// parameters, and its name (which named the G-code files and the job sheet).
 function clearDrawing(){
+  DOC.sheets = []; delete DOC.activeSheet;            // one sheet again
+  DOC.params = [];                                    // named sizes, made for the drawing that had them
+  delete DOC.name;
   DOC.ents = [];
   DOC.guides = [];
   DOC.dims = [];
@@ -190,20 +198,29 @@ function saveDrawing(asNew){
 
 // ---- opening: the browser's Open window where there is one, so a drawing opened here can be saved back to
 // its file with Save; otherwise (Firefox, Safari) the page's file picker, as before.
-var OPEN_TYPES = [{ description: 'Drawings, VCarve and Carbide Create projects, DXF, SVG and images',
-  accept: { 'application/octet-stream': ['.json', '.crv', '.c2d', '.dxf', '.svg'], 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'] } }];
-function openFiles(){
+// Open is for a drawing, or a project from VCarve or Carbide Create: it takes the place of the one open.
+// Import brings vectors (DXF, SVG) into the drawing that's open, or a picture to trace.
+var OPEN_TYPES = [{ description: 'Drawings, and VCarve and Carbide Create projects', accept: { 'application/octet-stream': ['.json', '.crv', '.c2d'] } }];
+var IMPORT_TYPES = [{ description: 'DXF and SVG drawings, and pictures to trace',
+  accept: { 'application/octet-stream': ['.dxf', '.svg'], 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'] } }];
+var OPEN_ACCEPT = { open: '.json,.crv,.c2d', import: '.dxf,.svg,.png,.jpg,.jpeg,.gif,.bmp,.webp' };
+function openFiles(kind){
+  kind = kind === 'import' ? 'import' : 'open';
   var DF = desktopFiles();
   if (DF){                                            // the desktop app: by path, so Save can go back to it
-    return DF.open().then(function (items){
+    return DF.open(kind).then(function (items){
       if (!items || !items.length) return false;
       OPEN_PATH = items.length === 1 && /\.json$/i.test(items[0].name) ? items[0].path : null;   // kept if it turns out to be a drawing
       DESIGN_IMPORT(items.map(function (it){ return new File([it.data], it.name); }));
       return true;
     }, function (e){ toast('err', 'Couldn’t open that', (e && e.message) || String(e)); return false; });
   }
-  if (!window.showOpenFilePicker){ document.getElementById('loadFile').click(); return Promise.resolve(false); }
-  return window.showOpenFilePicker({ id: 'design', multiple: true, types: OPEN_TYPES })
+  if (!window.showOpenFilePicker){
+    var inp = document.getElementById('loadFile');
+    inp.setAttribute('accept', OPEN_ACCEPT[kind]);
+    inp.click(); return Promise.resolve(false);
+  }
+  return window.showOpenFilePicker({ id: 'design' + (kind === 'import' ? '-import' : ''), multiple: true, types: kind === 'import' ? IMPORT_TYPES : OPEN_TYPES })
     .then(function (hs){
       return Promise.all(hs.map(function (h){ return h.getFile(); })).then(function (files){
         OPEN_HANDLE = hs.length === 1 && /\.json$/i.test(hs[0].name) ? hs[0] : null;   // kept if it turns out to be a drawing

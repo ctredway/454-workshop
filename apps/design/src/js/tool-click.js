@@ -233,6 +233,10 @@ function toolClick(w, snap){
       toast('info', 'Convert the text first', 'Text can\u2019t be trimmed while it\u2019s editable. Select it and use Convert to curves, then trim.');
       return;
     }
+    if (trHit !== null && DOC.ents[trHit].t === 'group'){
+      toast('info', 'Ungroup it first', 'That shape is part of a group. Select the group and press Ungroup (Ctrl+Shift+G), then trim the piece you want.');
+      return;
+    }
     if (doTrim(w)){ persist(); stagePrompt('trim0'); }
     else {
       stagePrompt('editMiss');

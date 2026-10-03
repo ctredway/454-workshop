@@ -26,6 +26,7 @@ function buildToolPanel(){
     '<div class="sideTabs" role="tablist" aria-orientation="vertical" aria-label="Side panel">' +
       '<button class="sideTab" role="tab" id="sideTabTools" data-tab="tools" aria-controls="paneTools" aria-selected="' + (tab === 'tools') + '" tabindex="' + (tab === 'tools' ? 0 : -1) + '">Tools</button>' +
       '<button class="sideTab" role="tab" id="sideTabLayers" data-tab="layers" aria-controls="paneLayers" aria-selected="' + (tab === 'layers') + '" tabindex="' + (tab === 'layers' ? 0 : -1) + '">Layers</button>' +
+      '<button id="sideFold" class="sideFold" aria-controls="paneTools paneLayers"></button>' +
     '</div>' +
     '<div class="sidePane" id="paneTools" role="tabpanel" aria-labelledby="sideTabTools"' + (tab === 'tools' ? '' : ' hidden') + '>' + html + '</div>' +
     '<div class="sidePane" id="paneLayers" role="tabpanel" aria-labelledby="sideTabLayers"' + (tab === 'layers' ? '' : ' hidden') + '>' +
@@ -34,6 +35,8 @@ function buildToolPanel(){
       '<button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>' +
     '</div>';
   if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each group's name: this panel is redrawn when groups are moved
+  sidePanelShow();
+  document.getElementById('sideFold').addEventListener('click', function(){ sidePanelSet(UICFG.sidePanel === false); });
   host.querySelectorAll('.sideTab').forEach(function(t){
     t.addEventListener('click', function(){ sideTab(t.dataset.tab); });
     t.addEventListener('keydown', function(e){                  // arrow keys move between tabs

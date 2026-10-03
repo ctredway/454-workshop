@@ -37,7 +37,7 @@ const PRELUDE = `
   const hoverAt = (x, y) => { const s = w2s(x, y); MOUSE.mx = s.x; MOUSE.my = s.y; MOUSE.w = { x, y }; MOUSE.x = x; MOUSE.y = y; MOUSE.snap = { x, y, k: 'grid' }; };
 `;
 
-const GROUPS = [['file', 'File'], ['create', 'Create vectors'], ['edit', 'Edit vectors'], ['align', 'Align and nest'], ['guides', 'Guides'], ['view', 'View and history']];
+const GROUPS = [['file', 'File'], ['create', 'Create vectors'], ['edit', 'Edit vectors'], ['align', 'Align and nest'], ['guides', 'Guides']];
 
 const SHOTS = [
   // each tool group in the left panel

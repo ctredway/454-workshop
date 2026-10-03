@@ -75,3 +75,26 @@ describe('opening', () => {
     expect(await files().open(null)).toEqual([]);
   });
 });
+
+describe('Open and Import ask for different files', () => {
+  async function asked(kind) {
+    let opts = null;
+    const df = createDesignFiles({ fs, path, dialog: { showOpenDialog: async (_w, o) => { opts = o; return { canceled: true, filePaths: [] }; } }, listFile: path.join(dir, 'list-' + Math.random() + '.json') });
+    await df.open(null, kind);
+    return opts;
+  }
+  it('Open: drawings, and VCarve and Carbide Create projects', async () => {
+    const o = await asked('open');
+    expect(o.title).toBe('Open');
+    expect(o.filters[0].extensions).toEqual(['json', 'crv', 'c2d']);
+    expect(o.filters[1].extensions).toEqual(['*']);
+    expect(await asked(undefined)).toEqual(o);
+  });
+  it('Import: DXF and SVG drawings, and pictures to trace', async () => {
+    const o = await asked('import');
+    expect(o.title).toBe('Import');
+    expect(o.filters[0].extensions).toEqual(['dxf', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']);
+    expect(o.filters[0].extensions).not.toContain('json');
+    expect(o.properties).toContain('multiSelections');
+  });
+});

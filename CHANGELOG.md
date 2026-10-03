@@ -27,6 +27,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.37 — fixes from testing
+- Includes Design 0.119.1: New starts with one sheet.
+- Includes Design 0.120.0: Open and Import are separate, the File buttons have usual icons, and View & History's
+  buttons are in File. The File menu has Import….
+- Includes Design 0.121.0: the left panel folds away for more drawing room.
+- Includes Design 0.120.2: a toolpath hidden and shown again shows its tabs.
+- Includes Design 0.120.1: Trim works on rectangles, a group's shapes count as crossings, and trimming a closed
+  shape no longer sometimes removes the wrong piece.
+
 ### 0.6.2-beta.36 — a File menu, and see every pass
 - **The menu bar is the usual one: File, Edit, View, Window, Help.** There was no File menu: one "454
   Workshop" menu held the two apps, the docs, problem reports, About, updates, Close and Quit.
@@ -933,6 +942,68 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.121.0 — the left panel folds away
+- **The left panel folds away, for more drawing room,** as the Toolpaths panel does on the right. **«** at the
+  bottom of the Tools and Layers tabs folds it down to just the tabs; **»**, or either tab, opens it again. It
+  stays as you left it next time.
+- The tab last shown (Tools or Layers) is remembered between visits too, as was meant: it was saved but never
+  read back.
+- Asked for by Clint.
+- **Tested** (6 tests in a new `side-fold.test.mjs`; broken on purpose 8 ways, all caught).
+
+### 0.120.2 — a toolpath shown again shows its tabs
+- **Fixed: a toolpath hidden with its eye and shown again had no tabs on the drawing** until it was edited and
+  updated (Recalculate didn't bring them back either). The tabs were still there and still in the G-code: they
+  were drawn only on the toolpath picked (the one just made, edited or clicked), and pressing an eye lets go of
+  the pick. Now every toolpath on the drawing shows its tabs. With one picked, only that one shows, as before.
+  A toolpath with no path drawn (its shapes deleted) shows no tabs, and nor does a shape that's gone.
+- Found by Clint, testing.
+- **Tested** (4 tests in a new `tp-tabs-shown.test.mjs`, which run Design's real drawing code and count the tab
+  marks; broken on purpose 3 ways, the old code included, all caught).
+
+### 0.120.1 — Trim works where shapes cross
+- **Rectangles can be trimmed.** Before, clicking a rectangle with Trim did nothing and said nothing crossed it.
+  What's left is an open outline, as with any closed shape.
+- **Fixed: trimming a closed shape could remove the wrong piece.** When the piece clicked ran past the point where
+  the outline starts (a polygon's first corner, say), Trim kept that piece and removed the rest.
+- **A group's shapes count as crossings**, for Trim and Extend: an imported DXF or SVG, or a traced picture, now
+  stops a trim where it crosses. Clicking a group itself with Trim says to ungroup it first.
+- A closed shape that another only touches once is left alone (there's no piece to cut out).
+- Found by Clint, testing.
+- **Tested** (12 tests in a new `trim.test.mjs`; broken on purpose 6 ways, all caught).
+
+### 0.120.0 — the File group: Open and Import apart, usual icons, and View & History moved in
+- **Open and Import are two buttons.** **Open** (Ctrl+O) is for a drawing, or a VCarve or Carbide Create project:
+  it takes the place of the drawing that's open, which Recover keeps if it wasn't saved. **Import** (Ctrl+I) brings
+  DXF or SVG vectors into the drawing that's open, or a picture to trace. Each window offers only its own kind of
+  file, and each remembers its own folder. Before, one Open button did all of it. Dropping a file on the window
+  still works for every kind.
+- **Usual icons:** a page with a plus for New, an open folder for Open, a floppy disk for Save, a floppy disk and a
+  pencil for Save As. Import has the arrow into a tray that Save had.
+- **View & History's four buttons are in File now:** Undo, Redo, Fit stock and Measure, and that group is gone. File
+  is New, Open, Import, Recover, Save, Save As, Export DXF, Export SVG, Undo, Redo, Fit stock, Measure. A panel
+  order saved before still works.
+- The desktop app's File menu has **Import…** (Ctrl+I) under Open, and its Open and Import windows offer
+  their own files.
+- Requested by Clint while testing.
+- **Tested** (5 more tests in `keys.test.mjs`, 2 in the desktop app's `design-files.test.mjs`, the menu's updated;
+  broken on purpose 16 ways, all caught), and looked at in the app.
+
+### 0.119.1 — New starts with one sheet
+- **Fixed: New kept the old drawing's sheets.** Found by Clint: six sheets added, New, and the six were still
+  there. Two faults. New only acts on a drawing that has something in it, and sheets didn't count, so a
+  drawing with only sheets added looked empty and New did nothing at all. And when it did act, it cleared
+  the shapes, layers and toolpaths but not the sheets. Now sheets added (more than one) and parameters count
+  as something in the drawing, and New starts with one sheet.
+- **New also clears the drawing's parameters and its name.** They belonged to the old drawing: its parameters
+  would have been offered in the new one, and its name went on the new drawing's G-code files and job sheet.
+  The material stays, as it always has.
+- The same goes for closing without saving (Don't save): the next session starts with one sheet.
+- An empty drawing that lists just one sheet is still empty, so New doesn't put it aside over a real drawing
+  waiting in Recover.
+- **Tested** (6 more tests in `unsaved.test.mjs`; broken on purpose 7 ways: 6 caught, and the other removes a
+  line that `sheetsInit` already does), and tried in the app: six sheets, File → New, one sheet.
 
 ### 0.119.0 — see every pass in the toolpath editor
 - **A Passes row in the toolpath editor,** under Per pass, for profiles and pockets. It shows how many passes

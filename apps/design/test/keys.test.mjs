@@ -281,3 +281,52 @@ test('the menus do nothing while a dialog or the help has the screen, as the key
   assert.equal(D.menuDo('new'), true);
   assert.deepEqual(did, ['new']);
 });
+
+// ---- Open and Import: two buttons, two kinds of file ----
+const later = (ms = 40) => new Promise((r) => setTimeout(r, ms));
+test('the File group: New, Open, Import, Recover, Save, Save As, the exports, then Undo, Redo, Fit and Measure', () => {
+  const D = fresh();
+  const btns = [...D.document.querySelectorAll('.tGroup[data-group="file"] .tGrid button')].map((b) => b.id || b.dataset.tool);
+  assert.deepEqual(btns, ['newBtn', 'loadBtn', 'importBtn', 'recoverBtn', 'saveBtn', 'saveAsBtn', 'dxfBtn', 'svgBtn', 'undoBtn', 'redoBtn', 'fitBtn2', 'measure']);
+  assert.equal(D.document.querySelector('.tGroup[data-group="view"]'), null, 'View & History is gone: its four are in File');
+  assert.match(D.document.getElementById('loadBtn').title, /^Open \(Ctrl\+O\) — a saved drawing, or a VCarve or Carbide Create project$/);
+  assert.match(D.document.getElementById('importBtn').title, /^Import \(Ctrl\+I\) — DXF or SVG vectors into this drawing, or a picture to trace$/);
+  // an order saved before, which still lists View & History, loses nothing
+  D.run(`UICFG.order = ['view', 'guides', 'file', 'create', 'edit', 'align']; buildToolPanel(); 1`);
+  assert.deepEqual([...D.document.querySelectorAll('.tGroup')].map((g) => g.dataset.group), ['guides', 'file', 'create', 'edit', 'align']);
+  for (const id of ['undoBtn', 'redoBtn', 'fitBtn2']) assert.equal(D.document.querySelectorAll('#' + id).length, 1, id + ' is there once, in File');
+  assert.equal(D.document.querySelectorAll('.tGroup[data-group="file"] button[data-tool="measure"]').length, 1, 'and Measure');
+});
+test('Open asks for drawings and projects; Import for DXF, SVG and pictures, from the buttons, the keys and the menu', async () => {
+  const D = fresh();
+  const asked = [];
+  D.showOpenFilePicker = async (o) => { asked.push({ id: o.id, ext: Object.values(o.types[0].accept).flat() }); const e = new Error('no'); e.name = 'AbortError'; throw e; };
+  D.document.getElementById('loadBtn').click(); await later();
+  D.document.getElementById('importBtn').click(); await later();
+  D.press('o', { ctrl: true }); await later();
+  D.press('i', { ctrl: true }); await later();
+  D.menuDo('open'); await later();
+  D.menuDo('import'); await later();
+  const open = ['.json', '.crv', '.c2d'], imp = ['.dxf', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
+  assert.deepEqual(asked.map((a) => a.ext), [open, imp, open, imp, open, imp]);
+  assert.deepEqual(asked.map((a) => a.id), ['design', 'design-import', 'design', 'design-import', 'design', 'design-import'], 'each remembers its own folder');
+});
+test('in the desktop app, Open and Import each ask for their own kind of file', async () => {
+  const D = fresh();
+  const kinds = [];
+  D.desktop454 = { files: { open: async (kind) => { kinds.push(kind); return []; } } };
+  D.document.getElementById('loadBtn').click(); D.document.getElementById('importBtn').click(); await later();
+  assert.deepEqual(kinds, ['open', 'import']);
+});
+test('without the browser’s file picker, the file box is told which files to offer', () => {
+  const D = fresh();
+  const box = D.document.getElementById('loadFile');
+  let clicks = 0;
+  box.click = () => { clicks++; };
+  delete D.showOpenFilePicker;
+  D.openFiles('import');
+  assert.equal(box.getAttribute('accept'), '.dxf,.svg,.png,.jpg,.jpeg,.gif,.bmp,.webp');
+  D.openFiles('open');
+  assert.equal(box.getAttribute('accept'), '.json,.crv,.c2d');
+  assert.equal(clicks, 2);
+});

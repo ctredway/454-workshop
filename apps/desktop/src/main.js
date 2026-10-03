@@ -227,7 +227,7 @@ function files() {
     listFile: path.join(app.getPath('userData'), 'design-files.json'), log: (m) => console.log('[files] ' + m) });
   return designFiles;
 }
-ipcMain.handle('files:open', (e) => (fromAppPage(e) ? files().open(BrowserWindow.fromWebContents(e.sender)) : []));
+ipcMain.handle('files:open', (e, kind) => (fromAppPage(e) ? files().open(BrowserWindow.fromWebContents(e.sender), kind === 'import' ? 'import' : 'open') : []));
 ipcMain.handle('files:saveAs', (e, text, suggested) => (fromAppPage(e) ? files().saveAs(BrowserWindow.fromWebContents(e.sender), String(text), suggested ? String(suggested) : '') : null));
 ipcMain.handle('files:save', (e, p, text) => (fromAppPage(e) ? files().save(String(p), String(text)) : { ok: false, why: 'not allowed' }));
 

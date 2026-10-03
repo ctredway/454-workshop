@@ -68,10 +68,11 @@ var ICON = {
  undo:'<svg viewBox="0 0 18 18"><path d="M6.5 4 L3 7.5 L6.5 11"/><path d="M3 7.5 H11 a4 4 0 0 1 0 8 H8"/></svg>',
  redo:'<svg viewBox="0 0 18 18"><path d="M11.5 4 L15 7.5 L11.5 11"/><path d="M15 7.5 H7 a4 4 0 0 0 0 8 H10"/></svg>',
  fit:'<svg viewBox="0 0 18 18"><path d="M3 6.5 V3 h3.5 M11.5 3 H15 v3.5 M15 11.5 V15 h-3.5 M6.5 15 H3 v-3.5"/></svg>',
- neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/></svg>',
- save:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
- saveas:'<svg viewBox="0 0 18 18"><path d="M7 2.5 V10 M4 7.5 L7 10.5 L10 7.5"/><path d="M2.5 12.5 V15 h7.5"/><path d="M11.5 15.5 l0.4 -2 l4 -4 l1.6 1.6 l-4 4 z"/></svg>',
- load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
+ neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/><path d="M9.5 9 v4.5 M7.25 11.25 h4.5"/></svg>',   // a new page
+ save:'<svg viewBox="0 0 18 18"><path d="M3 3 h9.5 l2.5 2.5 V15 H3 Z"/><path d="M6 3 v3.5 h5.5 V3"/><path d="M5.5 15 v-4.5 h7 V15"/></svg>',   // a floppy disk
+ import:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',   // into the drawing
+ saveas:'<svg viewBox="0 0 18 18"><path d="M9 13 H2.5 V2.5 h8.5 l2 2 V8"/><path d="M5 2.5 v3 h5 v-3"/><path d="M10.6 16 l0.4 -2 l4 -4 l1.6 1.6 l-4 4 z"/></svg>',   // a floppy disk and a pencil
+ load:'<svg viewBox="0 0 18 18"><path d="M2.5 14.5 V4 h4.5 l1.5 1.5 h6 V8"/><path d="M2.5 14.5 l2.3 -6.5 h11.7 l-2.3 6.5 Z"/></svg>',   // an open folder
  recover:'<svg viewBox="0 0 18 18"><path d="M4 9 A5.5 5.5 0 1 0 5.6 5.1"/><path d="M5.6 2.2 V5.1 H2.7"/><path d="M9 6.2 V9.2 L11 10.6"/></svg>'
 };
 var PANEL_BTNS = {
@@ -119,7 +120,7 @@ var PANEL_BTNS = {
  rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 select first; click the rotation center, then type the angle in degrees (+ CCW)'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 select first; type N@dx,dy for a linear array, or click a center then type N<step\u00b0 for a circular one'},
  fillet:{tool:'fillet', icon:'fillet', title:'Fillet (F) \u2014 type a radius, then click a corner: a poly/rect corner, or where two lines meet'},
- trim:  {tool:'trim', icon:'trim', title:'Trim (T) \u2014 click the part of a line, arc, or circle to remove, bounded by crossings'},
+ trim:  {tool:'trim', icon:'trim', title:'Trim (T) \u2014 click the part of a shape to remove, up to where other shapes cross it'},
  extend:{tool:'extend', icon:'extend', title:'Extend (E) \u2014 click near the end of a line or arc to run it out to the next crossing'},
  guide: {tool:'guide', icon:'guide', title:'Offset guide (G) \u2014 click an edge, type the offset. Guides and their intersections snap.'},
  clearGuides:{id:'clearGuides', icon:'gclr', title:'Remove all guides'},
@@ -130,17 +131,17 @@ var PANEL_BTNS = {
  newBtn:{id:'newBtn', icon:'neu', title:'New (Ctrl+N) — clear all vectors and guides (undoable with Ctrl+Z)'},
  saveBtn:{id:'saveBtn', icon:'save', title:'Save (Ctrl+S) — the drawing to a file (.454.json), keep it with your G-code or as a backup. Once saved, Save saves to the same file; Ctrl+Shift+S saves a copy under another name.'},
  saveAsBtn:{id:'saveAsBtn', icon:'saveas', title:'Save as (Ctrl+Shift+S) — save the drawing to a new file, or a copy under another name. Save then goes to the new file.'},
- loadBtn:{id:'loadBtn', icon:'load', title:'Open (Ctrl+O) — a saved drawing, a VCarve project, DXF or SVG files, or an image to trace'},
+ loadBtn:{id:'loadBtn', icon:'load', title:'Open (Ctrl+O) — a saved drawing, or a VCarve or Carbide Create project'},
+ importBtn:{id:'importBtn', icon:'import', title:'Import (Ctrl+I) — DXF or SVG vectors into this drawing, or a picture to trace'},
  recoverBtn:{id:'recoverBtn', icon:'recover', title:'Recover last drawing'},
  svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
 var PANEL_GROUPS = [
- {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
+ {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
- {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},
- {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}
+ {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
  /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
 ];

@@ -173,6 +173,12 @@
   .sideTab[aria-selected="true"]{color:var(--ink);background:var(--panel);border-left-color:var(--amber)}
   .sidePane{width:176px;overflow-y:auto}
   .sidePane[hidden]{display:none}
+  .sideFold{margin-top:auto;padding:10px 0;border:0;border-radius:0;background:none;color:var(--muted);font-size:14px;cursor:pointer}
+  .sideFold:hover{color:var(--ink);background:rgba(255,255,255,.03)}
+  #toolPanel.folded .sidePane{display:none}
+  #toolPanel.folded .sideTabs{border-right:0}
+  #toolPanel.folded .sideTab[aria-selected="true"]{background:none;border-left-color:transparent;color:var(--muted)}
+  #toolPanel.folded .sideTab:hover{color:var(--ink)}
   .sidePane .paneHead{padding:9px 10px 5px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
   .tGroup{border-bottom:1px solid var(--line)}
   .tGroup h4{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);cursor:grab}
@@ -1144,7 +1150,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.119.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.121.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -2437,7 +2443,8 @@ function hoverTrim(w){
   var idx = pickEntity(w);
   if (idx === null) return {action:'none'};
   var e = DOC.ents[idx];
-  if (e.t === 'line' || e.t === 'circle' || e.t === 'arc' || e.t === 'poly' || e.t === 'path'){
+  if (e.t === 'group') return {action:'none', hint:'ungroup it first to trim it', at:{x:w.x, y:w.y}};
+  if (e.t === 'line' || e.t === 'circle' || e.t === 'arc' || e.t === 'poly' || e.t === 'path' || e.t === 'rect'){
     var gone = trimPreview(w);
     if (!gone || !gone.length) return {action:'none', hint:'nothing crosses this to trim to', at:{x:w.x, y:w.y}};
     return {action:'do', hint:'trim', idx:idx, cut:gone};
@@ -2895,6 +2902,10 @@ function toolClick(w, snap){
     var trHit = pickEntity(w);
     if (trHit !== null && DOC.ents[trHit].t === 'text'){
       toast('info', 'Convert the text first', 'Text can\u2019t be trimmed while it\u2019s editable. Select it and use Convert to curves, then trim.');
+      return;
+    }
+    if (trHit !== null && DOC.ents[trHit].t === 'group'){
+      toast('info', 'Ungroup it first', 'That shape is part of a group. Select the group and press Ungroup (Ctrl+Shift+G), then trim the piece you want.');
       return;
     }
     if (doTrim(w)){ persist(); stagePrompt('trim0'); }
@@ -5577,12 +5588,11 @@ function designHelpWhere(){
 // the pointer rests on it. Keep a tip to two sentences: it says what the section is for, the guide says the rest.
 var HELP_ICONS = [
   // the tools, on the left
-  ['.tGroup[data-group="file"] > h4', 'design-tools.html#file', 'Start, open and save drawings, and export them as DXF or SVG for other programs.'],
+  ['.tGroup[data-group="file"] > h4', 'design-tools.html#file', 'Start, open, import and save drawings, export them for other programs, undo and redo, fit the view and measure.'],
   ['.tGroup[data-group="create"] > h4', 'design-tools.html#create-vectors', 'The drawing tools: lines, rectangles, circles, curves and text. Type a size while you draw to make it exact.'],
   ['.tGroup[data-group="edit"] > h4', 'design-tools.html#edit-vectors', 'Change shapes you\u2019ve drawn: round corners, trim, offset, mirror and join them, and add dimensions that set their sizes.'],
   ['.tGroup[data-group="align"] > h4', 'design-tools.html#align-and-nest', 'Line shapes up with each other or with the material, space them evenly, and nest parts to waste less wood.'],
   ['.tGroup[data-group="guides"] > h4', 'design-tools.html#guides', 'Guide lines to draw against, and the outline of your machine\u2019s cutting area.'],
-  ['.tGroup[data-group="view"] > h4', 'design-tools.html#view-and-history', 'Fit the material in the window, undo and redo, and measure between two points.'],
   ['#paneLayers > .paneHead', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
   // the toolpaths, on the right
   ['#tpPanel .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
@@ -5607,7 +5617,7 @@ var HELP_ICONS = [
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
   ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],
-  ['#impTitle', 'design-tools.html#load', 'Brings a file into the drawing: its shapes, and its layers and material where the file has them. Choose whether it joins this drawing or replaces it.']
+  ['#impTitle', 'design-tools.html#import', 'Brings a file into the drawing: its shapes, and its layers and material where the file has them. Choose whether it joins this drawing or replaces it.']
 ];
 // Toolpaths run in the order listed. Moving one is undoable like any other edit.
 function tpMoveTo(from, to){
@@ -10311,7 +10321,10 @@ function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} }
 function docHasWork(d){
   d = d || DOC;
   return !!((d.ents && d.ents.length) || (d.guides && d.guides.length) || (d.dims && d.dims.length) ||
-            (d.toolpaths && d.toolpaths.length) || (d.images && d.images.length));
+            (d.toolpaths && d.toolpaths.length) || (d.images && d.images.length) ||
+            // sheets added, or parameters made, are work too: without these, a drawing with only sheets in it
+            // looked empty, and New did nothing, so the sheets stayed
+            (d.sheets && d.sheets.length > 1) || (d.params && d.params.length));
 }
 function drawingUnsaved(){
   var u = UNSAVED !== null ? UNSAVED : lsGet(UNSAVED_KEY) === '1';
@@ -10356,7 +10369,12 @@ function syncRecoverBtn(){
 }
 
 // A drawing that isn't this one: New's empty drawing (the material and job setup stay), or one from a file.
+// Everything else that belongs to the drawing goes: a new one used to keep the old one's sheets, its
+// parameters, and its name (which named the G-code files and the job sheet).
 function clearDrawing(){
+  DOC.sheets = []; delete DOC.activeSheet;            // one sheet again
+  DOC.params = [];                                    // named sizes, made for the drawing that had them
+  delete DOC.name;
   DOC.ents = [];
   DOC.guides = [];
   DOC.dims = [];
@@ -10467,20 +10485,29 @@ function saveDrawing(asNew){
 
 // ---- opening: the browser's Open window where there is one, so a drawing opened here can be saved back to
 // its file with Save; otherwise (Firefox, Safari) the page's file picker, as before.
-var OPEN_TYPES = [{ description: 'Drawings, VCarve and Carbide Create projects, DXF, SVG and images',
-  accept: { 'application/octet-stream': ['.json', '.crv', '.c2d', '.dxf', '.svg'], 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'] } }];
-function openFiles(){
+// Open is for a drawing, or a project from VCarve or Carbide Create: it takes the place of the one open.
+// Import brings vectors (DXF, SVG) into the drawing that's open, or a picture to trace.
+var OPEN_TYPES = [{ description: 'Drawings, and VCarve and Carbide Create projects', accept: { 'application/octet-stream': ['.json', '.crv', '.c2d'] } }];
+var IMPORT_TYPES = [{ description: 'DXF and SVG drawings, and pictures to trace',
+  accept: { 'application/octet-stream': ['.dxf', '.svg'], 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'] } }];
+var OPEN_ACCEPT = { open: '.json,.crv,.c2d', import: '.dxf,.svg,.png,.jpg,.jpeg,.gif,.bmp,.webp' };
+function openFiles(kind){
+  kind = kind === 'import' ? 'import' : 'open';
   var DF = desktopFiles();
   if (DF){                                            // the desktop app: by path, so Save can go back to it
-    return DF.open().then(function (items){
+    return DF.open(kind).then(function (items){
       if (!items || !items.length) return false;
       OPEN_PATH = items.length === 1 && /\.json$/i.test(items[0].name) ? items[0].path : null;   // kept if it turns out to be a drawing
       DESIGN_IMPORT(items.map(function (it){ return new File([it.data], it.name); }));
       return true;
     }, function (e){ toast('err', 'Couldn’t open that', (e && e.message) || String(e)); return false; });
   }
-  if (!window.showOpenFilePicker){ document.getElementById('loadFile').click(); return Promise.resolve(false); }
-  return window.showOpenFilePicker({ id: 'design', multiple: true, types: OPEN_TYPES })
+  if (!window.showOpenFilePicker){
+    var inp = document.getElementById('loadFile');
+    inp.setAttribute('accept', OPEN_ACCEPT[kind]);
+    inp.click(); return Promise.resolve(false);
+  }
+  return window.showOpenFilePicker({ id: 'design' + (kind === 'import' ? '-import' : ''), multiple: true, types: kind === 'import' ? IMPORT_TYPES : OPEN_TYPES })
     .then(function (hs){
       return Promise.all(hs.map(function (h){ return h.getFile(); })).then(function (files){
         OPEN_HANDLE = hs.length === 1 && /\.json$/i.test(hs[0].name) ? hs[0] : null;   // kept if it turns out to be a drawing
@@ -10689,7 +10716,8 @@ function menuDo(what){
   if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
   var press = function (id){ var b = document.getElementById(id); if (b && !b.disabled) b.click(); };
   if (what === 'new') newDrawing();
-  else if (what === 'open') openFiles();
+  else if (what === 'open') openFiles('open');
+  else if (what === 'import') openFiles('import');
   else if (what === 'save') saveDrawing(false);
   else if (what === 'saveAs') saveDrawing(true);
   else if (what === 'recover') press('recoverBtn');
@@ -10711,7 +10739,8 @@ function keysWire(){
     var k = e.key.toLowerCase(), t = e.target;
     var inField = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
     if (k === 's'){ e.preventDefault(); saveDrawing(e.shiftKey); return; }
-    if (k === 'o' && !e.shiftKey){ e.preventDefault(); openFiles(); return; }
+    if (k === 'o' && !e.shiftKey){ e.preventDefault(); openFiles('open'); return; }
+    if (k === 'i' && !e.shiftKey){ e.preventDefault(); openFiles('import'); return; }
     if (k === 'n' && !e.shiftKey){ e.preventDefault(); newDrawing(); return; }
     if (inField) return;
     if (k === 'a' && !e.shiftKey){ e.preventDefault(); selectAll(); }
@@ -11005,6 +11034,7 @@ function draw(){
       if (!tp.tabsOn || !tp.tabPts) return;
       ctx.save();
       tp.ents.forEach(function (id) {
+        if (!entById(id)) return;                          // its shape was deleted: nothing to hold
         (tp.tabPts[id] || []).forEach(function (pt) {
           var c = w2s(pt[0], pt[1]), r = Math.max(4, (tp.tabLen || 4) / 2 * VIEW.scale);
           ctx.beginPath();
@@ -11071,7 +11101,11 @@ function draw(){
         if (!tp.moves || !tp.moves.length || !tpDrawn(tp)) return;
         drawMoves(tp.moves, tp.id === CUTSEL ? THEME.accent : cutCol, 'rgba(120,130,140,.35)');
       });
-      if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL){ drawTabs(tp, false); drawStarts(tp, false); } });
+      // Tabs on every toolpath drawn, so one shown again has its tabs. (They used to be drawn only on the one
+      // picked, and pressing an eye lets go of the pick: shown again, it had none until it was updated.)
+      // Only where the toolpath's path is drawn: none without one (its shapes deleted, say).
+      DOC.toolpaths.forEach(function (tp) { if (tp.moves && tp.moves.length && tpDrawn(tp)) drawTabs(tp, false); });
+      if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL) drawStarts(tp, false); });
     }
   })();
 
@@ -11600,6 +11634,9 @@ function primsOf(e){
     for (var i=0;i<n-1;i++) out.push({c:0, x1:tp[i][0],y1:tp[i][1],x2:tp[i+1][0],y2:tp[i+1][1]});
     if (e.closed && n>1) out.push({c:0, x1:tp[n-1][0],y1:tp[n-1][1],x2:tp[0][0],y2:tp[0][1]});
   }
+  // a group's shapes (an imported DXF or SVG, a traced logo, a Carbide Create shape) are crossings like any other:
+  // without them, nothing could be trimmed or extended where one of them crossed
+  else if (e.t === 'group') (e.ents || []).forEach(function(c){ primsOf(c).forEach(function(pr){ out.push(pr); }); });
   else entityEdges(e).forEach(function(ed){ out.push({c:0, x1:ed[0],y1:ed[1],x2:ed[2],y2:ed[3]}); });
   return out;
 }
@@ -11773,18 +11810,25 @@ function doTrim(w){
   if (e.t === 'poly' || e.t === 'path'){
     return trimPathEntity(idx, w);
   }
+  // A rectangle trims as the closed outline it is (it used to be left out: nothing happened, and Trim said
+  // nothing crossed it). What's left is an open outline, as with any closed shape.
+  if (e.t === 'rect'){
+    return trimPathEntity(idx, w, {pts: [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]], closed: true});
+  }
   return false;
 }
 // Trim a poly/path where OTHER entities cross it: split into per-span parametric position,
 // find crossings, and remove the clicked piece between the two bounding crossings. A closed
 // path opens at the cut; an already-open path yields the two remaining pieces.
-function trimPathEntity(idx, w){
+// `as` (optional) is the shape's outline when it isn't a poly or path itself: {pts, closed} (a rectangle).
+function trimPathEntity(idx, w, as){
   var e = DOC.ents[idx];
   // work on a uniform vertex list with bulges (poly -> bulge 0)
-  var V = (e.t === 'poly') ? e.pts.map(function(q){ return [q[0], q[1], 0]; })
+  var V = as ? as.pts.map(function(q){ return [q[0], q[1], 0]; })
+       : (e.t === 'poly') ? e.pts.map(function(q){ return [q[0], q[1], 0]; })
                            : e.pts.map(function(q){ return [q[0], q[1], q[2]||0]; });
   var n = V.length;
-  var closed = !!e.closed;
+  var closed = as ? !!as.closed : !!e.closed;
   var nSpan = closed ? n : n-1;
   if (nSpan < 1) return false;
   // tessellate each span, tracking global arc-length param s and mapping s->point
@@ -11827,9 +11871,11 @@ function trimPathEntity(idx, w){
     });
   }
   if (cross.length < 1) return false;   // nothing crosses it -> not trimmable (do NOT delete)
+  // a closed outline needs two crossings to cut a piece out of; one (a shape just touching it) leaves nothing to remove
   cross.sort(function(a,b){ return a.pos-b.pos; });
   // dedupe near-identical crossings
   cross = cross.filter(function(c,i){ return i===0 || c.pos - cross[i-1].pos > 1e-3; });
+  if (closed && cross.length < 2) return false;
   // clicked position along the flat polyline
   var cw = null, cbest = 1e9;
   for (var fi2 = 0; fi2 < FN; fi2++){
@@ -11866,9 +11912,11 @@ function trimPathEntity(idx, w){
   var newEnts = [];
   if (closed){
     if (lo === null || hi === null){
-      // click before first / after last crossing: single wrap gap between last and first crossing
+      // the click is in the stretch that runs round past the outline's start, from the last crossing to the
+      // first: that's the piece that goes, and what's kept runs from the first crossing to the last. (This
+      // used to keep the clicked stretch and throw the rest away.)
       var A = cross[cross.length-1], B = cross[0];
-      var keep = slice(A.pos, B.pos + FN); // wrap
+      var keep = slice(B.pos, A.pos);
       if (keep.length >= 2) newEnts.push({t:'poly', pts:keep.map(function(q){return[q[0],q[1]];}), closed:false});
     } else {
       // keep the complement of lo..hi : from hi around to lo
@@ -14685,10 +14733,11 @@ var ICON = {
  undo:'<svg viewBox="0 0 18 18"><path d="M6.5 4 L3 7.5 L6.5 11"/><path d="M3 7.5 H11 a4 4 0 0 1 0 8 H8"/></svg>',
  redo:'<svg viewBox="0 0 18 18"><path d="M11.5 4 L15 7.5 L11.5 11"/><path d="M15 7.5 H7 a4 4 0 0 0 0 8 H10"/></svg>',
  fit:'<svg viewBox="0 0 18 18"><path d="M3 6.5 V3 h3.5 M11.5 3 H15 v3.5 M15 11.5 V15 h-3.5 M6.5 15 H3 v-3.5"/></svg>',
- neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/></svg>',
- save:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
- saveas:'<svg viewBox="0 0 18 18"><path d="M7 2.5 V10 M4 7.5 L7 10.5 L10 7.5"/><path d="M2.5 12.5 V15 h7.5"/><path d="M11.5 15.5 l0.4 -2 l4 -4 l1.6 1.6 l-4 4 z"/></svg>',
- load:'<svg viewBox="0 0 18 18"><path d="M9 11.5 V3 M5.5 6 L9 2.5 L12.5 6"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',
+ neu:'<svg viewBox="0 0 18 18"><path d="M4.5 2.5 h6 l4 4 V15.5 h-10 Z"/><path d="M10.5 2.5 V6.5 h4"/><path d="M9.5 9 v4.5 M7.25 11.25 h4.5"/></svg>',   // a new page
+ save:'<svg viewBox="0 0 18 18"><path d="M3 3 h9.5 l2.5 2.5 V15 H3 Z"/><path d="M6 3 v3.5 h5.5 V3"/><path d="M5.5 15 v-4.5 h7 V15"/></svg>',   // a floppy disk
+ import:'<svg viewBox="0 0 18 18"><path d="M9 2.5 V11 M5.5 8 L9 11.5 L12.5 8"/><path d="M3 12.5 V15 h12 v-2.5"/></svg>',   // into the drawing
+ saveas:'<svg viewBox="0 0 18 18"><path d="M9 13 H2.5 V2.5 h8.5 l2 2 V8"/><path d="M5 2.5 v3 h5 v-3"/><path d="M10.6 16 l0.4 -2 l4 -4 l1.6 1.6 l-4 4 z"/></svg>',   // a floppy disk and a pencil
+ load:'<svg viewBox="0 0 18 18"><path d="M2.5 14.5 V4 h4.5 l1.5 1.5 h6 V8"/><path d="M2.5 14.5 l2.3 -6.5 h11.7 l-2.3 6.5 Z"/></svg>',   // an open folder
  recover:'<svg viewBox="0 0 18 18"><path d="M4 9 A5.5 5.5 0 1 0 5.6 5.1"/><path d="M5.6 2.2 V5.1 H2.7"/><path d="M9 6.2 V9.2 L11 10.6"/></svg>'
 };
 var PANEL_BTNS = {
@@ -14736,7 +14785,7 @@ var PANEL_BTNS = {
  rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 select first; click the rotation center, then type the angle in degrees (+ CCW)'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 select first; type N@dx,dy for a linear array, or click a center then type N<step\u00b0 for a circular one'},
  fillet:{tool:'fillet', icon:'fillet', title:'Fillet (F) \u2014 type a radius, then click a corner: a poly/rect corner, or where two lines meet'},
- trim:  {tool:'trim', icon:'trim', title:'Trim (T) \u2014 click the part of a line, arc, or circle to remove, bounded by crossings'},
+ trim:  {tool:'trim', icon:'trim', title:'Trim (T) \u2014 click the part of a shape to remove, up to where other shapes cross it'},
  extend:{tool:'extend', icon:'extend', title:'Extend (E) \u2014 click near the end of a line or arc to run it out to the next crossing'},
  guide: {tool:'guide', icon:'guide', title:'Offset guide (G) \u2014 click an edge, type the offset. Guides and their intersections snap.'},
  clearGuides:{id:'clearGuides', icon:'gclr', title:'Remove all guides'},
@@ -14747,18 +14796,18 @@ var PANEL_BTNS = {
  newBtn:{id:'newBtn', icon:'neu', title:'New (Ctrl+N) — clear all vectors and guides (undoable with Ctrl+Z)'},
  saveBtn:{id:'saveBtn', icon:'save', title:'Save (Ctrl+S) — the drawing to a file (.454.json), keep it with your G-code or as a backup. Once saved, Save saves to the same file; Ctrl+Shift+S saves a copy under another name.'},
  saveAsBtn:{id:'saveAsBtn', icon:'saveas', title:'Save as (Ctrl+Shift+S) — save the drawing to a new file, or a copy under another name. Save then goes to the new file.'},
- loadBtn:{id:'loadBtn', icon:'load', title:'Open (Ctrl+O) — a saved drawing, a VCarve project, DXF or SVG files, or an image to trace'},
+ loadBtn:{id:'loadBtn', icon:'load', title:'Open (Ctrl+O) — a saved drawing, or a VCarve or Carbide Create project'},
+ importBtn:{id:'importBtn', icon:'import', title:'Import (Ctrl+I) — DXF or SVG vectors into this drawing, or a picture to trace'},
  recoverBtn:{id:'recoverBtn', icon:'recover', title:'Recover last drawing'},
  svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
 var PANEL_GROUPS = [
- {id:'file',   label:'File',           btns:['newBtn','saveBtn','saveAsBtn','loadBtn','recoverBtn','dxfBtn','svgBtn']},
+ {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
- {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']},
- {id:'view',   label:'View & History', btns:['fitBtn2','undoBtn','redoBtn','measureT']}
+ {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
  /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
 ];
 // Display colours. The defaults suit the dark theme; on the light one, a colour still at its default is drawn
@@ -14796,6 +14845,8 @@ function uiCfgLoad(){
       if (c.nestRot) UICFG.nestRot = c.nestRot;
       if (c.stockUnits === 'in' || c.stockUnits === 'mm') UICFG.stockUnits = c.stockUnits;
       if (typeof c.tpPanel === 'boolean') UICFG.tpPanel = c.tpPanel;
+      if (typeof c.sidePanel === 'boolean') UICFG.sidePanel = c.sidePanel;
+      if (c.sideTab === 'layers' || c.sideTab === 'tools') UICFG.sideTab = c.sideTab;   // was saved, never read back
       if (c.libMachine) UICFG.libMachine = c.libMachine;
       if (typeof c.libMaterial === 'string') UICFG.libMaterial = c.libMaterial;
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
@@ -14814,9 +14865,29 @@ function orderedGroups(){
   PANEL_GROUPS.forEach(function(g){ if (byId[g.id]) out.push(g); }); // new groups append
   return out;
 }
+// The left panel folded down to its Tools and Layers tabs, for more drawing room (as the Toolpaths panel folds to
+// a strip on the right). Remembered between visits. Picking a tab opens it again.
+function sidePanelSet(open){
+  UICFG.sidePanel = !!open;
+  uiCfgSave();
+  sidePanelShow();
+}
+function sidePanelShow(){
+  var host = document.getElementById('toolPanel'), b = document.getElementById('sideFold');
+  if (!host) return;
+  var open = UICFG.sidePanel !== false;
+  host.classList.toggle('folded', !open);              // the canvas's size observer redraws it to fit
+  if (b){
+    b.textContent = open ? '«' : '»';
+    b.title = open ? 'Fold this panel away, for more drawing room' : 'Open this panel';
+    b.setAttribute('aria-label', open ? 'Fold the side panel away' : 'Open the side panel');
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+}
 // Which side-panel tab is showing: the drawing tools, or the layers. Remembered between visits.
 function sideTab(name){
   UICFG.sideTab = name === 'layers' ? 'layers' : 'tools';
+  if (UICFG.sidePanel === false){ UICFG.sidePanel = true; sidePanelShow(); }   // a tab picked while folded opens it
   uiCfgSave();
   var tools = document.getElementById('paneTools'), layers = document.getElementById('paneLayers');
   if (tools) tools.hidden = UICFG.sideTab !== 'tools';
@@ -14856,6 +14927,7 @@ function buildToolPanel(){
     '<div class="sideTabs" role="tablist" aria-orientation="vertical" aria-label="Side panel">' +
       '<button class="sideTab" role="tab" id="sideTabTools" data-tab="tools" aria-controls="paneTools" aria-selected="' + (tab === 'tools') + '" tabindex="' + (tab === 'tools' ? 0 : -1) + '">Tools</button>' +
       '<button class="sideTab" role="tab" id="sideTabLayers" data-tab="layers" aria-controls="paneLayers" aria-selected="' + (tab === 'layers') + '" tabindex="' + (tab === 'layers' ? 0 : -1) + '">Layers</button>' +
+      '<button id="sideFold" class="sideFold" aria-controls="paneTools paneLayers"></button>' +
     '</div>' +
     '<div class="sidePane" id="paneTools" role="tabpanel" aria-labelledby="sideTabTools"' + (tab === 'tools' ? '' : ' hidden') + '>' + html + '</div>' +
     '<div class="sidePane" id="paneLayers" role="tabpanel" aria-labelledby="sideTabLayers"' + (tab === 'layers' ? '' : ' hidden') + '>' +
@@ -14864,6 +14936,8 @@ function buildToolPanel(){
       '<button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>' +
     '</div>';
   if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each group's name: this panel is redrawn when groups are moved
+  sidePanelShow();
+  document.getElementById('sideFold').addEventListener('click', function(){ sidePanelSet(UICFG.sidePanel === false); });
   host.querySelectorAll('.sideTab').forEach(function(t){
     t.addEventListener('click', function(){ sideTab(t.dataset.tab); });
     t.addEventListener('keydown', function(e){                  // arrow keys move between tabs
@@ -15064,7 +15138,8 @@ function wirePanel(){
   document.getElementById('saveAsBtn').addEventListener('click', function(){ saveDrawing(true); });
   document.getElementById('recoverBtn').addEventListener('click', recoverDrawing);
   syncRecoverBtn();
-  document.getElementById('loadBtn').addEventListener('click', function(){ openFiles(); });   // unsaved.js
+  document.getElementById('loadBtn').addEventListener('click', function(){ openFiles('open'); });     // unsaved.js
+  document.getElementById('importBtn').addEventListener('click', function(){ openFiles('import'); });
 }
 
 function wire(){
