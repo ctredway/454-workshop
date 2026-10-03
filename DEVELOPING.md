@@ -99,9 +99,9 @@ lists every tag, released or not. A tag made before its release is published loo
 release with nothing in it, and they stop there, even with an older complete release published. (That's
 what the workflow did up to 0.6.2-beta.11: beta.8 saw beta.11's tag, and never beta.9.)
 
-**Before the first public release:** installed copies check for updates every 30 minutes, for testing
-betas. Change it back to every 6 hours: `CHECK_EVERY` in `apps/desktop/src/updater.js` (it's marked TODO),
-and the sentence about it on the docs' "The desktop app" page.
+**How often installed copies check for updates:** every 6 hours while open (`CHECK_EVERY` in
+`apps/desktop/src/updater.js`; its test and the docs' "The desktop app" page say so too). It was every 30
+minutes while betas were tested by one person.
 
 **Testing an update before a public release:** use a version with a suffix, such as `0.6.3-beta.1`. The workflow marks it a pre-release, which only copies on the **Beta** channel
 (454 Workshop → Updates) are offered. Drafts are never offered.

@@ -16,10 +16,9 @@
 'use strict';
 
 const HOUR = 3600e3, MINUTE = 60e3;
-// How often an installed copy checks for updates while it's open.
-// TODO: change back to 6 * HOUR before the first public release. It's every 30 minutes for now, while beta
-// releases come often and need testing. (The docs' "The desktop app" page says so too: change it there.)
-const CHECK_EVERY = 30 * MINUTE;
+// How often an installed copy checks for updates while it's open. (It was every 30 minutes while only Clint
+// was testing betas. The docs' "The desktop app" page and test/updater.test.mjs say 6 hours too.)
+const CHECK_EVERY = 6 * HOUR;
 
 // What a check with nothing to install says: also when the newest release can't be offered (published without
 // its update files, or none published for this channel). To the person checking, that's no new updates.

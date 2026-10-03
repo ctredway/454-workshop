@@ -57,14 +57,13 @@ describe('which copies can update themselves', () => {
 });
 
 describe('checking and offering', () => {
-  it('checks 30 seconds after starting, then every 30 minutes', async () => {
-    // (30 minutes while betas come often; change to 6 hours with CHECK_EVERY in src/updater.js, and here)
+  it('checks 30 seconds after starting, then every 6 hours', async () => {
     const r = rig();
     r.u.start();
     expect(r.pending.map((t) => t.ms)).toEqual([30e3]);
     await r.runTimers();
     expect(r.au.calls).toEqual(['check']);
-    expect(r.pending.map((t) => t.ms)).toEqual([30 * 60e3]);
+    expect(r.pending.map((t) => t.ms)).toEqual([6 * 3600e3]);
   });
   it('an update found in the background shows in the header, asks nothing, and downloads only when clicked', async () => {
     const r = rig();

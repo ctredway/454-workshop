@@ -27,6 +27,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.38 — checks for updates every 6 hours
+- **The app checks for updates every 6 hours while it's open,** not every 30 minutes. The short gap was for
+  testing betas with one person; with more people trying it, that's more asking of GitHub than is needed. It
+  still checks 30 seconds after starting, and **Help → Check for updates…** checks straight away.
+- **Tested** (the updater's test now expects 6 hours; with the old 30 minutes put back, it fails).
+
 ### 0.6.2-beta.37 — fixes from testing
 - Includes Design 0.119.1: New starts with one sheet.
 - Includes Design 0.120.0: Open and Import are separate, the File buttons have usual icons, and View & History's

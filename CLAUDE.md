@@ -143,9 +143,6 @@ without a published release looks to them like a newest release with nothing in 
 
 ## Open items
 
-- **Before the first public release:** change the update check back to every 6 hours: `CHECK_EVERY` in
-  `apps/desktop/src/updater.js` (marked TODO), its test in `apps/desktop/test/updater.test.mjs`, and the
-  sentence on the docs' "The desktop app" page.
 - **Offered, not done:** publishing beta releases automatically instead of as drafts.
 - **Next restructuring steps:** tests for Control's status parsing, time estimates and recovery; for Design,
   nesting and the geometry operations; the small quirks each README lists from the byte-identical splits.
