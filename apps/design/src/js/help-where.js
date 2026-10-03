@@ -53,7 +53,7 @@ var HELP_ICONS = [
   ['#paramTitle', 'design-tools.html#parameters', 'Named sizes, such as the material\u2019s thickness, that dimensions and toolpath depths can use. Change one and everything that uses it follows.'],
   ['#nestTitle', 'design-tools.html#nest-parts', 'Arranges the selected parts on the material to waste as little as possible, keeping a gap between them for the cutter.'],
   ['#textTitle', 'design-tools.html#text', 'Adds lettering to the drawing. It stays editable as text, and a toolpath can cut it like any other shape.'],
-  ['#woodTitle', 'cam-reference.html#preview-in-wood', 'The material as it will look after these toolpaths, cut with each bit\u2019s real shape. Tabs show in amber.'],
+  ['#woodTitle', 'cam-reference.html#preview-in-wood', 'The material as it will look after these toolpaths, cut with each bit\u2019s real shape, tabs in amber. Play shows it being cut, in order.'],
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
   ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],

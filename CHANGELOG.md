@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.39 — watch the job cut
+- Includes Design 0.122.0: Preview in wood plays the job, with Play, Pause and a slider.
+
 ### 0.6.2-beta.38 — checks for updates every 6 hours
 - **The app checks for updates every 6 hours while it's open,** not every 30 minutes. The short gap was for
   testing betas with one person; with more people trying it, that's more asking of GitHub than is needed. It
@@ -948,6 +951,31 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.122.0 — Preview in wood: watch the job cut
+- **Play, Pause and a slider under Preview in wood.** It still opens on the finished piece. **Play** starts from
+  uncut wood and cuts the toolpaths in order, seen from above, with the cutter shown as a ring where it is: blue
+  while it's in the wood, white while it's above it. Drag the slider to any moment of the job, back or forward.
+  **3D view** goes back to the finished piece in 3D.
+- **What it's for:** seeing the order things are cut in and where the cutter travels between cuts, which the
+  finished picture can't show: a part cut free before its pockets, a move through the wood, a profile started
+  in the wrong place.
+- **The clock is the job sheet's time** (feeds as set, rapid moves at 5000 mm/min, no speeding up and slowing
+  down), so a real job runs somewhat longer. **Speed** starts at whatever plays the whole job in about 45
+  seconds or less, from real time to 1000×.
+- **It's the same simulation as the finished preview,** cut a step at a time: `woodSim` was split into a job and
+  its steps (`woodJob`, `woodJobTo`, `woodStamp`), and the finished preview is those steps run to the end. The
+  split was proven against the old code on 400 made-up jobs (23.7 million cells of wood and every pixel of the
+  picture, the same bit for bit; a deliberate change to either was noticed).
+- Going back can't un-cut wood, so four copies of the wood are kept as play passes each fifth of the job, and
+  going back starts from the nearest. On a 600 × 400 mm board (2.5 million cells) a frame took 14 ms on
+  average and going back 150 ms.
+- Not yet: playing in the 3D view, saying which toolpath is cutting, and pausing where a rapid cuts wood.
+- Asked for by Clint.
+- **Tested** (13 tests in a new `wood-play.test.mjs`: played to the end in uneven frames, or dragged back and
+  forth first, it is the finished preview's wood exactly; broken on purpose 22 ways, 17 caught, 2 more after
+  adding tests, and 3 that change nothing but speed or are the same code written differently), and looked at
+  in the app.
 
 ### 0.121.0 — the left panel folds away
 - **The left panel folds away, for more drawing room,** as the Toolpaths panel does on the right. **«** at the

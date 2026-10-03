@@ -121,9 +121,15 @@
     <div id="woodPanel" role="dialog" aria-labelledby="woodTitle">
       <div class="modalHead"><h3 id="woodTitle">Preview in wood</h3><button class="modalX" id="woodX" title="Close (Esc)" aria-label="Close">&#10005;</button></div>
       <div id="woodView"><canvas id="woodCv" aria-label="The material after the toolpaths, shaded"></canvas><div id="wood3d" hidden aria-label="The material after the toolpaths, in 3D: drag to turn it"></div></div>
+      <div class="srow" id="woodPlayRow" hidden>
+        <button id="woodPlay" aria-pressed="false">▶ Play</button>
+        <input type="range" id="woodSeek" min="0" max="1000" value="1000" aria-label="Where in the job: drag to any moment">
+        <span class="snote" id="woodTime"></span>
+        <label class="snote" for="woodSpeed">Speed</label><select id="woodSpeed"></select>
+      </div>
       <p class="snote" id="woodWarn" hidden></p>
       <p class="snote" id="woodNote"></p>
-      <div class="srow tbtns"><span id="woodViews" hidden><button data-v="angled">Angled</button><button data-v="top">Top</button><button data-v="front">Front</button></span>
+      <div class="srow tbtns"><span id="woodViews" hidden><button data-v="angled">Angled</button><button data-v="top">Top</button><button data-v="front">Front</button></span><button id="woodTo3d" hidden title="The finished cut, in 3D">3D view</button>
         <span class="snote" id="woodHow"></span><span class="grow"></span><button id="woodClose" class="primary">Close</button></div>
     </div>
   </div>
@@ -619,6 +625,7 @@
 @@include js/preview-in-control.js
 @@include js/wood-preview.js
 @@include js/wood-3d.js
+@@include js/wood-play.js
 @@include js/templates.js
 @@include js/sheets.js
 @@include js/toolpath-panel.js

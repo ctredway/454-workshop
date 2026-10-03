@@ -208,6 +208,12 @@
   #woodViews{display:flex;gap:6px}
   #woodViews[hidden],#wood3d[hidden],#woodCv[hidden]{display:none}
   #woodHow{margin:0}
+  #woodPlayRow[hidden]{display:none}
+  #woodPlayRow{margin-top:8px}
+  #woodPlay{min-width:86px}
+  #woodSeek{flex:1;min-width:120px;accent-color:var(--amber)}
+  #woodTime{margin:0;font-family:var(--mono);white-space:nowrap}
+  #woodPlayRow label{margin:0 0 0 6px}
   #wood3d{width:100%;height:calc(100vh - 260px);min-height:320px;border-radius:4px;overflow:hidden;cursor:grab}
   #wood3d:active{cursor:grabbing}
   #dlgModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:230}
@@ -681,9 +687,15 @@
     <div id="woodPanel" role="dialog" aria-labelledby="woodTitle">
       <div class="modalHead"><h3 id="woodTitle">Preview in wood</h3><button class="modalX" id="woodX" title="Close (Esc)" aria-label="Close">&#10005;</button></div>
       <div id="woodView"><canvas id="woodCv" aria-label="The material after the toolpaths, shaded"></canvas><div id="wood3d" hidden aria-label="The material after the toolpaths, in 3D: drag to turn it"></div></div>
+      <div class="srow" id="woodPlayRow" hidden>
+        <button id="woodPlay" aria-pressed="false">▶ Play</button>
+        <input type="range" id="woodSeek" min="0" max="1000" value="1000" aria-label="Where in the job: drag to any moment">
+        <span class="snote" id="woodTime"></span>
+        <label class="snote" for="woodSpeed">Speed</label><select id="woodSpeed"></select>
+      </div>
       <p class="snote" id="woodWarn" hidden></p>
       <p class="snote" id="woodNote"></p>
-      <div class="srow tbtns"><span id="woodViews" hidden><button data-v="angled">Angled</button><button data-v="top">Top</button><button data-v="front">Front</button></span>
+      <div class="srow tbtns"><span id="woodViews" hidden><button data-v="angled">Angled</button><button data-v="top">Top</button><button data-v="front">Front</button></span><button id="woodTo3d" hidden title="The finished cut, in 3D">3D view</button>
         <span class="snote" id="woodHow"></span><span class="grow"></span><button id="woodClose" class="primary">Close</button></div>
     </div>
   </div>
@@ -1150,7 +1162,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.121.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.122.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -5613,7 +5625,7 @@ var HELP_ICONS = [
   ['#paramTitle', 'design-tools.html#parameters', 'Named sizes, such as the material\u2019s thickness, that dimensions and toolpath depths can use. Change one and everything that uses it follows.'],
   ['#nestTitle', 'design-tools.html#nest-parts', 'Arranges the selected parts on the material to waste as little as possible, keeping a gap between them for the cutter.'],
   ['#textTitle', 'design-tools.html#text', 'Adds lettering to the drawing. It stays editable as text, and a toolpath can cut it like any other shape.'],
-  ['#woodTitle', 'cam-reference.html#preview-in-wood', 'The material as it will look after these toolpaths, cut with each bit\u2019s real shape. Tabs show in amber.'],
+  ['#woodTitle', 'cam-reference.html#preview-in-wood', 'The material as it will look after these toolpaths, cut with each bit\u2019s real shape, tabs in amber. Play shows it being cut, in order.'],
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
   ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],
@@ -7359,78 +7371,122 @@ function woodEdge(tool, d){
   if (tool.kind === 'ball') return tool.r - Math.sqrt(Math.max(0, tool.r * tool.r - d * d));
   return d <= tool.tip / 2 ? 0 : (d - tool.tip / 2) / Math.tan(tool.half);
 }
-// The simulation. parts: [{moves, tool}] in cutting order; box: {x0, y0, x1, y1, top, bottom} (the material);
-// cell: the grid's spacing in mm. Returns {nx, ny, cell, x0, y0, top, bottom, z (Float32Array, row 0 at y0),
-// rapidsIn (G0 moves that cut more than 0.05 mm of wood), deepest}.
-function woodSim(parts, box, cell){
+// One straight move of the bit cut into a job's grid of heights; returns the most it took off anywhere. The cells
+// it changed are added to job.dirty ({i0, j0, i1, j1}), for whoever is drawing the job as it's cut.
+function woodStamp(job, tool, ax, ay, az, bx, by, bz){
+  if (Math.min(az, bz) >= job.top) return 0;
+  var nx = job.nx, ny = job.ny, z = job.z, cell = job.cell, most = 0;
+  var reach = woodReach(tool, job.top - Math.min(az, bz));
+  var i0 = Math.max(0, Math.floor((Math.min(ax, bx) - reach - job.x0) / cell)), i1 = Math.min(nx - 1, Math.floor((Math.max(ax, bx) + reach - job.x0) / cell));
+  var j0 = Math.max(0, Math.floor((Math.min(ay, by) - reach - job.y0) / cell)), j1 = Math.min(ny - 1, Math.floor((Math.max(ay, by) + reach - job.y0) / cell));
+  var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+  for (var j = j0; j <= j1; j++){
+    var cy = job.y0 + (j + 0.5) * cell, row = j * nx;
+    for (var i = i0; i <= i1; i++){
+      var cx = job.x0 + (i + 0.5) * cell, h;
+      if (tool.kind === 'flat'){
+        // a flat bit cuts to its tip wherever the cell is under it: the lowest tip height while within reach
+        var fx = ax - cx, fy = ay - cy, qa = L2, qb = 2 * (fx * dx + fy * dy), qc = fx * fx + fy * fy - tool.r * tool.r;
+        if (qa < 1e-18){ if (qc > 0) continue; h = Math.min(az, bz); }
+        else {
+          var disc = qb * qb - 4 * qa * qc;
+          if (disc < 0) continue;
+          var sq = Math.sqrt(disc), t1 = (-qb - sq) / (2 * qa), t2 = (-qb + sq) / (2 * qa);
+          if (t2 < 0 || t1 > 1) continue;
+          t1 = Math.max(0, t1); t2 = Math.min(1, t2);
+          h = Math.min(az + (bz - az) * t1, az + (bz - az) * t2);
+        }
+      } else {
+        var t = L2 > 1e-18 ? Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / L2)) : 0;
+        var px = ax + dx * t, py = ay + dy * t, e = woodEdge(tool, Math.hypot(cx - px, cy - py));
+        if (e === Infinity) continue;
+        h = az + (bz - az) * t + e;
+      }
+      if (h < z[row + i]){ if (z[row + i] - h > most) most = z[row + i] - h; z[row + i] = h; }
+    }
+  }
+  if (most > 0){
+    var d = job.dirty;
+    if (!d) job.dirty = {i0: i0, j0: j0, i1: i1, j1: j1};
+    else { if (i0 < d.i0) d.i0 = i0; if (j0 < d.j0) d.j0 = j0; if (i1 > d.i1) d.i1 = i1; if (j1 > d.j1) d.j1 = j1; }
+  }
+  return most;
+}
+// A job to cut: the material as a grid of heights, uncut, and every move that can cut it, in order.
+// parts: [{moves, tool, feed}] in cutting order; box: {x0, y0, x1, y1, top, bottom} (the material); cell: the
+// grid's spacing in mm. A move is one whose two ends are both known (as the job sheet's time counts them). Each
+// is cut in short steps, so each step's box of cells stays small.
+//   mv     nine numbers a move: its part, 1 if it's a rapid (G0), where it starts (x, y, z), where it ends, its steps
+//   ends   the time each move ends at, in seconds from the start (feeds as programmed, rapids at JS_RAPID)
+//   mi, k  how far it's been cut: every move before mi, and k steps of move mi
+var WOOD_MV = 9;
+function woodJob(parts, box, cell){
   var nx = Math.max(1, Math.ceil((box.x1 - box.x0) / cell)), ny = Math.max(1, Math.ceil((box.y1 - box.y0) / cell));
   var z = new Float32Array(nx * ny); z.fill(box.top);
-  var rapidsIn = 0;
-  // cut one straight move into the grid; returns the most it took off anywhere
-  function stamp(tool, ax, ay, az, bx, by, bz){
-    if (Math.min(az, bz) >= box.top) return 0;
-    var most = 0;
-    var reach = woodReach(tool, box.top - Math.min(az, bz));
-    var i0 = Math.max(0, Math.floor((Math.min(ax, bx) - reach - box.x0) / cell)), i1 = Math.min(nx - 1, Math.floor((Math.max(ax, bx) + reach - box.x0) / cell));
-    var j0 = Math.max(0, Math.floor((Math.min(ay, by) - reach - box.y0) / cell)), j1 = Math.min(ny - 1, Math.floor((Math.max(ay, by) + reach - box.y0) / cell));
-    var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
-    for (var j = j0; j <= j1; j++){
-      var cy = box.y0 + (j + 0.5) * cell, row = j * nx;
-      for (var i = i0; i <= i1; i++){
-        var cx = box.x0 + (i + 0.5) * cell, h;
-        if (tool.kind === 'flat'){
-          // a flat bit cuts to its tip wherever the cell is under it: the lowest tip height while within reach
-          var fx = ax - cx, fy = ay - cy, qa = L2, qb = 2 * (fx * dx + fy * dy), qc = fx * fx + fy * fy - tool.r * tool.r;
-          if (qa < 1e-18){ if (qc > 0) continue; h = Math.min(az, bz); }
-          else {
-            var disc = qb * qb - 4 * qa * qc;
-            if (disc < 0) continue;
-            var sq = Math.sqrt(disc), t1 = (-qb - sq) / (2 * qa), t2 = (-qb + sq) / (2 * qa);
-            if (t2 < 0 || t1 > 1) continue;
-            t1 = Math.max(0, t1); t2 = Math.min(1, t2);
-            h = Math.min(az + (bz - az) * t1, az + (bz - az) * t2);
-          }
-        } else {
-          var t = L2 > 1e-18 ? Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / L2)) : 0;
-          var px = ax + dx * t, py = ay + dy * t, e = woodEdge(tool, Math.hypot(cx - px, cy - py));
-          if (e === Infinity) continue;
-          h = az + (bz - az) * t + e;
-        }
-        if (h < z[row + i]){ if (z[row + i] - h > most) most = z[row + i] - h; z[row + i] = h; }
-      }
-    }
-    return most;
-  }
-  parts.forEach(function (part){
-    var x = null, y = null, zz = null;
+  var mv = [], ends = [], sec = 0;
+  parts.forEach(function (part, pi){
+    var x = null, y = null, zz = null, f = part.feed || 1000;
     (part.moves || []).forEach(function (m){
       var nxp = m.x !== undefined ? m.x : x, nyp = m.y !== undefined ? m.y : y, nzp = m.z !== undefined ? m.z : zz;
+      if (m.f) f = m.f;
       if (x !== null && y !== null && zz !== null && nxp !== null && nyp !== null && nzp !== null){
         // long moves in short steps, so each one's box of cells stays small
         var len = Math.hypot(nxp - x, nyp - y), n = Math.max(1, Math.ceil(len / Math.max(part.tool.r * 2, cell * 8)));
-        var took = 0;
-        for (var k = 0; k < n; k++){
-          var a = k / n, b = (k + 1) / n;
-          took = Math.max(took, stamp(part.tool, x + (nxp - x) * a, y + (nyp - y) * a, zz + (nzp - zz) * a, x + (nxp - x) * b, y + (nyp - y) * b, zz + (nzp - zz) * b));
-        }
-        if (m.g === 0 && took > 0.05) rapidsIn++;                        // a rapid move that cut wood
+        mv.push(pi, m.g === 0 ? 1 : 0, x, y, zz, nxp, nyp, nzp, n);
+        var far = Math.sqrt((nxp - x) * (nxp - x) + (nyp - y) * (nyp - y) + (nzp - zz) * (nzp - zz));
+        sec += far / (m.g === 0 ? JS_RAPID : Math.max(1, f)) * 60;
+        ends.push(sec);
       }
       x = nxp; y = nyp; zz = nzp;
     });
   });
-  var deepest = box.top;
+  return {nx: nx, ny: ny, cell: cell, x0: box.x0, y0: box.y0, top: box.top, bottom: box.bottom, z: z, parts: parts,
+          mv: new Float64Array(mv), ends: new Float64Array(ends), count: ends.length, total: sec,
+          mi: 0, k: 0, took: 0, rapidsIn: 0, rapidAt: [], dirty: null};
+}
+// Cut a job on, to: every move before mi, and k steps of move mi. Forwards only (wood can't be put back).
+// A rapid (G0) that takes more than 0.05 mm of wood is counted when its move is finished, and its number kept.
+function woodJobTo(job, mi, k){
+  var mv = job.mv;
+  if (mi >= job.count){ mi = job.count; k = 0; }
+  while (job.mi < mi || (job.mi === mi && job.k < k)){
+    var o = job.mi * WOOD_MV, tool = job.parts[mv[o]].tool, n = mv[o + 8], upTo = job.mi < mi ? n : Math.min(k, n);
+    var x = mv[o + 2], y = mv[o + 3], zz = mv[o + 4], nxp = mv[o + 5], nyp = mv[o + 6], nzp = mv[o + 7];
+    for (var q = job.k; q < upTo; q++){
+      var a = q / n, b = (q + 1) / n;
+      job.took = Math.max(job.took, woodStamp(job, tool, x + (nxp - x) * a, y + (nyp - y) * a, zz + (nzp - zz) * a, x + (nxp - x) * b, y + (nyp - y) * b, zz + (nzp - zz) * b));
+    }
+    job.k = upTo;
+    if (job.k < n) break;
+    if (mv[o + 1] === 1 && job.took > 0.05){ job.rapidsIn++; job.rapidAt.push(job.mi); }   // a rapid move that cut wood
+    job.mi++; job.k = 0; job.took = 0;
+  }
+}
+// The simulation: the whole job cut. Returns {nx, ny, cell, x0, y0, top, bottom, z (Float32Array, row 0 at y0),
+// rapidsIn (G0 moves that cut more than 0.05 mm of wood), deepest, total (the job's time in seconds, as the job
+// sheet works it out)}.
+function woodSim(parts, box, cell){
+  var job = woodJob(parts, box, cell);
+  woodJobTo(job, job.count, 0);
+  var z = job.z, deepest = box.top;
   for (var q = 0; q < z.length; q++) if (z[q] < deepest) deepest = z[q];
-  return {nx:nx, ny:ny, cell:cell, x0:box.x0, y0:box.y0, top:box.top, bottom:box.bottom, z:z, rapidsIn:rapidsIn, deepest:deepest};
+  return {nx: job.nx, ny: job.ny, cell: cell, x0: box.x0, y0: box.y0, top: box.top, bottom: box.bottom, z: z, rapidsIn: job.rapidsIn, deepest: deepest, total: job.total};
 }
 // The picture: RGBA, row 0 at the top of the material (the far side, as on screen). Light from the top left.
 function woodShade(sim){
-  var nx = sim.nx, ny = sim.ny, z = sim.z, out = new Uint8ClampedArray(nx * ny * 4);
+  var out = new Uint8ClampedArray(sim.nx * sim.ny * 4);
+  woodShadeRect(sim, out, 0, 0, sim.nx - 1, sim.ny - 1);
+  return out;
+}
+// The same for part of it: cells i0..i1 by j0..j1 (j counted from y0), into a picture already made.
+function woodShadeRect(sim, out, i0, j0, i1, j1){
+  var nx = sim.nx, ny = sim.ny, z = sim.z;
   var Lx = -0.5, Ly = 0.5, Lz = 0.707, ln = Math.hypot(Lx, Ly, Lz);
   Lx /= ln; Ly /= ln; Lz /= ln;
   function at(i, j){ i = Math.max(0, Math.min(nx - 1, i)); j = Math.max(0, Math.min(ny - 1, j)); return z[j * nx + i]; }
-  for (var j = 0; j < ny; j++){
+  for (var j = j0; j <= j1; j++){
     var oy = (ny - 1 - j) * nx * 4;                                   // world y up, picture rows down
-    for (var i = 0; i < nx; i++){
+    for (var i = i0; i <= i1; i++){
       var h = z[j * nx + i], o = oy + i * 4, c;
       c = woodColour(sim, h);                                           // spoilboard, amber where thin, or wood
       var gx = (at(i + 1, j) - at(i - 1, j)) / (2 * sim.cell), gy = (at(i, j + 1) - at(i, j - 1)) / (2 * sim.cell);
@@ -7439,12 +7495,11 @@ function woodShade(sim){
       out[o] = c[0] * s; out[o + 1] = c[1] * s; out[o + 2] = c[2] * s; out[o + 3] = 255;
     }
   }
-  return out;
 }
 // The ticked toolpaths of the sheet shown, as parts for woodSim, in cutting order.
 function woodParts(){
   return tpList().filter(function (tp){ return !tp.exclude && (typeof multiSheet !== 'function' || !multiSheet() || tpSheetOf(tp) === DOC.activeSheet); })
-    .map(function (tp){ if (tpStale(tp)) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name}; })
+    .map(function (tp){ if (tpStale(tp)) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name, feed: tp.feed}; })
     .filter(function (p){ return p.moves.length; });
 }
 function woodBox(){
@@ -7461,6 +7516,8 @@ function woodPreviewOpen(){
   if (!parts.length){ toast('info', 'Nothing to preview', 'Tick the toolpaths to include, then preview again.'); return; }
   var modal = document.getElementById('woodModal');
   modal.hidden = false;
+  woodPlayReset(); woodPreviewOpen.job = null; woodPreviewOpen.in3d = false;
+  document.getElementById('woodPlayRow').hidden = true;
   document.getElementById('woodNote').textContent = 'Working it out…';
   setTimeout(function (){                                            // let the window show first
     var box = woodBox(), cell = woodCell(box), bottomless = !(box.bottom > -Infinity);
@@ -7485,6 +7542,8 @@ function woodPreviewOpen(){
       ' into wood at full speed. Don’t cut this: check the toolpaths’ safe height and the material setup.' : '';
     warn.hidden = !sim.rapidsIn;
     woodPreviewOpen.last = sim;
+    woodPreviewOpen.job = {parts: parts, box: box, cell: cell, thin: sim.thin, total: sim.total};   // for watching it cut (wood-play.js)
+    woodPlayReady();
     // in 3D where it can be (wood-3d.js); otherwise the flat picture from above
     woodThree(function (ok){
       var host = document.getElementById('wood3d');
@@ -7496,13 +7555,15 @@ function woodPreviewOpen(){
         : ok ? 'The view from above: this computer can’t show it in 3D.'
         : 'The view from above: the 3D view needs a library that didn’t load (check the internet connection).';
       woodPreviewOpen.in3d = in3d;
+      if (woodFlat.on){ woodFlat.set = false; woodFlat(true); }     // Play was pressed before the 3D view was ready
     });
   }, 30);
 }
-function woodPreviewClose(){ document.getElementById('woodModal').hidden = true; }
+function woodPreviewClose(){ document.getElementById('woodModal').hidden = true; woodPlayReset(); woodPreviewOpen.job = null; }
 function woodWire(){
   var m = document.getElementById('woodModal');
   if (!m) return;
+  woodPlayWire();
   document.getElementById('woodX').addEventListener('click', woodPreviewClose);
   document.getElementById('woodClose').addEventListener('click', woodPreviewClose);
   m.addEventListener('click', function (e){ if (e.target === m) woodPreviewClose(); });
@@ -7681,6 +7742,221 @@ function woodWire3D(){
     woodCamera();
   }, {passive: false});
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(woodResize3D).observe(W.host);
+}
+/* ---------------- Preview in wood: watching it cut ----------------
+   Play, pause and a slider under the picture. The same simulation as the finished preview (woodJob, woodJobTo in
+   wood-preview.js), cut a little at a time and drawn from above as it goes, with the cutter shown where it is.
+   Played to the end, it's the finished preview's wood exactly (tested).
+   Time is the job sheet's: feeds as programmed, rapids at JS_RAPID, no acceleration. A guide, not a promise.
+   Wood can't be un-cut, so going back starts again from the nearest of a few copies of the wood kept on the way
+   (WOOD_KEEPS of them, taken as play first passes each point), or from uncut. */
+var WOODPLAY = null;     // {job, px, img, g, t, playing, speed, keeps, at, last, raf, stamp}
+var WOOD_KEEPS = 4;      // copies of the wood kept for going back: at 1/5, 2/5, 3/5 and 4/5 of the job
+var WOOD_SPEEDS = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
+
+function woodClock(sec){
+  sec = Math.max(0, Math.round(sec));
+  var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+// The speed that plays the whole job in about 45 seconds or less.
+function woodSpeedFor(total){
+  for (var i = 0; i < WOOD_SPEEDS.length; i++) if (total / WOOD_SPEEDS[i] <= 45) return WOOD_SPEEDS[i];
+  return WOOD_SPEEDS[WOOD_SPEEDS.length - 1];
+}
+// Where a job is at time t (seconds): {mi, frac (how far through move mi), k (its steps cut by then), x, y, z, part}.
+// A step is cut when the cutter is half way along it, so the wood shown is never more than half a step from the
+// cutter. At or past the end: mi is the number of moves, and the cutter is where the last move ended.
+function woodAt(job, t){
+  var n = job.count, mv = job.mv, ends = job.ends;
+  if (!n) return {mi: 0, frac: 0, k: 0, x: null, y: null, z: null, part: -1};
+  if (t >= job.total){
+    var e = (n - 1) * WOOD_MV;
+    return {mi: n, frac: 0, k: 0, x: mv[e + 5], y: mv[e + 6], z: mv[e + 7], part: mv[e]};
+  }
+  t = Math.max(0, t);
+  var lo = 0, hi = n - 1;                                   // the first move that ends after t
+  while (lo < hi){ var mid = (lo + hi) >> 1; if (ends[mid] > t) hi = mid; else lo = mid + 1; }
+  var o = lo * WOOD_MV, t0 = lo ? ends[lo - 1] : 0, span = ends[lo] - t0;
+  var frac = span > 1e-12 ? Math.min(1, Math.max(0, (t - t0) / span)) : 1, steps = mv[o + 8];
+  return {mi: lo, frac: frac, k: Math.min(steps, Math.floor(frac * steps + 0.5)),
+          x: mv[o + 2] + (mv[o + 5] - mv[o + 2]) * frac, y: mv[o + 3] + (mv[o + 6] - mv[o + 3]) * frac,
+          z: mv[o + 4] + (mv[o + 7] - mv[o + 4]) * frac, part: mv[o]};
+}
+// A copy of a job's wood and how far it's cut, to go back to; and going back to one.
+function woodKeep(job){
+  return {z: new Float32Array(job.z), mi: job.mi, k: job.k, took: job.took, rapidsIn: job.rapidsIn, rapids: job.rapidAt.length};
+}
+function woodKeepLoad(job, keep){
+  if (keep){ job.z.set(keep.z); job.mi = keep.mi; job.k = keep.k; job.took = keep.took; job.rapidsIn = keep.rapidsIn; job.rapidAt.length = keep.rapids; }
+  else { job.z.fill(job.top); job.mi = 0; job.k = 0; job.took = 0; job.rapidsIn = 0; job.rapidAt.length = 0; }
+}
+// Cut a job to where it is at time t, forwards or back. keeps: the copies kept so far (filled in here as play
+// passes each point). Returns 'on' when it only cut forwards (job.dirty says where), 'all' when it went back.
+function woodSeek(job, keeps, t){
+  var at = woodAt(job, t), back = at.mi < job.mi || (at.mi === job.mi && at.k < job.k), i;
+  if (back){
+    var best = null;
+    for (i = 0; i < keeps.length; i++){
+      var kp = keeps[i];
+      if (kp && (kp.mi < at.mi || (kp.mi === at.mi && kp.k <= at.k)) && (!best || kp.mi > best.mi)) best = kp;
+    }
+    woodKeepLoad(job, best);
+    job.dirty = null;
+  }
+  // cut on, stopping at each point a copy is due
+  for (i = 0; i < WOOD_KEEPS; i++){
+    var due = Math.floor(job.count * (i + 1) / (WOOD_KEEPS + 1));
+    if (!keeps[i] && due > 0 && job.mi < due && at.mi >= due){ woodJobTo(job, due, 0); keeps[i] = woodKeep(job); }
+  }
+  woodJobTo(job, at.mi, at.k);
+  return back ? 'all' : 'on';
+}
+
+// ---- the window's part ----
+// The picture's rectangle (canvas pixels) for cells i0..i1 by j0..j1, a cell wider all round: a cell's shading
+// looks at its neighbours.
+function woodPlayPut(P, i0, j0, i1, j1){
+  var job = P.job;
+  i0 = Math.max(0, i0 - 1); j0 = Math.max(0, j0 - 1); i1 = Math.min(job.nx - 1, i1 + 1); j1 = Math.min(job.ny - 1, j1 + 1);
+  if (i1 < i0 || j1 < j0) return;
+  woodShadeRect(job, P.px, i0, j0, i1, j1);
+  if (P.g) P.g.putImageData(P.img, 0, 0, i0, job.ny - 1 - j1, i1 - i0 + 1, j1 - j0 + 1);
+}
+// The cutter, from above: a ring the size of the bit where it is now (a V-bit: as wide as it's cutting), filled
+// while it's below the top of the material. What it covered last time is put back first.
+function woodPlayCutter(P, at){
+  var job = P.job, g = P.g;
+  if (!g) return;
+  if (P.last){ g.putImageData(P.img, 0, 0, P.last[0], P.last[1], P.last[2], P.last[3]); P.last = null; }
+  if (at.x === null || at.part < 0 || P.t >= job.total) return;         // finished: the board alone
+  var tool = job.parts[at.part].tool, inWood = at.z < job.top - 1e-9;
+  var r = Math.max(1.5, (tool.kind === 'v' ? Math.max(woodReach(tool, job.top - at.z), 0.5) : tool.r) / job.cell);
+  var cx = (at.x - job.x0) / job.cell, cy = job.ny - (at.y - job.y0) / job.cell, lw = Math.max(1, job.nx / 500);
+  g.save();
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fillStyle = inWood ? 'rgba(40,120,235,.6)' : 'rgba(255,255,255,.18)'; g.fill();
+  g.lineWidth = lw; g.strokeStyle = inWood ? '#0b3d91' : 'rgba(255,255,255,.9)'; g.stroke();
+  g.beginPath(); g.arc(cx, cy, Math.max(0.8, lw * 0.8), 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill();
+  // on a big board the bit is a speck: a wider, fainter ring round it, so the eye can find it
+  var find = job.nx / 60;
+  if (r < find * 0.6){
+    g.beginPath(); g.arc(cx, cy, find, 0, Math.PI * 2);
+    g.lineWidth = lw * 1.5; g.strokeStyle = inWood ? 'rgba(40,120,235,.55)' : 'rgba(255,255,255,.55)'; g.stroke();
+  } else find = 0;
+  g.restore();
+  var pad = Math.ceil(Math.max(r, find) + lw * 2 + 2), x0 = Math.max(0, Math.floor(cx - pad)), y0 = Math.max(0, Math.floor(cy - pad));
+  P.last = [x0, y0, Math.min(job.nx, Math.ceil(cx + pad)) - x0, Math.min(job.ny, Math.ceil(cy + pad)) - y0];
+  if (P.last[2] <= 0 || P.last[3] <= 0) P.last = null;
+}
+// Make the player for the job the preview was opened with (woodPreviewOpen.job), the first time it's wanted.
+function woodPlayStart(){
+  if (WOODPLAY) return WOODPLAY;
+  var src = woodPreviewOpen.job;
+  if (!src) return null;
+  var job = woodJob(src.parts, src.box, src.cell);
+  job.thin = src.thin;
+  var cv = document.getElementById('woodCv'), g = cv && cv.getContext ? cv.getContext('2d') : null;
+  var P = WOODPLAY = {job: job, keeps: [], t: 0, playing: false, speed: +document.getElementById('woodSpeed').value || 1, last: null, raf: 0, stamp: 0, g: null, img: null,
+                      px: new Uint8ClampedArray(job.nx * job.ny * 4)};
+  if (g && typeof ImageData !== 'undefined'){ P.g = g; P.img = new ImageData(P.px, job.nx, job.ny); }
+  return P;
+}
+// Show the job at time t: cut the wood to there, redraw what changed, place the cutter, set the slider and clock.
+function woodPlayShow(t){
+  var P = woodPlayStart();
+  if (!P) return;
+  var job = P.job;
+  P.t = Math.max(0, Math.min(job.total, t));
+  woodFlat(true);
+  var first = !P.drawn, how = woodSeek(job, P.keeps, P.t);
+  if (first || how === 'all'){ P.last = null; woodPlayPut(P, 0, 0, job.nx - 1, job.ny - 1); P.drawn = true; }
+  else if (job.dirty) woodPlayPut(P, job.dirty.i0, job.dirty.j0, job.dirty.i1, job.dirty.j1);
+  job.dirty = null;
+  woodPlayCutter(P, woodAt(job, P.t));
+  woodPlayUI();
+}
+function woodPlayUI(){
+  var P = WOODPLAY, src = woodPreviewOpen.job, total = P ? P.job.total : src ? src.total : 0, t = P ? P.t : total;
+  var b = document.getElementById('woodPlay'), sl = document.getElementById('woodSeek');
+  var playing = !!(P && P.playing);
+  b.textContent = playing ? '❚❚ Pause' : '▶ Play';
+  b.title = playing ? 'Pause' : t >= total ? 'Watch the toolpaths cut, from uncut wood' : 'Carry on from here';
+  b.setAttribute('aria-pressed', playing ? 'true' : 'false');
+  sl.value = String(total > 0 ? Math.round(t / total * 1000) : 1000);
+  sl.setAttribute('aria-valuetext', woodClock(t) + ' of ' + woodClock(total));
+  document.getElementById('woodTime').textContent = woodClock(t) + ' / ' + woodClock(total);
+}
+// One frame: dt seconds of real time have passed.
+function woodPlayTick(dt){
+  var P = WOODPLAY;
+  if (!P || !P.playing) return;
+  var t = P.t + dt * P.speed;
+  if (t >= P.job.total){ t = P.job.total; P.playing = false; }
+  woodPlayShow(t);
+}
+function woodPlayFrame(now){
+  var P = WOODPLAY;
+  if (!P || !P.playing){ if (P) P.raf = 0; return; }
+  var dt = P.stamp ? Math.min(0.25, (now - P.stamp) / 1000) : 0;     // a stalled tab doesn't leap ahead
+  P.stamp = now;
+  woodPlayTick(dt);
+  P.raf = P.playing ? requestAnimationFrame(woodPlayFrame) : 0;
+}
+function woodPlayToggle(){
+  var P = woodPlayStart();
+  if (!P) return;
+  if (P.playing){ P.playing = false; woodPlayUI(); return; }
+  if (!P.drawn || P.t >= P.job.total) woodPlayShow(0);                 // from uncut wood
+  P.playing = true; P.stamp = 0;
+  woodPlayUI();
+  P.raf = requestAnimationFrame(woodPlayFrame);
+}
+// The flat picture from above (where the cut is played), or the 3D view of the finished cut.
+function woodFlat(on){
+  var cv = document.getElementById('woodCv'), host = document.getElementById('wood3d'), can3d = !!woodPreviewOpen.in3d;
+  if (on === (woodFlat.on || false) && woodFlat.set) return;
+  woodFlat.on = on; woodFlat.set = true;
+  if (can3d){ host.hidden = on; cv.hidden = !on; document.getElementById('woodViews').hidden = on; }
+  document.getElementById('woodTo3d').hidden = !(on && can3d);
+  if (on) document.getElementById('woodHow').textContent = 'From above. The ring is the cutter: blue while it’s in the wood.';
+  else if (can3d) document.getElementById('woodHow').textContent = 'Drag to turn it, right-drag to move it, scroll to zoom.';
+}
+// Back to the finished cut in 3D.
+function woodPlayTo3d(){
+  var P = WOODPLAY;
+  if (P){ P.playing = false; P.t = P.job.total; }
+  woodFlat(false);
+  woodPlayUI();
+}
+// A new preview, or the window closed: forget the player.
+function woodPlayReset(){
+  if (WOODPLAY && WOODPLAY.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(WOODPLAY.raf);
+  WOODPLAY = null; woodFlat.set = false; woodFlat.on = false;
+  var to3d = document.getElementById('woodTo3d'); if (to3d) to3d.hidden = true;
+}
+// The preview has been worked out: set the speed that plays this job in about 45 seconds, and the clock.
+function woodPlayReady(){
+  var src = woodPreviewOpen.job, sel = document.getElementById('woodSpeed');
+  document.getElementById('woodPlayRow').hidden = !(src && src.total > 0);
+  if (!src) return;
+  sel.value = String(woodSpeedFor(src.total));
+  woodPlayUI();
+}
+function woodPlayWire(){
+  var sel = document.getElementById('woodSpeed');
+  if (!sel) return;
+  WOOD_SPEEDS.forEach(function (s){
+    var o = document.createElement('option'); o.value = String(s); o.textContent = s === 1 ? 'Real time' : s + '×';
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', function (){ if (WOODPLAY) WOODPLAY.speed = +sel.value || 1; });
+  document.getElementById('woodPlay').addEventListener('click', woodPlayToggle);
+  document.getElementById('woodTo3d').addEventListener('click', woodPlayTo3d);
+  document.getElementById('woodSeek').addEventListener('input', function (){
+    var src = woodPreviewOpen.job;
+    if (src) woodPlayShow(src.total * (+this.value || 0) / 1000);
+  });
 }
 // Toolpath templates: a job's toolpaths saved to a file without their shapes (tools, depths, passes, feeds, tabs,
 // ramps, finishing, order), and applied to another drawing, each toolpath finding its shapes by the name of the

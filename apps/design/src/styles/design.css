@@ -198,6 +198,12 @@
   #woodViews{display:flex;gap:6px}
   #woodViews[hidden],#wood3d[hidden],#woodCv[hidden]{display:none}
   #woodHow{margin:0}
+  #woodPlayRow[hidden]{display:none}
+  #woodPlayRow{margin-top:8px}
+  #woodPlay{min-width:86px}
+  #woodSeek{flex:1;min-width:120px;accent-color:var(--amber)}
+  #woodTime{margin:0;font-family:var(--mono);white-space:nowrap}
+  #woodPlayRow label{margin:0 0 0 6px}
   #wood3d{width:100%;height:calc(100vh - 260px);min-height:320px;border-radius:4px;overflow:hidden;cursor:grab}
   #wood3d:active{cursor:grabbing}
   #dlgModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:230}

@@ -46,78 +46,122 @@ function woodEdge(tool, d){
   if (tool.kind === 'ball') return tool.r - Math.sqrt(Math.max(0, tool.r * tool.r - d * d));
   return d <= tool.tip / 2 ? 0 : (d - tool.tip / 2) / Math.tan(tool.half);
 }
-// The simulation. parts: [{moves, tool}] in cutting order; box: {x0, y0, x1, y1, top, bottom} (the material);
-// cell: the grid's spacing in mm. Returns {nx, ny, cell, x0, y0, top, bottom, z (Float32Array, row 0 at y0),
-// rapidsIn (G0 moves that cut more than 0.05 mm of wood), deepest}.
-function woodSim(parts, box, cell){
+// One straight move of the bit cut into a job's grid of heights; returns the most it took off anywhere. The cells
+// it changed are added to job.dirty ({i0, j0, i1, j1}), for whoever is drawing the job as it's cut.
+function woodStamp(job, tool, ax, ay, az, bx, by, bz){
+  if (Math.min(az, bz) >= job.top) return 0;
+  var nx = job.nx, ny = job.ny, z = job.z, cell = job.cell, most = 0;
+  var reach = woodReach(tool, job.top - Math.min(az, bz));
+  var i0 = Math.max(0, Math.floor((Math.min(ax, bx) - reach - job.x0) / cell)), i1 = Math.min(nx - 1, Math.floor((Math.max(ax, bx) + reach - job.x0) / cell));
+  var j0 = Math.max(0, Math.floor((Math.min(ay, by) - reach - job.y0) / cell)), j1 = Math.min(ny - 1, Math.floor((Math.max(ay, by) + reach - job.y0) / cell));
+  var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+  for (var j = j0; j <= j1; j++){
+    var cy = job.y0 + (j + 0.5) * cell, row = j * nx;
+    for (var i = i0; i <= i1; i++){
+      var cx = job.x0 + (i + 0.5) * cell, h;
+      if (tool.kind === 'flat'){
+        // a flat bit cuts to its tip wherever the cell is under it: the lowest tip height while within reach
+        var fx = ax - cx, fy = ay - cy, qa = L2, qb = 2 * (fx * dx + fy * dy), qc = fx * fx + fy * fy - tool.r * tool.r;
+        if (qa < 1e-18){ if (qc > 0) continue; h = Math.min(az, bz); }
+        else {
+          var disc = qb * qb - 4 * qa * qc;
+          if (disc < 0) continue;
+          var sq = Math.sqrt(disc), t1 = (-qb - sq) / (2 * qa), t2 = (-qb + sq) / (2 * qa);
+          if (t2 < 0 || t1 > 1) continue;
+          t1 = Math.max(0, t1); t2 = Math.min(1, t2);
+          h = Math.min(az + (bz - az) * t1, az + (bz - az) * t2);
+        }
+      } else {
+        var t = L2 > 1e-18 ? Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / L2)) : 0;
+        var px = ax + dx * t, py = ay + dy * t, e = woodEdge(tool, Math.hypot(cx - px, cy - py));
+        if (e === Infinity) continue;
+        h = az + (bz - az) * t + e;
+      }
+      if (h < z[row + i]){ if (z[row + i] - h > most) most = z[row + i] - h; z[row + i] = h; }
+    }
+  }
+  if (most > 0){
+    var d = job.dirty;
+    if (!d) job.dirty = {i0: i0, j0: j0, i1: i1, j1: j1};
+    else { if (i0 < d.i0) d.i0 = i0; if (j0 < d.j0) d.j0 = j0; if (i1 > d.i1) d.i1 = i1; if (j1 > d.j1) d.j1 = j1; }
+  }
+  return most;
+}
+// A job to cut: the material as a grid of heights, uncut, and every move that can cut it, in order.
+// parts: [{moves, tool, feed}] in cutting order; box: {x0, y0, x1, y1, top, bottom} (the material); cell: the
+// grid's spacing in mm. A move is one whose two ends are both known (as the job sheet's time counts them). Each
+// is cut in short steps, so each step's box of cells stays small.
+//   mv     nine numbers a move: its part, 1 if it's a rapid (G0), where it starts (x, y, z), where it ends, its steps
+//   ends   the time each move ends at, in seconds from the start (feeds as programmed, rapids at JS_RAPID)
+//   mi, k  how far it's been cut: every move before mi, and k steps of move mi
+var WOOD_MV = 9;
+function woodJob(parts, box, cell){
   var nx = Math.max(1, Math.ceil((box.x1 - box.x0) / cell)), ny = Math.max(1, Math.ceil((box.y1 - box.y0) / cell));
   var z = new Float32Array(nx * ny); z.fill(box.top);
-  var rapidsIn = 0;
-  // cut one straight move into the grid; returns the most it took off anywhere
-  function stamp(tool, ax, ay, az, bx, by, bz){
-    if (Math.min(az, bz) >= box.top) return 0;
-    var most = 0;
-    var reach = woodReach(tool, box.top - Math.min(az, bz));
-    var i0 = Math.max(0, Math.floor((Math.min(ax, bx) - reach - box.x0) / cell)), i1 = Math.min(nx - 1, Math.floor((Math.max(ax, bx) + reach - box.x0) / cell));
-    var j0 = Math.max(0, Math.floor((Math.min(ay, by) - reach - box.y0) / cell)), j1 = Math.min(ny - 1, Math.floor((Math.max(ay, by) + reach - box.y0) / cell));
-    var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
-    for (var j = j0; j <= j1; j++){
-      var cy = box.y0 + (j + 0.5) * cell, row = j * nx;
-      for (var i = i0; i <= i1; i++){
-        var cx = box.x0 + (i + 0.5) * cell, h;
-        if (tool.kind === 'flat'){
-          // a flat bit cuts to its tip wherever the cell is under it: the lowest tip height while within reach
-          var fx = ax - cx, fy = ay - cy, qa = L2, qb = 2 * (fx * dx + fy * dy), qc = fx * fx + fy * fy - tool.r * tool.r;
-          if (qa < 1e-18){ if (qc > 0) continue; h = Math.min(az, bz); }
-          else {
-            var disc = qb * qb - 4 * qa * qc;
-            if (disc < 0) continue;
-            var sq = Math.sqrt(disc), t1 = (-qb - sq) / (2 * qa), t2 = (-qb + sq) / (2 * qa);
-            if (t2 < 0 || t1 > 1) continue;
-            t1 = Math.max(0, t1); t2 = Math.min(1, t2);
-            h = Math.min(az + (bz - az) * t1, az + (bz - az) * t2);
-          }
-        } else {
-          var t = L2 > 1e-18 ? Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / L2)) : 0;
-          var px = ax + dx * t, py = ay + dy * t, e = woodEdge(tool, Math.hypot(cx - px, cy - py));
-          if (e === Infinity) continue;
-          h = az + (bz - az) * t + e;
-        }
-        if (h < z[row + i]){ if (z[row + i] - h > most) most = z[row + i] - h; z[row + i] = h; }
-      }
-    }
-    return most;
-  }
-  parts.forEach(function (part){
-    var x = null, y = null, zz = null;
+  var mv = [], ends = [], sec = 0;
+  parts.forEach(function (part, pi){
+    var x = null, y = null, zz = null, f = part.feed || 1000;
     (part.moves || []).forEach(function (m){
       var nxp = m.x !== undefined ? m.x : x, nyp = m.y !== undefined ? m.y : y, nzp = m.z !== undefined ? m.z : zz;
+      if (m.f) f = m.f;
       if (x !== null && y !== null && zz !== null && nxp !== null && nyp !== null && nzp !== null){
         // long moves in short steps, so each one's box of cells stays small
         var len = Math.hypot(nxp - x, nyp - y), n = Math.max(1, Math.ceil(len / Math.max(part.tool.r * 2, cell * 8)));
-        var took = 0;
-        for (var k = 0; k < n; k++){
-          var a = k / n, b = (k + 1) / n;
-          took = Math.max(took, stamp(part.tool, x + (nxp - x) * a, y + (nyp - y) * a, zz + (nzp - zz) * a, x + (nxp - x) * b, y + (nyp - y) * b, zz + (nzp - zz) * b));
-        }
-        if (m.g === 0 && took > 0.05) rapidsIn++;                        // a rapid move that cut wood
+        mv.push(pi, m.g === 0 ? 1 : 0, x, y, zz, nxp, nyp, nzp, n);
+        var far = Math.sqrt((nxp - x) * (nxp - x) + (nyp - y) * (nyp - y) + (nzp - zz) * (nzp - zz));
+        sec += far / (m.g === 0 ? JS_RAPID : Math.max(1, f)) * 60;
+        ends.push(sec);
       }
       x = nxp; y = nyp; zz = nzp;
     });
   });
-  var deepest = box.top;
+  return {nx: nx, ny: ny, cell: cell, x0: box.x0, y0: box.y0, top: box.top, bottom: box.bottom, z: z, parts: parts,
+          mv: new Float64Array(mv), ends: new Float64Array(ends), count: ends.length, total: sec,
+          mi: 0, k: 0, took: 0, rapidsIn: 0, rapidAt: [], dirty: null};
+}
+// Cut a job on, to: every move before mi, and k steps of move mi. Forwards only (wood can't be put back).
+// A rapid (G0) that takes more than 0.05 mm of wood is counted when its move is finished, and its number kept.
+function woodJobTo(job, mi, k){
+  var mv = job.mv;
+  if (mi >= job.count){ mi = job.count; k = 0; }
+  while (job.mi < mi || (job.mi === mi && job.k < k)){
+    var o = job.mi * WOOD_MV, tool = job.parts[mv[o]].tool, n = mv[o + 8], upTo = job.mi < mi ? n : Math.min(k, n);
+    var x = mv[o + 2], y = mv[o + 3], zz = mv[o + 4], nxp = mv[o + 5], nyp = mv[o + 6], nzp = mv[o + 7];
+    for (var q = job.k; q < upTo; q++){
+      var a = q / n, b = (q + 1) / n;
+      job.took = Math.max(job.took, woodStamp(job, tool, x + (nxp - x) * a, y + (nyp - y) * a, zz + (nzp - zz) * a, x + (nxp - x) * b, y + (nyp - y) * b, zz + (nzp - zz) * b));
+    }
+    job.k = upTo;
+    if (job.k < n) break;
+    if (mv[o + 1] === 1 && job.took > 0.05){ job.rapidsIn++; job.rapidAt.push(job.mi); }   // a rapid move that cut wood
+    job.mi++; job.k = 0; job.took = 0;
+  }
+}
+// The simulation: the whole job cut. Returns {nx, ny, cell, x0, y0, top, bottom, z (Float32Array, row 0 at y0),
+// rapidsIn (G0 moves that cut more than 0.05 mm of wood), deepest, total (the job's time in seconds, as the job
+// sheet works it out)}.
+function woodSim(parts, box, cell){
+  var job = woodJob(parts, box, cell);
+  woodJobTo(job, job.count, 0);
+  var z = job.z, deepest = box.top;
   for (var q = 0; q < z.length; q++) if (z[q] < deepest) deepest = z[q];
-  return {nx:nx, ny:ny, cell:cell, x0:box.x0, y0:box.y0, top:box.top, bottom:box.bottom, z:z, rapidsIn:rapidsIn, deepest:deepest};
+  return {nx: job.nx, ny: job.ny, cell: cell, x0: box.x0, y0: box.y0, top: box.top, bottom: box.bottom, z: z, rapidsIn: job.rapidsIn, deepest: deepest, total: job.total};
 }
 // The picture: RGBA, row 0 at the top of the material (the far side, as on screen). Light from the top left.
 function woodShade(sim){
-  var nx = sim.nx, ny = sim.ny, z = sim.z, out = new Uint8ClampedArray(nx * ny * 4);
+  var out = new Uint8ClampedArray(sim.nx * sim.ny * 4);
+  woodShadeRect(sim, out, 0, 0, sim.nx - 1, sim.ny - 1);
+  return out;
+}
+// The same for part of it: cells i0..i1 by j0..j1 (j counted from y0), into a picture already made.
+function woodShadeRect(sim, out, i0, j0, i1, j1){
+  var nx = sim.nx, ny = sim.ny, z = sim.z;
   var Lx = -0.5, Ly = 0.5, Lz = 0.707, ln = Math.hypot(Lx, Ly, Lz);
   Lx /= ln; Ly /= ln; Lz /= ln;
   function at(i, j){ i = Math.max(0, Math.min(nx - 1, i)); j = Math.max(0, Math.min(ny - 1, j)); return z[j * nx + i]; }
-  for (var j = 0; j < ny; j++){
+  for (var j = j0; j <= j1; j++){
     var oy = (ny - 1 - j) * nx * 4;                                   // world y up, picture rows down
-    for (var i = 0; i < nx; i++){
+    for (var i = i0; i <= i1; i++){
       var h = z[j * nx + i], o = oy + i * 4, c;
       c = woodColour(sim, h);                                           // spoilboard, amber where thin, or wood
       var gx = (at(i + 1, j) - at(i - 1, j)) / (2 * sim.cell), gy = (at(i, j + 1) - at(i, j - 1)) / (2 * sim.cell);
@@ -126,12 +170,11 @@ function woodShade(sim){
       out[o] = c[0] * s; out[o + 1] = c[1] * s; out[o + 2] = c[2] * s; out[o + 3] = 255;
     }
   }
-  return out;
 }
 // The ticked toolpaths of the sheet shown, as parts for woodSim, in cutting order.
 function woodParts(){
   return tpList().filter(function (tp){ return !tp.exclude && (typeof multiSheet !== 'function' || !multiSheet() || tpSheetOf(tp) === DOC.activeSheet); })
-    .map(function (tp){ if (tpStale(tp)) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name}; })
+    .map(function (tp){ if (tpStale(tp)) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name, feed: tp.feed}; })
     .filter(function (p){ return p.moves.length; });
 }
 function woodBox(){
@@ -148,6 +191,8 @@ function woodPreviewOpen(){
   if (!parts.length){ toast('info', 'Nothing to preview', 'Tick the toolpaths to include, then preview again.'); return; }
   var modal = document.getElementById('woodModal');
   modal.hidden = false;
+  woodPlayReset(); woodPreviewOpen.job = null; woodPreviewOpen.in3d = false;
+  document.getElementById('woodPlayRow').hidden = true;
   document.getElementById('woodNote').textContent = 'Working it out…';
   setTimeout(function (){                                            // let the window show first
     var box = woodBox(), cell = woodCell(box), bottomless = !(box.bottom > -Infinity);
@@ -172,6 +217,8 @@ function woodPreviewOpen(){
       ' into wood at full speed. Don’t cut this: check the toolpaths’ safe height and the material setup.' : '';
     warn.hidden = !sim.rapidsIn;
     woodPreviewOpen.last = sim;
+    woodPreviewOpen.job = {parts: parts, box: box, cell: cell, thin: sim.thin, total: sim.total};   // for watching it cut (wood-play.js)
+    woodPlayReady();
     // in 3D where it can be (wood-3d.js); otherwise the flat picture from above
     woodThree(function (ok){
       var host = document.getElementById('wood3d');
@@ -183,13 +230,15 @@ function woodPreviewOpen(){
         : ok ? 'The view from above: this computer can’t show it in 3D.'
         : 'The view from above: the 3D view needs a library that didn’t load (check the internet connection).';
       woodPreviewOpen.in3d = in3d;
+      if (woodFlat.on){ woodFlat.set = false; woodFlat(true); }     // Play was pressed before the 3D view was ready
     });
   }, 30);
 }
-function woodPreviewClose(){ document.getElementById('woodModal').hidden = true; }
+function woodPreviewClose(){ document.getElementById('woodModal').hidden = true; woodPlayReset(); woodPreviewOpen.job = null; }
 function woodWire(){
   var m = document.getElementById('woodModal');
   if (!m) return;
+  woodPlayWire();
   document.getElementById('woodX').addEventListener('click', woodPreviewClose);
   document.getElementById('woodClose').addEventListener('click', woodPreviewClose);
   m.addEventListener('click', function (e){ if (e.target === m) woodPreviewClose(); });
