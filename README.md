@@ -85,6 +85,22 @@ love for Chevy big blocks.
 Bug reports and ideas are welcome as issues. If 454 Workshop is useful to you, the Sponsor button on
 this page helps keep it going.
 
+## Privacy
+
+454 Workshop has no accounts, no telemetry and no analytics. Your drawings, tool library, settings and
+G-code stay on your computer.
+
+- **The desktop app** contacts one place by itself: GitHub, to see whether a newer version has been
+  released (shortly after it starts, then every 6 hours while it's open). An update is downloaded only
+  when you click to get it. Everything else the app needs is inside it, so it works with no internet
+  connection.
+- **Help → Report a problem…** opens a form on GitHub in your web browser, with the app's version and
+  your Windows version filled in. Nothing is sent unless you submit the form.
+- **The browser versions** at 454workshop.com are web pages: they're served by Cloudflare, and load
+  fonts and a few open-source libraries from the public jsDelivr and cdnjs networks. As with any
+  website, those services see your internet address. Your drawings and settings stay in your browser.
+
 ## Licence
 
-MIT: free to use, change and share. See `LICENSE`.
+MIT: free to use, change and share. All of 454 Workshop is free; there is no paid version. See `LICENSE`
+and `LICENSING.md`.

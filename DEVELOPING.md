@@ -52,8 +52,8 @@ love for Chevy big blocks.
 
 ## Licence
 
-MIT, except where a package says otherwise. See `LICENSING.md` in the main repository for what stays
-free and what may become commercial.
+MIT, except where a package says otherwise. All of 454 Workshop is free; there is no paid version. See
+`LICENSING.md`.
 
 ## Building for Windows on GitHub
 
