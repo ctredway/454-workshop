@@ -1010,11 +1010,11 @@ The controller is the authority on the machine, so anything it reports is used r
   hasn't been checked against VCarve); a material with Z zero at the bottom (read by the same rule).
 - The tutorial project is someone else's work, so it isn't in the repository: the tests use its numbers, and
   text data built the way VCarve writes it. Clint's own project is kept as a permanent test
-  (`apps/design/test/fixtures/vcarve-text.crv`), with VCarve's DXF export of its line on the curve (`.dxf`): a
-  test opens the project, checks its material and that all three blocks of text are placed, and holds the
-  letters on the curve to that DXF. (An export of the whole drawing was checked by hand; one of those belongs
-  here, so the test can hold every shape to it. Design reads one shape fewer than VCarve exports: the arc the
-  text sits on. A shape of a single line or arc isn't read from a `.crv` yet, a gap older than this.)
+  (`apps/design/test/fixtures/vcarve-text.crv`), with VCarve's DXF export of the whole drawing (`.dxf`): a
+  test opens the project, checks its material and that all three blocks of text are placed, and holds every
+  shape Design makes to that DXF, each to its own shape. (Design reads one shape fewer than VCarve exports:
+  the arc the text sits on. A shape of a single line or arc isn't read from a `.crv` yet, a gap older than
+  this.)
 - Found by Clint.
 - **Tested** (20 tests in a new `crv-text.test.mjs`; broken on purpose 53 ways: 52 caught, and 1 that changes
   nothing, as the reader finds an outline within a few bytes of where it's told), and opened in the app.

@@ -322,9 +322,7 @@ test('a project with no text: nothing to do', () => {
 // fixtures/vcarve-text.crv: a 12 x 9 x 1.25 in job zeroed at its centre, with a frame, a circle, a square, an arc,
 // and three blocks of text in Arial: three lines fitted to a box and centred, two lines fitted to a box and set
 // left, and a line set left on the arc (turned round, and sized to fit it).
-// fixtures/vcarve-text.dxf is VCarve's export of the line on the arc: its eleven letter outlines. (An export of
-// the whole drawing, from the same project with the line on the arc in another font, was checked by hand: all
-// 74 shapes Design makes sat on their own DXF shape. With a whole export here, check all of them: see below.)
+// fixtures/vcarve-text.dxf is VCarve's export of the whole drawing: 75 shapes.
 const here = path.dirname(fileURLToPath(import.meta.url));
 function dxfShapes(file) {
   const lines = fs.readFileSync(file, 'latin1').split(/\r?\n/), shapes = [];
@@ -345,7 +343,7 @@ function dxfShapes(file) {
   }
   return shapes.map((s) => ({ layer: s.layer, x0: Math.min(...s.xs), x1: Math.max(...s.xs), y0: Math.min(...s.ys), y1: Math.max(...s.ys) }));
 }
-test('a real VCarve project: its material, its text, and the letters on the curve where VCarve’s own export has them', () => {
+test('a real VCarve project: every shape Design makes from it sits on its own shape in the DXF VCarve exports', () => {
   const buf = fs.readFileSync(path.join(here, 'fixtures/vcarve-text.crv'));
   const ex = D.crvExtract(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
   assert.deepEqual([ex.stockW, ex.stockH, ex.stockT, ex.stockZero], [12, 9, 1.25, 'top'], 'the material');
@@ -354,22 +352,19 @@ test('a real VCarve project: its material, its text, and the letters on the curv
   assert.deepEqual(plain(ex.textLeft), [], 'none left out');
   const doc = plain(D.crvToDoc(ex, 1));
   assert.equal(doc.stock.origin, 'center');
-  // the frame, the circle, the square, and 71 letter outlines (39, 21 and 11). The arc the text sits on isn't one of
-  // them: a shape of a single line or arc isn't read from a .crv yet (a gap older than this).
-  assert.equal(doc.ents.length, 74);
-  const boxes = doc.ents.map((e) => (e.t === 'circle' ? { x0: e.cx - e.r, x1: e.cx + e.r, y0: e.cy - e.r, y1: e.cy + e.r } : plain(D.crvSpansBox(e.pts.map((p) => [p[0], p[1], p[2] || 0])))));
-  // every shape in the DXF is one of Design's, each its own, within 0.003 in
   const dxf = dxfShapes(path.join(here, 'fixtures/vcarve-text.dxf'));
-  assert.equal(dxf.length, 11, 'the letters of the line on the arc');
+  assert.equal(dxf.length, 75);
+  assert.equal(doc.ents.length, 74, 'the frame, the circle, the square, and 71 letter outlines (39, 21 and 11)');
   const used = new Set();
-  dxf.forEach((d, i) => {
+  doc.ents.forEach((e, i) => {
+    const b = e.t === 'circle' ? { x0: e.cx - e.r, x1: e.cx + e.r, y0: e.cy - e.r, y1: e.cy + e.r } : plain(D.crvSpansBox(e.pts.map((p) => [p[0], p[1], p[2] || 0])));
     let best = Infinity, at = -1;
-    boxes.forEach((b, k) => { const err = Math.max(Math.abs(b.x0 - d.x0), Math.abs(b.x1 - d.x1), Math.abs(b.y0 - d.y0), Math.abs(b.y1 - d.y1)); if (err < best) { best = err; at = k; } });
-    assert.ok(best < 0.003, `DXF shape ${i} is ${best.toFixed(4)} from the nearest of Design’s`);
-    assert.ok(!used.has(at), `DXF shape ${i} is the same shape of Design’s as another`);
+    dxf.forEach((d, k) => { const err = Math.max(Math.abs(b.x0 - d.x0), Math.abs(b.x1 - d.x1), Math.abs(b.y0 - d.y0), Math.abs(b.y1 - d.y1)); if (err < best) { best = err; at = k; } });
+    assert.ok(best < 0.003, `shape ${i} is ${best.toFixed(4)} from the nearest DXF shape`);
+    assert.ok(!used.has(at), `shape ${i} lands on a DXF shape another already has`);
     used.add(at);
   });
-  // the straight text: where it sits, from the project's own numbers (centred on the job, and set left)
-  const top = Math.max(...boxes.map((b) => b.y1)), left = Math.min(...boxes.filter((b, k) => !used.has(k) && doc.ents[k].t !== 'circle').map((b) => b.x0));
-  assert.ok(top <= 4.5 && left >= -6, 'everything is on the material');
+  // the one DXF shape Design doesn't make: the arc the text sits on. A shape of a single line or arc isn't read
+  // from a .crv yet (a gap older than this); when it is, this becomes 75 of 75.
+  assert.deepEqual(dxf.filter((d, k) => !used.has(k)).map((d) => d.layer), ['TEXT_CURVE']);
 });
