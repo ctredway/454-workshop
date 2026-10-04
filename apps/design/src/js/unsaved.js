@@ -231,10 +231,30 @@ function openFiles(kind){
     .catch(function (e){ if (!(e && e.name === 'AbortError')) toast('err', 'Couldn’t open that', (e && e.message) || String(e)); return false; });
 }
 
-// A drawing dropped on the window, in the desktop app: remember where it is, so Save goes back to it.
+// A recent file again (the desktop app's File > Open recent): opened as Open opens it. If it's been moved or
+// deleted, say so; the app has taken it off the list.
+function openRecent(path){
+  var DF = desktopFiles();
+  if (!DF || !DF.openRecent || !path) return Promise.resolve(false);
+  return DF.openRecent(path).then(function (it){
+    if (!it) return false;
+    if (it.missing){ toast('warn', 'That file isn’t there any more', it.name + ' has been moved, renamed or deleted. It’s been taken off the recent files.'); return false; }
+    OPEN_PATH = /\.json$/i.test(it.name) ? it.path : null;       // kept if it turns out to be a drawing
+    DESIGN_IMPORT([new File([it.data], it.name)]);
+    return true;
+  }, function (e){ toast('err', 'Couldn’t open that', (e && e.message) || String(e)); return false; });
+}
+
+// A drawing dropped on the window, in the desktop app: remember where it is, so Save goes back to it. Projects
+// dropped (drawings, VCarve and Carbide Create files) go on the recent files, as ones opened with Open do.
 function droppedFiles(files){
   var DF = desktopFiles();
   OPEN_PATH = DF && files && files.length === 1 && /\.json$/i.test(files[0].name) ? (DF.pathOf(files[0]) || null) : null;
+  if (DF && DF.noteRecent && files) Array.prototype.forEach.call(files, function (f){
+    if (!/\.(json|crv|c2d)$/i.test(f.name)) return;
+    var p = DF.pathOf(f);
+    if (p) DF.noteRecent(p);
+  });
 }
 
 // ---- closing (the desktop app asks; these are its answers)

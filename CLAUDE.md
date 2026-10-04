@@ -120,6 +120,9 @@ without a published release looks to them like a newest release with nothing in 
 - **Carbide Create projects open** (`c2d-import.js`, `c2d-toolpaths.js`): both file kinds (SQLite database of
   zlib-packed JSON; older, one JSON text). A toolpath is converted only when its meaning is known from real
   files; otherwise it's left out and named. Don't add a mapping from a guess: get a file and its G-code.
+- **File → Open recent** (the desktop app, `design-files.js`): the last ten projects opened, dropped or saved,
+  in `design-recent.json` in the app's data folder. The page may reopen only a file on that list. The menu is
+  built again whenever the list changes.
 - **Design asks before closing an unsaved drawing** (not saved to a file since it changed; `unsaved.js`):
   the desktop app asks Save… / Don't save / Cancel, for the window, a quit and a restart to update.
   Don't save, New, or opening another drawing puts it aside; File → Recover last drawing brings it back.

@@ -10,9 +10,17 @@
 //   act       { page(name), showDesign, showControl, docs, report, about, closeWindow, devTools }
 //             page(name) asks the window in front to do something (its own menuDo, in the page)
 //   updates   the update items, from main.js (none in a copy that can't update)
+//   recent    454 Design's recent files, newest first: [{path, name, dir}] (design-files.js)
+//             act.openRecent(path) opens one; act.clearRecent() empties the list
 'use strict';
 
-function menuTemplate({ kind, act, updates = [] }) {
+// A recent file's line in the menu: its name, then the folder it's in (the end of it, if it's long). An & is
+// doubled, or Windows would take it as marking the next letter.
+function recentLabel(r) {
+  const dir = r.dir && r.dir.length > 46 ? '…' + r.dir.slice(-45) : (r.dir || '');
+  return (r.name + (dir ? '   (' + dir + ')' : '')).replace(/&/g, '&&');
+}
+function menuTemplate({ kind, act, updates = [], recent = [] }) {
   // An action the page also has a key for. The key is shown, not taken: the page's own handler does the work,
   // so the menu and the key do one thing, and neither works while one of the page's dialogs has the screen.
   const page = (label, name, key) => Object.assign({ label, click: () => act.page(name) }, key ? { accelerator: key, registerAccelerator: false } : {});
@@ -26,6 +34,9 @@ function menuTemplate({ kind, act, updates = [] }) {
   const file = kind === 'design' ? [
     page('New', 'new', 'CmdOrCtrl+N'),
     page('Open…', 'open', 'CmdOrCtrl+O'),
+    { label: 'Open recent', submenu: recent.length
+      ? recent.map((r) => ({ label: recentLabel(r), click: () => act.openRecent(r.path) })).concat([sep, { label: 'Clear this list', click: act.clearRecent }])
+      : [{ label: 'No recent files yet', enabled: false }] },
     page('Import…', 'import', 'CmdOrCtrl+I'),
     page('Save', 'save', 'CmdOrCtrl+S'),
     page('Save As…', 'saveAs', 'CmdOrCtrl+Shift+S'),
@@ -78,4 +89,4 @@ function windowKind(url) {
   return 'other';
 }
 
-module.exports = { menuTemplate, windowKind };
+module.exports = { menuTemplate, windowKind, recentLabel };

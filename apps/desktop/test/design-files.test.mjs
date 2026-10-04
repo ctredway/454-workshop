@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { createDesignFiles } = require('../src/design-files.js');
+const { createDesignFiles, RECENT_MAX } = require('../src/design-files.js');
 
 let dir;
 const drawing = (w) => JSON.stringify({ stock: { w: 200, h: 120 }, ents: [{ t: 'rect', x: 0, y: 0, w, h: 20 }] });
@@ -96,5 +96,98 @@ describe('Open and Import ask for different files', () => {
     expect(o.filters[0].extensions).toEqual(['dxf', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']);
     expect(o.filters[0].extensions).not.toContain('json');
     expect(o.properties).toContain('multiSelections');
+  });
+});
+
+// ---- File > Open recent: the last projects opened or saved, newest first ----
+describe('recent files', () => {
+  function withRecent({ open = [], saveAs = null } = {}) {
+    const changes = [];
+    const dialog = { showOpenDialog: async () => ({ canceled: !open.length, filePaths: open }), showSaveDialog: async () => ({ canceled: !saveAs, filePath: saveAs }) };
+    const f = createDesignFiles({ fs, path, dialog, listFile: path.join(dir, 'design-files.json'), recentFile: path.join(dir, 'design-recent.json'), onRecent: () => changes.push(1) });
+    return { f, changes, names: () => f.recent().map((r) => r.name) };
+  }
+  const make = (name, text = drawing(10)) => { const p = path.join(dir, name); fs.writeFileSync(p, text); return p; };
+
+  it('a project opened, saved or saved as goes to the top; each is listed once, with its folder', async () => {
+    const a = make('a.454.json'), b = make('b.crv', 'vcarve'), c = make('c.c2d', 'carbide');
+    let r = withRecent({ open: [a] }); await r.f.open(null, 'open');
+    expect(r.names()).toEqual(['a.454.json']);
+    expect(r.f.recent()[0]).toEqual({ path: a, name: 'a.454.json', dir });
+    expect(r.changes.length).toBe(1);                                            // the menu is told
+    r = withRecent({ open: [b] }); await r.f.open(null, 'open');
+    r = withRecent({ open: [c] }); await r.f.open(null);
+    expect(r.names()).toEqual(['c.c2d', 'b.crv', 'a.454.json']);
+    expect(r.f.save(a, drawing(20)).ok).toBe(true);                              // Save: back to the top
+    expect(r.names()).toEqual(['a.454.json', 'c.c2d', 'b.crv']);
+    r = withRecent({ saveAs: path.join(dir, 'new.454.json') }); await r.f.saveAs(null, drawing(1));
+    expect(r.names()).toEqual(['new.454.json', 'a.454.json', 'c.c2d', 'b.crv']);
+  });
+  it('one file is one entry, whatever the letter case it was named with', async () => {
+    const a = make('Bench.454.json');
+    const r = withRecent({ open: [a] }); await r.f.open(null, 'open');
+    r.f.save(a.toUpperCase(), drawing(2));
+    expect(r.f.recent().length).toBe(1);
+  });
+  it('several picked at once: the first picked is on top', async () => {
+    const r = withRecent({ open: [make('one.454.json'), make('two.454.json')] }); await r.f.open(null, 'open');
+    expect(r.names()).toEqual(['one.454.json', 'two.454.json']);
+  });
+  it('what Import brings in isn’t a recent file', async () => {
+    const r = withRecent({ open: [make('logo.svg', '<svg/>'), make('part.dxf', '0')] }); await r.f.open(null, 'import');
+    expect(r.names()).toEqual([]);
+    expect(r.f.noteRecent(path.join(dir, 'logo.svg'))).toBe(false);
+  });
+  it('keeps the last ' + RECENT_MAX + ', and they’re still there after the app is restarted', async () => {
+    const all = []; for (let i = 1; i <= RECENT_MAX + 3; i++) all.push(make('p' + i + '.454.json'));
+    const one = withRecent({ open: all.slice(0, 2) }); await one.f.open(null, 'open');
+    for (const p of all.slice(2)) one.f.save(p, drawing(3));                     // all in one sitting
+    expect(one.names().length).toBe(RECENT_MAX);
+    const again = withRecent();
+    expect(again.names().length).toBe(RECENT_MAX);
+    expect(again.names()[0]).toBe('p' + (RECENT_MAX + 3) + '.454.json');
+    expect(again.names()).not.toContain('p3.454.json');
+  });
+  it('opening one again reads it, moves it to the top, and Save may then write it', async () => {
+    const a = make('a.454.json', drawing(40)), b = make('b.454.json');
+    let r = withRecent({ open: [a] }); await r.f.open(null, 'open');
+    r = withRecent({ open: [b] }); await r.f.open(null, 'open');
+    fs.rmSync(path.join(dir, 'design-files.json'));                               // as if only the recent list knew it
+    r = withRecent();
+    const got = r.f.openRecent(a);
+    expect(got.path).toBe(a); expect(got.name).toBe('a.454.json');
+    expect(JSON.parse(Buffer.from(got.data).toString()).ents[0].w).toBe(40);
+    expect(r.names()).toEqual(['a.454.json', 'b.454.json']);
+    fs.writeFileSync(a, 'overwritten by something else');
+    expect(r.f.save(a, drawing(41)).ok).toBe(true);
+  });
+  it('only a file on the list can be opened that way', async () => {
+    const secret = make('secret.454.json'), r = withRecent();
+    expect(r.f.openRecent(secret)).toBe(null);
+    expect(r.f.openRecent(path.join(dir, 'design-files.json'))).toBe(null);
+    expect(r.f.openRecent(undefined)).toBe(null);
+  });
+  it('one that’s been moved or deleted says so, and comes off the list', async () => {
+    const a = make('a.454.json'), b = make('b.454.json');
+    let r = withRecent({ open: [a, b] }); await r.f.open(null, 'open');
+    fs.rmSync(a);
+    expect(r.f.openRecent(a)).toEqual({ missing: true, name: 'a.454.json' });
+    expect(r.names()).toEqual(['b.454.json']);
+    expect(withRecent().names()).toEqual(['b.454.json']);                         // and stays off
+  });
+  it('a project dropped on the window is listed, if it’s there; Clear empties the list', async () => {
+    const a = make('dropped.crv', 'x'), r = withRecent();
+    expect(r.f.noteRecent(a)).toBe(true);
+    expect(r.f.noteRecent(path.join(dir, 'not-there.454.json'))).toBe(false);
+    expect(r.names()).toEqual(['dropped.crv']);
+    r.f.clearRecent();
+    expect(r.names()).toEqual([]);
+    expect(withRecent().names()).toEqual([]);
+  });
+  it('a list file that’s been spoiled is taken as empty', () => {
+    fs.writeFileSync(path.join(dir, 'design-recent.json'), '{"not": "a list"}');
+    expect(withRecent().names()).toEqual([]);
+    fs.writeFileSync(path.join(dir, 'design-recent.json'), JSON.stringify([5, 'C:/x/readme.txt', null]));
+    expect(withRecent().names()).toEqual([]);
   });
 });

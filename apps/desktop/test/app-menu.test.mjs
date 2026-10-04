@@ -3,13 +3,13 @@
 import { describe, it, expect } from 'vitest';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { menuTemplate, windowKind } = require('../src/app-menu.js');
+const { menuTemplate, windowKind, recentLabel } = require('../src/app-menu.js');
 
-function build(kind, updates) {
+function build(kind, updates, recent) {
   const did = [];
-  const act = { page: (n) => did.push('page:' + n) };
+  const act = { page: (n) => did.push('page:' + n), openRecent: (p) => did.push('recent:' + p), clearRecent: () => did.push('clearRecent') };
   for (const k of ['showDesign', 'showControl', 'docs', 'report', 'about', 'closeWindow', 'devTools']) act[k] = () => did.push(k);
-  return { menu: menuTemplate({ kind, act, updates }), did };
+  return { menu: menuTemplate({ kind, act, updates, recent }), did };
 }
 const labels = (items) => items.map((i) => i.type === 'separator' ? '-' : i.label || i.role);
 const sub = (menu, name) => menu.find((m) => m.label === name).submenu;
@@ -21,7 +21,7 @@ describe('the menu bar', () => {
     expect(labels(build('design').menu)).not.toContain('454 Workshop');
   });
   it('File, in 454 Design: a drawing’s actions, then Job setup and Settings, then Close and Exit', () => {
-    expect(labels(sub(build('design').menu, 'File'))).toEqual(['New', 'Open…', 'Import…', 'Save', 'Save As…', 'Recover last drawing', '-',
+    expect(labels(sub(build('design').menu, 'File'))).toEqual(['New', 'Open…', 'Open recent', 'Import…', 'Save', 'Save As…', 'Recover last drawing', '-',
       'Export DXF…', 'Export SVG…', 'Save G-code…', '-', 'Job setup…', 'Settings…', '-', 'Close window', 'Exit']);
   });
   it('File, in 454 Control: Open G-code file, Settings, Close and Exit', () => {
@@ -85,6 +85,32 @@ describe('the menu bar', () => {
     const { menu } = build('design');
     expect(labels(sub(menu, 'Edit'))).toEqual(['undo', 'redo', '-', 'cut', 'copy', 'paste', 'selectAll']);
     expect(labels(sub(menu, 'View'))).toEqual(['reload', 'resetZoom', 'zoomIn', 'zoomOut', '-', 'togglefullscreen', '-', 'Toggle developer tools']);
+  });
+});
+
+describe('File > Open recent, in 454 Design', () => {
+  const recent = [{ path: 'C:\\Jobs\\bench.454.json', name: 'bench.454.json', dir: 'C:\\Jobs' }, { path: 'D:\\Signs\\Tom & Co.crv', name: 'Tom & Co.crv', dir: 'D:\\Signs' }];
+  it('lists them newest first, each with its folder, then Clear this list', () => {
+    const items = item(build('design', [], recent).menu, 'File', 'Open recent').submenu;
+    expect(labels(items)).toEqual(['bench.454.json   (C:\\Jobs)', 'Tom && Co.crv   (D:\\Signs)', '-', 'Clear this list']);
+  });
+  it('clicking one opens that file; Clear empties the list', () => {
+    const { menu, did } = build('design', [], recent), items = item(menu, 'File', 'Open recent').submenu;
+    items[1].click(); items[3].click();
+    expect(did).toEqual(['recent:D:\\Signs\\Tom & Co.crv', 'clearRecent']);
+  });
+  it('with none yet, says so, and can’t be clicked', () => {
+    const items = item(build('design').menu, 'File', 'Open recent').submenu;
+    expect(items).toEqual([{ label: 'No recent files yet', enabled: false }]);
+  });
+  it('a long folder shows its end, where the job’s name usually is', () => {
+    const l = recentLabel({ name: 'a.454.json', dir: 'C:\\Users\\clint\\Documents\\Woodworking\\Customers\\2026\\Smith kitchen' });
+    expect(l.startsWith('a.454.json   (…')).toBe(true);
+    expect(l.endsWith('Smith kitchen)')).toBe(true);
+    expect(l.length).toBeLessThan(70);
+  });
+  it('454 Control’s File menu has no recent list', () => {
+    expect(labels(sub(build('control', [], recent).menu, 'File'))).not.toContain('Open recent');
   });
 });
 

@@ -224,12 +224,17 @@ function files() {
   };
   const useTest = process.env.P454_FILE_OPEN !== undefined || process.env.P454_FILE_SAVEAS !== undefined;
   designFiles = createDesignFiles({ fs, path, dialog: useTest ? testDialog : dialog,
-    listFile: path.join(app.getPath('userData'), 'design-files.json'), log: (m) => console.log('[files] ' + m) });
+    listFile: path.join(app.getPath('userData'), 'design-files.json'), recentFile: path.join(app.getPath('userData'), 'design-recent.json'),
+    onRecent: () => Menu.setApplicationMenu(menu()),                 // File > Open recent shows the list as it is now
+    log: (m) => console.log('[files] ' + m) });
   return designFiles;
 }
 ipcMain.handle('files:open', (e, kind) => (fromAppPage(e) ? files().open(BrowserWindow.fromWebContents(e.sender), kind === 'import' ? 'import' : 'open') : []));
 ipcMain.handle('files:saveAs', (e, text, suggested) => (fromAppPage(e) ? files().saveAs(BrowserWindow.fromWebContents(e.sender), String(text), suggested ? String(suggested) : '') : null));
 ipcMain.handle('files:save', (e, p, text) => (fromAppPage(e) ? files().save(String(p), String(text)) : { ok: false, why: 'not allowed' }));
+// a recent file again (only one on the list), and a project opened another way put on the list
+ipcMain.handle('files:openRecent', (e, p) => (fromAppPage(e) ? files().openRecent(String(p)) : null));
+ipcMain.handle('files:noteRecent', (e, p) => (fromAppPage(e) ? files().noteRecent(String(p)) : false));
 
 ipcMain.handle('updates:view', (e) => (updater && fromAppPage(e) ? updater.view : null));
 ipcMain.handle('updates:do', async (e, action) => {
@@ -259,9 +264,12 @@ function menu() {
   const focused = () => BrowserWindow.getFocusedWindow();
   const front = focused();
   const kind = front && !front.isDestroyed() ? (front === design ? 'design' : front === control ? 'control' : windowKind(front.webContents.getURL())) : 'other';
-  return Menu.buildFromTemplate(menuTemplate({ kind, updates: updateMenu(), act: {
+  return Menu.buildFromTemplate(menuTemplate({ kind, updates: updateMenu(), recent: kind === 'design' ? files().recent() : [], act: {
     // the page does it, through its own menuDo: the same thing its button or its keys do
     page: (name) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo(' + JSON.stringify(name) + ')', true).catch(() => {}); },
+    // a recent file: the page opens it, as it opens any other (and asks nothing of a dialog that has the screen)
+    openRecent: (p) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo("recent", ' + JSON.stringify(p) + ')', true).catch(() => {}); },
+    clearRecent: () => files().clearRecent(),
     showDesign, showControl,
     docs: () => openDocs(ORIGIN + '/docs/index.html'),
     report: () => shell.openExternal(reportUrl({ version: app.getVersion(), os: osName(process.platform, require('os').release()) })),

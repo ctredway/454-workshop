@@ -330,3 +330,49 @@ test('without the browser’s file picker, the file box is told which files to o
   assert.equal(box.getAttribute('accept'), '.json,.crv,.c2d');
   assert.equal(clicks, 2);
 });
+
+// ---- the desktop app's File > Open recent ----
+test('desktop: a recent file opens as Open opens it, and Save then goes back to it', async () => {
+  const D = fresh(), calls = desktop(D);
+  D.desktop454.files.openRecent = async (p) => { calls.push('openRecent ' + p); return { path: p, name: 'shelf.454.json', data: new Uint8Array([123, 125]) }; };
+  assert.equal(D.menuDo('recent', 'C:/Jobs/shelf.454.json'), true); await flush();
+  assert.deepEqual(calls, ['openRecent C:/Jobs/shelf.454.json']);
+  assert.equal(D.run('DESIGN_IMPORT.got.length'), 1);
+  assert.equal(D.run('DESIGN_IMPORT.got[0].name'), 'shelf.454.json');
+  const d = JSON.parse(D.run('docForStorage()'));
+  D.openDrawing(D.run(`(${JSON.stringify(d)})`), 'shelf.454.json');                // Design reads it as a drawing
+  D.run(`persist(); 1`);
+  D.press('s', { ctrl: true }); await flush();
+  assert.deepEqual(calls.slice(1), ['save C:/Jobs/shelf.454.json'], 'no Save window');
+});
+test('desktop: a recent VCarve or Carbide Create project opens, but isn’t a file Save writes to', async () => {
+  const D = fresh(), calls = desktop(D);
+  D.desktop454.files.openRecent = async (p) => ({ path: p, name: 'sign.crv', data: new Uint8Array([1]) });
+  D.menuDo('recent', 'C:/Jobs/sign.crv'); await flush();
+  assert.equal(D.run('DESIGN_IMPORT.got[0].name'), 'sign.crv');
+  assert.equal(D.run('OPEN_PATH'), null);
+});
+test('desktop: a recent file that’s gone says so, and opens nothing', async () => {
+  const D = fresh(); desktop(D);
+  D.desktop454.files.openRecent = async () => ({ missing: true, name: 'old.454.json' });
+  D.run('DESIGN_IMPORT.got = null; 1');
+  D.menuDo('recent', 'C:/Jobs/old.454.json'); await flush();
+  assert.equal(D.run('DESIGN_IMPORT.got'), null);
+  assert.match(D.document.body.textContent, /That file isn’t there any more/);
+  assert.match(D.document.body.textContent, /old\.454\.json has been moved, renamed or deleted/);
+});
+test('desktop: a recent file isn’t opened while a dialog has the screen', async () => {
+  const D = fresh(), calls = desktop(D);
+  D.desktop454.files.openRecent = async (p) => { calls.push('openRecent'); return null; };
+  D.document.getElementById('settingsModal').hidden = false;
+  assert.equal(D.menuDo('recent', 'C:/Jobs/shelf.454.json'), false); await flush();
+  assert.deepEqual(calls, []);
+});
+test('desktop: projects dropped on the window go on the recent files; other files don’t', () => {
+  const D = fresh(); desktop(D);
+  const noted = [];
+  D.desktop454.files.pathOf = (f) => 'C:/Drops/' + f.name;
+  D.desktop454.files.noteRecent = (p) => { noted.push(p); return true; };
+  D.droppedFiles([{ name: 'bench.454.json' }, { name: 'logo.svg' }, { name: 'sign.crv' }, { name: 'box.c2d' }, { name: 'photo.png' }]);
+  assert.deepEqual(noted, ['C:/Drops/bench.454.json', 'C:/Drops/sign.crv', 'C:/Drops/box.c2d']);
+});

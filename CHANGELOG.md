@@ -27,6 +27,22 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.40 — recent files
+- **File → Open recent**, in 454 Design: the last ten projects opened or saved, newest first, each with its
+  folder. Click one to open it again; Save then goes straight back to it, as after Open. A project is a
+  drawing, or a VCarve or Carbide Create file: what Open opens. Files brought in with Import aren't listed.
+- A file gets on the list when it's opened (the Open window, or dropped on the window), saved, or saved as.
+  Opening or saving one already there moves it to the top.
+- **A file that's been moved, renamed or deleted** says so when clicked, and comes off the list. **Clear this
+  list** empties it. With none yet, the menu says so.
+- The list is kept in the app's data folder (`design-recent.json`), so it's there next time. The page can ask
+  for a file to be opened this way only if it's on the list, so it can't name a file of its own choosing.
+- Includes Design 0.123.0.
+- Asked for by Clint.
+- **Tested** (10 tests in `design-files.test.mjs`, 5 in `app-menu.test.mjs`, 5 in Design's `keys.test.mjs`;
+  broken on purpose 26 ways: 23 caught, 1 more after fixing a test, and 2 that showed the same check written
+  twice, one of which was taken out), and done in the app: opened, reopened from the menu, saved back, deleted.
+
 ### 0.6.2-beta.39 — watch the job cut
 - Includes Design 0.122.0: Preview in wood plays the job, with Play, Pause and a slider.
 
@@ -963,6 +979,11 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.123.0 — recent files, in the desktop app
+- The desktop app's **File → Open recent** opens a recent project as Open does (`openRecent`, `menuDo('recent', path)`),
+  and projects dropped on the window go on its list. See the desktop app's 0.6.2-beta.40. In a browser there's
+  no such list: a web page can't keep hold of where a file is.
 
 ### 0.122.0 — Preview in wood: watch the job cut
 - **Play, Pause and a slider under Preview in wood.** It still opens on the finished piece. **Play** starts from

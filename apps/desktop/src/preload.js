@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('desktop454', {
     open: (kind) => ipcRenderer.invoke('files:open', kind === 'import' ? 'import' : 'open'),   // [{path, name, data}]
     saveAs: (text, suggested) => ipcRenderer.invoke('files:saveAs', String(text), suggested || ''),   // {path, name} or null
     save: (p, text) => ipcRenderer.invoke('files:save', String(p), String(text)),    // {ok, name} or {ok: false, why}
+    openRecent: (p) => ipcRenderer.invoke('files:openRecent', String(p)),            // {path, name, data}, {missing, name} or null
+    noteRecent: (p) => ipcRenderer.invoke('files:noteRecent', String(p)),            // a project opened another way (dropped)
     pathOf: (file) => { try { return webUtils.getPathForFile(file) || ''; } catch (e) { return ''; } },
   },
   platform: process.platform,

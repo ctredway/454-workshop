@@ -12,7 +12,7 @@ function selectAll(){
 }
 // The desktop app's File and Help menus act through here, so a menu item does exactly what its button or its
 // keys do, and nothing while a dialog (or the help) has the screen: the same rule the keys follow.
-function menuDo(what){
+function menuDo(what, arg){
   if (typeof helpIsOpen === 'function' && helpIsOpen()) return false;
   if (what === 'help'){ helpOpen(); return true; }
   if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
@@ -20,6 +20,7 @@ function menuDo(what){
   if (what === 'new') newDrawing();
   else if (what === 'open') openFiles('open');
   else if (what === 'import') openFiles('import');
+  else if (what === 'recent') openRecent(arg);
   else if (what === 'save') saveDrawing(false);
   else if (what === 'saveAs') saveDrawing(true);
   else if (what === 'recover') press('recoverBtn');
