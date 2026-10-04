@@ -22,21 +22,40 @@ function crvSheets(vd){
   }
   return out;
 }
+// The material, from the MaterialSize stream: it holds the block's two opposite corners (x, y, z at 6, 14, 22
+// and at 30, 38, 46), not its size. Its size is the difference; XY zero is wherever 0, 0 falls in it, and Z
+// zero is at whichever of its top and bottom sits at 0. (The high corner used to be taken as the size, which
+// is only right with XY zero at the low corner: a 12 x 9 job zeroed at its centre was read as 6 x 4.5, with
+// no thickness. Seen in five projects; none yet with Z zero at the bottom.)
+function crvMaterial(ms){
+  var out = {w: 0, h: 0, t: 0, zero: 'top', x0: 0, y0: 0};
+  if (!ms || ms.length < 54) return out;
+  var dv = new DataView(ms.buffer, ms.byteOffset, ms.byteLength), v = [];
+  for (var k = 0; k < 6; k++) v.push(dv.getFloat64(6 + 8 * k, true));
+  var ok = function (n){ return isFinite(n) && Math.abs(n) < 1e6; };
+  if (ok(v[0]) && ok(v[3]) && v[3] - v[0] > 0){ out.w = v[3] - v[0]; out.x0 = v[0]; }
+  if (ok(v[1]) && ok(v[4]) && v[4] - v[1] > 0){ out.h = v[4] - v[1]; out.y0 = v[1]; }
+  if (ok(v[2]) && ok(v[5]) && v[5] - v[2] > 0.01 && v[5] - v[2] < 500){ out.t = v[5] - v[2]; out.zero = Math.abs(v[2]) < 1e-6 ? 'bottom' : 'top'; }
+  return out;
+}
+// Where XY zero is on a material w by h whose low corner is at (x0, y0): Design's name for it, or null if it
+// isn't at a corner or the centre.
+function crvZeroAt(w, h, x0, y0){
+  var e = Math.max(1e-6, Math.max(w, h) * 1e-6), near = function (a, b){ return Math.abs(a - b) <= e; };
+  if (near(x0, 0) && near(y0, 0)) return 'corner';
+  if (near(x0, -w / 2) && near(y0, -h / 2)) return 'center';
+  if (near(x0, -w) && near(y0, 0)) return 'fr';
+  if (near(x0, 0) && near(y0, -h)) return 'bl';
+  if (near(x0, -w) && near(y0, -h)) return 'br';
+  return null;
+}
 function crvExtract(buf){
   var ole = oleParse(buf);
   if (!ole) return null;
   var vd = ole.stream('2dDataV2');
   if (!vd) return null;
-  var ms = ole.stream('MaterialSize');
-  var mdv = ms ? new DataView(ms.buffer, ms.byteOffset, ms.byteLength) : null;
-  var stockW = mdv && ms.length >= 46 ? mdv.getFloat64(30, true) : 0;
-  var stockH = mdv && ms.length >= 46 ? mdv.getFloat64(38, true) : 0;
-  // The material's Z range: top at 14, bottom at 22. Its size is the thickness; whichever end sits
-  // at zero is where Z zero is. Getting this from the project avoids "through" meaning nothing.
-  var zTop = mdv && ms.length >= 30 ? mdv.getFloat64(14, true) : 0;
-  var zBot = mdv && ms.length >= 30 ? mdv.getFloat64(22, true) : 0;
-  var stockT = isFinite(zTop) && isFinite(zBot) && zTop - zBot > 0.01 && zTop - zBot < 500 ? zTop - zBot : 0;
-  var stockZero = Math.abs(zBot) < 1e-6 && zTop > 0 ? 'bottom' : 'top';
+  var mat = crvMaterial(ole.stream('MaterialSize'));
+  var stockW = mat.w, stockH = mat.h, stockT = mat.t, stockZero = mat.zero;
   var dv = new DataView(vd.buffer, vd.byteOffset, vd.byteLength);
   // layer markers: ff fe ff <len> utf16 strings; layer names precede their content.
   // VCarve serializes the 'Toolpath Previews' layer first, drawing layers after.
@@ -59,7 +78,7 @@ function crvExtract(buf){
   var drawingStart = 0;
   if (layers.length && /toolpath/i.test(layers[0].name))
     drawingStart = layers.length > 1 ? layers[1].off : vd.length; // previews-only file: nothing is drawing
-  var contours = [], preview = [], contourIds = [], contourSheets = [], i = 0, L = vd.length;
+  var contours = [], preview = [], contourIds = [], contourSheets = [], contourAts = [], contourEnds = [], i = 0, L = vd.length;
   // A segment starts with its kind: 0 line, 1 arc (a bulge follows), 2 cubic Bezier (two control
   // points follow). Missing the Bezier kind used to drop whole outlines: VCarve's smooth curves
   // are Beziers, so any shape with one simply vanished on import.
@@ -105,16 +124,27 @@ function crvExtract(buf){
           if (o + 16 <= L) for (var hb = 0; hb < 16; hb++) hx += (vd[o + hb] < 16 ? '0' : '') + vd[o + hb].toString(16);
           contourIds.push(/^0+$/.test(hx) ? null : hx);
           contourSheets.push(crvSheetBefore(vd, i));      // the sheet it's on (multi-sheet projects)
+          contourAts.push(i); contourEnds.push(o);        // where it is in the data: text's letters are found by it (crv-text.js)
         }
         i = o; continue;
       }
     }
     i++;
   }
+  // Text: put each letter where VCarve does, or leave the block out and say so (crv-text.js). A block that
+  // can't be read at all is left as it was found.
+  var text = {placed: 0, left: [], drop: {}, sheets: {}};
+  try { text = crvTextApply(vd, dv, contours, contourAts, contourEnds); } catch (e){ text.left.push({said: '', why: 'the text couldn\u2019t be read (' + e.message + ')', unread: true}); }
+  Object.keys(text.sheets).forEach(function (k){ if (!contourSheets[k]) contourSheets[k] = text.sheets[k]; });
+  if (Object.keys(text.drop).length){
+    var keep = function (v, k){ return !text.drop[k]; };
+    contours = contours.filter(keep); contourIds = contourIds.filter(keep); contourSheets = contourSheets.filter(keep);
+  }
   var toolpaths = [];
   try{ var td = ole.stream('ToolpathData'); if (td){ toolpaths = vcToolpathsFrom(td); vcToolpathVectors(td, toolpaths, contourIds); } }catch(e){}   // never block the import
-  return {stockW: stockW, stockH: stockH, stockT: stockT, stockZero: stockZero, contours: contours, contourIds: contourIds,
-          contourSheets: contourSheets, sheets: crvSheets(vd), preview: preview, toolpaths: toolpaths};
+  return {stockW: stockW, stockH: stockH, stockT: stockT, stockZero: stockZero, stockAt: [mat.x0, mat.y0], contours: contours, contourIds: contourIds,
+          contourSheets: contourSheets, sheets: crvSheets(vd), preview: preview, toolpaths: toolpaths,
+          textPlaced: text.placed, textLeft: text.left};
 }
 function crvToDoc(ex, scale){
   var ents = [];
@@ -141,6 +171,14 @@ function crvToDoc(ex, scale){
   });
   var st = {w: Math.max(10, ex.stockW*scale), h: Math.max(10, ex.stockH*scale), origin:'corner'};
   if (ex.stockT > 0){ st.t = ex.stockT * scale; st.zero = ex.stockZero || 'top'; }
-  return {stock: st, ents: ents, guides: []};
+  // XY zero where the project has it: at a corner or the centre of the material. Anywhere else, the shapes are
+  // moved so the material's front-left corner is zero, and `moved` says by how much.
+  var moved = null;
+  if (ex.stockAt && ex.stockW > 0 && ex.stockH > 0){
+    var zero = crvZeroAt(ex.stockW, ex.stockH, ex.stockAt[0], ex.stockAt[1]);
+    if (zero) st.origin = zero;
+    else { moved = [-ex.stockAt[0] * scale, -ex.stockAt[1] * scale]; ents.forEach(function (e){ moveEntity(e, moved[0], moved[1]); }); }
+  }
+  return {stock: st, ents: ents, guides: [], moved: moved};
 }
 

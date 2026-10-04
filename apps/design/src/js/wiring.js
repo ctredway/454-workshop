@@ -493,18 +493,20 @@ function wire(){
     if (!useD && !useP){ impClose(); return; }
     var scale = document.getElementById('impIN').checked ? 25.4 : 1;
     pushUndo();
-    var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockT: ex.stockT, stockZero: ex.stockZero, contours: useD ? ex.contours : [],
+    var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockT: ex.stockT, stockZero: ex.stockZero, stockAt: ex.stockAt, contours: useD ? ex.contours : [],
                          contourIds: useD ? ex.contourIds : [], contourSheets: useD ? ex.contourSheets : []}, scale);   // IDs and sheets
-    var docP = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, contours: useP ? ex.preview : []}, scale);
+    var docP = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockAt: ex.stockAt, contours: useP ? ex.preview : []}, scale);
     docP.ents.forEach(function(en){ en.tp = true; });
     DOC = {stock: docD.stock, ents: docD.ents.concat(docP.ents), guides: [], dims: [], vcToolpaths: ex.toolpaths || [],
-           vcPreview: (ex.preview || []).map(function (c) { return c.map(function (sp) { return [sp[0]*scale, sp[1]*scale, sp[2]]; }); })};
+           vcPreview: (ex.preview || []).map(function (c) { return c.map(function (sp) { return [sp[0]*scale + (docD.moved ? docD.moved[0] : 0), sp[1]*scale + (docD.moved ? docD.moved[1] : 0), sp[2]]; }); })};
     var sheetsMade = sheetsFromCrv(ex);
     syncStockUI(); persist(); fit();
     if (sheetsMade) toast('info', 'This project has ' + sheetsMade.length + ' sheets',
       sheetsMade.map(function (l) { return l.name; }).join(', ') + ': each has its own toolpaths and its own G-code. Choose the sheet at the top of the Toolpaths panel.');
     impClose();
     renderToolpathPanel();
+    if (useD) crvTextSay(ex);
+    if (docD.moved) toast('info', 'XY zero moved to the front-left corner', 'The project has its zero somewhere 454 Design can\u2019t put one. The shapes sit on the material as they did; set XY zero in Job setup.');
     if (DOC.stock.t > 0)
       toast('info', 'Material from the project', fmtDisp(DOC.stock.t) + ' ' + unitTag() + ' thick, Z zero on the ' +
             (DOC.stock.zero === 'bottom' ? 'spoilboard' : 'top of the material') + '. Change it in Job setup if that\u2019s not what you\u2019ll cut.');
@@ -515,6 +517,17 @@ function wire(){
     }
   }, true);
 
+  // What became of a VCarve project's text: blocks left out are named, with why and what to do.
+  function crvTextSay(ex){
+    var left = ex.textLeft || [];
+    if (!left.length) return;
+    var unread = left.filter(function (t){ return t.unread; }), out = left.filter(function (t){ return !t.unread; });
+    if (out.length) toast('warn', out.length === 1 ? 'One block of text was left out' : out.length + ' blocks of text were left out',
+      out.slice(0, 4).map(function (t){ return '\u201c' + (t.said.length > 28 ? t.said.slice(0, 27) + '\u2026' : t.said) + '\u201d: ' + t.why; }).join('. ') + (out.length > 4 ? ', and ' + (out.length - 4) + ' more' : '') +
+      '. In VCarve, select the text and use Convert Text to Curves, save a copy, and open that.');
+    if (unread.length) toast('warn', 'Some text may be in the wrong place', '454 couldn\u2019t read ' + (unread.length === 1 ? 'a block of text' : unread.length + ' blocks of text') +
+      ' in this project, so its letters may be piled up near zero. In VCarve, select the text and use Convert Text to Curves, save a copy, and open that.');
+  }
   function importFile(f){
     if (/^image\//.test(f.type) || /\.(png|jpe?g|gif|bmp|webp)$/i.test(f.name)){ traceOpen(f); return; }
     var rd = new FileReader();

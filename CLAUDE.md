@@ -117,6 +117,10 @@ without a published release looks to them like a newest release with nothing in 
   toolpath `tp.sheet`, and one sheet is shown at a time (`entOnSheet`, `tpOnSheet`). Sheets share one drawing
   space, so anything that looks at "the other shapes" must skip other sheets'. Save G-code saves the shown
   sheet only. All sheets use Job setup's material. A drawing with no sheets, or one, is a single job.
+- **VCarve text is placed, not read as plain outlines** (`crv-text.js`): a `.crv` keeps each letter's outline
+  centred on zero, with its advance, kerning and centre beside it, lines and words above, and a box and matrix
+  for the block. Straight text (left, centred) and text on a curve are placed; anything not yet checked
+  against a VCarve DXF export is left out and named. The material is two corners (`crvMaterial`), not a size.
 - **Carbide Create projects open** (`c2d-import.js`, `c2d-toolpaths.js`): both file kinds (SQLite database of
   zlib-packed JSON; older, one JSON text). A toolpath is converted only when its meaning is known from real
   files; otherwise it's left out and named. Don't add a mapping from a guess: get a file and its G-code.

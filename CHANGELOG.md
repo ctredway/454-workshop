@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.41 — VCarve text and material
+- Includes Design 0.124.0: text in a VCarve project opens where VCarve has it, and a project zeroed at the
+  centre of its material opens at its real size.
+
 ### 0.6.2-beta.40 — recent files
 - **File → Open recent**, in 454 Design: the last ten projects opened or saved, newest first, each with its
   folder. Click one to open it again; Save then goes straight back to it, as after Open. A project is a
@@ -979,6 +983,41 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.124.0 — VCarve projects: text where VCarve has it, and the material's real size
+- **Fixed: text in a VCarve project opened in a pile.** VCarve keeps text as text: each letter's outline is
+  stored centred on zero, with numbers beside it that say where it goes. 454 read the outlines and not the
+  numbers, so every letter of every block landed on one spot. It now reads them (`crv-text.js`) and puts each
+  letter where VCarve does: straight text in lines, set left or centred, fitted to a box or not; and text on a
+  curve, centred on it or starting where it starts; with the block's size, mirroring and place.
+- **Only what's been checked is placed.** Text set to the right, or on a curve with settings not seen yet (off
+  the curve, to one side of it, not filling it) is left out, and 454 says which and why: convert it to curves in VCarve to bring it in. Text
+  it can't read at all is left as it was found, and it says the letters may be piled up.
+- **Fixed: a project zeroed at the centre of its material opened at half its size, with no thickness.** The
+  project holds the material's two corners, not its size, and the high corner was taken as the size: right
+  only with zero at the low corner. A 12 × 9 × 1.25 in job opened as 6 × 4.5. The size is now the space between
+  the corners, and XY zero opens where the project has it: a corner or the centre. A zero anywhere else is
+  moved to the front-left corner, with the shapes kept where they sit on the material, and 454 says so.
+- **How it was worked out:** from a tutorial project of Clint's with twelve blocks of text, and the DXF VCarve
+  exports from it. With the fix, all 1,096 shapes Design makes from the project sit on their own shape in
+  that DXF: the 1,002 letter outlines of straight text and the 86 other shapes exactly, the 8 letters on a
+  curve within 0.003 in. Seven of Clint's own projects open as they did.
+- **Checked on a second project,** made by Clint for the purpose, with its DXF: text fitted to a box (set left,
+  and centred) and text set left on a curve that was turned round and sized to fit. The first version left all
+  three out, as not seen before. The box-fitted text then proved to follow the same rule exactly, and the text
+  on the curve to start where the curve starts (within 0.002 in). All 74 shapes sit on their own DXF shape.
+- Not seen yet, so not handled: text set right; a curve that isn't one arc (it follows the same rule, but
+  hasn't been checked against VCarve); a material with Z zero at the bottom (read by the same rule).
+- The tutorial project is someone else's work, so it isn't in the repository: the tests use its numbers, and
+  text data built the way VCarve writes it. Clint's own project is kept as a permanent test
+  (`apps/design/test/fixtures/vcarve-text.crv`), with VCarve's DXF export of its line on the curve (`.dxf`): a
+  test opens the project, checks its material and that all three blocks of text are placed, and holds the
+  letters on the curve to that DXF. (An export of the whole drawing was checked by hand; one of those belongs
+  here, so the test can hold every shape to it. Design reads one shape fewer than VCarve exports: the arc the
+  text sits on. A shape of a single line or arc isn't read from a `.crv` yet, a gap older than this.)
+- Found by Clint.
+- **Tested** (20 tests in a new `crv-text.test.mjs`; broken on purpose 53 ways: 52 caught, and 1 that changes
+  nothing, as the reader finds an outline within a few bytes of where it's told), and opened in the app.
 
 ### 0.123.0 — recent files, in the desktop app
 - The desktop app's **File → Open recent** opens a recent project as Open does (`openRecent`, `menuDo('recent', path)`),
