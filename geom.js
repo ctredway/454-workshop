@@ -135,6 +135,11 @@
             else if (d1 === best && (q1[0] !== bq[0] || q1[1] !== bq[1])) tie = true;
           }
           if (bq && !tie && !(cap !== undefined && best > cap)){ self.lastNear = bq; return best; }
+          // Every segment has just been measured, and none is within the cap: say so now. (This used to go on
+          // to the grid, which walked out ring after ring to find how far beyond the cap the nearest was, an
+          // answer no caller that gives a cap uses: they ask only whether anything is nearer than it. It was
+          // most of the time a V-carve or a pocket with islands took.)
+          if (cap !== undefined && best > cap){ self.lastNear = null; return cap + cell; }
           best = Infinity;
         }
         var bx = Math.floor((px - minx) / cell), by = Math.floor((py - miny) / cell);
@@ -161,7 +166,9 @@
             if (bx + ring < gw) for (var cy4 = ya; cy4 <= yb; cy4++) visit(bx + ring, cy4);
           }
           if (best <= ring * cell) return best;           // nothing further out can be nearer
-          if (cap !== undefined && ring * cell > cap && best === Infinity) return cap + cell;
+          // every cell within the cap has been looked in, and nothing in them is within it (found further off, or
+          // not found): the same answer as for nothing found at all
+          if (cap !== undefined && ring * cell > cap && best > cap){ self.lastNear = null; return cap + cell; }
           if (bx - ring <= 0 && bx + ring >= gw - 1 && by - ring <= 0 && by + ring >= gh - 1) return best;  // seen it all
         }
       }

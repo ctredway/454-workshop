@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.44 — V-carves and pockets with islands calculate much faster
+- Includes Design 0.128.0: a V-carve over many shapes, and a pocket with islands, calculate several times faster
+  (the tutorial inlay's V-carve in 0.2 s, not 14 s). Not a move is different.
+
 ### 0.6.2-beta.43 — inlay plugs keep their start depth; clearing pockets say when they leave floor
 - Includes Design 0.127.0 **(cutting)**: updating an inlay plug's V-carve in the editor no longer loses its start
   depth. And the clearing pocket of a V-carve or an inlay says when its cutter can't reach some of the floor,
@@ -993,6 +997,23 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.128.0 — V-carves and pockets with islands calculate much faster; the toolpaths are the same
+- **What was slow:** a real inlay project (a panel with 24 shapes, from a VCarve tutorial) froze the app for
+  about half a minute when its toolpaths were calculated: 14 s for the V-carve and 13 s for its clearing pockets.
+- **Why:** the engine keeps asking one question: is any outline nearer to this spot than so far? It asks every
+  outline, millions of times. For an outline that was further off than that, it had the answer after measuring
+  to its segments, and then went on to work out exactly how much further, walking outwards cell by cell through
+  that outline's lookup grid. Nothing that asks the question with a limit uses that number.
+- **Now it stops as soon as it knows nothing is within the limit** (`pathIndex`'s `dist`, in `geom.js`: two
+  early ways out). The tutorial's V-carve takes 0.2 s and its pockets 3 s.
+- **Not a move is different.** Proven old against new: the tutorial's own 15 engine calls, 240 random jobs
+  (pockets with islands, raster, clean-ups and allowances; V-carves with and without a max depth, a start depth
+  and a flat tip; profiles with tabs; offsets), and 100 more on shapes of several hundred points each. Every
+  result was the same, character for character. All of Design's tests pass.
+- **A correction to what was said before:** the times first measured for that project (87 s and 61 s) were taken
+  inside the test harness, which runs the engine about seven times slower than the app does. The app's real
+  times were the 13 s and 14 s above.
 
 ### 0.127.0 — inlay plugs keep their start depth through the editor (cutting); clearing pockets say when they leave floor
 - **Fixed (cutting): updating an inlay plug's V-carve lost its start depth.** A plug's walls begin at the start
