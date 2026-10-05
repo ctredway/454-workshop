@@ -21,6 +21,9 @@ Not released yet
   places at the floor's depth, as VCarve's does, so an inlay seats. It's for a V-carve with its own clearing
   pocket, an inlay made from now on, and inlay toolpaths from a VCarve project. **Make older inlays again to get
   it.** The note about floor left high, added in beta.43, is gone: there's nothing left to warn about.
+- **(cutting) Fixed: a pocket with a stepover over 50% could leave a thin strip standing** down the middle of a
+  channel, where the rings from the two sides didn't quite meet. The middle is now cut. Pockets at 50% or less
+  (the default is 40%) were never affected and haven't changed.
 - **V-carves and pockets with islands calculate much faster.** A V-carve over many shapes that took 14 seconds
   now takes a fraction of one, and pockets with islands are about four times quicker. The toolpaths are exactly
   the same.

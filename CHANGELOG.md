@@ -28,6 +28,8 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ## 454 Workshop (the desktop app, in testing)
 
 ### 0.6.2-beta.44 — the V-bit flattens the floor its clearing cutter can't reach; faster calculation
+- Includes Design 0.130.0 **(cutting)**: a pocket with a stepover over half its cutter no longer leaves a thin
+  strip standing down the middle of a channel.
 - Includes Design 0.129.0 **(cutting)**: a V-carve with a clearing pocket, and an inlay, flatten the floor the
   clearing cutter can't get to, the way VCarve's V-bit does.
 - Includes Design 0.128.0: a V-carve over many shapes, and a pocket with islands, calculate several times faster
@@ -1000,6 +1002,29 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.130.0 — a pocket with a wide stepover no longer leaves a strip down the middle of a channel (cutting)
+- **What was wrong:** a pocket is cleared in rings, each a stepover further in than the last, and each ring clears
+  a cutter's radius either side of itself. With a stepover of more than half the cutter (over 50%), the rings
+  from the two sides of a channel could fail to meet: the channel's middle was more than a radius past one ring,
+  but not far enough in for the next ring to exist there. A strip was left standing down the middle, a fraction of
+  a millimetre wide and the full depth of the pocket. A 6 mm cutter at 60% in a channel 12.6 mm wide left one
+  0.6 mm wide. Found by cutting a VCarve tutorial's inlay in the simulation beside VCarve's own G-code: six such
+  strips, 19 mm² in all.
+- **454's own default, 40%, can't do this,** nor can any stepover of 50% or less: the next ring in is never more
+  than a radius on. It took a stepover typed above 50%, or a VCarve project's (60% there).
+- **Now the middle is cut** (`pocket()` in `cam.js`, MIDDLES). After the rings are worked out, wherever a ring has
+  no next ring within half a radius to do the job, a stretch of ring 0.9 of a radius further in is added. It's
+  cut first at each pass, ramped into like any other, nearest stretch next. Raster clearing and clean-ups after a
+  larger bit don't need it and don't get it.
+- **Pockets at 50% or less are, move for move, what they were:** proven old against new on 240 random jobs.
+- **Tested** (5 tests in `pocket-middles.test.mjs`): cut in Preview in wood's simulation at 60% and 95%, for
+  channels of eight widths, a wedge (every width from 8 to 26 mm) and a pocket with two islands, each must come
+  out the same, cell for cell, as the same pocket at 40%: nothing left standing, nothing extra cut, no rapid move
+  into wood; and in passes with a ramp, nothing goes below a pass's depth before that pass. Broken on purpose 8
+  ways: all caught.
+- **Against VCarve's G-code for that inlay:** the strips are gone, and the wood cut is 99.7% the same within
+  0.1 mm.
+
 ### 0.129.0 — the V-bit flattens the floor its clearing cutter can't reach (cutting)
 - **What was wrong:** a V-carve with a max depth, and both halves of an inlay, are cut by an end mill that clears
   the flat floor and a V-bit that cuts the walls. The end mill is round: it can't get into the floor's corners, or
@@ -1029,9 +1054,8 @@ The controller is the authority on the machine, so anything it reports is used r
   both cut in Preview in wood's simulation: 99.7% of the panel is the same within 0.1 mm (94.8% before), and
   Design is never deeper than the floor. Before, about 2,900 mm² of floor was left high; now none is, apart
   from 19 mm² in six thin strips that the clearing pocket leaves and VCarve's doesn't (see below).
-- **Found, not yet fixed:** a pocket with a stepover over half its cutter's diameter can leave a strip a fraction
-  of a millimetre wide standing down the middle of a channel, where the rings from the two sides don't quite
-  meet and the next ring in doesn't fit. 454's own default (40%) can't do this; a VCarve project's 60% can.
+- **Found, and fixed in 0.130.0:** a pocket with a stepover over half its cutter's diameter can leave a strip a
+  fraction of a millimetre wide standing down the middle of a channel.
 - **Tested** (14 tests in `vcarve-floor.test.mjs`, and more in `vcarve-pair.test.mjs` and
   `vcarve-convert.test.mjs`; broken on purpose 21 ways: 16 caught, 2 more after adding a test for each, and 3 that
   make no difference, because a V-carve that's out of date is worked out again when the list is shown): cut in the simulation after the clearing pocket, for a square, a narrow neck, a

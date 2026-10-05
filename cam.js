@@ -354,6 +354,23 @@
     };
   }
 
+  // For each grid point of a distance field, the furthest from the walls of anything within nb cells of it (a
+  // square of cells, so a little further on the diagonals), looking only at the cells from (x0, y0) to (x1, y1).
+  // It answers "is there anywhere deeper into the shape near here?", which is how the middle of a narrow part is told
+  // from a place the next ring or line in will reach.
+  function topWithin(F, nb, x0, y0, x1, y1){
+    var w = F.w, d = F.d, top = new Float32Array(w * F.h), row = new Float32Array(w), col = new Float32Array(F.h), x, y, k, m;
+    for (y = y0; y <= y1; y++){
+      for (x = x0; x <= x1; x++){ m = -Infinity; for (k = Math.max(x0, x - nb); k <= Math.min(x1, x + nb); k++) if (d[y * w + k] > m) m = d[y * w + k]; row[x] = m; }
+      for (x = x0; x <= x1; x++) top[y * w + x] = row[x];
+    }
+    for (x = x0; x <= x1; x++){
+      for (y = y0; y <= y1; y++){ m = -Infinity; for (k = Math.max(y0, y - nb); k <= Math.min(y1, y + nb); k++) if (top[k * w + x] > m) m = top[k * w + x]; col[y] = m; }
+      for (y = y0; y <= y1; y++) top[y * w + x] = col[y];
+    }
+    return top;
+  }
+
   // ---- pocketing -------------------------------------------------------
   // Clear everything inside `outline`, leaving any `islands` standing, down to depth.
   //
@@ -436,6 +453,7 @@
       return snapped;
     }
 
+    var raster0 = o.strategy === 'raster';
     var ringsByLevel = levels.map(function (lv) {
       return G.isoLoops(F, lv).map(function (l) { return prepare(l, lv); }).filter(Boolean);
     });
@@ -474,6 +492,27 @@
           if (run && run.length >= 2) out.push({pts: run, closed: false});
         });
         return out;
+      });
+    }
+    // MIDDLES: with a stepover of more than half the cutter, the rings from two sides of a channel can fail to meet.
+    // A ring clears a cutter's radius either side of itself. Where a channel's middle is more than a radius past
+    // one ring, and not far enough for the next ring in to exist there, a strip was left standing down the
+    // middle: a fraction of a millimetre wide, the full depth of the pocket. (A stepover of half the cutter or less
+    // can't do it: the next ring in is never more than a radius on.) So, after each ring, a stretch of ring 0.9 of
+    // a radius further in is cut wherever there is no next ring within half a radius to do the job. It reaches
+    // 1.9 radii past its ring, which is as far as the widest stepover goes.
+    var midRuns = [];
+    if (!raster0 && !(o.rest && o.rest.toolDia > 0) && step > r + 1e-9){
+      var mN = F.w * F.h, mTop = topWithin(F, Math.max(1, Math.round(r * 0.5 / res)), 0, 0, F.w - 1, F.h - 1), mMask = new Uint8Array(mN);
+      levels.forEach(function (lv, li) {
+        var next = li + 1 < levels.length ? levels[li + 1] : Infinity, anyM = false;
+        if (next - lv <= r + 1e-9) return;                  // (the last ring but one can be closer to the last than a stepover)
+        for (var mc = 0; mc < mN; mc++){ var isM = F.d[mc] > lv && mTop[mc] < next; mMask[mc] = isM ? 1 : 0; if (isM) anyM = true; }
+        if (!anyM) return;
+        G.isoRuns(F, lv + r * 0.9, mMask).forEach(function (rn) {
+          var pts = G.simplify(rn.pts, 0.01, rn.closed);
+          if (pts.length >= 2) midRuns.push({pts: pts, closed: rn.closed && pts.length > 2});
+        });
       });
     }
     var ringCount = ringsByLevel.reduce(function (s2, a2) { return s2 + a2.length; }, 0);
@@ -562,6 +601,27 @@
         moves.push({g: 0, z: clear});
         continue;
       }
+      if (midRuns.length){                               // the middles the rings would miss, first: nearest next
+        var mids = midRuns.slice();
+        while (mids.length){
+          var fromM = here || mids[0].pts[0], bM = 0, bdM = Infinity, endM = 0;
+          mids.forEach(function (rn, kk) {
+            var e0 = rn.pts[0], e1 = rn.pts[rn.pts.length - 1], dm0 = G.dist(fromM[0], fromM[1], e0[0], e0[1]), dm1 = rn.closed ? Infinity : G.dist(fromM[0], fromM[1], e1[0], e1[1]);
+            if (dm0 < bdM){ bdM = dm0; bM = kk; endM = 0; }
+            if (dm1 < bdM){ bdM = dm1; bM = kk; endM = 1; }
+          });
+          var mr = mids.splice(bM, 1)[0], mp = mr.closed ? rotateTo(mr.pts, fromM) : endM ? mr.pts.slice().reverse() : mr.pts.slice();
+          if (mr.closed) mp.push(mp[0]);
+          moves.push({g: 0, z: entered ? clear : o.safeZ});
+          moves.push({g: 0, x: mp[0][0], y: mp[0][1]});
+          moves.push({g: 0, z: prevZ + 0.5 < clear ? prevZ + 0.5 : clear});
+          moves.push({g: 1, z: prevZ, f: o.plunge});
+          rampOn(mp[0], mp[1], prevZ, z);
+          entered = true;
+          for (var km = 1; km < mp.length; km++) moves.push({g: 1, x: mp[km][0], y: mp[km][1], z: z, f: o.feed});
+          here = mp[mp.length - 1];
+        }
+      }
       if (raster){
         var todo = rasterSegs.slice();
         while (todo.length){
@@ -639,7 +699,7 @@
       moves.push({g: 0, z: clear});
     }
     moves.push({g: 0, z: o.safeZ});
-    return {moves: moves, rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD,
+    return {moves: moves, rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD, middles: midRuns.length,
             restRuns: restRuns ? restRuns.reduce(function (s3, a3) { return s3 + a3.length; }, 0) : undefined, restLeft: restRuns ? restLeft * res * res : undefined};
   }
 
@@ -807,16 +867,7 @@
         // ridge twice the height. So a line half a step further in is added, only where there's no full line
         // further in to do the job: where nothing within a step of it is a whole step deeper into the floor.
         // `top`: the furthest from the walls of anything within a step of each grid point.
-        var nb = Math.ceil(fs / res), top = new Float32Array(N), row = new Float32Array(F.w), midMask = new Uint8Array(N), x, y, k, m;
-        for (y = wy0; y <= wy1; y++){
-          for (x = wx0; x <= wx1; x++){ m = -Infinity; for (k = Math.max(wx0, x - nb); k <= Math.min(wx1, x + nb); k++) if (fd[y * F.w + k] > m) m = fd[y * F.w + k]; row[x] = m; }
-          for (x = wx0; x <= wx1; x++) top[y * F.w + x] = row[x];
-        }
-        var col = new Float32Array(F.h);
-        for (x = wx0; x <= wx1; x++){
-          for (y = wy0; y <= wy1; y++){ m = -Infinity; for (k = Math.max(wy0, y - nb); k <= Math.min(wy1, y + nb); k++) if (top[k * F.w + x] > m) m = top[k * F.w + x]; col[y] = m; }
-          for (y = wy0; y <= wy1; y++) top[y * F.w + x] = col[y];
-        }
+        var top = topWithin(F, Math.ceil(fs / res), wx0, wy0, wx1, wy1), midMask = new Uint8Array(N), x, y;
         for (var lv = rCap; lv <= rCap + maxIn + fs; lv += fs){
           if (lv > rCap) trace(lv, mask);                 // (the first line, at the floor's edge, is the walls' own pass)
           var anyMid = false;

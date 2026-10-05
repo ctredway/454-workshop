@@ -1,2 +1,2 @@
 'use strict';
-var DESIGN_VERSION = '0.129.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.130.0'; // bump on every build — shown in the header
