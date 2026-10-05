@@ -494,7 +494,7 @@ function wire(){
     var scale = document.getElementById('impIN').checked ? 25.4 : 1;
     pushUndo();
     var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockT: ex.stockT, stockZero: ex.stockZero, stockAt: ex.stockAt, contours: useD ? ex.contours : [],
-                         contourIds: useD ? ex.contourIds : [], contourSheets: useD ? ex.contourSheets : []}, scale);   // IDs and sheets
+                         contourIds: useD ? ex.contourIds : [], contourSheets: useD ? ex.contourSheets : [], contourOpen: useD ? ex.contourOpen : [], contourGroups: useD ? ex.contourGroups : []}, scale);   // IDs, sheets, which are open, and groups
     var docP = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockAt: ex.stockAt, contours: useP ? ex.preview : []}, scale);
     docP.ents.forEach(function(en){ en.tp = true; });
     DOC = {stock: docD.stock, ents: docD.ents.concat(docP.ents), guides: [], dims: [], vcToolpaths: ex.toolpaths || [],

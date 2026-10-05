@@ -143,12 +143,17 @@ function crvTextRead(vd, dv, mark, stop, outs){
     p = lf.end + 40;
     blk.lines.push(line);
   }
+  // After the last line, the path the text sits on: its curve, or for straight text its baseline. 20 bytes, a
+  // class and a number, a class and two numbers, a double, 10 bytes; then how many spans, and the spans. It's
+  // part of the text, not a shape of the drawing: pathAt says where it is, so it isn't taken for one.
+  try {
+    var c0 = cls(p + 20, 'path') + 4;
+    c0 = cls(c0, 'path') + 8 + 8 + 10;
+    if (i32(c0) >= 1 && i32(c0) <= 10000) blk.pathAt = c0;
+  } catch (e){ if (blk.set.IsOnCurve) throw e; }
   if (blk.set.IsOnCurve){
-    // the curve: 20 bytes, a class and a number, a class and two numbers, a double, 10 bytes; then how many spans, and the spans
-    var c = cls(p + 20, 'curve') + 4;
-    c = cls(c, 'curve') + 8 + 8 + 10;
-    var n = i32(c), spans = [];
-    if (n < 1 || n > 10000) throw new Error('its curve has an odd number of spans');
+    if (blk.pathAt === undefined) throw new Error('its curve isn’t where it should be');
+    var c = blk.pathAt, n = i32(c), spans = [];
     c += 4;
     for (var si = 0; si < n; si++){
       var ty = vd[c];
@@ -311,6 +316,7 @@ function crvTextApply(vd, dv, contours, ats, ends){
     catch (e){ res.left.push({said: '', why: 'it couldn’t be read (' + e.message + ')', unread: true}); return; }
     var mine = [];
     blk.lines.forEach(function (l){ l.chars.forEach(function (ch){ ch.outs.forEach(function (at){ mine.push(at); }); }); });
+    if (blk.pathAt !== undefined && index[blk.pathAt] !== undefined) res.drop[index[blk.pathAt]] = true;   // its baseline or curve: part of the text
     var why = crvTextCant(blk);
     if (why){
       mine.forEach(function (at){ res.drop[index[at]] = true; });

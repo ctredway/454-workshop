@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.42 — VCarve projects: lone lines and arcs, and open shapes
+- Includes Design 0.125.0: a lone line or arc in a VCarve project comes across, and open shapes stay open.
+- Includes Design 0.126.0 **(cutting)**: VCarve toolpaths made editable get their real depths in projects in
+  inches and from newer VCarve, and the project's own cutter and feeds.
+
 ### 0.6.2-beta.41 — VCarve text and material
 - Includes Design 0.124.0: text in a VCarve project opens where VCarve has it, and a project zeroed at the
   centre of its material opens at its real size.
@@ -984,6 +989,86 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.126.0 — VCarve toolpaths made editable: real depths, and the project's own cutter and feeds (cutting)
+- **Fixed: in a project in inches, toolpaths came across with their depths taken as millimetres.** A project
+  keeps its toolpaths' lengths in its own units, and says which. The drawing was converted to millimetres;
+  the toolpaths' numbers weren't. A 0.26 in through-cut became a cut 0.26 mm deep. Depth, allowance, pass
+  depth, ramp length and a V-carve's flat depth are converted now (tabs already were).
+- **Fixed: a pocket from newer VCarve came across 3 mm deep, whatever its depth.** Newer VCarve keeps a
+  pocket's settings under another name, so its depth wasn't found, and 3 mm was used in its place without a
+  word: pockets of 0.25 in and 0.125 in both came across at 3 mm, and a 0.01 in skim would have been cut
+  twelve times too deep. Those settings are read now, with the pocket's ramp.
+- **A depth is never made up.** If a toolpath's depth can't be read from the project, the toolpath isn't
+  converted, and 454 says which, and to make it again here.
+- **The cutter and feeds are the project's own.** Each toolpath in a project records its tool: diameter, pass
+  depth, stepover, feed and plunge, in the tool's own units. They're read now, and used first: the diameter
+  (it was guessed from the tool's name, and 1/8 in used when the name didn't say: a 3/16 in cutter named
+  `UC2875 - Upcut - 3/16"x 3/4"` came across as 1/8 in), the feed and plunge (they came from the tool library,
+  or 800 and 300 mm/min without one), and a pocket's stepover (it was 40%). If the diameter can't be told at
+  all, 454 uses 1/8 in and says to check the cutter.
+- **Checked against VCarve's own G-code** for a tutorial project's skim pocket: depth 0.254 mm, a 3/16 in
+  cutter, 2032 and 1016 mm/min, passes up and down 2.858 mm apart, a 12.7 mm ramp, over the same size of
+  area. 454's toolpath has each of those.
+- **On five of Clint's projects,** old conversion against new: the two in inches get their real depths (6.35
+  and 3.175 mm for 3 and 3; 6.604 mm for 0.26); in the three in mm, depths, passes and shapes are as they
+  were, feeds are the project's, and a 1/4 in V-bit is 6.35 mm where it was 3.175.
+- **A toolpath comes across once, under its own name.** A project's toolpath starts with its name, and its
+  settings hold the name it had when it was last calculated, which a rename since leaves behind. Each
+  differing name was taken for a toolpath: the tutorial's five came across as nine, one of them under
+  another's old name.
+- **A V-carve inlay comes across as one**: a V-carve cut with a second tool clearing its floor is two toolpaths
+  in VCarve, and now two here, paired: the V-carve, starting below the surface if it does, with its floor at
+  the start depth and the flat depth together; and a clearing pocket to that floor, standing off the outline
+  by as far as the V-bit's cone reaches there. The pocket goes down in passes no deeper than its tool's own.
+  (VCarve's own G-code for a carve starting 0.23 in down with a 0.1 in flat depth goes to 0.33 in; and the
+  clearing's area in that G-code is 454's within 0.01 mm.)
+- **The V-bit's angle is read from the project.** The tutorial's bit is named `30 Deg V-Groove`: no degree
+  sign, so its angle came out as 60, which carves to the wrong depth. The project keeps the bit's radius and
+  the height of its cone, and the angle is worked out from those. If it can't be told at all, 454 uses 60 and
+  says to check the bit.
+- **Toolpaths find their shapes in groups and text.** A toolpath names what it cuts by ID, and that can be a
+  group's or a block of text's. Every shape, block of text and group in a project starts with a header
+  carrying its ID (`crvObjects`); a group's children follow it. So a toolpath that names a group gets
+  everything in it, and one that names a block of text gets its letters. (The tutorial has four groups: the
+  outlines counted into each reach exactly as far as the box the group records.)
+- **Making toolpaths editable no longer hangs on a big project.** With no shapes found by ID it compared
+  every shape with every saved preview, several times over: on the tutorial (1,096 shapes, 899 previews) it
+  never finished. Past a size that search isn't tried, and those toolpaths come across to have their shapes
+  picked.
+- **Cut in the simulator against VCarve's own G-code** (the tutorial's base, both tools): the wood is the same
+  within 0.1 mm over 94.8% of it, and nowhere does 454 cut deeper by more than 0.17 mm. The rest is floor
+  454 leaves higher: see the first of these.
+- **Known, and not fixed here** (both are the toolpath engine, and so the same for an inlay made in 454):
+  - A V-carve doesn't flatten floor its clearing tool can't fit into. VCarve's V-bit goes back and forth over
+    those places (29 m of moves on the tutorial's base, to 454's 6 m); 454 leaves them. On that pattern it's
+    about a tenth of the floor, in the narrow parts: an inlay cut that way wouldn't seat there.
+  - That pattern takes the engine 87 s for its clearing pocket and 61 s for its V-carve, with the app waiting.
+- The tutorial's two plug toolpaths name a shape that's no longer in its drawing (VCarve has only their saved
+  result), so they come across without shapes, and say so.
+- Found by Clint, checking the tutorial project's toolpaths.
+- **Tested** (23 tests in a new `vcarve-convert.test.mjs`, with a project of Clint's as a fixture,
+  `vcarve-pockets.crv`; broken on purpose 51 ways: 48 caught, and 3 more after adding checks), and on five of
+  Clint's projects, old conversion against new: the same toolpaths, names and shapes.
+
+### 0.125.0 — VCarve projects: lone lines and arcs come across, and open shapes stay open
+- **Fixed: a shape that was a single line or a single arc didn't come across from a VCarve project.** The reader
+  took a shape to be two spans or more, so a lone line or arc was skipped without a word: a project holding one
+  line opened empty. Shapes of one span are read now, as a line or an arc.
+- **Fixed: open shapes were closed, and lost their last point.** Each span in a project says where it ends as
+  well as where it starts. Only the starts were read, so an open shape came across without its last point,
+  closed by a straight line. Now a shape whose last span ends where its first starts is closed, as before, and
+  any other is open, with its end as its last point.
+- **A block of text's own baseline or curve isn't taken for a shape.** Each block of text carries one after its
+  last line (very likely why shapes of one span were skipped). It's part of the text and is left out.
+- The toolpath previews are read as they were.
+- **Checked on real projects:** Clint's test project now gives all 75 shapes of the DXF VCarve exports from it,
+  the arc as an open arc, each open or closed as the DXF has it. The tutorial project still gives its 1,096,
+  with none of its text's baselines or curves beside them. Of eight more of Clint's projects, one that was a
+  single line now opens with it, two gain lone lines they were missing (7 and 1), and five are unchanged.
+- Found while testing the text fix: VCarve's DXF had one shape more than Design read.
+- **Tested** (4 more tests in `crv-text.test.mjs`, on Clint's test project and on a project of his that is one
+  line, `test/fixtures/vcarve-line.crv`; broken on purpose 11 ways, all caught).
+
 ### 0.124.0 — VCarve projects: text where VCarve has it, and the material's real size
 - **Fixed: text in a VCarve project opened in a pile.** VCarve keeps text as text: each letter's outline is
   stored centred on zero, with numbers beside it that say where it goes. 454 read the outlines and not the
@@ -1012,9 +1097,8 @@ The controller is the authority on the machine, so anything it reports is used r
   text data built the way VCarve writes it. Clint's own project is kept as a permanent test
   (`apps/design/test/fixtures/vcarve-text.crv`), with VCarve's DXF export of the whole drawing (`.dxf`): a
   test opens the project, checks its material and that all three blocks of text are placed, and holds every
-  shape Design makes to that DXF, each to its own shape. (Design reads one shape fewer than VCarve exports:
-  the arc the text sits on. A shape of a single line or arc isn't read from a `.crv` yet, a gap older than
-  this.)
+  shape Design makes to that DXF, each to its own shape. (Design then read one shape fewer than VCarve
+  exports, the arc the text sits on: fixed in 0.125.0.)
 - Found by Clint.
 - **Tested** (20 tests in a new `crv-text.test.mjs`; broken on purpose 53 ways: 52 caught, and 1 that changes
   nothing, as the reader finds an outline within a few bytes of where it's told), and opened in the app.

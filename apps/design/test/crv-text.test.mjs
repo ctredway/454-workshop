@@ -334,18 +334,24 @@ function dxfShapes(file) {
     if (code === 0) {
       if (v === 'ENDSEC') break;
       vertex = v === 'VERTEX';
-      if (v === 'POLYLINE') { cur = { layer: '', xs: [], ys: [] }; shapes.push(cur); } else if (v !== 'VERTEX' && v !== 'SEQEND') throw new Error('a ' + v + ' in the DXF: this reader only knows polylines');
+      if (v === 'POLYLINE') { cur = { layer: '', xs: [], ys: [], bs: [], closed: false }; shapes.push(cur); } else if (v !== 'VERTEX' && v !== 'SEQEND') throw new Error('a ' + v + ' in the DXF: this reader only knows polylines');
       continue;
     }
     if (code === 8 && cur && !vertex) cur.layer = v;
-    else if (code === 10 && vertex) cur.xs.push(+v);
+    else if (code === 70 && cur && !vertex) cur.closed = !!(+v & 1);
+    else if (code === 10 && vertex) { cur.xs.push(+v); cur.bs.push(0); }
     else if (code === 20 && vertex) cur.ys.push(+v);
+    else if (code === 42 && vertex) cur.bs[cur.bs.length - 1] = +v;                // this vertex starts an arc
   }
-  return shapes.map((s) => ({ layer: s.layer, x0: Math.min(...s.xs), x1: Math.max(...s.xs), y0: Math.min(...s.ys), y1: Math.max(...s.ys) }));
+  // each shape's box, its arcs included (an open shape's last vertex starts nothing)
+  return shapes.map((s) => Object.assign({ layer: s.layer, closed: s.closed }, plain(D.crvSpansBox(s.xs.map((x, k) => [x, s.ys[k], !s.closed && k === s.xs.length - 1 ? 0 : s.bs[k]])))));
 }
-test('a real VCarve project: every shape Design makes from it sits on its own shape in the DXF VCarve exports', () => {
-  const buf = fs.readFileSync(path.join(here, 'fixtures/vcarve-text.crv'));
-  const ex = D.crvExtract(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+const boxOf = (e) => (e.t === 'circle' ? { x0: e.cx - e.r, x1: e.cx + e.r, y0: e.cy - e.r, y1: e.cy + e.r }
+  : e.t === 'line' ? { x0: Math.min(e.x1, e.x2), x1: Math.max(e.x1, e.x2), y0: Math.min(e.y1, e.y2), y1: Math.max(e.y1, e.y2) }
+  : plain(D.crvSpansBox(e.pts.map((p) => [p[0], p[1], p[2] || 0]))));
+const open = (name) => { const buf = fs.readFileSync(path.join(here, 'fixtures', name)); return D.crvExtract(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)); };
+test('a real VCarve project: every shape Design makes from it is a shape in the DXF VCarve exports, and every DXF shape is made', () => {
+  const ex = open('vcarve-text.crv');
   assert.deepEqual([ex.stockW, ex.stockH, ex.stockT, ex.stockZero], [12, 9, 1.25, 'top'], 'the material');
   assert.deepEqual(plain(ex.stockAt), [-6, -4.5], 'zeroed at its centre');
   assert.equal(ex.textPlaced, 3, 'three blocks of text placed');
@@ -354,17 +360,63 @@ test('a real VCarve project: every shape Design makes from it sits on its own sh
   assert.equal(doc.stock.origin, 'center');
   const dxf = dxfShapes(path.join(here, 'fixtures/vcarve-text.dxf'));
   assert.equal(dxf.length, 75);
-  assert.equal(doc.ents.length, 74, 'the frame, the circle, the square, and 71 letter outlines (39, 21 and 11)');
+  assert.equal(doc.ents.length, 75, 'the frame, the circle, the square, the arc, and 71 letter outlines (39, 21 and 11)');
   const used = new Set();
   doc.ents.forEach((e, i) => {
-    const b = e.t === 'circle' ? { x0: e.cx - e.r, x1: e.cx + e.r, y0: e.cy - e.r, y1: e.cy + e.r } : plain(D.crvSpansBox(e.pts.map((p) => [p[0], p[1], p[2] || 0])));
+    const b = boxOf(e);
     let best = Infinity, at = -1;
     dxf.forEach((d, k) => { const err = Math.max(Math.abs(b.x0 - d.x0), Math.abs(b.x1 - d.x1), Math.abs(b.y0 - d.y0), Math.abs(b.y1 - d.y1)); if (err < best) { best = err; at = k; } });
     assert.ok(best < 0.003, `shape ${i} is ${best.toFixed(4)} from the nearest DXF shape`);
     assert.ok(!used.has(at), `shape ${i} lands on a DXF shape another already has`);
+    assert.equal(e.closed !== false && e.t !== 'line', dxf[at].closed, `shape ${i} is open or closed as the DXF has it`);
     used.add(at);
   });
-  // the one DXF shape Design doesn't make: the arc the text sits on. A shape of a single line or arc isn't read
-  // from a .crv yet (a gap older than this); when it is, this becomes 75 of 75.
-  assert.deepEqual(dxf.filter((d, k) => !used.has(k)).map((d) => d.layer), ['TEXT_CURVE']);
+  assert.equal(used.size, 75, 'every DXF shape');
+  // the arc the text sits on: a shape of one span, open. (Shapes of one span used to be skipped.)
+  const arc = doc.ents.filter((e) => e.closed === false);
+  assert.equal(arc.length, 1);
+  assert.equal(arc[0].t, 'path'); assert.equal(arc[0].pts.length, 2);
+  near(arc[0].pts[0][0], 4.0674, 1e-3, 'it starts on the right'); near(arc[0].pts[1][0], -4.0674, 1e-3, 'and ends on the left');
+  near(boxOf(arc[0]).y1, -0.5, 1e-3, 'over the top');
+  // the text's own baselines and curve are part of the text, not shapes: none came in beside it
+  assert.equal(doc.ents.filter((e) => e.t === 'line').length, 0);
+});
+test('a project that is one line: it comes in, as a line (it used to come in empty)', () => {
+  const ex = open('vcarve-line.crv');
+  assert.deepEqual([ex.stockW, ex.stockH, ex.stockT], [20, 20, 0.5]);
+  assert.deepEqual(plain(ex.contourOpen), [true]);
+  const ents = plain(D.crvToDoc(ex, 1)).ents;
+  assert.equal(ents.length, 1);
+  assert.deepEqual([ents[0].t, ents[0].x1, ents[0].y1, ents[0].x2, ents[0].y2], ['line', 0, 0, 0, 2.25]);
+  assert.ok(ents[0].vcId, 'with VCarve’s ID, so a toolpath that uses it can find it');
+});
+test('open shapes stay open, with their last point; closed ones are as they were', () => {
+  const ex = { stockW: 20, stockH: 20, contours: [
+    [[0, 0, 0], [5, 0, 0], [5, 5, 0]],                                              // three points, open
+    [[0, 0, 0], [5, 0, 0], [5, 5, 0]],                                              // the same, closed
+    [[0, 0, 0.5], [4, 0, 0]],                                                       // one arc
+    [[0, 0, 0], [3, 0, 0.3], [6, 2, 0]],                                            // a line then an arc, open
+    [[1, 0, 0.41421356], [0, 1, 0.41421356], [-1, 0, 0.41421356], [0, -1, 0.41421356]],   // a circle
+  ], contourOpen: [true, false, true, true, false] };
+  const e = plain(D.crvToDoc(ex, 2)).ents;
+  assert.deepEqual(e[0], { t: 'poly', pts: [[0, 0], [10, 0], [10, 10]], closed: false });
+  assert.deepEqual(e[1], { t: 'poly', pts: [[0, 0], [10, 0], [10, 10]], closed: true });
+  assert.deepEqual(e[2], { t: 'path', pts: [[0, 0, 0.5], [8, 0, 0]], closed: false });
+  assert.deepEqual(e[3], { t: 'path', pts: [[0, 0, 0], [6, 0, 0.3], [12, 4, 0]], closed: false });
+  assert.equal(e[4].t, 'circle');
+  assert.deepEqual(plain(D.crvToDoc({ stockW: 20, stockH: 20, contours: [[[0, 0, 0], [5, 0, 0], [5, 5, 0]]] }, 1)).ents[0].closed, true, 'with nothing said, closed, as before');
+});
+test('a block of text’s own baseline or curve isn’t a shape of the drawing', () => {
+  // straight text carries a baseline after its last line, text on a curve its curve: both are read as outlines
+  // by the drawing's reader, and both must be left out
+  const w = writer(); w.zeros(40);
+  const blk = Object.assign({}, TWO_LINES, { curve: [{ x0: -8, y0: 0, x1: 8, y1: 0 }] });
+  const outs = writeBlock(w, blk), vd = w.bytes();
+  // where the baseline was written: the last 4 + 61 bytes before the 64 that end the block
+  const at = vd.length - 64 - 61 - 4;
+  const all = outs.concat([{ at, end: at + 4 + 61, spans: [[-8, 0, 0], [8, 0, 0]] }]);
+  const contours = all.map((o) => o.spans.map((x) => x.slice()));
+  const res = plain(D.crvTextApply(vd, new DataView(vd.buffer), contours, all.map((o) => o.at), all.map((o) => o.end)));
+  assert.equal(res.placed, 1);
+  assert.deepEqual(Object.keys(res.drop).map(Number), [6], 'the baseline is to be left out; the six letters stay');
 });

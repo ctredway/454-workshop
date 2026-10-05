@@ -22,6 +22,70 @@ function crvSheets(vd){
   }
   return out;
 }
+// The drawing's objects. Every shape, block of text and group starts with a header: its class, the number 10, its
+// ID (16 bytes), a second ID, 8 zero bytes, three whole numbers, -1. A plain shape's ID is repeated after its
+// outline (which is where it's read from); a block of text's letters have none of their own; and a group is an
+// object whose own part ends, after its sheet, with 1, how many children it has, and its first child's header.
+// Its children follow it, a child group's own children straight after that child. Toolpaths name what they cut
+// by these IDs: a shape's, a block of text's, or a group's.
+// (From a tutorial project with four groups: the outlines counted into each group reach exactly as far as the
+// box the group records; and its V-carve toolpath, which names one group, covers that box in VCarve's G-code.)
+// Returns the headers from `from` on, in order: {at, id, kids (a group's count), groups (the IDs of the groups
+// it's in, outermost first)}.
+function crvObjects(vd, dv, from){
+  var L = vd.length, heads = [];
+  function isHead(p){
+    if (p < 0 || p + 62 > L || dv.getInt32(p + 2, true) !== 10) return false;
+    if (dv.getInt32(p + 38, true) !== 0 || dv.getInt32(p + 42, true) !== 0 || dv.getInt32(p + 58, true) !== -1) return false;
+    for (var k = 46; k <= 54; k += 4){ var v = dv.getInt32(p + k, true); if (v < 0 || v > 1000000) return false; }
+    for (var z = 6; z < 22; z++) if (vd[p + z]) return true;      // an ID that isn't all zeros
+    return false;
+  }
+  function hexAt(p){ var s = ''; for (var k = 0; k < 16; k++) s += (vd[p + k] < 16 ? '0' : '') + vd[p + k].toString(16); return s; }
+  for (var p = Math.max(0, from); p + 62 <= L; p++) if (isHead(p)){ heads.push({at: p, id: hexAt(p + 6), kids: 0, groups: []}); p += 61; }
+  var TAG = [86, 101, 99, 116, 114, 105, 99, 95, 95, 86, 101, 114, 115, 105, 111, 110];    // Vectric__Version
+  function tagAt(q){ if (q < 0 || q + 28 > L || dv.getInt32(q, true) !== 16) return -1; for (var k = 0; k < 16; k++) if (vd[q + 4 + k] !== TAG[k]) return -1; var n = dv.getInt32(q + 24, true); return n >= 1 && n <= 64 ? q + 28 + n : -1; }
+  heads.forEach(function (h, i){
+    // its layer, then its box and matrix, then its sheet; a group goes on: 1, its count, its first child
+    var lim = Math.min(heads[i + 1] ? heads[i + 1].at : L, h.at + 200000);
+    for (var q = h.at + 62; q + 28 <= lim; q++){
+      var afterLayer = tagAt(q);
+      if (afterLayer < 0) continue;
+      var afterSheet = tagAt(afterLayer + 4 + 32 + 72);
+      if (afterSheet > 0 && afterSheet + 8 + 62 <= L && dv.getInt32(afterSheet, true) === 1 && isHead(afterSheet + 8)){
+        var n = dv.getInt32(afterSheet + 4, true);
+        if (n >= 1 && n <= 100000) h.kids = n;
+      }
+      break;
+    }
+  });
+  // count each group's children off, depth first
+  function walk(i, into){
+    var h = heads[i];
+    h.groups = into;
+    if (!h.kids) return i + 1;
+    var j = i + 1, mine = into.concat([h.id]);
+    for (var k = 0; k < h.kids && j < heads.length; k++) j = walk(j, mine);
+    return j;
+  }
+  for (var w = 0; w < heads.length;) w = walk(w, []);
+  return heads;
+}
+// Each outline's object is the last header before it. An outline with no ID of its own (a letter) takes its
+// object's, filled into `ids`; and each takes the IDs of the groups its object is in, which are returned, one
+// list (or null) for each outline. heads and ats are both in the order they're in the file; skip: outlines to
+// leave alone, by index.
+function crvOwners(heads, ats, ids, skip){
+  var hi = 0;
+  return ats.map(function (at, ci){
+    if (skip && skip[ci]) return null;
+    while (hi + 1 < heads.length && heads[hi + 1].at < at) hi++;
+    var h = heads[hi];
+    if (!h || h.at > at) return null;
+    if (!ids[ci] && !h.kids) ids[ci] = h.id;
+    return h.groups.length ? h.groups.slice() : null;
+  });
+}
 // The material, from the MaterialSize stream: it holds the block's two opposite corners (x, y, z at 6, 14, 22
 // and at 30, 38, 46), not its size. Its size is the difference; XY zero is wherever 0, 0 falls in it, and Z
 // zero is at whichever of its top and bottom sits at 0. (The high corner used to be taken as the size, which
@@ -78,19 +142,22 @@ function crvExtract(buf){
   var drawingStart = 0;
   if (layers.length && /toolpath/i.test(layers[0].name))
     drawingStart = layers.length > 1 ? layers[1].off : vd.length; // previews-only file: nothing is drawing
-  var contours = [], preview = [], contourIds = [], contourSheets = [], contourAts = [], contourEnds = [], i = 0, L = vd.length;
+  var contours = [], preview = [], contourIds = [], contourSheets = [], contourAts = [], contourEnds = [], contourOpen = [], i = 0, L = vd.length;
   // A segment starts with its kind: 0 line, 1 arc (a bulge follows), 2 cubic Bezier (two control
   // points follow). Missing the Bezier kind used to drop whole outlines: VCarve's smooth curves
   // are Beziers, so any shape with one simply vanished on import.
   function isHdr(o){ return o+9 <= L && (vd[o] === 0 || vd[o] === 1 || vd[o] === 2) && vd[o+1] === 2 && vd[o+2] === 0 && vd[o+3] === 0 && vd[o+4] === 0; }
   while (i < L - 73){
     var n = dv.getInt32(i, true);
-    if (n >= 2 && n <= 100000 && isHdr(i+4)){
-      var o = i + 4, spans = [], ok = true;
+    // A shape in the drawing can be a single span: one line, or one arc. (Those used to be skipped, so a lone line
+    // or arc never came across.) The toolpath previews are read as before, from two spans up.
+    if (n >= (i >= drawingStart ? 1 : 2) && n <= 100000 && isHdr(i+4)){
+      var o = i + 4, spans = [], ok = true, endX = NaN, endY = NaN;
       for (var k = 0; k < n; k++){
         if (!isHdr(o) || o + 61 > L){ ok = false; break; }
         var x = dv.getFloat64(o+9, true), y = dv.getFloat64(o+17, true);
         if (!isFinite(x) || !isFinite(y) || Math.abs(x) > 1e5 || Math.abs(y) > 1e5){ ok = false; break; }
+        endX = dv.getFloat64(o+33, true); endY = dv.getFloat64(o+41, true);     // where this span ends
         if (vd[o] === 1){
           if (o + 69 > L){ ok = false; break; }
           var b = dv.getFloat64(o+61, true);
@@ -116,7 +183,16 @@ function crvExtract(buf){
           o += 93;
         } else { spans.push([x, y, 0]); o += 61; }
       }
+      if (ok && spans.length >= n && i >= drawingStart && !(isFinite(endX) && isFinite(endY) && Math.abs(endX) < 1e5 && Math.abs(endY) < 1e5)) ok = false;
       if (ok && spans.length >= n){
+        // Open or closed: each span says where it ends, and a closed shape's last span ends where its first
+        // starts. An open one's doesn't: its end is one more point. (The ends used to be ignored, so an open shape
+        // lost its last point and was closed with a straight line.)
+        if (i >= drawingStart){
+          var isOpen = Math.hypot(endX - spans[0][0], endY - spans[0][1]) > 1e-6;
+          if (isOpen) spans.push([endX, endY, 0]);
+          contourOpen.push(isOpen);
+        }
         (i < drawingStart ? preview : contours).push(spans);
         // VCarve follows each vector with its 16-byte ID; toolpaths list the IDs of the vectors they use
         if (i >= drawingStart){
@@ -136,14 +212,23 @@ function crvExtract(buf){
   var text = {placed: 0, left: [], drop: {}, sheets: {}};
   try { text = crvTextApply(vd, dv, contours, contourAts, contourEnds); } catch (e){ text.left.push({said: '', why: 'the text couldn\u2019t be read (' + e.message + ')', unread: true}); }
   Object.keys(text.sheets).forEach(function (k){ if (!contourSheets[k]) contourSheets[k] = text.sheets[k]; });
+  var keep = function (v, k){ return !text.drop[k]; };
+  // Each outline's object: the last header before it. Its letters take a block of text's ID (they've none of
+  // their own), and every outline takes the IDs of the groups it's in: a toolpath can name any of them.
+  var contourGroups = contours.map(function (){ return null; }), groupIds = [];
+  try {
+    var heads = crvObjects(vd, dv, drawingStart);
+    heads.forEach(function (h){ if (h.kids && groupIds.indexOf(h.id) < 0) groupIds.push(h.id); });
+    contourGroups = crvOwners(heads, contourAts, contourIds, text.drop);
+  } catch (e){}
   if (Object.keys(text.drop).length){
-    var keep = function (v, k){ return !text.drop[k]; };
-    contours = contours.filter(keep); contourIds = contourIds.filter(keep); contourSheets = contourSheets.filter(keep);
+    contours = contours.filter(keep); contourIds = contourIds.filter(keep); contourSheets = contourSheets.filter(keep); contourOpen = contourOpen.filter(keep);
+    contourGroups = contourGroups.filter(keep);
   }
   var toolpaths = [];
-  try{ var td = ole.stream('ToolpathData'); if (td){ toolpaths = vcToolpathsFrom(td); vcToolpathVectors(td, toolpaths, contourIds); } }catch(e){}   // never block the import
+  try{ var td = ole.stream('ToolpathData'); if (td){ toolpaths = vcToolpathsFrom(td); vcToolpathVectors(td, toolpaths, contourIds.concat(groupIds)); } }catch(e){}   // never block the import
   return {stockW: stockW, stockH: stockH, stockT: stockT, stockZero: stockZero, stockAt: [mat.x0, mat.y0], contours: contours, contourIds: contourIds,
-          contourSheets: contourSheets, sheets: crvSheets(vd), preview: preview, toolpaths: toolpaths,
+          contourSheets: contourSheets, contourOpen: contourOpen, contourGroups: contourGroups, sheets: crvSheets(vd), preview: preview, toolpaths: toolpaths,
           textPlaced: text.placed, textLeft: text.left};
 }
 function crvToDoc(ex, scale){
@@ -151,8 +236,16 @@ function crvToDoc(ex, scale){
   ex.contours.forEach(function(spans, ci){
     var vcId = ex.contourIds ? ex.contourIds[ci] : null;           // VCarve's ID, so converted toolpaths find it
     var vcSheet = ex.contourSheets ? ex.contourSheets[ci] : null;   // and its sheet, in a multi-sheet project
-    function tag(e){ if (vcId) e.vcId = vcId; if (vcSheet) e.vcSheet = vcSheet; return e; }
+    var vcGroups = ex.contourGroups ? ex.contourGroups[ci] : null;   // the groups it's in: a toolpath may name one of those
+    function tag(e){ if (vcId) e.vcId = vcId; if (vcSheet) e.vcSheet = vcSheet; if (vcGroups && vcGroups.length) e.vcGroups = vcGroups.slice(); return e; }
     var sc = spans.map(function(sp){ return [sp[0]*scale, sp[1]*scale, sp[2]]; });
+    if (ex.contourOpen && ex.contourOpen[ci]){                    // an open shape: a line, or an outline left open
+      var straight = sc.every(function(sp){ return Math.abs(sp[2]) < 1e-9; });
+      if (sc.length === 2 && straight) ents.push(tag({t:'line', x1: sc[0][0], y1: sc[0][1], x2: sc[1][0], y2: sc[1][1]}));
+      else if (straight) ents.push(tag({t:'poly', pts: sc.map(function(sp){ return [sp[0], sp[1]]; }), closed:false}));
+      else ents.push(tag({t:'path', pts: sc, closed:false}));
+      return;
+    }
     // circle: 4 spans, uniform quarter bulge, equidistant from centroid
     if (sc.length === 4 && sc.every(function(sp){ return Math.abs(Math.abs(sp[2]) - 0.41421356) < 1e-4; })){
       var cx = (sc[0][0]+sc[1][0]+sc[2][0]+sc[3][0])/4;

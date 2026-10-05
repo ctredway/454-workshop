@@ -85,7 +85,11 @@ function oleParse(buf){
    The 'ToolpathData' stream stores each toolpath's settings as NAMED values
    (_ppdCutDepth, _dpdPeckDrill ...): a UTF-16 name after FF FE FF <len>, then a
    type tag (0 number, 1 whole number, 2 on/off, 3 text) and the value. Each
-   toolpath is preceded by its tool: spindle speed, tool number, then the name. */
+   toolpath is preceded by its tool: spindle speed, tool number, then the name.
+   Just before the spindle speed are the tool's own numbers, as the project used them: its units (one byte:
+   0 inches, 1 mm), diameter, pass depth, stepover, feed and plunge, and the feeds' units (as the tool
+   library has them: 1 mm/min, 4 inches/min). Seen in ten tools of six projects; the tutorial project's feeds
+   are the ones in the G-code VCarve wrote for it. */
 function vcDecode(bytes){
   var n = bytes.length, dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   var kv = [], tools = [];
@@ -128,7 +132,22 @@ function vcDecode(bytes){
       nm += String.fromCharCode(b);
     }
     if (!good || nm.length < 3) continue;
-    tools.push({at:j, num:tn, rpm:rpm, name:nm});
+    var tool = {at:j, num:tn, rpm:rpm, name:nm};
+    if (j >= 48){
+      var un = bytes[j - 45], ru = dv.getInt32(j - 4, true);
+      var dia = dv.getFloat64(j - 44, true), pass = dv.getFloat64(j - 36, true), over = dv.getFloat64(j - 28, true), feed = dv.getFloat64(j - 20, true), plunge = dv.getFloat64(j - 12, true);
+      var sane = function (v, hi){ return isFinite(v) && v > 0 && v < hi; };
+      // only if all of it reads as a tool's numbers: otherwise this isn't that kind of record
+      if ((un === 0 || un === 1) && sane(dia, 500) && sane(pass, 500) && sane(over, 500) && sane(feed, 1e5) && sane(plunge, 1e5)){
+        var mm = un === 1 ? 1 : 25.4;
+        tool.dia = dia * mm; tool.pass = pass * mm; tool.stepover = over * mm; tool.inches = un === 0;
+        if (ru === 1 || ru === 4){ tool.feed = feed * (ru === 4 ? 25.4 : 1); tool.plunge = plunge * (ru === 4 ? 25.4 : 1); }
+        // a V-bit (kind 3) keeps its radius and how tall its cone is: its angle is twice the angle those make
+        var rr = dv.getFloat32(j - 57, true), hh = dv.getFloat32(j - 53, true);
+        if (j >= 61 && dv.getInt32(j - 61, true) === 3 && rr > 0 && hh > 0 && isFinite(rr) && isFinite(hh)) tool.angle = +(2 * Math.atan(rr / hh) * 180 / Math.PI).toFixed(3);
+      }
+    }
+    tools.push(tool);
     j = s0 + L2 - 1;
   }
   return {kv:kv, tools:tools};
@@ -169,11 +188,17 @@ function vcToolpathVectors(td, toolpaths, contourIds){
 }
 function vcToolpathsFrom(bytes){
   var d = vcDecode(bytes), kv = d.kv, tools = d.tools, groups = [];
+  // A toolpath starts with its own name (mcBaseToolpathName); its settings then hold a name too, and that one is
+  // the name it had when it was last calculated, which a rename since has left behind. So a name inside the
+  // settings belongs to the toolpath it's in, unless a tool's record stands between them: every toolpath has
+  // its tool before it, and older projects have toolpaths with no name of their own. (Each differing name used
+  // to start a toolpath: five came across as nine, one of them under another's old name.)
+  function toolBetween(a, b){ for (var t = 0; t < tools.length; t++) if (tools[t].at > a && tools[t].at < b) return true; return false; }
   kv.forEach(function(e, idx){
     if (!/ToolpathName$/.test(e.k)) return;
-    var name = String(e.v), pre = e.k.replace(/ToolpathName$/, ''), last = groups[groups.length - 1];
-    if (last && last.name === name){ if (last.prefixes.indexOf(pre) < 0) last.prefixes.push(pre); return; }
-    groups.push({name:name, at:e.at, idx:idx, prefixes:[pre]});   // same name again = parts of one toolpath
+    var name = String(e.v), own = e.k === 'mcBaseToolpathName', pre = own ? '' : e.k.replace(/ToolpathName$/, ''), last = groups[groups.length - 1];
+    if (last && !own && (last.name === name || (last.own && !toolBetween(last.at, e.at)))){ if (last.prefixes.indexOf(pre) < 0) last.prefixes.push(pre); return; }
+    groups.push({name:name, at:e.at, idx:idx, prefixes: own ? [] : [pre], own: own});
   });
   var TYPES = [['_chpd','Chamfer'], ['_vcpd','V-Carve'], ['_dpd','Drilling'], ['_pkpd','Pocket'], ['_ppd','Profile']];
   return groups.map(function(g, gi){
@@ -187,6 +212,8 @@ function vcToolpathsFrom(bytes){
     if (type === 'Toolpath' && /pocket/i.test(named)) type = 'Pocket';
     else if (type === 'Toolpath' && /drill/i.test(named)) type = 'Drilling';
     else if (type === 'Toolpath' && /profile/i.test(named)) type = 'Profile';
+    // a V-carve made with a second tool for its flat floor is two toolpaths: the V-bit's, and that tool's clearing
+    if (/AreaClear/i.test(named)) type = 'AreaClear'; else if (/VCarve/i.test(named)) type = 'V-Carve';
     var tool = null;
     for (var tj = tools.length - 1; tj >= 0; tj--) if (tools[tj].at < g.at){ tool = tools[tj]; break; }
     // the machine and material VCarve used for this toolpath (IDs from its tool database) sit between
@@ -196,7 +223,9 @@ function vcToolpathsFrom(bytes){
       if (mid === null && kv[z].k === 'db_machine_id') mid = String(kv[z].v);
       if (matid === null && kv[z].k === 'db_material_id') matid = String(kv[z].v);
     }
-    return {name:g.name, at:g.at, type:type, tool: tool ? {num:tool.num, name:tool.name, rpm:tool.rpm} : null, set:set,
+    var tl = tool ? {num:tool.num, name:tool.name, rpm:tool.rpm} : null;
+    if (tool && tool.dia > 0){ tl.dia = tool.dia; tl.pass = tool.pass; tl.stepover = tool.stepover; tl.inches = tool.inches; if (tool.feed > 0){ tl.feed = tool.feed; tl.plunge = tool.plunge; } if (tool.angle > 0) tl.angle = tool.angle; }
+    return {name:g.name, at:g.at, type:type, tool: tl, set:set,
             machineId:mid, materialId:matid};
   });
 }

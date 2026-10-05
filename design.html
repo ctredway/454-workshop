@@ -1162,7 +1162,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.124.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.126.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3666,7 +3666,11 @@ function oleParse(buf){
    The 'ToolpathData' stream stores each toolpath's settings as NAMED values
    (_ppdCutDepth, _dpdPeckDrill ...): a UTF-16 name after FF FE FF <len>, then a
    type tag (0 number, 1 whole number, 2 on/off, 3 text) and the value. Each
-   toolpath is preceded by its tool: spindle speed, tool number, then the name. */
+   toolpath is preceded by its tool: spindle speed, tool number, then the name.
+   Just before the spindle speed are the tool's own numbers, as the project used them: its units (one byte:
+   0 inches, 1 mm), diameter, pass depth, stepover, feed and plunge, and the feeds' units (as the tool
+   library has them: 1 mm/min, 4 inches/min). Seen in ten tools of six projects; the tutorial project's feeds
+   are the ones in the G-code VCarve wrote for it. */
 function vcDecode(bytes){
   var n = bytes.length, dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   var kv = [], tools = [];
@@ -3709,7 +3713,22 @@ function vcDecode(bytes){
       nm += String.fromCharCode(b);
     }
     if (!good || nm.length < 3) continue;
-    tools.push({at:j, num:tn, rpm:rpm, name:nm});
+    var tool = {at:j, num:tn, rpm:rpm, name:nm};
+    if (j >= 48){
+      var un = bytes[j - 45], ru = dv.getInt32(j - 4, true);
+      var dia = dv.getFloat64(j - 44, true), pass = dv.getFloat64(j - 36, true), over = dv.getFloat64(j - 28, true), feed = dv.getFloat64(j - 20, true), plunge = dv.getFloat64(j - 12, true);
+      var sane = function (v, hi){ return isFinite(v) && v > 0 && v < hi; };
+      // only if all of it reads as a tool's numbers: otherwise this isn't that kind of record
+      if ((un === 0 || un === 1) && sane(dia, 500) && sane(pass, 500) && sane(over, 500) && sane(feed, 1e5) && sane(plunge, 1e5)){
+        var mm = un === 1 ? 1 : 25.4;
+        tool.dia = dia * mm; tool.pass = pass * mm; tool.stepover = over * mm; tool.inches = un === 0;
+        if (ru === 1 || ru === 4){ tool.feed = feed * (ru === 4 ? 25.4 : 1); tool.plunge = plunge * (ru === 4 ? 25.4 : 1); }
+        // a V-bit (kind 3) keeps its radius and how tall its cone is: its angle is twice the angle those make
+        var rr = dv.getFloat32(j - 57, true), hh = dv.getFloat32(j - 53, true);
+        if (j >= 61 && dv.getInt32(j - 61, true) === 3 && rr > 0 && hh > 0 && isFinite(rr) && isFinite(hh)) tool.angle = +(2 * Math.atan(rr / hh) * 180 / Math.PI).toFixed(3);
+      }
+    }
+    tools.push(tool);
     j = s0 + L2 - 1;
   }
   return {kv:kv, tools:tools};
@@ -3750,11 +3769,17 @@ function vcToolpathVectors(td, toolpaths, contourIds){
 }
 function vcToolpathsFrom(bytes){
   var d = vcDecode(bytes), kv = d.kv, tools = d.tools, groups = [];
+  // A toolpath starts with its own name (mcBaseToolpathName); its settings then hold a name too, and that one is
+  // the name it had when it was last calculated, which a rename since has left behind. So a name inside the
+  // settings belongs to the toolpath it's in, unless a tool's record stands between them: every toolpath has
+  // its tool before it, and older projects have toolpaths with no name of their own. (Each differing name used
+  // to start a toolpath: five came across as nine, one of them under another's old name.)
+  function toolBetween(a, b){ for (var t = 0; t < tools.length; t++) if (tools[t].at > a && tools[t].at < b) return true; return false; }
   kv.forEach(function(e, idx){
     if (!/ToolpathName$/.test(e.k)) return;
-    var name = String(e.v), pre = e.k.replace(/ToolpathName$/, ''), last = groups[groups.length - 1];
-    if (last && last.name === name){ if (last.prefixes.indexOf(pre) < 0) last.prefixes.push(pre); return; }
-    groups.push({name:name, at:e.at, idx:idx, prefixes:[pre]});   // same name again = parts of one toolpath
+    var name = String(e.v), own = e.k === 'mcBaseToolpathName', pre = own ? '' : e.k.replace(/ToolpathName$/, ''), last = groups[groups.length - 1];
+    if (last && !own && (last.name === name || (last.own && !toolBetween(last.at, e.at)))){ if (last.prefixes.indexOf(pre) < 0) last.prefixes.push(pre); return; }
+    groups.push({name:name, at:e.at, idx:idx, prefixes: own ? [] : [pre], own: own});
   });
   var TYPES = [['_chpd','Chamfer'], ['_vcpd','V-Carve'], ['_dpd','Drilling'], ['_pkpd','Pocket'], ['_ppd','Profile']];
   return groups.map(function(g, gi){
@@ -3768,6 +3793,8 @@ function vcToolpathsFrom(bytes){
     if (type === 'Toolpath' && /pocket/i.test(named)) type = 'Pocket';
     else if (type === 'Toolpath' && /drill/i.test(named)) type = 'Drilling';
     else if (type === 'Toolpath' && /profile/i.test(named)) type = 'Profile';
+    // a V-carve made with a second tool for its flat floor is two toolpaths: the V-bit's, and that tool's clearing
+    if (/AreaClear/i.test(named)) type = 'AreaClear'; else if (/VCarve/i.test(named)) type = 'V-Carve';
     var tool = null;
     for (var tj = tools.length - 1; tj >= 0; tj--) if (tools[tj].at < g.at){ tool = tools[tj]; break; }
     // the machine and material VCarve used for this toolpath (IDs from its tool database) sit between
@@ -3777,7 +3804,9 @@ function vcToolpathsFrom(bytes){
       if (mid === null && kv[z].k === 'db_machine_id') mid = String(kv[z].v);
       if (matid === null && kv[z].k === 'db_material_id') matid = String(kv[z].v);
     }
-    return {name:g.name, at:g.at, type:type, tool: tool ? {num:tool.num, name:tool.name, rpm:tool.rpm} : null, set:set,
+    var tl = tool ? {num:tool.num, name:tool.name, rpm:tool.rpm} : null;
+    if (tool && tool.dia > 0){ tl.dia = tool.dia; tl.pass = tool.pass; tl.stepover = tool.stepover; tl.inches = tool.inches; if (tool.feed > 0){ tl.feed = tool.feed; tl.plunge = tool.plunge; } if (tool.angle > 0) tl.angle = tool.angle; }
+    return {name:g.name, at:g.at, type:type, tool: tl, set:set,
             machineId:mid, materialId:matid};
   });
 }
@@ -6626,15 +6655,19 @@ function vcTipFromName(name){
   if (!(val > 0)) return 0;
   return +(val * (inches ? 25.4 : 1)).toFixed(4);
 }
+// The cutter's diameter in mm, and the tool in the library it is (if it's there). The project's own record of the
+// tool comes first: it's what the toolpath was made with. `from` says where the diameter came from: 'project',
+// 'library', 'name', or 'guess' (none of those: 1/8 in, which the conversion then says).
 function vcToolDia(t){
   var lib = TOOLLIB ? libMatch({name: t.tool.name, num: t.tool.num}, t.machineId) : null;
   var lt = lib && lib.tool;
-  if (lt && lt.diameter) return {dia: lt.diameter * (lt.units === 'in' ? 25.4 : 1), tool: lt};
+  if (t.tool.dia > 0) return {dia: t.tool.dia, tool: lt || null, from: 'project'};
+  if (lt && lt.diameter) return {dia: lt.diameter * (lt.units === 'in' ? 25.4 : 1), tool: lt, from: 'library'};
   var m = /\(([\d.]+)\s*mm\)/i.exec(t.tool.name);
-  if (m) return {dia: parseFloat(m[1]), tool: null};
+  if (m) return {dia: parseFloat(m[1]), tool: null, from: 'name'};
   m = /\((\d+)\s*\/\s*(\d+)\s*"?\)|\((\d+)\s+(\d+)\s*\/\s*(\d+)\s*"?\)/.exec(t.tool.name);
-  if (m){ var inch = m[1] ? (+m[1] / +m[2]) : (+m[3] + +m[4] / +m[5]); return {dia: inch * 25.4, tool: null}; }
-  return {dia: 3.175, tool: null};
+  if (m){ var inch = m[1] ? (+m[1] / +m[2]) : (+m[3] + +m[4] / +m[5]); return {dia: inch * 25.4, tool: null, from: 'name'}; }
+  return {dia: 3.175, tool: null, from: 'guess'};
 }
 function vcPreviewLoops(){
   return (DOC.vcPreview || []).map(function (sp) {
@@ -6670,12 +6703,20 @@ function vcMakeEditable(){
   }).filter(Boolean);
   // Matching shapes against previews is slow on big projects (every shape against every preview), and
   // only needed for toolpaths VCarve's own record doesn't cover: so it runs once, and only if needed.
-  var matchesMemo = null;
-  function previewMatches(){ if (!matchesMemo) matchesMemo = vcPreviewMatches(shapes); return matchesMemo; }
-  var made = [], unsure = [];
+  // (Every shape against every preview: on a big project that's minutes, so past a size it isn't tried, and
+  // those toolpaths come across without shapes, to be picked in Edit.)
+  var matchesMemo = null, tooBig = shapes.length * (DOC.vcPreview || []).length > 60000;
+  function previewMatches(){ if (!matchesMemo) matchesMemo = tooBig ? [] : vcPreviewMatches(shapes); return matchesMemo; }
+  var list = DOC.vcToolpaths, clears = [];
+  var made = [], unsure = [], skipped = [], guessed = [], noAngle = [];
   pushUndo();
-  DOC.vcToolpaths.forEach(function (T) {
-    var set = T.set || {}, g = function (k) { for (var key in set) if (key.replace(/^_(ppd|dpd|chpd|pkpd|vcpd|mc\w\wd)/, '') === k) return set[key]; };
+  list.forEach(function (T, ti) {
+    // A setting, by its name without the group it's in. (`_mtpkpd` and `_mtpkptpd` are the pocket's groups in
+    // newer VCarve: without them a pocket's depth wasn't found, and 3 mm was used in its place.)
+    var set = T.set || {}, g = function (k) { for (var key in set) if (key.replace(/^_(ppd|dpd|chpd|pkpd|vcpd|mtpkptpd|mtpkpd|mc\w\wd)/, '') === k) return set[key]; };
+    // The project's units: its lengths are in inches unless it says millimetres. (They used to be taken as
+    // millimetres whatever it said: a 0.26 in cut came across 0.26 mm deep.)
+    var u = g('InMM') === false ? 25.4 : 1;
     var kind = String(g('ToolpathType') || T.type || '');
     var td = vcToolDia(T), D = td.dia;
     // A profile's side comes from ProfileType (0 outside, 1 inside, 2 on the line). The "Profile Inside"
@@ -6683,30 +6724,58 @@ function vcMakeEditable(){
     // later, so it can say the opposite of what VCarve cuts: VCarve's own calculated paths follow
     // ProfileType. The label is only a fallback for projects without ProfileType.
     var pt = g('ProfileType');
-    var side = /VCarve/i.test(kind) || /V-Carve/i.test(T.type) ? 'vcarve' : /Drill/i.test(kind) ? 'drill' : /Chamfer/i.test(T.type) ? 'chamfer' : /Pocket/i.test(kind) ? 'pocket'
+    // A V-carve's flat floor cleared by a second tool (AreaClearToolpath): a pocket to the floor's depth that
+    // stands off the outline by as far as the V-bit's cone reaches at the floor, where the two meet. It needs
+    // the V-bit's angle, which is the next toolpath's: VCarve writes the pair one after the other.
+    var clearing = /AreaClear/i.test(kind) || T.type === 'AreaClear', mate = null;
+    if (clearing){
+      var nx = list[ti + 1];
+      if (nx && (nx.type === 'V-Carve' || /VCarve/i.test(String((nx.set || {}).ToolpathType || ''))) && nx.tool && nx.tool.angle > 0) mate = nx;
+      if (!mate){ skipped.push(T.name); return; }
+    }
+    var side = clearing ? 'pocket' : /VCarve/i.test(kind) || /V-Carve/i.test(T.type) ? 'vcarve' : /Drill/i.test(kind) ? 'drill' : /Chamfer/i.test(T.type) ? 'chamfer' : /Pocket/i.test(kind) ? 'pocket'
              : pt === 1 ? 'inside' : pt === 2 ? 'on' : pt === 0 ? 'outside'
              : /Inside/i.test(kind) ? 'inside' : /Outside/i.test(kind) ? 'outside' : 'outside';
-    var cutDepth = +(g('CutDepth') || g('ChamferDepth') || 3), allow = +(g('Allowance') || 0);
-    var passes = +(g('NumPasses') || 0), step = passes > 0 ? cutDepth / passes : (+(g('Stepdown') || 0) || Math.max(0.5, cutDepth / 2));
+    // Its depth. If the project's can't be read, it isn't converted: a made-up depth is worse than none. (A
+    // V-carve's depth comes from its shapes and its flat depth, below.)
+    var rawDepth = g('CutDepth'); if (!(rawDepth > 0)) rawDepth = g('ChamferDepth');
+    // a V-carve's depths: where it starts below the surface, and how far below that its flat floor is
+    var vStart = Math.max(0, +(g('StartDepth') || 0)) * u, vFlat = g('DoFlatBottom') && +(g('FlatDepth') || 0) > 0 ? +g('FlatDepth') * u : 0;
+    if (clearing){ if (!(vFlat > 0)){ skipped.push(T.name); return; } rawDepth = (vStart + vFlat) / u; }
+    if (side !== 'vcarve' && !(typeof rawDepth === 'number' && isFinite(rawDepth) && rawDepth > 0)){ skipped.push(T.name); return; }
+    var cutDepth = rawDepth > 0 ? rawDepth * u : 3, allow = +(g('Allowance') || 0) * u;
+    var passes = +(g('NumPasses') || 0), step = passes > 0 ? cutDepth / passes : (+(g('Stepdown') || 0) * u || Math.max(0.5, cutDepth / 2));
+    if (td.from === 'guess') guessed.push(T.name);
     var tp = {id: tpNewId(), name: T.name, side: side, ents: [], dia: +D.toFixed(4), step: +step.toFixed(4), safeZ: 6,
               rpm: T.tool.rpm || 18000, toolId: td.tool ? td.tool.id : null, climb: +(g('CutDirection') || 0) === 0,
               allowance: allow, tabsOn: false, tabLen: 4, tabThk: 0.5, tabPts: {}, tabCount: 0, stepoverPct: 40,
               vcFrom: T.name, depth: cutDepth, toolChosen: true};
     tp.type = side === 'drill' ? 'drill' : side === 'pocket' ? 'pocket' : side === 'chamfer' ? 'chamfer' : 'profile';
-    if (g('DoRamping') && +(g('RampingDistance') || 0) > 0) tp.rampLen = +g('RampingDistance');
-    // feeds from the library, for the machine and material VCarve used
+    var rampD = +(g('RampingDistance') || g('RampDistance') || 0) * u;      // newer VCarve calls it RampDistance
+    if (g('DoRamping') && rampD > 0) tp.rampLen = +rampD.toFixed(4);
+    // feeds: the project's own for this tool; without them, the library's for the machine and material VCarve used
     var cut = td.tool ? (libCutFor(td.tool, T.machineId, T.materialId) || td.tool.cuts[0]) : null;
-    if (cut){
+    if (T.tool.feed > 0){ tp.feed = Math.round(T.tool.feed); tp.plunge = Math.round(T.tool.plunge); }
+    else if (cut){
       var rate = cut.rateUnits === 4 ? 25.4 : 1;
       tp.feed = cut.feed ? Math.round(cut.feed * rate) : 800;
       tp.plunge = cut.plunge ? Math.round(cut.plunge * rate) : Math.round(tp.feed / 2);
       if (cut.rpm && !T.tool.rpm) tp.rpm = cut.rpm;          // what the project used comes first
     } else { tp.feed = 800; tp.plunge = 300; }
+    // a pocket's stepover: the tool's own, as a share of its diameter
+    if (side === 'pocket' && T.tool.stepover > 0 && D > 0) tp.stepoverPct = Math.max(5, Math.min(100, Math.round(T.tool.stepover / D * 100)));
     // through the material, when the depth is the thickness plus a little
     var t = DOC.stock.t || 0;
     if (side !== 'chamfer' && t > 0 && cutDepth >= t - 1e-6 && cutDepth - t <= 1){ tp.through = true; tp.over = +(cutDepth - t).toFixed(4); }
     else tp.through = false;
-    if (side === 'pocket' && g('DoRaster')){ tp.pocketClear = 'raster'; tp.rasterAngle = +(g('RasterAngle') || 0); }
+    if (clearing){
+      // as deep as the floor, from the surface, in passes no deeper than the tool's own; standing off by the cone's reach
+      tp.allowance = +(vFlat * Math.tan(mate.tool.angle / 2 * Math.PI / 180)).toFixed(4);
+      tp.step = +(T.tool.pass > 0 ? Math.min(cutDepth, T.tool.pass) : Math.max(0.5, cutDepth / 2)).toFixed(4);
+      tp.finishPass = false; tp.through = false;
+      clears.push({tp: tp, mate: mate.name});
+    }
+    if (side === 'pocket' && !clearing && g('DoRaster')){ tp.pocketClear = 'raster'; tp.rasterAngle = +(g('RasterAngle') || 0); }
     if (side === 'drill'){
       var sd = cut && cut.stepdown ? cut.stepdown * (cut.lengthUnits === 'in' ? 25.4 : 1) : cutDepth / 6;
       tp.peck = g('PeckDrill') ? +sd.toFixed(4) : 0;
@@ -6714,9 +6783,14 @@ function vcMakeEditable(){
     if (side === 'vcarve'){
       var vt = td.tool;
       var nm = T.tool.name, nameAng = vcNumberBefore(nm, nm.indexOf('\u00b0'));      // "... 30\u00b0 ..." anywhere in the name
-      tp.vAngle = vt && vt.angle > 0 ? vt.angle : (nameAng > 0 ? nameAng : 60);
+      // the bit's angle: the project's own record of the tool first, then the library's, then its name
+      tp.vAngle = T.tool.angle > 0 ? T.tool.angle : vt && vt.angle > 0 ? vt.angle : (nameAng > 0 ? nameAng : 60);
+      if (!(T.tool.angle > 0) && !(vt && vt.angle > 0) && !(nameAng > 0)) noAngle.push(T.name);
       tp.vTip = vt && vt.flat > 0 ? +(vt.flat * (vt.units === 'in' ? 25.4 : 1)).toFixed(4) : vcTipFromName(nm);
-      tp.vcMax = g('DoFlatBottom') && +(g('FlatDepth') || 0) > 0 ? +g('FlatDepth') : 0;
+      // the floor's depth is from the surface here: the start depth and the flat depth together. (VCarve's G-code
+      // for a carve starting 0.23 in down with a 0.1 in flat depth goes to 0.33 in.)
+      tp.vcMax = vFlat > 0 ? +(vStart + vFlat).toFixed(4) : 0;
+      if (vStart > 0) tp.vcStart = +vStart.toFixed(4);
       tp.step = 0; tp.through = false;
     }
     if (side === 'chamfer'){
@@ -6724,7 +6798,7 @@ function vcMakeEditable(){
       tp.vAngle = half * 2;
       tp.chamW = +(cutDepth * Math.tan(half * Math.PI / 180)).toFixed(4);
       tp.chamMode = g('VectorsAtTop') ? (g('Inside') ? 'in' : 'out') : 'edge';
-      tp.step = +(g('Stepdown') || step);
+      tp.step = +(g('Stepdown') || 0) * u || step;
     }
     if (g('UseTabs')){
       tp.tabsOn = true;
@@ -6735,7 +6809,10 @@ function vcMakeEditable(){
     // which shapes: VCarve's own record of the vectors this toolpath uses, by ID. Only projects without
     // it fall back to matching the saved previews (which fails if parts moved after calculating).
     if (T.vids && T.vids.length){
-      DOC.ents.forEach(function (e) { if (e.vcId && T.vids.indexOf(e.vcId) >= 0) tp.ents.push(entId(e)); });
+      // a shape by its own ID, the letters of a block of text by the block's, or everything in a group by the group's
+      DOC.ents.forEach(function (e) {
+        if ((e.vcId && T.vids.indexOf(e.vcId) >= 0) || (e.vcGroups && e.vcGroups.some(function (gid){ return T.vids.indexOf(gid) >= 0; }))) tp.ents.push(entId(e));
+      });
       if (tp.ents.length) tp.foundBy = 'id';
     }
     var want;
@@ -6748,7 +6825,7 @@ function vcMakeEditable(){
       if (side === 'drill' || side === 'vcarve') return;   // matched below: drills by centre, V-carves by containment
       if (Math.abs(m.off - want.off) < 0.06 && m.side === want.side) tp.ents.push(m.id);
     });
-    if (side === 'vcarve' && !tp.foundBy){
+    if (side === 'vcarve' && !tp.foundBy && !tooBig){
       // A V-carve's preview is its centre-line, inside the shape it carves: so each unmatched preview
       // belongs to the smallest shape that contains it (not the part outline the text sits on).
       var usedPrev = {}; previewMatches().forEach(function (m) { usedPrev[m.preview] = true; });
@@ -6778,9 +6855,17 @@ function vcMakeEditable(){
       });
     }
     if (tp.side === 'chamfer' && tp.chamMode === 'edge') tp.ents = tp.ents.filter(function (id, i, a) { return a.indexOf(id) === i; });
-    if (!tp.ents.length) unsure.push(tp.name);
+    if (!tp.ents.length && !clearing) unsure.push(tp.name);
     tpGenerate(tp);
     made.push(tp);
+  });
+  // a clearing toolpath goes with its V-carve: the same shapes, and kept in step with it after
+  clears.forEach(function (c) {
+    var v = made.filter(function (x) { return x.side === 'vcarve' && x.vcFrom === c.mate; })[0];
+    if (!v) return;
+    c.tp.clearFor = v.id;
+    if (!c.tp.ents.length && v.ents.length){ c.tp.ents = v.ents.slice(); tpGenerate(c.tp); }
+    if (!c.tp.ents.length && unsure.indexOf(c.tp.name) < 0) unsure.push(c.tp.name);
   });
   if (multiSheet()){
     var split = [];
@@ -6802,6 +6887,10 @@ function vcMakeEditable(){
   DOC.toolpaths = tpList().filter(function (x) { return !x.vcFrom; }).concat(made);
   DOC.vcConverted = true;                    // kept, not deleted, so undo can bring the VCarve list back
   persist(); renderToolpathPanel(); draw();
+  if (skipped.length) toast('warn', skipped.length === 1 ? 'One toolpath wasn’t converted' : skipped.length + ' toolpaths weren’t converted',
+    skipped.join(', ') + ': 454 couldn’t read ' + (skipped.length === 1 ? 'its depth' : 'their depths') + ' from the project, and won’t make one up. Make ' + (skipped.length === 1 ? 'it' : 'them') + ' again here with + in the Toolpaths panel.');
+  if (noAngle.length) toast('warn', 'Check the V-bit', 'For ' + noAngle.join(', ') + ', 454 couldn’t tell the bit’s angle and has used 60\u00b0. A wrong angle carves to the wrong depth: open Edit and choose the bit.');
+  if (guessed.length) toast('warn', 'Check the cutter', 'For ' + guessed.join(', ') + ', 454 couldn’t tell the cutter’s diameter and has used 1/8 in (3.175 mm). Open Edit and choose the tool.');
   toast(unsure.length ? 'info' : 'ok', made.length + ' VCarve toolpaths are now editable',
         made.map(function (x) { return x.name + ' (' + (x.ents.length ? x.ents.length + (x.ents.length === 1 ? ' shape' : ' shapes') : 'shapes not found') + ')'; }).join(', ') +
         (unsure.length ? '. For ' + unsure.join(', ') + ', open Edit and pick the shapes: the project doesn\u2019t say which vectors they use.' : '.'));
@@ -9393,6 +9482,70 @@ function crvSheets(vd){
   }
   return out;
 }
+// The drawing's objects. Every shape, block of text and group starts with a header: its class, the number 10, its
+// ID (16 bytes), a second ID, 8 zero bytes, three whole numbers, -1. A plain shape's ID is repeated after its
+// outline (which is where it's read from); a block of text's letters have none of their own; and a group is an
+// object whose own part ends, after its sheet, with 1, how many children it has, and its first child's header.
+// Its children follow it, a child group's own children straight after that child. Toolpaths name what they cut
+// by these IDs: a shape's, a block of text's, or a group's.
+// (From a tutorial project with four groups: the outlines counted into each group reach exactly as far as the
+// box the group records; and its V-carve toolpath, which names one group, covers that box in VCarve's G-code.)
+// Returns the headers from `from` on, in order: {at, id, kids (a group's count), groups (the IDs of the groups
+// it's in, outermost first)}.
+function crvObjects(vd, dv, from){
+  var L = vd.length, heads = [];
+  function isHead(p){
+    if (p < 0 || p + 62 > L || dv.getInt32(p + 2, true) !== 10) return false;
+    if (dv.getInt32(p + 38, true) !== 0 || dv.getInt32(p + 42, true) !== 0 || dv.getInt32(p + 58, true) !== -1) return false;
+    for (var k = 46; k <= 54; k += 4){ var v = dv.getInt32(p + k, true); if (v < 0 || v > 1000000) return false; }
+    for (var z = 6; z < 22; z++) if (vd[p + z]) return true;      // an ID that isn't all zeros
+    return false;
+  }
+  function hexAt(p){ var s = ''; for (var k = 0; k < 16; k++) s += (vd[p + k] < 16 ? '0' : '') + vd[p + k].toString(16); return s; }
+  for (var p = Math.max(0, from); p + 62 <= L; p++) if (isHead(p)){ heads.push({at: p, id: hexAt(p + 6), kids: 0, groups: []}); p += 61; }
+  var TAG = [86, 101, 99, 116, 114, 105, 99, 95, 95, 86, 101, 114, 115, 105, 111, 110];    // Vectric__Version
+  function tagAt(q){ if (q < 0 || q + 28 > L || dv.getInt32(q, true) !== 16) return -1; for (var k = 0; k < 16; k++) if (vd[q + 4 + k] !== TAG[k]) return -1; var n = dv.getInt32(q + 24, true); return n >= 1 && n <= 64 ? q + 28 + n : -1; }
+  heads.forEach(function (h, i){
+    // its layer, then its box and matrix, then its sheet; a group goes on: 1, its count, its first child
+    var lim = Math.min(heads[i + 1] ? heads[i + 1].at : L, h.at + 200000);
+    for (var q = h.at + 62; q + 28 <= lim; q++){
+      var afterLayer = tagAt(q);
+      if (afterLayer < 0) continue;
+      var afterSheet = tagAt(afterLayer + 4 + 32 + 72);
+      if (afterSheet > 0 && afterSheet + 8 + 62 <= L && dv.getInt32(afterSheet, true) === 1 && isHead(afterSheet + 8)){
+        var n = dv.getInt32(afterSheet + 4, true);
+        if (n >= 1 && n <= 100000) h.kids = n;
+      }
+      break;
+    }
+  });
+  // count each group's children off, depth first
+  function walk(i, into){
+    var h = heads[i];
+    h.groups = into;
+    if (!h.kids) return i + 1;
+    var j = i + 1, mine = into.concat([h.id]);
+    for (var k = 0; k < h.kids && j < heads.length; k++) j = walk(j, mine);
+    return j;
+  }
+  for (var w = 0; w < heads.length;) w = walk(w, []);
+  return heads;
+}
+// Each outline's object is the last header before it. An outline with no ID of its own (a letter) takes its
+// object's, filled into `ids`; and each takes the IDs of the groups its object is in, which are returned, one
+// list (or null) for each outline. heads and ats are both in the order they're in the file; skip: outlines to
+// leave alone, by index.
+function crvOwners(heads, ats, ids, skip){
+  var hi = 0;
+  return ats.map(function (at, ci){
+    if (skip && skip[ci]) return null;
+    while (hi + 1 < heads.length && heads[hi + 1].at < at) hi++;
+    var h = heads[hi];
+    if (!h || h.at > at) return null;
+    if (!ids[ci] && !h.kids) ids[ci] = h.id;
+    return h.groups.length ? h.groups.slice() : null;
+  });
+}
 // The material, from the MaterialSize stream: it holds the block's two opposite corners (x, y, z at 6, 14, 22
 // and at 30, 38, 46), not its size. Its size is the difference; XY zero is wherever 0, 0 falls in it, and Z
 // zero is at whichever of its top and bottom sits at 0. (The high corner used to be taken as the size, which
@@ -9449,19 +9602,22 @@ function crvExtract(buf){
   var drawingStart = 0;
   if (layers.length && /toolpath/i.test(layers[0].name))
     drawingStart = layers.length > 1 ? layers[1].off : vd.length; // previews-only file: nothing is drawing
-  var contours = [], preview = [], contourIds = [], contourSheets = [], contourAts = [], contourEnds = [], i = 0, L = vd.length;
+  var contours = [], preview = [], contourIds = [], contourSheets = [], contourAts = [], contourEnds = [], contourOpen = [], i = 0, L = vd.length;
   // A segment starts with its kind: 0 line, 1 arc (a bulge follows), 2 cubic Bezier (two control
   // points follow). Missing the Bezier kind used to drop whole outlines: VCarve's smooth curves
   // are Beziers, so any shape with one simply vanished on import.
   function isHdr(o){ return o+9 <= L && (vd[o] === 0 || vd[o] === 1 || vd[o] === 2) && vd[o+1] === 2 && vd[o+2] === 0 && vd[o+3] === 0 && vd[o+4] === 0; }
   while (i < L - 73){
     var n = dv.getInt32(i, true);
-    if (n >= 2 && n <= 100000 && isHdr(i+4)){
-      var o = i + 4, spans = [], ok = true;
+    // A shape in the drawing can be a single span: one line, or one arc. (Those used to be skipped, so a lone line
+    // or arc never came across.) The toolpath previews are read as before, from two spans up.
+    if (n >= (i >= drawingStart ? 1 : 2) && n <= 100000 && isHdr(i+4)){
+      var o = i + 4, spans = [], ok = true, endX = NaN, endY = NaN;
       for (var k = 0; k < n; k++){
         if (!isHdr(o) || o + 61 > L){ ok = false; break; }
         var x = dv.getFloat64(o+9, true), y = dv.getFloat64(o+17, true);
         if (!isFinite(x) || !isFinite(y) || Math.abs(x) > 1e5 || Math.abs(y) > 1e5){ ok = false; break; }
+        endX = dv.getFloat64(o+33, true); endY = dv.getFloat64(o+41, true);     // where this span ends
         if (vd[o] === 1){
           if (o + 69 > L){ ok = false; break; }
           var b = dv.getFloat64(o+61, true);
@@ -9487,7 +9643,16 @@ function crvExtract(buf){
           o += 93;
         } else { spans.push([x, y, 0]); o += 61; }
       }
+      if (ok && spans.length >= n && i >= drawingStart && !(isFinite(endX) && isFinite(endY) && Math.abs(endX) < 1e5 && Math.abs(endY) < 1e5)) ok = false;
       if (ok && spans.length >= n){
+        // Open or closed: each span says where it ends, and a closed shape's last span ends where its first
+        // starts. An open one's doesn't: its end is one more point. (The ends used to be ignored, so an open shape
+        // lost its last point and was closed with a straight line.)
+        if (i >= drawingStart){
+          var isOpen = Math.hypot(endX - spans[0][0], endY - spans[0][1]) > 1e-6;
+          if (isOpen) spans.push([endX, endY, 0]);
+          contourOpen.push(isOpen);
+        }
         (i < drawingStart ? preview : contours).push(spans);
         // VCarve follows each vector with its 16-byte ID; toolpaths list the IDs of the vectors they use
         if (i >= drawingStart){
@@ -9507,14 +9672,23 @@ function crvExtract(buf){
   var text = {placed: 0, left: [], drop: {}, sheets: {}};
   try { text = crvTextApply(vd, dv, contours, contourAts, contourEnds); } catch (e){ text.left.push({said: '', why: 'the text couldn\u2019t be read (' + e.message + ')', unread: true}); }
   Object.keys(text.sheets).forEach(function (k){ if (!contourSheets[k]) contourSheets[k] = text.sheets[k]; });
+  var keep = function (v, k){ return !text.drop[k]; };
+  // Each outline's object: the last header before it. Its letters take a block of text's ID (they've none of
+  // their own), and every outline takes the IDs of the groups it's in: a toolpath can name any of them.
+  var contourGroups = contours.map(function (){ return null; }), groupIds = [];
+  try {
+    var heads = crvObjects(vd, dv, drawingStart);
+    heads.forEach(function (h){ if (h.kids && groupIds.indexOf(h.id) < 0) groupIds.push(h.id); });
+    contourGroups = crvOwners(heads, contourAts, contourIds, text.drop);
+  } catch (e){}
   if (Object.keys(text.drop).length){
-    var keep = function (v, k){ return !text.drop[k]; };
-    contours = contours.filter(keep); contourIds = contourIds.filter(keep); contourSheets = contourSheets.filter(keep);
+    contours = contours.filter(keep); contourIds = contourIds.filter(keep); contourSheets = contourSheets.filter(keep); contourOpen = contourOpen.filter(keep);
+    contourGroups = contourGroups.filter(keep);
   }
   var toolpaths = [];
-  try{ var td = ole.stream('ToolpathData'); if (td){ toolpaths = vcToolpathsFrom(td); vcToolpathVectors(td, toolpaths, contourIds); } }catch(e){}   // never block the import
+  try{ var td = ole.stream('ToolpathData'); if (td){ toolpaths = vcToolpathsFrom(td); vcToolpathVectors(td, toolpaths, contourIds.concat(groupIds)); } }catch(e){}   // never block the import
   return {stockW: stockW, stockH: stockH, stockT: stockT, stockZero: stockZero, stockAt: [mat.x0, mat.y0], contours: contours, contourIds: contourIds,
-          contourSheets: contourSheets, sheets: crvSheets(vd), preview: preview, toolpaths: toolpaths,
+          contourSheets: contourSheets, contourOpen: contourOpen, contourGroups: contourGroups, sheets: crvSheets(vd), preview: preview, toolpaths: toolpaths,
           textPlaced: text.placed, textLeft: text.left};
 }
 function crvToDoc(ex, scale){
@@ -9522,8 +9696,16 @@ function crvToDoc(ex, scale){
   ex.contours.forEach(function(spans, ci){
     var vcId = ex.contourIds ? ex.contourIds[ci] : null;           // VCarve's ID, so converted toolpaths find it
     var vcSheet = ex.contourSheets ? ex.contourSheets[ci] : null;   // and its sheet, in a multi-sheet project
-    function tag(e){ if (vcId) e.vcId = vcId; if (vcSheet) e.vcSheet = vcSheet; return e; }
+    var vcGroups = ex.contourGroups ? ex.contourGroups[ci] : null;   // the groups it's in: a toolpath may name one of those
+    function tag(e){ if (vcId) e.vcId = vcId; if (vcSheet) e.vcSheet = vcSheet; if (vcGroups && vcGroups.length) e.vcGroups = vcGroups.slice(); return e; }
     var sc = spans.map(function(sp){ return [sp[0]*scale, sp[1]*scale, sp[2]]; });
+    if (ex.contourOpen && ex.contourOpen[ci]){                    // an open shape: a line, or an outline left open
+      var straight = sc.every(function(sp){ return Math.abs(sp[2]) < 1e-9; });
+      if (sc.length === 2 && straight) ents.push(tag({t:'line', x1: sc[0][0], y1: sc[0][1], x2: sc[1][0], y2: sc[1][1]}));
+      else if (straight) ents.push(tag({t:'poly', pts: sc.map(function(sp){ return [sp[0], sp[1]]; }), closed:false}));
+      else ents.push(tag({t:'path', pts: sc, closed:false}));
+      return;
+    }
     // circle: 4 spans, uniform quarter bulge, equidistant from centroid
     if (sc.length === 4 && sc.every(function(sp){ return Math.abs(Math.abs(sp[2]) - 0.41421356) < 1e-4; })){
       var cx = (sc[0][0]+sc[1][0]+sc[2][0]+sc[3][0])/4;
@@ -9698,12 +9880,17 @@ function crvTextRead(vd, dv, mark, stop, outs){
     p = lf.end + 40;
     blk.lines.push(line);
   }
+  // After the last line, the path the text sits on: its curve, or for straight text its baseline. 20 bytes, a
+  // class and a number, a class and two numbers, a double, 10 bytes; then how many spans, and the spans. It's
+  // part of the text, not a shape of the drawing: pathAt says where it is, so it isn't taken for one.
+  try {
+    var c0 = cls(p + 20, 'path') + 4;
+    c0 = cls(c0, 'path') + 8 + 8 + 10;
+    if (i32(c0) >= 1 && i32(c0) <= 10000) blk.pathAt = c0;
+  } catch (e){ if (blk.set.IsOnCurve) throw e; }
   if (blk.set.IsOnCurve){
-    // the curve: 20 bytes, a class and a number, a class and two numbers, a double, 10 bytes; then how many spans, and the spans
-    var c = cls(p + 20, 'curve') + 4;
-    c = cls(c, 'curve') + 8 + 8 + 10;
-    var n = i32(c), spans = [];
-    if (n < 1 || n > 10000) throw new Error('its curve has an odd number of spans');
+    if (blk.pathAt === undefined) throw new Error('its curve isn’t where it should be');
+    var c = blk.pathAt, n = i32(c), spans = [];
     c += 4;
     for (var si = 0; si < n; si++){
       var ty = vd[c];
@@ -9866,6 +10053,7 @@ function crvTextApply(vd, dv, contours, ats, ends){
     catch (e){ res.left.push({said: '', why: 'it couldn’t be read (' + e.message + ')', unread: true}); return; }
     var mine = [];
     blk.lines.forEach(function (l){ l.chars.forEach(function (ch){ ch.outs.forEach(function (at){ mine.push(at); }); }); });
+    if (blk.pathAt !== undefined && index[blk.pathAt] !== undefined) res.drop[index[blk.pathAt]] = true;   // its baseline or curve: part of the text
     var why = crvTextCant(blk);
     if (why){
       mine.forEach(function (at){ res.drop[index[at]] = true; });
@@ -16516,7 +16704,7 @@ function wire(){
     var scale = document.getElementById('impIN').checked ? 25.4 : 1;
     pushUndo();
     var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockT: ex.stockT, stockZero: ex.stockZero, stockAt: ex.stockAt, contours: useD ? ex.contours : [],
-                         contourIds: useD ? ex.contourIds : [], contourSheets: useD ? ex.contourSheets : []}, scale);   // IDs and sheets
+                         contourIds: useD ? ex.contourIds : [], contourSheets: useD ? ex.contourSheets : [], contourOpen: useD ? ex.contourOpen : [], contourGroups: useD ? ex.contourGroups : []}, scale);   // IDs, sheets, which are open, and groups
     var docP = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockAt: ex.stockAt, contours: useP ? ex.preview : []}, scale);
     docP.ents.forEach(function(en){ en.tp = true; });
     DOC = {stock: docD.stock, ents: docD.ents.concat(docP.ents), guides: [], dims: [], vcToolpaths: ex.toolpaths || [],

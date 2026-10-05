@@ -34,15 +34,19 @@ function vcTipFromName(name){
   if (!(val > 0)) return 0;
   return +(val * (inches ? 25.4 : 1)).toFixed(4);
 }
+// The cutter's diameter in mm, and the tool in the library it is (if it's there). The project's own record of the
+// tool comes first: it's what the toolpath was made with. `from` says where the diameter came from: 'project',
+// 'library', 'name', or 'guess' (none of those: 1/8 in, which the conversion then says).
 function vcToolDia(t){
   var lib = TOOLLIB ? libMatch({name: t.tool.name, num: t.tool.num}, t.machineId) : null;
   var lt = lib && lib.tool;
-  if (lt && lt.diameter) return {dia: lt.diameter * (lt.units === 'in' ? 25.4 : 1), tool: lt};
+  if (t.tool.dia > 0) return {dia: t.tool.dia, tool: lt || null, from: 'project'};
+  if (lt && lt.diameter) return {dia: lt.diameter * (lt.units === 'in' ? 25.4 : 1), tool: lt, from: 'library'};
   var m = /\(([\d.]+)\s*mm\)/i.exec(t.tool.name);
-  if (m) return {dia: parseFloat(m[1]), tool: null};
+  if (m) return {dia: parseFloat(m[1]), tool: null, from: 'name'};
   m = /\((\d+)\s*\/\s*(\d+)\s*"?\)|\((\d+)\s+(\d+)\s*\/\s*(\d+)\s*"?\)/.exec(t.tool.name);
-  if (m){ var inch = m[1] ? (+m[1] / +m[2]) : (+m[3] + +m[4] / +m[5]); return {dia: inch * 25.4, tool: null}; }
-  return {dia: 3.175, tool: null};
+  if (m){ var inch = m[1] ? (+m[1] / +m[2]) : (+m[3] + +m[4] / +m[5]); return {dia: inch * 25.4, tool: null, from: 'name'}; }
+  return {dia: 3.175, tool: null, from: 'guess'};
 }
 function vcPreviewLoops(){
   return (DOC.vcPreview || []).map(function (sp) {
@@ -78,12 +82,20 @@ function vcMakeEditable(){
   }).filter(Boolean);
   // Matching shapes against previews is slow on big projects (every shape against every preview), and
   // only needed for toolpaths VCarve's own record doesn't cover: so it runs once, and only if needed.
-  var matchesMemo = null;
-  function previewMatches(){ if (!matchesMemo) matchesMemo = vcPreviewMatches(shapes); return matchesMemo; }
-  var made = [], unsure = [];
+  // (Every shape against every preview: on a big project that's minutes, so past a size it isn't tried, and
+  // those toolpaths come across without shapes, to be picked in Edit.)
+  var matchesMemo = null, tooBig = shapes.length * (DOC.vcPreview || []).length > 60000;
+  function previewMatches(){ if (!matchesMemo) matchesMemo = tooBig ? [] : vcPreviewMatches(shapes); return matchesMemo; }
+  var list = DOC.vcToolpaths, clears = [];
+  var made = [], unsure = [], skipped = [], guessed = [], noAngle = [];
   pushUndo();
-  DOC.vcToolpaths.forEach(function (T) {
-    var set = T.set || {}, g = function (k) { for (var key in set) if (key.replace(/^_(ppd|dpd|chpd|pkpd|vcpd|mc\w\wd)/, '') === k) return set[key]; };
+  list.forEach(function (T, ti) {
+    // A setting, by its name without the group it's in. (`_mtpkpd` and `_mtpkptpd` are the pocket's groups in
+    // newer VCarve: without them a pocket's depth wasn't found, and 3 mm was used in its place.)
+    var set = T.set || {}, g = function (k) { for (var key in set) if (key.replace(/^_(ppd|dpd|chpd|pkpd|vcpd|mtpkptpd|mtpkpd|mc\w\wd)/, '') === k) return set[key]; };
+    // The project's units: its lengths are in inches unless it says millimetres. (They used to be taken as
+    // millimetres whatever it said: a 0.26 in cut came across 0.26 mm deep.)
+    var u = g('InMM') === false ? 25.4 : 1;
     var kind = String(g('ToolpathType') || T.type || '');
     var td = vcToolDia(T), D = td.dia;
     // A profile's side comes from ProfileType (0 outside, 1 inside, 2 on the line). The "Profile Inside"
@@ -91,30 +103,58 @@ function vcMakeEditable(){
     // later, so it can say the opposite of what VCarve cuts: VCarve's own calculated paths follow
     // ProfileType. The label is only a fallback for projects without ProfileType.
     var pt = g('ProfileType');
-    var side = /VCarve/i.test(kind) || /V-Carve/i.test(T.type) ? 'vcarve' : /Drill/i.test(kind) ? 'drill' : /Chamfer/i.test(T.type) ? 'chamfer' : /Pocket/i.test(kind) ? 'pocket'
+    // A V-carve's flat floor cleared by a second tool (AreaClearToolpath): a pocket to the floor's depth that
+    // stands off the outline by as far as the V-bit's cone reaches at the floor, where the two meet. It needs
+    // the V-bit's angle, which is the next toolpath's: VCarve writes the pair one after the other.
+    var clearing = /AreaClear/i.test(kind) || T.type === 'AreaClear', mate = null;
+    if (clearing){
+      var nx = list[ti + 1];
+      if (nx && (nx.type === 'V-Carve' || /VCarve/i.test(String((nx.set || {}).ToolpathType || ''))) && nx.tool && nx.tool.angle > 0) mate = nx;
+      if (!mate){ skipped.push(T.name); return; }
+    }
+    var side = clearing ? 'pocket' : /VCarve/i.test(kind) || /V-Carve/i.test(T.type) ? 'vcarve' : /Drill/i.test(kind) ? 'drill' : /Chamfer/i.test(T.type) ? 'chamfer' : /Pocket/i.test(kind) ? 'pocket'
              : pt === 1 ? 'inside' : pt === 2 ? 'on' : pt === 0 ? 'outside'
              : /Inside/i.test(kind) ? 'inside' : /Outside/i.test(kind) ? 'outside' : 'outside';
-    var cutDepth = +(g('CutDepth') || g('ChamferDepth') || 3), allow = +(g('Allowance') || 0);
-    var passes = +(g('NumPasses') || 0), step = passes > 0 ? cutDepth / passes : (+(g('Stepdown') || 0) || Math.max(0.5, cutDepth / 2));
+    // Its depth. If the project's can't be read, it isn't converted: a made-up depth is worse than none. (A
+    // V-carve's depth comes from its shapes and its flat depth, below.)
+    var rawDepth = g('CutDepth'); if (!(rawDepth > 0)) rawDepth = g('ChamferDepth');
+    // a V-carve's depths: where it starts below the surface, and how far below that its flat floor is
+    var vStart = Math.max(0, +(g('StartDepth') || 0)) * u, vFlat = g('DoFlatBottom') && +(g('FlatDepth') || 0) > 0 ? +g('FlatDepth') * u : 0;
+    if (clearing){ if (!(vFlat > 0)){ skipped.push(T.name); return; } rawDepth = (vStart + vFlat) / u; }
+    if (side !== 'vcarve' && !(typeof rawDepth === 'number' && isFinite(rawDepth) && rawDepth > 0)){ skipped.push(T.name); return; }
+    var cutDepth = rawDepth > 0 ? rawDepth * u : 3, allow = +(g('Allowance') || 0) * u;
+    var passes = +(g('NumPasses') || 0), step = passes > 0 ? cutDepth / passes : (+(g('Stepdown') || 0) * u || Math.max(0.5, cutDepth / 2));
+    if (td.from === 'guess') guessed.push(T.name);
     var tp = {id: tpNewId(), name: T.name, side: side, ents: [], dia: +D.toFixed(4), step: +step.toFixed(4), safeZ: 6,
               rpm: T.tool.rpm || 18000, toolId: td.tool ? td.tool.id : null, climb: +(g('CutDirection') || 0) === 0,
               allowance: allow, tabsOn: false, tabLen: 4, tabThk: 0.5, tabPts: {}, tabCount: 0, stepoverPct: 40,
               vcFrom: T.name, depth: cutDepth, toolChosen: true};
     tp.type = side === 'drill' ? 'drill' : side === 'pocket' ? 'pocket' : side === 'chamfer' ? 'chamfer' : 'profile';
-    if (g('DoRamping') && +(g('RampingDistance') || 0) > 0) tp.rampLen = +g('RampingDistance');
-    // feeds from the library, for the machine and material VCarve used
+    var rampD = +(g('RampingDistance') || g('RampDistance') || 0) * u;      // newer VCarve calls it RampDistance
+    if (g('DoRamping') && rampD > 0) tp.rampLen = +rampD.toFixed(4);
+    // feeds: the project's own for this tool; without them, the library's for the machine and material VCarve used
     var cut = td.tool ? (libCutFor(td.tool, T.machineId, T.materialId) || td.tool.cuts[0]) : null;
-    if (cut){
+    if (T.tool.feed > 0){ tp.feed = Math.round(T.tool.feed); tp.plunge = Math.round(T.tool.plunge); }
+    else if (cut){
       var rate = cut.rateUnits === 4 ? 25.4 : 1;
       tp.feed = cut.feed ? Math.round(cut.feed * rate) : 800;
       tp.plunge = cut.plunge ? Math.round(cut.plunge * rate) : Math.round(tp.feed / 2);
       if (cut.rpm && !T.tool.rpm) tp.rpm = cut.rpm;          // what the project used comes first
     } else { tp.feed = 800; tp.plunge = 300; }
+    // a pocket's stepover: the tool's own, as a share of its diameter
+    if (side === 'pocket' && T.tool.stepover > 0 && D > 0) tp.stepoverPct = Math.max(5, Math.min(100, Math.round(T.tool.stepover / D * 100)));
     // through the material, when the depth is the thickness plus a little
     var t = DOC.stock.t || 0;
     if (side !== 'chamfer' && t > 0 && cutDepth >= t - 1e-6 && cutDepth - t <= 1){ tp.through = true; tp.over = +(cutDepth - t).toFixed(4); }
     else tp.through = false;
-    if (side === 'pocket' && g('DoRaster')){ tp.pocketClear = 'raster'; tp.rasterAngle = +(g('RasterAngle') || 0); }
+    if (clearing){
+      // as deep as the floor, from the surface, in passes no deeper than the tool's own; standing off by the cone's reach
+      tp.allowance = +(vFlat * Math.tan(mate.tool.angle / 2 * Math.PI / 180)).toFixed(4);
+      tp.step = +(T.tool.pass > 0 ? Math.min(cutDepth, T.tool.pass) : Math.max(0.5, cutDepth / 2)).toFixed(4);
+      tp.finishPass = false; tp.through = false;
+      clears.push({tp: tp, mate: mate.name});
+    }
+    if (side === 'pocket' && !clearing && g('DoRaster')){ tp.pocketClear = 'raster'; tp.rasterAngle = +(g('RasterAngle') || 0); }
     if (side === 'drill'){
       var sd = cut && cut.stepdown ? cut.stepdown * (cut.lengthUnits === 'in' ? 25.4 : 1) : cutDepth / 6;
       tp.peck = g('PeckDrill') ? +sd.toFixed(4) : 0;
@@ -122,9 +162,14 @@ function vcMakeEditable(){
     if (side === 'vcarve'){
       var vt = td.tool;
       var nm = T.tool.name, nameAng = vcNumberBefore(nm, nm.indexOf('\u00b0'));      // "... 30\u00b0 ..." anywhere in the name
-      tp.vAngle = vt && vt.angle > 0 ? vt.angle : (nameAng > 0 ? nameAng : 60);
+      // the bit's angle: the project's own record of the tool first, then the library's, then its name
+      tp.vAngle = T.tool.angle > 0 ? T.tool.angle : vt && vt.angle > 0 ? vt.angle : (nameAng > 0 ? nameAng : 60);
+      if (!(T.tool.angle > 0) && !(vt && vt.angle > 0) && !(nameAng > 0)) noAngle.push(T.name);
       tp.vTip = vt && vt.flat > 0 ? +(vt.flat * (vt.units === 'in' ? 25.4 : 1)).toFixed(4) : vcTipFromName(nm);
-      tp.vcMax = g('DoFlatBottom') && +(g('FlatDepth') || 0) > 0 ? +g('FlatDepth') : 0;
+      // the floor's depth is from the surface here: the start depth and the flat depth together. (VCarve's G-code
+      // for a carve starting 0.23 in down with a 0.1 in flat depth goes to 0.33 in.)
+      tp.vcMax = vFlat > 0 ? +(vStart + vFlat).toFixed(4) : 0;
+      if (vStart > 0) tp.vcStart = +vStart.toFixed(4);
       tp.step = 0; tp.through = false;
     }
     if (side === 'chamfer'){
@@ -132,7 +177,7 @@ function vcMakeEditable(){
       tp.vAngle = half * 2;
       tp.chamW = +(cutDepth * Math.tan(half * Math.PI / 180)).toFixed(4);
       tp.chamMode = g('VectorsAtTop') ? (g('Inside') ? 'in' : 'out') : 'edge';
-      tp.step = +(g('Stepdown') || step);
+      tp.step = +(g('Stepdown') || 0) * u || step;
     }
     if (g('UseTabs')){
       tp.tabsOn = true;
@@ -143,7 +188,10 @@ function vcMakeEditable(){
     // which shapes: VCarve's own record of the vectors this toolpath uses, by ID. Only projects without
     // it fall back to matching the saved previews (which fails if parts moved after calculating).
     if (T.vids && T.vids.length){
-      DOC.ents.forEach(function (e) { if (e.vcId && T.vids.indexOf(e.vcId) >= 0) tp.ents.push(entId(e)); });
+      // a shape by its own ID, the letters of a block of text by the block's, or everything in a group by the group's
+      DOC.ents.forEach(function (e) {
+        if ((e.vcId && T.vids.indexOf(e.vcId) >= 0) || (e.vcGroups && e.vcGroups.some(function (gid){ return T.vids.indexOf(gid) >= 0; }))) tp.ents.push(entId(e));
+      });
       if (tp.ents.length) tp.foundBy = 'id';
     }
     var want;
@@ -156,7 +204,7 @@ function vcMakeEditable(){
       if (side === 'drill' || side === 'vcarve') return;   // matched below: drills by centre, V-carves by containment
       if (Math.abs(m.off - want.off) < 0.06 && m.side === want.side) tp.ents.push(m.id);
     });
-    if (side === 'vcarve' && !tp.foundBy){
+    if (side === 'vcarve' && !tp.foundBy && !tooBig){
       // A V-carve's preview is its centre-line, inside the shape it carves: so each unmatched preview
       // belongs to the smallest shape that contains it (not the part outline the text sits on).
       var usedPrev = {}; previewMatches().forEach(function (m) { usedPrev[m.preview] = true; });
@@ -186,9 +234,17 @@ function vcMakeEditable(){
       });
     }
     if (tp.side === 'chamfer' && tp.chamMode === 'edge') tp.ents = tp.ents.filter(function (id, i, a) { return a.indexOf(id) === i; });
-    if (!tp.ents.length) unsure.push(tp.name);
+    if (!tp.ents.length && !clearing) unsure.push(tp.name);
     tpGenerate(tp);
     made.push(tp);
+  });
+  // a clearing toolpath goes with its V-carve: the same shapes, and kept in step with it after
+  clears.forEach(function (c) {
+    var v = made.filter(function (x) { return x.side === 'vcarve' && x.vcFrom === c.mate; })[0];
+    if (!v) return;
+    c.tp.clearFor = v.id;
+    if (!c.tp.ents.length && v.ents.length){ c.tp.ents = v.ents.slice(); tpGenerate(c.tp); }
+    if (!c.tp.ents.length && unsure.indexOf(c.tp.name) < 0) unsure.push(c.tp.name);
   });
   if (multiSheet()){
     var split = [];
@@ -210,6 +266,10 @@ function vcMakeEditable(){
   DOC.toolpaths = tpList().filter(function (x) { return !x.vcFrom; }).concat(made);
   DOC.vcConverted = true;                    // kept, not deleted, so undo can bring the VCarve list back
   persist(); renderToolpathPanel(); draw();
+  if (skipped.length) toast('warn', skipped.length === 1 ? 'One toolpath wasn’t converted' : skipped.length + ' toolpaths weren’t converted',
+    skipped.join(', ') + ': 454 couldn’t read ' + (skipped.length === 1 ? 'its depth' : 'their depths') + ' from the project, and won’t make one up. Make ' + (skipped.length === 1 ? 'it' : 'them') + ' again here with + in the Toolpaths panel.');
+  if (noAngle.length) toast('warn', 'Check the V-bit', 'For ' + noAngle.join(', ') + ', 454 couldn’t tell the bit’s angle and has used 60\u00b0. A wrong angle carves to the wrong depth: open Edit and choose the bit.');
+  if (guessed.length) toast('warn', 'Check the cutter', 'For ' + guessed.join(', ') + ', 454 couldn’t tell the cutter’s diameter and has used 1/8 in (3.175 mm). Open Edit and choose the tool.');
   toast(unsure.length ? 'info' : 'ok', made.length + ' VCarve toolpaths are now editable',
         made.map(function (x) { return x.name + ' (' + (x.ents.length ? x.ents.length + (x.ents.length === 1 ? ' shape' : ' shapes') : 'shapes not found') + ')'; }).join(', ') +
         (unsure.length ? '. For ' + unsure.join(', ') + ', open Edit and pick the shapes: the project doesn\u2019t say which vectors they use.' : '.'));

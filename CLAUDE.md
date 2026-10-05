@@ -121,6 +121,8 @@ without a published release looks to them like a newest release with nothing in 
   centred on zero, with its advance, kerning and centre beside it, lines and words above, and a box and matrix
   for the block. Straight text (left, centred) and text on a curve are placed; anything not yet checked
   against a VCarve DXF export is left out and named. The material is two corners (`crvMaterial`), not a size.
+  A shape can be one span (a lone line or arc), and is open unless its last span ends where its first starts;
+  a block of text's own baseline or curve is part of the text, not a shape.
 - **Carbide Create projects open** (`c2d-import.js`, `c2d-toolpaths.js`): both file kinds (SQLite database of
   zlib-packed JSON; older, one JSON text). A toolpath is converted only when its meaning is known from real
   files; otherwise it's left out and named. Don't add a mapping from a guess: get a file and its G-code.

@@ -372,14 +372,24 @@ Opening a VCarve `.crv` brings in its drawing, material and zero, and its toolpa
 - **Profiles**, with tabs, ramps, allowance and direction
 - **Pockets**, including raster clearing and its angle
 - **Drilling**, and **chamfers** in both of VCarve’s modes
-- **V-carves**, with the bit’s angle and tip and the flat depth
+- **V-carves**, with the bit’s angle and tip, the start depth and the flat depth
+- **V-carve inlays** cut with a second tool for the floor: the V-carve, and its clearing pocket, as a pair
 
-**How shapes are found:** each toolpath in a VCarve project records which vectors it uses, by VCarve’s own IDs, and 454 reads that record. It doesn’t depend on where anything is, so it works even if parts were moved after VCarve last calculated. For a project without that record, 454 falls back to matching VCarve’s saved toolpath previews to the shapes; if nothing matches, the toolpath comes across with no shapes: open it with **Edit** and pick them. Inlay toolpaths aren’t converted yet.
+Depths, feeds and the cutter’s size are the project’s own, whether it’s in inches or millimetres. If 454 can’t
+read a toolpath’s depth it doesn’t convert that toolpath, and says which: it never makes one up.
+
+**Check an inlay before cutting it.** 454’s V-carve doesn’t flatten floor that the clearing tool is too wide to
+reach; VCarve’s V-bit does. In a design with narrow parts, **Preview in wood** shows those places left high, and
+an inlay wouldn’t seat there.
+
+**How shapes are found:** each toolpath in a VCarve project records what it cuts, by VCarve’s own IDs: a shape, a block of text, or a group, and 454 reads that record. It doesn’t depend on where anything is, so it works even if parts were moved after VCarve last calculated. For a project without that record, 454 falls back to matching VCarve’s saved toolpath previews to the shapes; if nothing matches, the toolpath comes across with no shapes: open it with **Edit** and pick them. (On a big project that matching isn’t tried: it would take minutes.) A toolpath whose shapes have been deleted from the project since it was calculated comes across without them too.
 
 **Text:** VCarve keeps text as text, and 454 puts each letter where VCarve does, as outlines: straight text in
 lines, set left or centred, fitted to a box or not, and text on a curve. Text set to the right, or on a curve
 with unusual settings (off the curve, or not filling it), is left out, and 454 says which. To bring that in, select the text in VCarve, use **Convert
 Text to Curves**, save a copy, and open the copy.
+
+**Lines, arcs and open shapes:** a single line or arc comes across as one, and an open shape stays open.
 
 **Material and zero:** the material's size and thickness come from the project, with XY zero where the project
 has it: a corner or the centre.

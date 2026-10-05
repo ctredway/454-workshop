@@ -12,6 +12,20 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.42
+
+Not released yet
+
+- **(cutting) Fixed: VCarve toolpaths made editable had wrong depths** in projects in inches (a 0.26 in cut came
+  across 0.26 mm deep), and pockets from newer VCarve came across 3 mm deep whatever their depth. Both now get
+  their real depth, with the project's own cutter size and feeds. A toolpath whose depth can't be read isn't
+  converted. **If you've made a VCarve project's toolpaths editable before, make them editable again.**
+- **VCarve inlay toolpaths come across:** the V-carve, with its start depth and the V-bit's real angle, and the
+  clearing pocket that goes with it. Toolpaths that use a group or a block of text find their shapes, and each
+  toolpath comes across once, under its own name.
+- **Fixed: a lone line or arc in a VCarve project didn't come across,** and open shapes were closed. Both now
+  open as VCarve has them.
+
 ## 0.6.2-beta.41
 
 4 October 2026
