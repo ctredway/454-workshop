@@ -171,9 +171,11 @@ A bevel wider than the bit can cut is refused, with the reason in the hint.
 
 **Warnings** in the hint: the tool isn’t a V-bit; the carving is wider than the bit can make (set a max depth, or use a larger bit); or it would go deeper than the material.
 
+**Floor the clearing cutter can’t reach.** An end mill is round, so it can’t get into the corners of the flat floor, or into any part of the floor narrower than itself. 454’s V-bit runs its point round the floor’s edge and no further in, so that floor is left, sloping up from the edge. The clearing pocket’s card says when this happens and how high the floor is left: “left up to 1.47 mm high”. A smaller clearing cutter leaves less. For a carving that’s only looked at, it rarely matters. For an inlay it does: see below.
+
 <Compare kind="same" title="Same as VCarve">
 
-Flat depth with a clearance tool works as VCarve’s does, and clearing runs before the V-carve.
+Flat depth with a clearance tool works as VCarve’s does, and clearing runs before the V-carve. One difference: VCarve’s V-bit goes back over floor the clearance tool couldn’t reach, and 454’s doesn’t.
 
 </Compare>
 
@@ -191,6 +193,8 @@ Flat depth with a clearance tool works as VCarve’s does, and clearing runs bef
 | **Plug depth** | Plug only: how deep the plug is carved. More than the start depth, so it stands proud. 5 mm to start. |
 
 **Create** makes each half as two ordinary toolpaths: a clearing pocket (choose its end mill) and a V-carve. The **plug** half also draws a mirrored copy of your shapes, and a boundary around them, on an **Inlay plug** layer beside the design.
+
+**Watch for a note on the clearing toolpaths.** If a clearing cutter can’t get into some corners or narrow parts of the floor, its card says so and how high the floor is left there. The plug or the pocket will sit on that instead of seating. Use a smaller clearing cutter, or pare those places flat with a chisel before gluing up.
 
 **How it fits:** flipped into the pocket, the plug wedges on its walls at the start depth, leaves *pocket depth − start depth* underneath for glue, and stands *plug depth − start depth* above the surface to plane off. The hint states all three.
 
@@ -379,8 +383,8 @@ Depths, feeds and the cutter’s size are the project’s own, whether it’s in
 read a toolpath’s depth it doesn’t convert that toolpath, and says which: it never makes one up.
 
 **Check an inlay before cutting it.** 454’s V-carve doesn’t flatten floor that the clearing tool is too wide to
-reach; VCarve’s V-bit does. In a design with narrow parts, **Preview in wood** shows those places left high, and
-an inlay wouldn’t seat there.
+reach; VCarve’s V-bit does. The clearing toolpath’s card says when floor is left and how high, and **Preview in
+wood** shows where. An inlay wouldn’t seat there.
 
 **How shapes are found:** each toolpath in a VCarve project records what it cuts, by VCarve’s own IDs: a shape, a block of text, or a group, and 454 reads that record. It doesn’t depend on where anything is, so it works even if parts were moved after VCarve last calculated. For a project without that record, 454 falls back to matching VCarve’s saved toolpath previews to the shapes; if nothing matches, the toolpath comes across with no shapes: open it with **Edit** and pick them. (On a big project that matching isn’t tried: it would take minutes.) A toolpath whose shapes have been deleted from the project since it was calculated comes across without them too.
 

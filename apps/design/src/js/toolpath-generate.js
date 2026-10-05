@@ -114,7 +114,7 @@ function tpGenerateMoves(tp){
   if (!camReady()) return tp;
   if (tp.side === 'pocket'){
     var groups = tpPocketGroups(tp.ents), pm = [], warnP = null, rings = 0; tp.rasterLines = 0;
-    var zs = tpSurface(), rs = tpRestSource(tp), restRuns = 0;
+    var zs = tpSurface(), rs = tpRestSource(tp), restRuns = 0, vFor = tpClearsFor(tp), flArea = 0, flIn = 0;
     // a clean-up after a larger bit: where that bit's centre could go (its radius, the flattening tolerance,
     // and any allowance it left on the walls without a finishing pass)
     var rest = rs ? {toolDia: rs.dia, level: rs.dia / 2 + 0.01 + (rs.allowance > 0 && !rs.finishPass ? rs.allowance : 0)} : null;
@@ -124,9 +124,10 @@ function tpGenerateMoves(tp){
                            strategy: tp.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: tp.rasterAngle || 0,
                            allowance: tp.allowance || 0, finishPass: !!tp.finishPass,
                            z0: zs, safeZ: zs + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
-                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}, rest: rest});
+                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}, rest: rest, floorCheck: !!vFor});
       if (pr.warning) warnP = pr.warning;
       restRuns += pr.restRuns || 0;
+      flArea += pr.floorLeft || 0; if (pr.floorLeftIn > flIn) flIn = pr.floorLeftIn;
       rings += pr.rings || 0; tp.rasterLines = (tp.rasterLines || 0) + (pr.rasterLines || 0);
       pr.moves.forEach(function (m) { pm.push(m); });
     });
@@ -135,6 +136,8 @@ function tpGenerateMoves(tp){
     tp.islands = groups.reduce(function (s2, g) { return s2 + g.islands.length; }, 0);
     tp.warning = groups.length ? warnP : 'nothing to pocket: pick closed shapes';
     tp.restRuns = rs ? restRuns : undefined;
+    tp.floorLeft = vFor ? tpFloorLeft(tp, vFor, flArea, flIn) : undefined;
+    if (tp.floorLeft && (!tp.warning || (pm.length && tp.warning === 'the cutter is too big for this pocket'))) tp.warning = tpFloorSay(tp);
     if (!tp.warning && tp.restFrom) tp.warning = tpRestProblem(tp) || tpRestNote(tp) || null;
     tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
     return tp;
@@ -251,6 +254,28 @@ function tpStale(tp){ return tp.sig !== tpSignature(tp.ents) + tpStockSig(tp); }
 function tpTabHeight(tp){
   var thk = tp.tabThk || 0.5, t = DOC.stock && DOC.stock.t > 0 ? DOC.stock.t : 0;
   return thk + (t > 0 ? Math.max(0, tpDepth(tp) - t) : 0);
+}
+// The V-carve a pocket clears the flat floor for (tp.clearFor), or null. It's looked for among the drawing's
+// toolpaths, and any being made that aren't among them yet (tpClearsFor.also, set by whoever is making them).
+function tpClearsFor(tp){
+  if (!tp || tp.side !== 'pocket' || !tp.clearFor) return null;
+  var v = tpList().concat(tpClearsFor.also || []).filter(function (x) { return x.id === tp.clearFor; })[0];
+  return v && v.side === 'vcarve' ? v : null;
+}
+// Floor a V-carve's clearing pocket can't get to: the corners and the parts narrower than its cutter. The V-bit
+// runs its point round the floor's edge and no further in, so what the cutter misses stays, sloping up from that
+// edge at the V-bit's angle: `inBy` in from the edge it stands inBy / tan(half angle) above the floor (less a flat
+// tip's half width), and never above the surface. Returns {area (mm2), high (mm)}, or null if it's nothing to
+// speak of (under 0.1 mm high, or 0.25 mm2 in all).
+function tpFloorLeft(tp, v, area, inBy){
+  var tanH = Math.tan((v.vAngle || 60) / 2 * Math.PI / 180);
+  var high = Math.min(tpDepth(tp), Math.max(0, inBy - (v.vTip || 0) / 2) / tanH);
+  return area >= 0.25 && high >= 0.1 ? {area: +area.toFixed(2), high: +high.toFixed(3)} : null;
+}
+function tpFloorSay(tp){
+  var f = tp.floorLeft; if (!f) return '';
+  return 'this cutter can’t get into some corners or narrow parts, and the floor there is left up to ' + fmtDisp(f.high) + ' ' + unitTag() +
+         ' high. The V-bit doesn’t flatten it: use a smaller cutter here, or pare it flat by hand before fitting an inlay';
 }
 // A pocket that cleans up after a larger bit's pocket (tp.restFrom): that pocket, if it can be cleaned up
 // after (it's a pocket, on the same shapes, with a larger bit, and not itself a clean-up), or null.

@@ -27,6 +27,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.43 — inlay plugs keep their start depth; clearing pockets say when they leave floor
+- Includes Design 0.127.0 **(cutting)**: updating an inlay plug's V-carve in the editor no longer loses its start
+  depth. And the clearing pocket of a V-carve or an inlay says when its cutter can't reach some of the floor,
+  and how high that floor is left.
+
 ### 0.6.2-beta.42 — VCarve projects: lone lines and arcs, and open shapes
 - Includes Design 0.125.0: a lone line or arc in a VCarve project comes across, and open shapes stay open.
 - Includes Design 0.126.0 **(cutting)**: VCarve toolpaths made editable get their real depths in projects in
@@ -988,6 +993,49 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.127.0 — inlay plugs keep their start depth through the editor (cutting); clearing pockets say when they leave floor
+- **Fixed (cutting): updating an inlay plug's V-carve lost its start depth.** A plug's walls begin at the start
+  depth (2.5 mm, say), which is what makes it wedge into the pocket. The toolpath editor has no box for it, and
+  on Update it handed the toolpath back without it: change the feed, press Update, and the walls began at the
+  surface instead. With a 60° bit and a 2.5 mm start depth the plug came out 1.4 mm smaller all round, and loose.
+  The same happened to a V-carve with a start depth from a VCarve project. Update now keeps it: not a move
+  changes. **If you've edited an inlay plug's V-carve, open it and check, or make the inlay again.** Found while
+  testing the note below.
+- **Fixed: choosing a clearing pocket's cutter unlinked it from its V-carve.** A V-carve with a max depth gets a
+  clearing pocket that follows it. Opening that pocket to choose its end mill, as the message says to, dropped
+  the link: changing the V-carve's max depth afterwards left the old pocket as it was and added a second one.
+  The link is kept now, and the one pocket follows, keeping its cutter.
+- **An inlay's two toolpaths are linked the same way** (new inlays; ones made before aren't), so changing an
+  inlay's V-carve keeps its clearing pocket in step. For a plug the pocket stands off the walls by what the V-bit
+  cuts from the start depth down, (plug depth − start depth) × tan(half angle), as it did when made.
+
+**The note:**
+- **What was wrong:** a V-carve with a max depth, and both halves of an inlay, are cut by two toolpaths: an end
+  mill clears the flat floor, and the V-bit cuts the sloping walls, running its point round the floor's edge. The
+  end mill is round, so it can't get into the floor's corners, or into any part of the floor narrower than
+  itself. The V-bit goes no further in than the floor's edge, so that floor is simply left: it slopes up from the
+  edge at the V-bit's angle. Nothing said so. With a 6 mm cutter and a 60° bit, a square corner is left about
+  1.5 mm high; a part too narrow for the cutter is left at full height. An inlay doesn't seat on that. (VCarve's
+  V-bit goes back and flattens those places. 454's doesn't yet.)
+- **Now the clearing pocket says so:** "this cutter can't get into some corners or narrow parts, and the floor
+  there is left up to 1.47 mm high. The V-bit doesn't flatten it: use a smaller cutter here, or pare it flat by
+  hand before fitting an inlay." It's on the toolpath's card (with its ⚠), in the editor's hint as you change
+  the cutter, on the job sheet, and in the list when toolpaths are recalculated. It doesn't stop G-code being saved.
+- **How it's measured:** the engine's pocket (`floorCheck`, in `cam.js`) already has a map of how far every spot
+  is from the walls. The floor is everything at least the allowance in; the cutter clears everything within its
+  radius of where its centre can go. What's neither is left, and the furthest of it in from the floor's edge,
+  divided by the tangent of half the V-bit's angle, is how high it stands (never more than the pocket's depth).
+  It's read a little low, never high: by under a tenth of a millimetre in from the edge. Under 0.1 mm high, or
+  0.25 mm² in all, isn't mentioned.
+- **Nothing about the cutting changed:** no toolpath moves differently. Only a V-carve's clearing pocket is
+  measured; other pockets aren't, and take no longer.
+- **Shown for** a V-carve's clearing pocket and a new inlay's, and for inlay toolpaths from a VCarve project.
+- **Tested** (5 tests in `vcarve-pair.test.mjs` for the editor fixes, each failing before its fix; broken on
+  purpose 6 ways, all caught. 8 tests in `floor-left.test.mjs`): what the engine says is held against Preview in wood's
+  simulation of the pocket and the V-carve cut one after the other, for a square (four corners), a shape with a
+  neck too narrow for the cutter, and a circle (nothing left, nothing said). Broken on purpose 10 ways: 9 caught;
+  the tenth (measuring every pocket, not only clearing ones) changes nothing but the time taken.
 
 ### 0.126.0 — VCarve toolpaths made editable: real depths, and the project's own cutter and feeds (cutting)
 - **Fixed: in a project in inches, toolpaths came across with their depths taken as millimetres.** A project

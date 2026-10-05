@@ -535,7 +535,7 @@ function inlayApply(){
   var tpV = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: V-carve' : 'Inlay pocket: V-carve', side: 'vcarve', type: 'vcarve', ents: ents.slice(),
     vAngle: CUT.vAngle || 60, vTip: CUT.vTip || 0, vcMax: plug ? M : D, vcStart: plug ? S : 0, dia: CUT.dia, step: 0,
     feed: CUT.feed, plunge: CUT.plunge, toolId: CUT.toolId, toolChosen: true, through: false});
-  var tpC = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: clearing' : 'Inlay pocket: clearing', side: 'pocket', type: 'pocket', ents: ents.slice(),
+  var tpC = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: clearing' : 'Inlay pocket: clearing', side: 'pocket', type: 'pocket', ents: ents.slice(), clearFor: tpV.id,
     depth: plug ? M : D, step: Math.max(0.5, (plug ? M : D) / 2), allowance: (plug ? M - S : D) * tanH, finishPass: false, stepoverPct: 40,
     dia: 3.175, feed: 800, plunge: 300, toolId: null, toolChosen: false, through: false});
   tpGenerate(tpV); tpGenerate(tpC);
@@ -561,20 +561,21 @@ function tpInsertByRank(tp){
 }
 // A V-carve capped at a max depth leaves flat middles wherever the shape is wider than the cone at
 // that depth. Its clearing pocket stops exactly where the V-bit's floor ends (standing off the outline
-// by maxDepth x tan(half angle), as proved for inlays), runs first, and follows the V-carve's settings.
+// by maxDepth x tan(half angle), as proved for inlays; from the start depth down, for a plug, whose walls
+// begin there), runs first, and follows the V-carve's settings.
 function vcarveClearing(tp){
   var linked = tpList().filter(function (x) { return x.clearFor === tp.id; });
-  var tanH = Math.tan((tp.vAngle || 60) / 2 * Math.PI / 180);
+  var tanH = Math.tan((tp.vAngle || 60) / 2 * Math.PI / 180), off = Math.max(0, tp.vcMax - (tp.vcStart > 0 ? tp.vcStart : 0)) * tanH;
   if (!(tp.vcMax > 0) || !tp.vcFlat){
     if (linked.length) return 'The V-carve no longer has flat areas, so \u201c' + linked[0].name + '\u201d isn\u2019t needed: delete it if you like.';
     return '';
   }
   if (linked.length){                                    // keep the pair in step
-    linked.forEach(function (c) { c.ents = tp.ents.slice(); c.depth = tp.vcMax; c.allowance = tp.vcMax * tanH; tpGenerate(c); });
+    linked.forEach(function (c) { c.ents = tp.ents.slice(); c.depth = tp.vcMax; c.allowance = off; tpGenerate(c); });
     return '';
   }
   var c = {id: tpNewId(), name: tp.name + ': clearing', side: 'pocket', type: 'pocket', ents: tp.ents.slice(), clearFor: tp.id,
-           depth: tp.vcMax, step: Math.max(0.5, tp.vcMax / 2), allowance: tp.vcMax * tanH, finishPass: false, stepoverPct: 40,
+           depth: tp.vcMax, step: Math.max(0.5, tp.vcMax / 2), allowance: off, finishPass: false, stepoverPct: 40,
            dia: 3.175, feed: 800, plunge: 300, toolId: null, toolChosen: false, through: false, safeZ: 6, rpm: 18000, climb: true,
            tabPts: {}, tabsOn: false, hidden: false, exclude: false};
   tpGenerate(c); tpInsertByRank(c);
@@ -644,6 +645,10 @@ function cutApply(){
     startPts: cutStartsKept(),
     exprs: JSON.parse(JSON.stringify(CUT.exprs || {})),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
+    // what the editor has no box for, and must hand back as it found it: a plug's start depth (lost, its walls
+    // began at the surface and the plug came out small), and which V-carve a pocket clears the floor for
+    vcStart: CUT.side === 'vcarve' && CUT.vcStart > 0 ? CUT.vcStart : undefined,
+    clearFor: CUT.side === 'pocket' && CUT.clearFor ? CUT.clearFor : undefined,
     hidden: !!CUT.hidden, exclude: !!CUT.exclude, folded: !!CUT.folded,   // editing a toolpath leaves these alone
     toolId: CUT.toolId, rpm: CUT.rpm || 18000, safeZ: 6
   };
@@ -662,6 +667,8 @@ function cutApply(){
     tp.sheet = sheetsUsed[0] || DOC.activeSheet;
   }
   if (tp.restFrom === undefined) delete tp.restFrom;
+  if (tp.vcStart === undefined) delete tp.vcStart;
+  if (tp.clearFor === undefined) delete tp.clearFor;
   if (tp.tabsOn) cutTabsRemember(tp);                      // the next new toolpath starts with these tabs
   if (at >= 0) list[at] = tp; else tpInsertByRank(tp);   // new ones take their place in the cutting order
   var rsrc = tpRestSource(tp);                              // a clean-up goes after the pocket it follows (moved to just after it, if need be)

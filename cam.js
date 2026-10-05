@@ -362,7 +362,7 @@
   // distance from the nearest wall, so the finished walls are true.
   //
   // opts: outline, islands [], toolDia, stepover (mm), depth, passDepth, z0, safeZ, feed, plunge,
-  //       climb, ramp {length}, rest {toolDia, level}
+  //       climb, ramp {length}, rest {toolDia, level}, floorCheck (see floorLeft, below)
   //
   // rest: clean up after a larger cutter that has already pocketed the same outline to the same depth, its
   // centre kept `level` from the walls (its radius, the tolerance, and any allowance it left). It cleared
@@ -378,7 +378,27 @@
     var F = G.distanceField(bounds, res, r);
     var maxD = 0;
     for (var i = 0; i < F.d.length; i++) if (F.d[i] > maxD) maxD = F.d[i];
-    if (maxD < r + (o.tolerance === undefined ? 0.01 : o.tolerance) + (o.allowance > 0 ? o.allowance : 0)) return {moves: [], warning: 'the cutter is too big for this pocket', rings: 0};
+    // floorCheck: how much of the floor this cutter can't get to. The floor is everything at least the allowance
+    // from the walls (what a V-bit's clearing pocket is there to flatten); the cutter clears within its radius of
+    // where its centre can go. What's left is the corners and the parts too narrow for it: its area (mm2), and how
+    // far the furthest of it is in from the floor's edge. Measured between grid points, the distance to where the
+    // centre goes reads up to about 0.7 of a cell long, so a cell counts only if it's 0.75 of a cell clear: nothing
+    // is called left that isn't, and what is left is under-read by less than a cell.
+    function floorLeft(){
+      var a0 = o.allowance > 0 ? o.allowance : 0, lv = r + (o.tolerance === undefined ? 0.01 : o.tolerance), N0 = F.w * F.h, cells = 0, inBy = 0;
+      var to = new Float64Array(N0), any = false;        // squared distance to where the cutter's centre goes
+      for (var c0 = 0; c0 < N0; c0++){ var can = F.d[c0] >= lv + a0; to[c0] = can ? 0 : 1e20; if (can) any = true; }
+      if (any) G.edt2(to, F.w, F.h, res);
+      for (var c1 = 0; c1 < N0; c1++){
+        if (F.d[c1] < a0 || F.d[c1] <= 0 || Math.sqrt(to[c1]) <= lv + res * 0.75) continue;
+        cells++;
+        if (F.d[c1] - a0 > inBy) inBy = F.d[c1] - a0;
+      }
+      return {area: cells * res * res, inBy: inBy};
+    }
+    var fl = o.floorCheck ? floorLeft() : null;
+    if (maxD < r + (o.tolerance === undefined ? 0.01 : o.tolerance) + (o.allowance > 0 ? o.allowance : 0))
+      return {moves: [], warning: 'the cutter is too big for this pocket', rings: 0, floorLeft: fl ? fl.area : undefined, floorLeftIn: fl ? fl.inBy : undefined};
 
     // Levels from the wall pass inward; a last small ring if the middle would otherwise be missed.
     // The wall ring sits the flattening tolerance further out than the radius: curves arrive as
@@ -640,6 +660,7 @@
     }
     moves.push({g: 0, z: o.safeZ});
     return {moves: moves, rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD,
+            floorLeft: fl ? fl.area : undefined, floorLeftIn: fl ? fl.inBy : undefined,
             restRuns: restRuns ? restRuns.reduce(function (s3, a3) { return s3 + a3.length; }, 0) : undefined, restLeft: restRuns ? restLeft * res * res : undefined};
   }
 

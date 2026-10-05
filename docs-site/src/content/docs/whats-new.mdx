@@ -12,6 +12,20 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.43
+
+Not released yet
+
+- **(cutting) Fixed: updating an inlay plug's V-carve lost its start depth.** Opening the plug's V-carve and
+  pressing Update made its walls begin at the surface, so the plug came out small and loose. It now cuts as it
+  did when made. **If you've edited an inlay plug's V-carve, make the inlay again.**
+- **Fixed: choosing a clearing pocket's cutter unlinked it from its V-carve,** so a later change to the
+  V-carve's max depth added a second pocket. The one pocket now follows.
+- **A V-carve's clearing pocket says when it leaves floor.** An end mill can't get into the corners of a
+  V-carve's flat floor, or into parts narrower than itself, and 454's V-bit doesn't flatten them. The clearing
+  toolpath now says so on its card, with how high that floor is left. An inlay won't seat on it: use a smaller
+  cutter, or pare it flat.
+
 ## 0.6.2-beta.42
 
 4 October 2026

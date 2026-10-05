@@ -235,15 +235,21 @@ function vcMakeEditable(){
     }
     if (tp.side === 'chamfer' && tp.chamMode === 'edge') tp.ents = tp.ents.filter(function (id, i, a) { return a.indexOf(id) === i; });
     if (!tp.ents.length && !clearing) unsure.push(tp.name);
-    tpGenerate(tp);
+    if (!clearing) tpGenerate(tp);                       // a clearing pocket is calculated below, once it has its V-carve
     made.push(tp);
   });
   // a clearing toolpath goes with its V-carve: the same shapes, and kept in step with it after
   clears.forEach(function (c) {
     var v = made.filter(function (x) { return x.side === 'vcarve' && x.vcFrom === c.mate; })[0];
+    if (v){
+      c.tp.clearFor = v.id;
+      if (!c.tp.ents.length && v.ents.length) c.tp.ents = v.ents.slice();
+    }
+    // (calculated once, here: knowing its V-carve, it can say what floor its cutter leaves. The V-carve isn't in
+    // the drawing's list yet, so it's handed over.)
+    tpClearsFor.also = made;
+    try { tpGenerate(c.tp); } finally { tpClearsFor.also = null; }
     if (!v) return;
-    c.tp.clearFor = v.id;
-    if (!c.tp.ents.length && v.ents.length){ c.tp.ents = v.ents.slice(); tpGenerate(c.tp); }
     if (!c.tp.ents.length && unsure.indexOf(c.tp.name) < 0) unsure.push(c.tp.name);
   });
   if (multiSheet()){
