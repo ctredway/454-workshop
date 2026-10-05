@@ -362,7 +362,7 @@
   // distance from the nearest wall, so the finished walls are true.
   //
   // opts: outline, islands [], toolDia, stepover (mm), depth, passDepth, z0, safeZ, feed, plunge,
-  //       climb, ramp {length}, rest {toolDia, level}, floorCheck (see floorLeft, below)
+  //       climb, ramp {length}, rest {toolDia, level}
   //
   // rest: clean up after a larger cutter that has already pocketed the same outline to the same depth, its
   // centre kept `level` from the walls (its radius, the tolerance, and any allowance it left). It cleared
@@ -378,27 +378,7 @@
     var F = G.distanceField(bounds, res, r);
     var maxD = 0;
     for (var i = 0; i < F.d.length; i++) if (F.d[i] > maxD) maxD = F.d[i];
-    // floorCheck: how much of the floor this cutter can't get to. The floor is everything at least the allowance
-    // from the walls (what a V-bit's clearing pocket is there to flatten); the cutter clears within its radius of
-    // where its centre can go. What's left is the corners and the parts too narrow for it: its area (mm2), and how
-    // far the furthest of it is in from the floor's edge. Measured between grid points, the distance to where the
-    // centre goes reads up to about 0.7 of a cell long, so a cell counts only if it's 0.75 of a cell clear: nothing
-    // is called left that isn't, and what is left is under-read by less than a cell.
-    function floorLeft(){
-      var a0 = o.allowance > 0 ? o.allowance : 0, lv = r + (o.tolerance === undefined ? 0.01 : o.tolerance), N0 = F.w * F.h, cells = 0, inBy = 0;
-      var to = new Float64Array(N0), any = false;        // squared distance to where the cutter's centre goes
-      for (var c0 = 0; c0 < N0; c0++){ var can = F.d[c0] >= lv + a0; to[c0] = can ? 0 : 1e20; if (can) any = true; }
-      if (any) G.edt2(to, F.w, F.h, res);
-      for (var c1 = 0; c1 < N0; c1++){
-        if (F.d[c1] < a0 || F.d[c1] <= 0 || Math.sqrt(to[c1]) <= lv + res * 0.75) continue;
-        cells++;
-        if (F.d[c1] - a0 > inBy) inBy = F.d[c1] - a0;
-      }
-      return {area: cells * res * res, inBy: inBy};
-    }
-    var fl = o.floorCheck ? floorLeft() : null;
-    if (maxD < r + (o.tolerance === undefined ? 0.01 : o.tolerance) + (o.allowance > 0 ? o.allowance : 0))
-      return {moves: [], warning: 'the cutter is too big for this pocket', rings: 0, floorLeft: fl ? fl.area : undefined, floorLeftIn: fl ? fl.inBy : undefined};
+    if (maxD < r + (o.tolerance === undefined ? 0.01 : o.tolerance) + (o.allowance > 0 ? o.allowance : 0)) return {moves: [], warning: 'the cutter is too big for this pocket', rings: 0};
 
     // Levels from the wall pass inward; a last small ring if the middle would otherwise be missed.
     // The wall ring sits the flattening tolerance further out than the radius: curves arrive as
@@ -660,7 +640,6 @@
     }
     moves.push({g: 0, z: o.safeZ});
     return {moves: moves, rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD,
-            floorLeft: fl ? fl.area : undefined, floorLeftIn: fl ? fl.inBy : undefined,
             restRuns: restRuns ? restRuns.reduce(function (s3, a3) { return s3 + a3.length; }, 0) : undefined, restLeft: restRuns ? restLeft * res * res : undefined};
   }
 
@@ -675,7 +654,10 @@
   // opts: loops (closed; the shape is everything inside an odd number of them, so letters with
   //       holes just work), angle (the bit's included angle, degrees), maxDepth (optional cap:
   //       beyond it the floor is flat and the middle is left for a clearing pass), passDepth,
-  //       z0, safeZ, feed, plunge, step (how finely the outline is walked, mm)
+  //       z0, safeZ, feed, plunge, step (how finely the outline is walked, mm),
+  //       clear {toolDia, allowance}: the end mill that clears the flat floor first, and what its pocket leaves
+  //       on the walls. Given that, the V-bit also flattens the floor that cutter can't get to (see FLOOR, below),
+  //       in passes floorStep apart (0.127 mm, 0.005 in, if not given).
   function vcarve(opts){
     var o = Object.assign({angle: 60, tip: 0, maxDepth: 0, startDepth: 0, passDepth: 0, z0: 0, safeZ: 5, feed: 1000, plunge: 400, step: 0.15}, opts);
     // startDepth: the carve begins this far below the surface, so the walls meet the outline at that
@@ -774,8 +756,123 @@
           moves.push({g: 1, x: pts[k2][0], y: pts[k2][1], z: o.z0 + Math.max(pts[k2][2], floor), f: o.feed});
       });
     });
+    // FLOOR: what the clearing cutter leaves. It's round, so it can't get into the floor's corners, or into any
+    // part of the floor narrower than itself, and the passes above only run the tip round the floor's edge. So the
+    // tip goes back over what's left, at the floor's depth, along lines that follow the walls one floorStep apart,
+    // the way VCarve's V-bit does: straight down to depth, round and round, on to the next place.
+    //   The floor is where the tip can go without its cone touching a wall: rCap or more from every wall. The
+    // cutter cleared everything within its radius of where its centre could go. What's neither is left. Every
+    // move here keeps the tip rCap or more from the walls, lines and the links between them alike, so nothing
+    // but floor is cut. A pointed tip leaves ridges floorStep / (2 tan(half angle)) high between its lines (up to
+    // a fifth more on the line into a square corner, where the lines turn).
+    var floorRuns = 0, floorArea = 0;
+    if (o.clear && o.clear.toolDia > 0 && flatHit && isFinite(rCap)){
+      var fs = Math.max(0.05, o.floorStep > 0 ? o.floorStep : 0.127);
+      var res = Math.max(0.04, Math.min(0.1, fs * 0.75));
+      var Rc = o.clear.toolDia / 2, reachLv = Rc + 0.01 + (o.clear.allowance > 0 ? o.clear.allowance : 0);
+      var F = G.distanceField(loops, res, res * 3), N = F.w * F.h, fd = F.d, c;
+      var to = new Float64Array(N), any = false;         // squared distance to where the cutter's centre went
+      for (c = 0; c < N; c++){ var can = fd[c] >= reachLv; to[c] = can ? 0 : 1e20; if (can) any = true; }
+      if (any) G.edt2(to, F.w, F.h, res);
+      // Left: floor further from the cutter's centre than its radius. Between grid points that distance reads
+      // up to about 0.7 of a cell long, so a cell counts only if it's 0.75 of a cell clear: a straight edge the
+      // cutter did reach isn't called left. The lines kept below spread further than that to make up for it.
+      var near = new Float64Array(N), maxIn = 0, cells = 0;
+      var bx0 = F.w, by0 = F.h, bx1 = -1, by1 = -1;
+      for (c = 0; c < N; c++){
+        var isLeft = fd[c] >= rCap && Math.sqrt(to[c]) > Rc + 0.01 + res * 0.75;
+        near[c] = isLeft ? 0 : 1e20;
+        if (!isLeft) continue;
+        cells++;
+        if (fd[c] - rCap > maxIn) maxIn = fd[c] - rCap;
+        var cx = c % F.w, cy = (c - cx) / F.w;
+        if (cx < bx0) bx0 = cx; if (cx > bx1) bx1 = cx; if (cy < by0) by0 = cy; if (cy > by1) by1 = cy;
+      }
+      to = null;
+      if (cells){
+        floorArea = cells * res * res;
+        G.edt2(near, F.w, F.h, res);                     // squared distance to the nearest floor that's left
+        var spread = fs + res * 2, mask = new Uint8Array(N), pad = Math.ceil(spread / res) + 2;
+        for (c = 0; c < N; c++) if (near[c] <= spread * spread) mask[c] = 1;
+        near = null;
+        var runs = [], wx0 = Math.max(0, bx0 - pad), wy0 = Math.max(0, by0 - pad), wx1 = Math.min(F.w - 1, bx1 + pad), wy1 = Math.min(F.h - 1, by1 + pad);
+        var trace = function (level, where){
+          G.isoRuns(F, level, where, wx0, wy0, wx1, wy1).forEach(function (rn) {
+            var pts = G.simplify(rn.pts, 0.01, rn.closed);
+            if (pts.length >= 2) runs.push({pts: pts, closed: rn.closed && pts.length > 2});
+          });
+        };
+        // Down the middle of a narrow part, the lines from the two sides meet. The last pair can be nearly two
+        // steps apart with nothing between them (the next line in would be past the middle), which would leave a
+        // ridge twice the height. So a line half a step further in is added, only where there's no full line
+        // further in to do the job: where nothing within a step of it is a whole step deeper into the floor.
+        // `top`: the furthest from the walls of anything within a step of each grid point.
+        var nb = Math.ceil(fs / res), top = new Float32Array(N), row = new Float32Array(F.w), midMask = new Uint8Array(N), x, y, k, m;
+        for (y = wy0; y <= wy1; y++){
+          for (x = wx0; x <= wx1; x++){ m = -Infinity; for (k = Math.max(wx0, x - nb); k <= Math.min(wx1, x + nb); k++) if (fd[y * F.w + k] > m) m = fd[y * F.w + k]; row[x] = m; }
+          for (x = wx0; x <= wx1; x++) top[y * F.w + x] = row[x];
+        }
+        var col = new Float32Array(F.h);
+        for (x = wx0; x <= wx1; x++){
+          for (y = wy0; y <= wy1; y++){ m = -Infinity; for (k = Math.max(wy0, y - nb); k <= Math.min(wy1, y + nb); k++) if (top[k * F.w + x] > m) m = top[k * F.w + x]; col[y] = m; }
+          for (y = wy0; y <= wy1; y++) top[y * F.w + x] = col[y];
+        }
+        for (var lv = rCap; lv <= rCap + maxIn + fs; lv += fs){
+          if (lv > rCap) trace(lv, mask);                 // (the first line, at the floor's edge, is the walls' own pass)
+          var anyMid = false;
+          for (y = wy0; y <= wy1; y++) for (x = wx0; x <= wx1; x++){ c = y * F.w + x; var isMid = mask[c] && top[c] < lv + fs; midMask[c] = isMid ? 1 : 0; if (isMid) anyMid = true; }
+          if (anyMid) trace(lv + fs / 2, midMask);
+        }
+        // may the tip go straight from a to b at depth? Only if every bit of the way is floor.
+        var fieldAt = function (px, py){
+          var gx = (px - F.x0) / res, gy = (py - F.y0) / res;
+          var x0 = Math.max(0, Math.min(F.w - 2, Math.floor(gx))), y0 = Math.max(0, Math.min(F.h - 2, Math.floor(gy)));
+          var tx = gx - x0, ty = gy - y0, w = F.w;
+          return (fd[y0*w+x0]*(1-tx) + fd[y0*w+x0+1]*tx) * (1-ty) + (fd[(y0+1)*w+x0]*(1-tx) + fd[(y0+1)*w+x0+1]*tx) * ty;
+        };
+        var linkOk = function (a, b){
+          var L = G.dist(a[0], a[1], b[0], b[1]);
+          if (L > 3) return false;
+          var n = Math.max(1, Math.ceil(L / (res / 2)));
+          for (var i = 0; i <= n; i++) if (fieldAt(a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n) < rCap + fs * 0.5) return false;
+          return true;
+        };
+        // the nearest line next, from either end (a loop: from its nearest corner), so one place is finished
+        // before the tip moves to another
+        var zf = o.z0 - o.maxDepth, here = null, done = new Uint8Array(runs.length), leftN = runs.length;
+        floorRuns = runs.length;
+        while (leftN){
+          var bi = -1, bd = Infinity, bEnd = 0;
+          for (var ri = 0; ri < runs.length; ri++){
+            if (done[ri]) continue;
+            var rp = runs[ri].pts;
+            if (!here){ bi = ri; break; }
+            var d0 = G.dist(here[0], here[1], rp[0][0], rp[0][1]);
+            if (d0 < bd){ bd = d0; bi = ri; bEnd = 0; }
+            var d1 = G.dist(here[0], here[1], rp[rp.length - 1][0], rp[rp.length - 1][1]);
+            if (d1 < bd){ bd = d1; bi = ri; bEnd = 1; }
+          }
+          done[bi] = 1; leftN--;
+          var rn = runs[bi], line = rn.pts;
+          if (rn.closed){
+            var si = 0;
+            if (here){ var sd2 = Infinity; for (var q2 = 0; q2 < line.length; q2++){ var dq = G.dist(here[0], here[1], line[q2][0], line[q2][1]); if (dq < sd2){ sd2 = dq; si = q2; } } }
+            line = line.slice(si).concat(line.slice(0, si)); line.push(line[0]);
+          } else if (bEnd) line = line.slice().reverse();
+          if (here && linkOk(here, line[0])) moves.push({g: 1, x: line[0][0], y: line[0][1], z: zf, f: o.feed});
+          else {
+            moves.push({g: 0, z: o.safeZ});
+            moves.push({g: 0, x: line[0][0], y: line[0][1]});
+            moves.push({g: 0, z: o.z0 + 0.5});
+            moves.push({g: 1, z: zf, f: o.plunge});
+          }
+          for (var k3 = 1; k3 < line.length; k3++) moves.push({g: 1, x: line[k3][0], y: line[k3][1], z: zf, f: o.feed});
+          here = line[line.length - 1];
+        }
+      }
+    }
     moves.push({g: 0, z: o.safeZ});
-    return {moves: moves, depth: total, flatCapped: flatHit, passes: levels.length, paths: paths.length,
+    return {moves: moves, depth: total, flatCapped: flatHit, passes: levels.length, paths: paths.length, floorRuns: floorRuns, floorArea: floorArea,
             warning: flatHit ? 'wider parts reach the maximum depth and have a flat floor: the middle of those needs a clearing toolpath' : null};
   }
   // drop points that lie on a straight line (in 3D) between their neighbours, within tol

@@ -609,6 +609,69 @@
     }
   }
   // The loops where a field equals `level` (marching squares), in world coordinates.
+  // The same contour as isoLoops, but only where it's wanted: mask has a 1 for each grid point to look at (a cell
+  // is traced when its lower-left point is marked), so what comes back is stretches of the contour, each
+  // {pts, closed}: closed when a whole loop lies in the marked part, open where it runs out of it. It looks only
+  // at the cells from (x0, y0) to (x1, y1), if given: tracing a few corners of a large field needn't read it all.
+  function isoRuns(F, level, mask, x0, y0, x1, y1){
+    var w = F.w, h = F.h, d = F.d, res = F.res, segs = [];
+    function P(x, y){ return d[y * w + x] - level; }
+    function lerp(ax, ay, av, bx, by, bv){
+      var t = av / (av - bv);
+      return [F.x0 + (ax + (bx - ax) * t) * res, F.y0 + (ay + (by - ay) * t) * res];
+    }
+    var xa = Math.max(0, x0 === undefined ? 0 : x0), ya = Math.max(0, y0 === undefined ? 0 : y0);
+    var xb = Math.min(w - 2, x1 === undefined ? w - 2 : x1), yb = Math.min(h - 2, y1 === undefined ? h - 2 : y1);
+    for (var y = ya; y <= yb; y++) for (var x = xa; x <= xb; x++){
+      if (!mask[y * w + x]) continue;
+      var a = P(x, y), b = P(x + 1, y), c = P(x + 1, y + 1), e = P(x, y + 1);
+      var code = (a > 0 ? 1 : 0) | (b > 0 ? 2 : 0) | (c > 0 ? 4 : 0) | (e > 0 ? 8 : 0);
+      if (code === 0 || code === 15) continue;
+      var pts = [];
+      if ((a > 0) !== (b > 0)) pts.push(lerp(x, y, a, x + 1, y, b));
+      if ((b > 0) !== (c > 0)) pts.push(lerp(x + 1, y, b, x + 1, y + 1, c));
+      if ((c > 0) !== (e > 0)) pts.push(lerp(x + 1, y + 1, c, x, y + 1, e));
+      if ((e > 0) !== (a > 0)) pts.push(lerp(x, y + 1, e, x, y, a));
+      if (pts.length === 2) segs.push([pts[0], pts[1]]);
+      else if (pts.length === 4){                        // a saddle: decide by the centre, as isoLoops does
+        var mid = (a + b + c + e) / 4;
+        if ((mid > 0) === (a > 0)){ segs.push([pts[0], pts[1]]); segs.push([pts[2], pts[3]]); }
+        else { segs.push([pts[0], pts[3]]); segs.push([pts[1], pts[2]]); }
+      }
+    }
+    function key(p){ return Math.round(p[0] * 1e5) + ',' + Math.round(p[1] * 1e5); }
+    var byEnd = {};
+    segs.forEach(function (sg, i) {
+      [0, 1].forEach(function (end) { var k = key(sg[end]); (byEnd[k] || (byEnd[k] = [])).push(i); });
+    });
+    var used = new Uint8Array(segs.length), runs = [];
+    // walk on from the end `cur` of a chain for as long as an unused segment joins it
+    function walk(chain, cur){
+      while (true){
+        var cand = byEnd[key(cur)], next = -1;
+        if (cand) for (var j = 0; j < cand.length; j++) if (!used[cand[j]]){ next = cand[j]; break; }
+        if (next < 0) return false;
+        used[next] = 1;
+        var sg2 = segs[next];
+        cur = key(sg2[0]) === key(cur) ? sg2[1] : sg2[0];
+        if (key(cur) === key(chain[0])) return true;     // back where it began: a loop
+        chain.push(cur);
+      }
+    }
+    for (var i = 0; i < segs.length; i++){
+      if (used[i]) continue;
+      used[i] = 1;
+      var chain = [segs[i][0], segs[i][1]];
+      var closed = walk(chain, segs[i][1]);
+      if (!closed){                                      // an open stretch: it may run on from its first end too
+        chain.reverse();
+        walk(chain, chain[chain.length - 1]);
+      }
+      chain = clean(chain);
+      if (chain.length > (closed ? 2 : 1)) runs.push({pts: chain, closed: closed});
+    }
+    return runs;
+  }
   function isoLoops(F, level){
     var w = F.w, h = F.h, d = F.d, res = F.res, segs = [];
     function P(x, y){ return d[y * w + x] - level; }
@@ -665,6 +728,6 @@
     closestOnSeg: closestOnSeg, distToSeg: distToSeg, distToPath: distToPath, pathIndex: pathIndex, segX: segX,
     arcPoints: arcPoints, circlePoints: circlePoints,
     offsetLoop: offsetLoop, offsetPart: offsetPart,
-    distanceField: distanceField, isoLoops: isoLoops, edt2: edt2
+    distanceField: distanceField, isoLoops: isoLoops, isoRuns: isoRuns, edt2: edt2
   };
 });

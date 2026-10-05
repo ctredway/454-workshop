@@ -141,6 +141,8 @@ function vcMakeEditable(){
       tp.plunge = cut.plunge ? Math.round(cut.plunge * rate) : Math.round(tp.feed / 2);
       if (cut.rpm && !T.tool.rpm) tp.rpm = cut.rpm;          // what the project used comes first
     } else { tp.feed = 800; tp.plunge = 300; }
+    // a V-carve's floor passes: the V-bit's own stepover, in mm
+    if (side === 'vcarve' && T.tool.stepover > 0) tp.vcStep = +(+T.tool.stepover).toFixed(4);
     // a pocket's stepover: the tool's own, as a share of its diameter
     if (side === 'pocket' && T.tool.stepover > 0 && D > 0) tp.stepoverPct = Math.max(5, Math.min(100, Math.round(T.tool.stepover / D * 100)));
     // through the material, when the depth is the thickness plus a little
@@ -235,21 +237,19 @@ function vcMakeEditable(){
     }
     if (tp.side === 'chamfer' && tp.chamMode === 'edge') tp.ents = tp.ents.filter(function (id, i, a) { return a.indexOf(id) === i; });
     if (!tp.ents.length && !clearing) unsure.push(tp.name);
-    if (!clearing) tpGenerate(tp);                       // a clearing pocket is calculated below, once it has its V-carve
+    tpGenerate(tp);
     made.push(tp);
   });
   // a clearing toolpath goes with its V-carve: the same shapes, and kept in step with it after
   clears.forEach(function (c) {
     var v = made.filter(function (x) { return x.side === 'vcarve' && x.vcFrom === c.mate; })[0];
-    if (v){
-      c.tp.clearFor = v.id;
-      if (!c.tp.ents.length && v.ents.length) c.tp.ents = v.ents.slice();
-    }
-    // (calculated once, here: knowing its V-carve, it can say what floor its cutter leaves. The V-carve isn't in
-    // the drawing's list yet, so it's handed over.)
-    tpClearsFor.also = made;
-    try { tpGenerate(c.tp); } finally { tpClearsFor.also = null; }
     if (!v) return;
+    c.tp.clearFor = v.id;
+    if (!c.tp.ents.length && v.ents.length){ c.tp.ents = v.ents.slice(); tpGenerate(c.tp); }
+    // the V-carve again, now it has its clearing pocket: it flattens the floor that pocket's cutter can't get
+    // to. (Neither is in the drawing's list yet, so they're handed over.)
+    tpClearingOf.also = made;
+    try { tpGenerate(v); } finally { tpClearingOf.also = null; }
     if (!c.tp.ents.length && unsure.indexOf(c.tp.name) < 0) unsure.push(c.tp.name);
   });
   if (multiSheet()){

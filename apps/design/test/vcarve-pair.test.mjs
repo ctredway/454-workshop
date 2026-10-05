@@ -34,14 +34,13 @@ function edit(id, change) {
   D.CUT.toolChosen = true; D.cutApply();
 }
 
-test('an inlay’s clearing pocket knows which V-carve it clears for, so it can say what floor it leaves', () => {
+test('an inlay’s clearing pocket knows which V-carve it clears for, so the V-carve can flatten what its cutter leaves', () => {
   for (const half of ['pocket', 'plug']) {
     const { v, c } = inlay(half);
     assert.equal(c.clearFor, v.id, half);
     edit(c.id, () => set('cutDia', 6));
-    const after = byId(c.id);
-    assert.equal(after.dia, 6);
-    assert.match(after.warning || '', /^this cutter can’t get into some corners or narrow parts, and the floor there is left up to \d\.\d\d mm high/, half);
+    assert.equal(byId(c.id).dia, 6);
+    assert.ok(byId(v.id).vcFloor > v.vcFloor, half + ': more to flatten after a larger cutter: ' + v.vcFloor + ' then ' + byId(v.id).vcFloor);
   }
 });
 test('choosing the clearing pocket’s cutter in the editor doesn’t unlink it from its V-carve', () => {
@@ -63,6 +62,16 @@ test('updating a plug’s V-carve keeps its start depth: the same cut as before 
   assert.equal(after.vcStart, S, 'the walls still begin at the start depth');
   const xyz = (t) => t.moves.map((m) => [m.g, m.x, m.y, m.z]);
   assert.deepEqual(xyz(after), xyz(v), 'not a move is in a different place');
+});
+test('updating a V-carve keeps how far apart its floor passes are (from a VCarve project’s V-bit)', () => {
+  const { v } = inlay('pocket');
+  D.run(`(function(){ var t = tpList().filter(function (t) { return t.id === '${v.id}'; })[0]; t.vcStep = 0.3; tpGenerate(t); })()`);
+  const wide = byId(v.id);
+  assert.ok(wide.moves.length < v.moves.length, 'passes 0.3 mm apart are fewer than at 0.127: ' + v.moves.length + ' then ' + wide.moves.length);
+  edit(v.id, () => set('cutFeed', 900));
+  const after = byId(v.id);
+  assert.equal(after.vcStep, 0.3);
+  assert.equal(after.moves.length, wide.moves.length);
 });
 test('updating a plug’s V-carve leaves its clearing pocket standing off by what the V-bit cuts, from the start depth down', () => {
   const { v, c } = inlay('plug');

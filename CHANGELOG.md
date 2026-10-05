@@ -27,7 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.44 — V-carves and pockets with islands calculate much faster
+### 0.6.2-beta.44 — the V-bit flattens the floor its clearing cutter can't reach; faster calculation
+- Includes Design 0.129.0 **(cutting)**: a V-carve with a clearing pocket, and an inlay, flatten the floor the
+  clearing cutter can't get to, the way VCarve's V-bit does.
 - Includes Design 0.128.0: a V-carve over many shapes, and a pocket with islands, calculate several times faster
   (the tutorial inlay's V-carve in 0.2 s, not 14 s). Not a move is different.
 
@@ -997,6 +999,45 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.129.0 — the V-bit flattens the floor its clearing cutter can't reach (cutting)
+- **What was wrong:** a V-carve with a max depth, and both halves of an inlay, are cut by an end mill that clears
+  the flat floor and a V-bit that cuts the walls. The end mill is round: it can't get into the floor's corners, or
+  into any part of the floor narrower than itself. 454's V-bit only ran its point round the floor's edge, so that
+  floor was left standing, up to full height, and an inlay sat on it instead of seating. 0.127.0 said so in a
+  note. VCarve's V-bit goes back and flattens it.
+- **Now 454's does too** (`vcarve({clear})` in `cam.js`). After the walls, the tip goes straight down to the
+  floor's depth at each place the clearing cutter missed, and runs lines there that follow the walls, 0.127 mm
+  (0.005 in) apart, or as far apart as a VCarve project's V-bit says (`tp.vcStep`). Nearest place next, so one
+  is finished before it moves on. Clint chose VCarve's way of going to depth: in one go, not in passes.
+- **What's left:** a pointed tip leaves ridges between its lines: 0.11 mm high with a 60° bit, 0.24 mm with a
+  30° one, at 0.127 mm apart. Up to a fifth more on the line into a square corner, where the lines turn. Down the
+  middle of a narrow part, where the lines from the two sides meet, an extra line is added so the ridge there is
+  no higher.
+- **Nothing but floor is cut.** Every one of these moves, lines and the links between them, keeps the tip at
+  least as far from every wall as the floor's edge is, so the cone never touches a wall. The walls' own passes
+  are not changed by a single move.
+- **Who gets it:** a V-carve whose clearing pocket was added with it; an inlay made from this version on (its two
+  toolpaths have been linked since 0.127.0); and inlay toolpaths made editable from a VCarve project. A V-carve
+  with no clearing pocket is carved exactly as before. Inlays made earlier aren't linked: make them again.
+- **It follows the clearing pocket:** choose another cutter for the pocket and the V-carve is worked out again
+  (it's part of what makes a V-carve out of date). The V-carve's card says **Floor: also flattens what "…" can't
+  reach**. The floor step is kept through the editor, which has no box for it.
+- **The note from 0.127.0 is gone**, with the pocket's `floorCheck` behind it: there is nothing left high to
+  report.
+- **Against VCarve's own G-code** for a tutorial inlay (a panel of 24 shapes, 3/16 in clearing cutter, 30° bit),
+  both cut in Preview in wood's simulation: 99.7% of the panel is the same within 0.1 mm (94.8% before), and
+  Design is never deeper than the floor. Before, about 2,900 mm² of floor was left high; now none is, apart
+  from 19 mm² in six thin strips that the clearing pocket leaves and VCarve's doesn't (see below).
+- **Found, not yet fixed:** a pocket with a stepover over half its cutter's diameter can leave a strip a fraction
+  of a millimetre wide standing down the middle of a channel, where the rings from the two sides don't quite
+  meet and the next ring in doesn't fit. 454's own default (40%) can't do this; a VCarve project's 60% can.
+- **Tested** (14 tests in `vcarve-floor.test.mjs`, and more in `vcarve-pair.test.mjs` and
+  `vcarve-convert.test.mjs`; broken on purpose 21 ways: 16 caught, 2 more after adding a test for each, and 3 that
+  make no difference, because a V-carve that's out of date is worked out again when the list is shown): cut in the simulation after the clearing pocket, for a square, a narrow neck, a
+  shape with a star-shaped island, and an inlay plug: no floor stands higher than a ridge, nothing is cut deeper
+  than the floor or nearer a wall than the cone's slope, nothing outside the shape is touched, and no rapid move
+  enters wood.
 
 ### 0.128.0 — V-carves and pockets with islands calculate much faster; the toolpaths are the same
 - **What was slow:** a real inlay project (a panel with 24 shapes, from a VCarve tutorial) froze the app for

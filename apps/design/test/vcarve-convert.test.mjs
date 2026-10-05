@@ -228,10 +228,9 @@ test('the inlay’s base: a V-carve to its flat depth, and its clearing, as VCar
   assert.equal(c.clearFor, v.id, 'paired with its V-carve'); assert.deepEqual(c.ents, v.ents, 'on the same shapes');
   assert.equal(c.finishPass, false);
   assert.ok(!said.some((x) => /wasn’t converted|Check the/.test(x)), said.join(' | '));
-  // knowing its V-carve, the clearing says what its 3/16 in cutter leaves in the floor's square corners: up to
-  // 0.293 x its radius (1 - 1 / root 2) in from the floor's edge, which a 30 degree bit leaves 0.70 / tan 15 = 2.61 mm high
-  assert.ok(c.floorLeft && c.floorLeft.high > 2.3 && c.floorLeft.high < 2.62, JSON.stringify(c.floorLeft));
-  assert.match(c.warning, /the floor there is left up to 2\.\d\d mm high/);
+  // knowing its clearing pocket, the V-carve flattens what that pocket's 3/16 in cutter leaves in the floor's corners,
+  // in passes as far apart as the project's V-bit says: 0.127 mm
+  assert.ok(v.vcFloor > 2, String(v.vcFloor)); assert.equal(v.vcStep, 0.127); assert.equal(c.warning, null);
   for (const t of tps) near(Math.min(...t.moves.filter((m) => m.z !== undefined).map((m) => m.z)), -6.35, 1e-6, t.name + ' goes no deeper than the floor');
 });
 test('the inlay’s plug: it starts below the surface, and its floor is the start depth and the flat depth together', () => {

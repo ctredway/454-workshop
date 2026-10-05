@@ -6,7 +6,7 @@
 var TPL_KIND = '454-toolpath-template';
 // What a template doesn't keep: which shapes, where the tabs sat on them, and everything worked out from them
 var TPL_DROP = ['id', 'ents', 'tabPts', 'startPts', 'past', 'moves', 'sheet', 'sig', 'warning', 'rasterLines', 'vcNote', 'vcFlat', 'vcDepth',
-                'rings', 'restRuns', 'floorLeft', 'islands', 'holes', 'foundBy', 'hidden', 'vcFrom', 'restFrom'];
+                'rings', 'restRuns', 'vcFloor', 'islands', 'holes', 'foundBy', 'hidden', 'vcFrom', 'restFrom'];
 
 // The template for the toolpaths on this sheet: each one's settings and the names of its shapes' layers
 function tplMake(){

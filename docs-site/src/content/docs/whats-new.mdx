@@ -16,6 +16,11 @@ The full record, in more detail than most people want, is the
 
 Not released yet
 
+- **(cutting) The V-bit flattens the floor its clearing cutter can't reach.** An end mill can't get into the
+  corners of a V-carve's flat floor, or into parts narrower than itself. The V-bit now goes back over those
+  places at the floor's depth, as VCarve's does, so an inlay seats. It's for a V-carve with its own clearing
+  pocket, an inlay made from now on, and inlay toolpaths from a VCarve project. **Make older inlays again to get
+  it.** The note about floor left high, added in beta.43, is gone: there's nothing left to warn about.
 - **V-carves and pockets with islands calculate much faster.** A V-carve over many shapes that took 14 seconds
   now takes a fraction of one, and pockets with islands are about four times quicker. The toolpaths are exactly
   the same.

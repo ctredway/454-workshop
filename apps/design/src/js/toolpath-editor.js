@@ -538,8 +538,8 @@ function inlayApply(){
   var tpC = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: clearing' : 'Inlay pocket: clearing', side: 'pocket', type: 'pocket', ents: ents.slice(), clearFor: tpV.id,
     depth: plug ? M : D, step: Math.max(0.5, (plug ? M : D) / 2), allowance: (plug ? M - S : D) * tanH, finishPass: false, stepoverPct: 40,
     dia: 3.175, feed: 800, plunge: 300, toolId: null, toolChosen: false, through: false});
-  tpGenerate(tpV); tpGenerate(tpC);
   tpInsertByRank(tpC); tpInsertByRank(tpV);             // clearing before the V-carve, as VCarve does
+  tpGenerate(tpC); tpGenerate(tpV);                     // (the V-carve last: it flattens what the clearing's cutter leaves)
   CUTSEL = tpV.id;
   persist();
   toast('ok', plug ? 'Inlay plug toolpaths created' : 'Inlay pocket toolpaths created',
@@ -646,7 +646,9 @@ function cutApply(){
     exprs: JSON.parse(JSON.stringify(CUT.exprs || {})),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
     // what the editor has no box for, and must hand back as it found it: a plug's start depth (lost, its walls
-    // began at the surface and the plug came out small), and which V-carve a pocket clears the floor for
+    // began at the surface and the plug came out small), how far apart a V-carve's floor passes are, and which
+    // V-carve a pocket clears the floor for
+    vcStep: CUT.side === 'vcarve' && CUT.vcStep > 0 ? CUT.vcStep : undefined,
     vcStart: CUT.side === 'vcarve' && CUT.vcStart > 0 ? CUT.vcStart : undefined,
     clearFor: CUT.side === 'pocket' && CUT.clearFor ? CUT.clearFor : undefined,
     hidden: !!CUT.hidden, exclude: !!CUT.exclude, folded: !!CUT.folded,   // editing a toolpath leaves these alone
@@ -668,12 +670,17 @@ function cutApply(){
   }
   if (tp.restFrom === undefined) delete tp.restFrom;
   if (tp.vcStart === undefined) delete tp.vcStart;
+  if (tp.vcStep === undefined) delete tp.vcStep;
   if (tp.clearFor === undefined) delete tp.clearFor;
   if (tp.tabsOn) cutTabsRemember(tp);                      // the next new toolpath starts with these tabs
   if (at >= 0) list[at] = tp; else tpInsertByRank(tp);   // new ones take their place in the cutting order
   var rsrc = tpRestSource(tp);                              // a clean-up goes after the pocket it follows (moved to just after it, if need be)
   if (rsrc && list.indexOf(rsrc) > list.indexOf(tp)){ list.splice(list.indexOf(tp), 1); list.splice(list.indexOf(rsrc) + 1, 0, tp); tpGenerate(tp); }
   var clearMsg = tp.side === 'vcarve' ? vcarveClearing(tp) : '';
+  // a V-carve flattens what its clearing pocket's cutter leaves, and a clearing pocket's V-carve what this one
+  // now leaves: whichever changed, the V-carve is worked out again
+  if (tp.side === 'vcarve' && tpStale(tp)) tpGenerate(tp);
+  if (tp.side === 'pocket' && tp.clearFor) tpList().forEach(function (x) { if (x.id === tp.clearFor && x.side === 'vcarve' && tpStale(x)) tpGenerate(x); });
   CUTSEL = tp.id;
   persist();
   toast('ok', at >= 0 ? 'Toolpath updated' : 'Toolpath created',

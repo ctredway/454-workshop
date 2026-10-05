@@ -1162,7 +1162,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.128.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.129.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -4240,7 +4240,7 @@ function tpGenerateMoves(tp){
   if (!camReady()) return tp;
   if (tp.side === 'pocket'){
     var groups = tpPocketGroups(tp.ents), pm = [], warnP = null, rings = 0; tp.rasterLines = 0;
-    var zs = tpSurface(), rs = tpRestSource(tp), restRuns = 0, vFor = tpClearsFor(tp), flArea = 0, flIn = 0;
+    var zs = tpSurface(), rs = tpRestSource(tp), restRuns = 0;
     // a clean-up after a larger bit: where that bit's centre could go (its radius, the flattening tolerance,
     // and any allowance it left on the walls without a finishing pass)
     var rest = rs ? {toolDia: rs.dia, level: rs.dia / 2 + 0.01 + (rs.allowance > 0 && !rs.finishPass ? rs.allowance : 0)} : null;
@@ -4250,10 +4250,9 @@ function tpGenerateMoves(tp){
                            strategy: tp.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: tp.rasterAngle || 0,
                            allowance: tp.allowance || 0, finishPass: !!tp.finishPass,
                            z0: zs, safeZ: zs + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
-                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}, rest: rest, floorCheck: !!vFor});
+                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}, rest: rest});
       if (pr.warning) warnP = pr.warning;
       restRuns += pr.restRuns || 0;
-      flArea += pr.floorLeft || 0; if (pr.floorLeftIn > flIn) flIn = pr.floorLeftIn;
       rings += pr.rings || 0; tp.rasterLines = (tp.rasterLines || 0) + (pr.rasterLines || 0);
       pr.moves.forEach(function (m) { pm.push(m); });
     });
@@ -4262,18 +4261,19 @@ function tpGenerateMoves(tp){
     tp.islands = groups.reduce(function (s2, g) { return s2 + g.islands.length; }, 0);
     tp.warning = groups.length ? warnP : 'nothing to pocket: pick closed shapes';
     tp.restRuns = rs ? restRuns : undefined;
-    tp.floorLeft = vFor ? tpFloorLeft(tp, vFor, flArea, flIn) : undefined;
-    if (tp.floorLeft && (!tp.warning || (pm.length && tp.warning === 'the cutter is too big for this pocket'))) tp.warning = tpFloorSay(tp);
     if (!tp.warning && tp.restFrom) tp.warning = tpRestProblem(tp) || tpRestNote(tp) || null;
     tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
     return tp;
   }
   if (tp.side === 'vcarve'){
-    var vz = tpSurface();
+    var vz = tpSurface(), vclr = tpClearingOf(tp);
     var vr = Cam.vcarve({loops: tpOutlinesById(tp.ents).map(function (o) { return o.loop; }), angle: tp.vAngle || 60, tip: tp.vTip || 0,
                          maxDepth: tp.vcMax > 0 ? tp.vcMax : 0, startDepth: tp.vcStart > 0 ? tp.vcStart : 0, passDepth: tp.step > 0 ? tp.step : 0,
-                         z0: vz, safeZ: vz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2)});
+                         z0: vz, safeZ: vz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
+                         clear: vclr ? {toolDia: vclr.dia, allowance: vclr.allowance || 0} : null, floorStep: tp.vcStep > 0 ? tp.vcStep : 0});
     tp.moves = vr.moves; tp.vcDepth = vr.depth || 0; tp.vcFlat = !!vr.flatCapped;
+    // the floor its clearing pocket's cutter couldn't get to, which it flattens: how much, in mm2 (0: none)
+    tp.vcFloor = vclr && vr.floorArea > 0 ? +vr.floorArea.toFixed(2) : 0;
     var widest = (tp.vTip || 0) + (vr.depth || 0) * 2 * Math.tan((tp.vAngle || 60) / 2 * Math.PI / 180);
     tp.warning = vr.warning && !vr.moves.length ? vr.warning : null;
     tp.vcNote = vr.moves.length ? {depth: vr.depth, widest: widest, flat: vr.flatCapped, passes: vr.passes, outlines: vr.paths} : null;
@@ -4381,27 +4381,13 @@ function tpTabHeight(tp){
   var thk = tp.tabThk || 0.5, t = DOC.stock && DOC.stock.t > 0 ? DOC.stock.t : 0;
   return thk + (t > 0 ? Math.max(0, tpDepth(tp) - t) : 0);
 }
-// The V-carve a pocket clears the flat floor for (tp.clearFor), or null. It's looked for among the drawing's
-// toolpaths, and any being made that aren't among them yet (tpClearsFor.also, set by whoever is making them).
-function tpClearsFor(tp){
-  if (!tp || tp.side !== 'pocket' || !tp.clearFor) return null;
-  var v = tpList().concat(tpClearsFor.also || []).filter(function (x) { return x.id === tp.clearFor; })[0];
-  return v && v.side === 'vcarve' ? v : null;
-}
-// Floor a V-carve's clearing pocket can't get to: the corners and the parts narrower than its cutter. The V-bit
-// runs its point round the floor's edge and no further in, so what the cutter misses stays, sloping up from that
-// edge at the V-bit's angle: `inBy` in from the edge it stands inBy / tan(half angle) above the floor (less a flat
-// tip's half width), and never above the surface. Returns {area (mm2), high (mm)}, or null if it's nothing to
-// speak of (under 0.1 mm high, or 0.25 mm2 in all).
-function tpFloorLeft(tp, v, area, inBy){
-  var tanH = Math.tan((v.vAngle || 60) / 2 * Math.PI / 180);
-  var high = Math.min(tpDepth(tp), Math.max(0, inBy - (v.vTip || 0) / 2) / tanH);
-  return area >= 0.25 && high >= 0.1 ? {area: +area.toFixed(2), high: +high.toFixed(3)} : null;
-}
-function tpFloorSay(tp){
-  var f = tp.floorLeft; if (!f) return '';
-  return 'this cutter can’t get into some corners or narrow parts, and the floor there is left up to ' + fmtDisp(f.high) + ' ' + unitTag() +
-         ' high. The V-bit doesn’t flatten it: use a smaller cutter here, or pare it flat by hand before fitting an inlay';
+// The pocket that clears the flat floor for a V-carve (the one whose clearFor names it), or null. It's looked for
+// among the drawing's toolpaths, and any being made that aren't among them yet (tpClearingOf.also, set by whoever
+// is making them). Knowing it, the V-carve flattens the floor that pocket's cutter can't get to.
+function tpClearingOf(tp){
+  if (!tp || tp.side !== 'vcarve' || !(tp.vcMax > 0)) return null;
+  var c = tpList().concat(tpClearingOf.also || []).filter(function (x) { return x.side === 'pocket' && x.clearFor === tp.id; })[0];
+  return c && c.dia > 0 ? c : null;
 }
 // A pocket that cleans up after a larger bit's pocket (tp.restFrom): that pocket, if it can be cleaned up
 // after (it's a pocket, on the same shapes, with a larger bit, and not itself a clean-up), or null.
@@ -4447,10 +4433,11 @@ function tpChamferDepth(tp){
   return (tp.chamW || 1) / Math.tan(half);
 }
 function tpSurface(){ return DOC.stock.zero === 'bottom' ? (DOC.stock.t || 0) : 0; }
-function tpStockSig(tp){                              // what makes a through-cut (or a clean-up) out of date
-  var rs = tpRestSource(tp);
+function tpStockSig(tp){                              // what makes a through-cut (or a clean-up, or a V-carve with a clearing pocket) out of date
+  var rs = tpRestSource(tp), vc = tp.side === 'vcarve' ? tpClearingOf(tp) : null;
   return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top') +
-         (tp.restFrom ? '|r' + (rs ? [rs.id, rs.dia, tpDepth(rs), rs.allowance || 0, !!rs.finishPass, tpStockSig(rs)].join(',') : 'none:' + tpRestProblem(tp)) : '');
+         (tp.restFrom ? '|r' + (rs ? [rs.id, rs.dia, tpDepth(rs), rs.allowance || 0, !!rs.finishPass, tpStockSig(rs)].join(',') : 'none:' + tpRestProblem(tp)) : '') +
+         (vc ? '|c' + [vc.id, vc.dia, vc.allowance || 0].join(',') : '');
 }
 
 // ---- the editor ----
@@ -4993,8 +4980,8 @@ function inlayApply(){
   var tpC = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: clearing' : 'Inlay pocket: clearing', side: 'pocket', type: 'pocket', ents: ents.slice(), clearFor: tpV.id,
     depth: plug ? M : D, step: Math.max(0.5, (plug ? M : D) / 2), allowance: (plug ? M - S : D) * tanH, finishPass: false, stepoverPct: 40,
     dia: 3.175, feed: 800, plunge: 300, toolId: null, toolChosen: false, through: false});
-  tpGenerate(tpV); tpGenerate(tpC);
   tpInsertByRank(tpC); tpInsertByRank(tpV);             // clearing before the V-carve, as VCarve does
+  tpGenerate(tpC); tpGenerate(tpV);                     // (the V-carve last: it flattens what the clearing's cutter leaves)
   CUTSEL = tpV.id;
   persist();
   toast('ok', plug ? 'Inlay plug toolpaths created' : 'Inlay pocket toolpaths created',
@@ -5101,7 +5088,9 @@ function cutApply(){
     exprs: JSON.parse(JSON.stringify(CUT.exprs || {})),
     restFrom: CUT.side === 'pocket' && CUT.restFrom ? CUT.restFrom : undefined,
     // what the editor has no box for, and must hand back as it found it: a plug's start depth (lost, its walls
-    // began at the surface and the plug came out small), and which V-carve a pocket clears the floor for
+    // began at the surface and the plug came out small), how far apart a V-carve's floor passes are, and which
+    // V-carve a pocket clears the floor for
+    vcStep: CUT.side === 'vcarve' && CUT.vcStep > 0 ? CUT.vcStep : undefined,
     vcStart: CUT.side === 'vcarve' && CUT.vcStart > 0 ? CUT.vcStart : undefined,
     clearFor: CUT.side === 'pocket' && CUT.clearFor ? CUT.clearFor : undefined,
     hidden: !!CUT.hidden, exclude: !!CUT.exclude, folded: !!CUT.folded,   // editing a toolpath leaves these alone
@@ -5123,12 +5112,17 @@ function cutApply(){
   }
   if (tp.restFrom === undefined) delete tp.restFrom;
   if (tp.vcStart === undefined) delete tp.vcStart;
+  if (tp.vcStep === undefined) delete tp.vcStep;
   if (tp.clearFor === undefined) delete tp.clearFor;
   if (tp.tabsOn) cutTabsRemember(tp);                      // the next new toolpath starts with these tabs
   if (at >= 0) list[at] = tp; else tpInsertByRank(tp);   // new ones take their place in the cutting order
   var rsrc = tpRestSource(tp);                              // a clean-up goes after the pocket it follows (moved to just after it, if need be)
   if (rsrc && list.indexOf(rsrc) > list.indexOf(tp)){ list.splice(list.indexOf(tp), 1); list.splice(list.indexOf(rsrc) + 1, 0, tp); tpGenerate(tp); }
   var clearMsg = tp.side === 'vcarve' ? vcarveClearing(tp) : '';
+  // a V-carve flattens what its clearing pocket's cutter leaves, and a clearing pocket's V-carve what this one
+  // now leaves: whichever changed, the V-carve is worked out again
+  if (tp.side === 'vcarve' && tpStale(tp)) tpGenerate(tp);
+  if (tp.side === 'pocket' && tp.clearFor) tpList().forEach(function (x) { if (x.id === tp.clearFor && x.side === 'vcarve' && tpStale(x)) tpGenerate(x); });
   CUTSEL = tp.id;
   persist();
   toast('ok', at >= 0 ? 'Toolpath updated' : 'Toolpath created',
@@ -6794,6 +6788,8 @@ function vcMakeEditable(){
       tp.plunge = cut.plunge ? Math.round(cut.plunge * rate) : Math.round(tp.feed / 2);
       if (cut.rpm && !T.tool.rpm) tp.rpm = cut.rpm;          // what the project used comes first
     } else { tp.feed = 800; tp.plunge = 300; }
+    // a V-carve's floor passes: the V-bit's own stepover, in mm
+    if (side === 'vcarve' && T.tool.stepover > 0) tp.vcStep = +(+T.tool.stepover).toFixed(4);
     // a pocket's stepover: the tool's own, as a share of its diameter
     if (side === 'pocket' && T.tool.stepover > 0 && D > 0) tp.stepoverPct = Math.max(5, Math.min(100, Math.round(T.tool.stepover / D * 100)));
     // through the material, when the depth is the thickness plus a little
@@ -6888,21 +6884,19 @@ function vcMakeEditable(){
     }
     if (tp.side === 'chamfer' && tp.chamMode === 'edge') tp.ents = tp.ents.filter(function (id, i, a) { return a.indexOf(id) === i; });
     if (!tp.ents.length && !clearing) unsure.push(tp.name);
-    if (!clearing) tpGenerate(tp);                       // a clearing pocket is calculated below, once it has its V-carve
+    tpGenerate(tp);
     made.push(tp);
   });
   // a clearing toolpath goes with its V-carve: the same shapes, and kept in step with it after
   clears.forEach(function (c) {
     var v = made.filter(function (x) { return x.side === 'vcarve' && x.vcFrom === c.mate; })[0];
-    if (v){
-      c.tp.clearFor = v.id;
-      if (!c.tp.ents.length && v.ents.length) c.tp.ents = v.ents.slice();
-    }
-    // (calculated once, here: knowing its V-carve, it can say what floor its cutter leaves. The V-carve isn't in
-    // the drawing's list yet, so it's handed over.)
-    tpClearsFor.also = made;
-    try { tpGenerate(c.tp); } finally { tpClearsFor.also = null; }
     if (!v) return;
+    c.tp.clearFor = v.id;
+    if (!c.tp.ents.length && v.ents.length){ c.tp.ents = v.ents.slice(); tpGenerate(c.tp); }
+    // the V-carve again, now it has its clearing pocket: it flattens the floor that pocket's cutter can't get
+    // to. (Neither is in the drawing's list yet, so they're handed over.)
+    tpClearingOf.also = made;
+    try { tpGenerate(v); } finally { tpClearingOf.also = null; }
     if (!c.tp.ents.length && unsure.indexOf(c.tp.name) < 0) unsure.push(c.tp.name);
   });
   if (multiSheet()){
@@ -7156,6 +7150,7 @@ function tpRows(tp){
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
   else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
+  if (tp.side === 'vcarve' && tp.vcFloor > 0 && tpClearingOf(tp)) row('Floor', 'also flattens what \u201c' + tpClearingOf(tp).name + '\u201d can\u2019t reach: its corners and narrow parts');
   else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
   else if (tp.side === 'pocket' && tpRestSource(tp)) row('Clearing', 'only what \u201c' + tpRestSource(tp).name + '\u201d left: its corners and narrow parts');
   else if (tp.side === 'pocket') row('Clearing', (tp.pocketClear === 'raster' ? 'raster at ' + (tp.rasterAngle || 0) + '\u00b0, ' : 'offset rings, ') + (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
@@ -8306,7 +8301,7 @@ function woodPlayWire(){
 var TPL_KIND = '454-toolpath-template';
 // What a template doesn't keep: which shapes, where the tabs sat on them, and everything worked out from them
 var TPL_DROP = ['id', 'ents', 'tabPts', 'startPts', 'past', 'moves', 'sheet', 'sig', 'warning', 'rasterLines', 'vcNote', 'vcFlat', 'vcDepth',
-                'rings', 'restRuns', 'floorLeft', 'islands', 'holes', 'foundBy', 'hidden', 'vcFrom', 'restFrom'];
+                'rings', 'restRuns', 'vcFloor', 'islands', 'holes', 'foundBy', 'hidden', 'vcFrom', 'restFrom'];
 
 // The template for the toolpaths on this sheet: each one's settings and the names of its shapes' layers
 function tplMake(){
