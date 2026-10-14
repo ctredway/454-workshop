@@ -148,7 +148,14 @@ cd apps/desktop
 P454_SIM_PROBE=-100,-50,-70,5 P454_E2E_SCRIPT=test/e2e-bitsetter.js P454_E2E_NO_DESIGN=1 sh test/e2e.sh   # finds it
 P454_E2E_SCRIPT=test/e2e-bitsetter.js P454_E2E_NO_DESIGN=1 sh test/e2e.sh                                # none: must stop
 P454_SIM_PROBE=-100,-50,-70,5 P454_E2E_SCRIPT=test/e2e-tlo.js P454_E2E_NO_DESIGN=1 sh test/e2e.sh        # a leftover offset
+P454_SIM_PROBE=-100,-50,-70,5 P454_E2E_SCRIPT=test/e2e-toolchange.js P454_E2E_NO_DESIGN=1 sh test/e2e.sh # Change tool
 ```
+
+`e2e-toolchange.js` zeroes Z (taking the reference), starts the spindle over the work, and presses the jog
+panel's **Change tool…**: the spindle must stop only once Z is at the top, the machine must go to the
+tool-change position, and the new bit must be measured and its offset applied, ending with the jog panel open.
+(If the simulator package was built before, and `packages/grbl/dist` lacks `stream.js`, rebuild it with
+`npx tsc -b packages/grbl --force`.)
 
 `e2e-tlo.js` leaves a 20 mm tool length offset active (as an earlier job's tool change would), sets Z zero,
 takes the BitSetter reference, and runs a job that starts with a tool change: its plunge must land exactly

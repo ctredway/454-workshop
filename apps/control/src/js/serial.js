@@ -6,6 +6,17 @@ function logC(cls, text){
   log.appendChild(d);
   while (log.childNodes.length > 600) log.removeChild(log.firstChild);
   log.scrollTop = log.scrollHeight;
+  // The console is a window now, so the Machine tab shows its latest message, and counts the errors not yet seen.
+  if (cls === 'err' || cls === 'sys'){
+    var last = document.getElementById('conLast');
+    if (last){ last.textContent = text; last.className = cls; }
+  }
+  if (cls === 'err' && document.getElementById('conModal').hidden){
+    var b = document.getElementById('conBadge');
+    var n = (parseInt(b.dataset.n, 10) || 0) + 1;
+    b.dataset.n = n; b.textContent = n > 99 ? '99+' : String(n); b.hidden = false;
+    b.title = n === 1 ? '1 error you haven\u2019t seen' : n + ' errors you haven\u2019t seen';
+  }
 }
 
 function rawWrite(u8){

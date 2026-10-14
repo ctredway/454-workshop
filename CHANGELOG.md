@@ -580,6 +580,44 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.33.0 — Change tool, in the jog panel
+- **Change tool…** in the jog panel, beside Probe…, does what Carbide Motion's Change tool does: the machine lifts
+  Z right up, stops the spindle (only once it's up, never in the material), goes to the tool-change position from
+  Settings, and waits while you change the bit. Then, with the BitSetter set up, **Measure the new bit** measures
+  it against the reference taken when Z was zeroed and applies its length, so your Z zero is kept. The jog panel
+  opens again afterwards.
+- **Without a working BitSetter, or with no reference yet,** the new bit can't be measured against the old one, so
+  it says so before anything moves, and afterwards says to set Z zero again for the new bit. Until Z zero is set
+  (Zero Z, Zero all or the BitZero), Start warns that the job would cut at the old bit's depth. The same happens if
+  you choose **Don't measure**.
+- It asks first, needs a homed, idle machine, and isn't offered during a job: a job's own tool changes have their
+  tool-change prompt. With no tool-change position set, the machine lifts and stops the spindle where it is.
+- Asked for by Clint.
+- **Tested** (8 tests in `tool-change.test.mjs`; broken on purpose 7 ways, all caught, including stopping the
+  spindle before lifting and measuring with no reference), and end to end against the simulated machine with a
+  BitSetter (`e2e-toolchange.js`): Z went to the top with the spindle running, then the spindle stopped at the top,
+  then the front centre, the BitSetter, and the offset applied.
+
+### 0.32.0 — a tidier Machine tab; jog keys that stand out
+- **The Machine tab is in the order you work at the machine:** Machine (Home, Unlock, Reset), **Set up**, **Run
+  job**, **Quick actions**, then **Console**. It was seven sections of equal weight, with the console's log and
+  the spindle controls taking up room that's needed for running jobs.
+- **Set up** holds three buttons: **Jog & zero** (was Open jog panel), **Probe Z…** (was BitZero Z zero…) and
+  **Spindle…**. The spindle's speed, Start and Spindle off are now in a small window of their own, with a STOP
+  button like the jog and BitZero windows. Nothing about what they send has changed: Start still needs the
+  machine idle, and the spindle chip in the header still stops it.
+- **The console is a window**, opened with **Console…**. So an error isn't missed while it's shut, the tab shows
+  the controller's latest message beside the button (red for an error), and a red number on the button counts
+  the errors since the console was last opened. The log keeps every line as before. The Console button works
+  while not connected, so the log can be read after a disconnect; typing a command needs a connection.
+- **The jog panel's buttons are raised keys:** lighter than the panel, with a clear edge, in both the dark and
+  light themes. They were the panel's own colour with a faint outline, and hard to pick out. The chosen step
+  size and a key held down are still amber, and STOP is still red.
+- Asked for by Clint.
+- **Tested** (3 new tests in `machine-tab.test.mjs`, 2 more checks in `help.test.mjs`: F1 in the Spindle and
+  Console windows opens their sections of the guides; broken on purpose 5 ways, all caught), and looked at in
+  both themes.
+
 ### 0.31.24 — the desktop app's File and Help menus
 - 454 Control answers the desktop app's new menus (`menuDo`): File → Open G-code file… and Settings… press
   their buttons (Open still refuses while a job runs), and Help opens the help. Nothing happens while Control

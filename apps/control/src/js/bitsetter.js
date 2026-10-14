@@ -132,6 +132,7 @@ function probeStart(kind, onDone){ // BitSetter entry point (job code calls this
 function clearToolOffset(){
   sendLine('G49');
   PROBE.tlo = 0;
+  PROBE.toolSwapped = false;                            // a bit changed without measuring: this zero is its
   if (typeof ZN !== 'undefined') ZN.val = 0;
 }
 // Setting Z zero makes the tool in the spindle the one every later tool must be measured

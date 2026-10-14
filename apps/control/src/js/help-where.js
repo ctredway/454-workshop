@@ -6,6 +6,8 @@ var HELP_FOR_WINDOW = [
   ['jogModal', 'control-quickstart.html#3-set-your-zero'],
   ['setModal', 'control-reference.html#settings'],
   ['toolModal', 'control-reference.html#the-machine-tab'],
+  ['spModal', 'control-reference.html#spindle'],
+  ['conModal', 'control-reference.html#console'],
   ['connModal', 'control-quickstart.html#1-open-and-connect'],
   ['homeModal', 'control-quickstart.html#1-open-and-connect']
 ];

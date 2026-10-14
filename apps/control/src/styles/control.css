@@ -7,12 +7,14 @@
     --on-accent:#1a1407;                  /* text on an accent-filled button */
     --err:#e06c5a; --warn:#d98e3f; --info:#6fa8dc; --ok:#7fb069;
     --mono:'JetBrains Mono',monospace; --sans:'Archivo',sans-serif;
+    --key:#3a4756; --key-hover:#45546a; --key-edge:#64748a; --key-ink:#eef2f6;   /* the jog panel's keys */
   }
   :root[data-theme="light"]{
     --bg:#eef1f4; --panel:#ffffff; --panel-deep:#f4f6f8; --line:#d3d9e0;
     --ink:#1c2228; --muted:#5d6b78; --faint:#8b98a5;
     --cut:#a8721f; --cut-done:#8a5a10; --rapid:#9bb0c4; --rapid-done:#4d7ba6;
     --err:#b3382a; --warn:#9a6413; --info:#1d6fb8; --ok:#3f7a2e;
+    --key:#dde4ec; --key-hover:#cfd8e2; --key-edge:#808ea0; --key-ink:#1c2228;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden}
@@ -155,6 +157,16 @@
   #jmDro{display:flex;gap:26px;font-family:var(--mono);font-size:26px;margin:8px 0 14px}
   #jmDro .ax i{color:var(--muted);font-size:12px;margin-right:7px;font-style:normal}
   #jogGrid button.kbdOn{background:var(--amber);border-color:var(--amber);color:#1a1407}
+  /* The jog panel's buttons are raised keys, lighter than the panel with a clear edge, so they stand out from it
+     (they were the panel's own colour with a faint outline). STOP, the selected step and a held key keep their colours. */
+  #jogPanel button:not(.estop):not(.primary):not(.danger):not(.incOn):not(.kbdOn):not(.helpI):not(#jogClose){
+    background:var(--key);border-color:var(--key-edge);color:var(--key-ink);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 2px 0 rgba(0,0,0,.28)}
+  #jogPanel button:not(.estop):not(.primary):not(.danger):not(.incOn):not(.kbdOn):not(.helpI):not(#jogClose):hover{background:var(--key-hover)}
+  #jogPanel button:not(.estop):not(.primary):not(.danger):not(.incOn):not(.kbdOn):not(.helpI):not(#jogClose):active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+  #jogGrid button{font-weight:600}
+  #jogClose{background:none;border-color:transparent;color:var(--muted)}
+  #jogClose:hover{color:var(--ink);border-color:var(--line)}
   .kbdHint{color:var(--faint);font-size:12px;margin-top:12px;line-height:1.6}
   #setModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:70}
   #setModal[hidden]{display:none}
@@ -245,6 +257,21 @@
   .iconBtn svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .iconBtn.primary svg{stroke:#1a1407}
   @media (max-width: 1180px){ header .sub{display:none} }
+  .mSetup button{min-width:96px}
+  #conOpen{position:relative}
+  #conBadge{display:inline-block;min-width:18px;margin-left:7px;padding:0 5px;border-radius:9px;background:var(--err);color:#fff;font-family:var(--mono);font-size:11px;line-height:17px;text-align:center}
+  #conBadge[hidden]{display:none}
+  #conLast{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  #conLast.err{color:var(--err)}
+  #spModal,#conModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:65}
+  #spModal[hidden],#conModal[hidden]{display:none}
+  #spPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;width:min(460px,94vw);box-shadow:0 14px 44px rgba(0,0,0,.55)}
+  #spHead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  #spClose{padding:4px 10px}
+  #conPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;width:min(720px,94vw);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 14px 44px rgba(0,0,0,.55)}
+  #conBody{padding:12px 16px;display:flex;flex-direction:column;min-height:0}
+  #conBody #consoleLog{height:min(52vh,440px)}
+  #consoleIn:disabled{opacity:.5}
   #consoleLog{background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;height:150px;overflow-y:auto;font-family:var(--mono);font-size:11.5px;line-height:17px;padding:6px 8px;margin-bottom:6px;overflow-wrap:anywhere}
   #consoleLog .tx{color:#9a8a6a}
   #consoleLog .rx{color:#93a4b5}

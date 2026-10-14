@@ -255,6 +255,8 @@ function jobStart(opts){
   if (adjKeptText()) msg += '⚠ Kept from the last job (Adjust panel): ' + adjKeptText() + '.\n';
   if (!PROFILE.run.highStart)
     msg += '*** START & STOP HIGH IS OFF — the machine will travel at whatever height the file uses and will not lift before stopping the spindle. Turn it on in Machine settings unless you have a reason. ***\n';
+  if (PROBE.toolSwapped)
+    msg += '*** The bit was changed (Change tool) since Z zero was set, and wasn\u2019t measured. Set Z zero again with it before starting, or this job cuts at the old bit\u2019s depth. ***\n';
   msg += '\nWork zero set? Right tool loaded? Hand near the e-stop?\n' +
     'For a new file, consider an air cut first (zero Z above the stock).';
   uiDialog({title:'Start this job?', body:msg, ok:'Start job'}).then(function(go){

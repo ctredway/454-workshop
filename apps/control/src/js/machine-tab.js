@@ -1,4 +1,18 @@
 /* ---------------- machine tab wiring ---------------- */
+// The Spindle and Console windows, opened from the Machine tab.
+function spOpenModal(){ document.getElementById('spModal').hidden = false; }
+function spCloseModal(){ document.getElementById('spModal').hidden = true; }
+function conOpenModal(){
+  var b = document.getElementById('conBadge');
+  b.hidden = true; b.dataset.n = '0';                  // seen now
+  document.getElementById('conModal').hidden = false;
+  var log = document.getElementById('consoleLog');
+  log.scrollTop = log.scrollHeight;                    // it can't scroll while it's hidden
+  var inp = document.getElementById('consoleIn');
+  if (!inp.disabled) inp.focus();
+}
+function conCloseModal(){ document.getElementById('conModal').hidden = true; }
+
 function wireMachine(){
   document.getElementById('connectBtn').addEventListener('click', function(){ serialConnect(false); });
   document.getElementById('choosePort').addEventListener('click', function(){ serialConnect(true); });
@@ -111,7 +125,13 @@ function wireMachine(){
       e.stopImmediatePropagation(); settingsClose(); return;
     }
     if (!document.getElementById('qaModal').hidden){
-      e.stopImmediatePropagation(); qaEditClose();
+      e.stopImmediatePropagation(); qaEditClose(); return;
+    }
+    if (!document.getElementById('spModal').hidden){
+      e.stopImmediatePropagation(); spCloseModal(); return;
+    }
+    if (!document.getElementById('conModal').hidden){
+      e.stopImmediatePropagation(); conCloseModal();
     }
   }, true);
 
@@ -240,9 +260,23 @@ function wireMachine(){
       rapidTo(f[0], f[1]);
     });
   });
+  document.getElementById('jogTool').addEventListener('click', toolChangeStart);
   document.getElementById('jogProbe').addEventListener('click', function(){
     jogModalClose();   // releases keyboard jog cleanly
     bzOpenModal();
+  });
+
+  // ----- Spindle and Console windows (they were sections of the Machine tab) -----
+  document.getElementById('spOpen').addEventListener('click', spOpenModal);
+  document.getElementById('spClose').addEventListener('click', spCloseModal);
+  document.getElementById('spEstop').addEventListener('click', emergencyStop);
+  document.getElementById('spModal').addEventListener('pointerdown', function(e){
+    if (e.target === e.currentTarget) spCloseModal();
+  });
+  document.getElementById('conOpen').addEventListener('click', conOpenModal);
+  document.getElementById('conClose').addEventListener('click', conCloseModal);
+  document.getElementById('conModal').addEventListener('pointerdown', function(e){
+    if (e.target === e.currentTarget) conCloseModal();
   });
 
   document.getElementById('spinOn').addEventListener('click', function(){

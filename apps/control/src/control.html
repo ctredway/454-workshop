@@ -146,36 +146,11 @@
           </div>
 
           <div class="mSection">
-            <h3>Jog &amp; zero <span class="helpAt" data-k="jogpanel"></span></h3>
-            <div class="mRow">
-              <button id="jogOpen" class="primary">Open jog panel</button>
-              <span style="color:var(--faint);font-size:12px">arrow keys &amp; PgUp/PgDn work while it's open</span>
-            </div>
-          </div>
-
-          <div class="mSection">
-            <h3>Probe <span class="helpAt" data-k="probepanel"></span></h3>
-            <div class="mRow">
-              <button id="bzOpen">BitZero Z zero…</button>
-            </div>
-          </div>
-
-          <div class="mSection">
-            <h3>Spindle <span class="helpAt" data-k="spindlepanel"></span></h3>
-            <div class="mRow">
-              <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
-              <button id="spinOn">Start (M3)</button>
-              <button id="spinOff" class="danger" title="Turn the spindle off (M5)">Spindle off</button>
-              <span class="chip" id="spinState">stopped</span>
-            </div>
-          </div>
-
-          <div class="mSection">
-            <h3 class="qaHead">Quick actions <span class="helpAt" data-k="quick"></span> <button id="qaAdd" class="qaAddBtn" title="Add a quick action">+ Add</button></h3>
-            <div id="qaList"></div>
-            <div class="mRow" id="qaRunRow" style="display:none">
-              <span id="qaStatus" style="color:var(--amber);font-size:12.5px;flex:1"></span>
-              <button id="qaCancel" class="danger" title="Stop sending the rest of the action. The current move finishes; use STOP for an immediate halt.">Cancel</button>
+            <h3>Set up <span class="helpAt" data-k="jogpanel"></span></h3>
+            <div class="mRow mSetup">
+              <button id="jogOpen" class="primary" title="Move the machine by hand and set your work zero. Arrow keys and PgUp/PgDn jog while it&rsquo;s open.">Jog &amp; zero</button>
+              <button id="bzOpen" title="Set Z zero on top of the material with the BitZero">Probe Z&hellip;</button>
+              <button id="spOpen" title="Start and stop the spindle by hand">Spindle&hellip;</button>
             </div>
           </div>
 
@@ -195,11 +170,21 @@
             <div class="mRow" style="color:var(--muted);font-size:12px" id="jobStatus">no job running</div>
           </div>
 
-          <div class="mSection" style="margin-bottom:4px">
-            <h3>Console <span class="helpAt" data-k="console"></span></h3>
-            <div id="consoleLog"></div>
-            <input id="consoleIn" placeholder="type a command — Enter to send ($$, G0 X10, ?, !, ~)" autocomplete="off">
-            <div class="mRow" style="margin-top:6px"><input type="checkbox" id="verboseChk"><label for="verboseChk">Show status reports and job acks</label></div>
+          <div class="mSection">
+            <h3 class="qaHead">Quick actions <span class="helpAt" data-k="quick"></span> <button id="qaAdd" class="qaAddBtn" title="Add a quick action">+ Add</button></h3>
+            <div id="qaList"></div>
+            <div class="mRow" id="qaRunRow" style="display:none">
+              <span id="qaStatus" style="color:var(--amber);font-size:12.5px;flex:1"></span>
+              <button id="qaCancel" class="danger" title="Stop sending the rest of the action. The current move finishes; use STOP for an immediate halt.">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mSection" id="conSection">
+          <h3>Console <span class="helpAt" data-k="console"></span></h3>
+          <div class="mRow">
+            <button id="conOpen" title="Everything sent to the controller and everything it answered, and a line to type commands">Console&hellip;<span id="conBadge" hidden></span></button>
+            <span id="conLast" title="The controller&rsquo;s latest message"></span>
           </div>
         </div>
       </div>
@@ -286,9 +271,42 @@
         <button id="gotoZero" title="Raises Z to 5 mm below the top of travel first (machine must be homed)">Go to XY zero</button>
         <button id="jogZ6" title="Lift Z 6 mm from where it is now, as in Carbide Motion. Stops short at the top of travel.">Z +6 mm</button>
         <button id="jogProbe" title="Jog over the plate, then probe — opens the BitZero panel">Probe…</button>
+        <button id="jogTool" title="Lift, stop the spindle and go to the tool-change position, then measure the new bit on the BitSetter">Change tool…</button>
       </div>
     </div>
     <p class="kbdHint">Keyboard: ← → = X &nbsp;·&nbsp; ↑ ↓ = Y &nbsp;·&nbsp; PgUp PgDn = Z. In Fast, hold to jog — release stops instantly. Esc closes.</p>
+  </div>
+</div>
+
+<div id="spModal" hidden>
+  <div id="spPanel">
+    <div id="spHead">
+      <button id="spEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
+      <b style="font-size:15px">Spindle</b> <span class="helpAt" data-k="spindlepanel"></span>
+      <div style="flex:1"></div>
+      <button id="spClose" title="Close (Esc)">✕</button>
+    </div>
+    <div id="spBody" class="disabledArea">
+      <div class="mRow">
+        <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
+        <button id="spinOn">Start (M3)</button>
+        <button id="spinOff" class="danger" title="Turn the spindle off (M5)">Spindle off</button>
+        <span class="chip" id="spinState">stopped</span>
+      </div>
+      <p class="kbdHint">Start needs the machine idle. It doesn&rsquo;t wait for the spindle to reach speed, so give it a few seconds before you cut. The spindle chip in the header stops it too.</p>
+    </div>
+  </div>
+</div>
+
+<div id="conModal" hidden>
+  <div id="conPanel">
+    <div class="dlgHead"><b>Console</b><button id="conClose" title="Close (Esc)" aria-label="Close">✕</button></div>
+    <div id="conBody">
+      <div id="consoleLog"></div>
+      <input id="consoleIn" disabled placeholder="type a command — Enter to send ($$, G0 X10, ?, !, ~)" autocomplete="off">
+      <div class="mRow" style="margin-top:6px"><input type="checkbox" id="verboseChk"><label for="verboseChk">Show status reports and job acks</label></div>
+      <p class="kbdHint" style="margin-top:4px">Commands typed here are sent as they are, with no checks.</p>
+    </div>
   </div>
 </div>
 
@@ -543,7 +561,7 @@
   <div id="bzPanel">
     <div id="jogHead" style="margin-bottom:8px">
       <button id="bzEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
-      <b style="font-size:15px">BitZero — Z zero</b>
+      <b style="font-size:15px">BitZero — Z zero</b> <span class="helpAt" data-k="probepanel"></span>
       <div style="flex:1"></div>
       <button id="bzClose" title="Close (Esc)">✕</button>
     </div>
@@ -586,6 +604,7 @@
 @@include js/probing.js
 @@include js/bitsetter.js
 @@include js/bitzero.js
+@@include js/tool-change.js
 @@include js/overrides.js
 @@include js/jog-panel.js
 @@include js/serial.js

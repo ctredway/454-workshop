@@ -204,6 +204,8 @@ function wire(){
     if (!document.getElementById('setModal').hidden) return;  // settings modal open
     if (!document.getElementById('bzModal').hidden) return;   // probe modal open
     if (!document.getElementById('qaModal').hidden) return;   // quick-action editor open
+    if (!document.getElementById('spModal').hidden) return;   // spindle window open
+    if (!document.getElementById('conModal').hidden) return;  // console window open
     if (!document.getElementById('homeModal').hidden) return; // homing prompt open
     if (!document.getElementById('connModal').hidden) return; // connect prompt open
     if (!document.getElementById('dlgModal').hidden) return;  // an in-app dialog owns the keyboard

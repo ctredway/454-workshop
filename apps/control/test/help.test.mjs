@@ -91,6 +91,12 @@ test('F1 opens the guide for what Control is doing', () => {
   C.el('setModal').hidden = false;
   assert.equal(where(), 'control-reference.html#settings');
   C.el('setModal').hidden = true;
+  C.el('spModal').hidden = false;
+  assert.equal(where(), 'control-reference.html#spindle', 'the Spindle window');
+  C.el('spModal').hidden = true;
+  C.el('conModal').hidden = false;
+  assert.equal(where(), 'control-reference.html#console', 'the Console window');
+  C.el('conModal').hidden = true;
   C.JOB.active = false; C.SERIAL.connected = false; C.MODEL = null;
   for (const [id] of plain(C.HELP_FOR_WINDOW)) assert.ok(C.el(id), id + ' is a window in Control');
   const e = { key: 'F1', target: C.document.body, preventDefault() { this.p = true; }, stopPropagation() { this.s = true; } };

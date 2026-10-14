@@ -110,6 +110,7 @@ function uiStatus(){
   document.getElementById('jogOpen').disabled = JOB.active && !atToolChange();
   if (JOB.active && !atToolChange() && !document.getElementById('jogModal').hidden) jogModalClose();
   document.getElementById('bzOpen').disabled = JOB.active && !atToolChange();
+  document.getElementById('jogTool').disabled = JOB.active;   // a job's changes are its tool-change prompt's
   if (JOB.active && !atToolChange() && !document.getElementById('bzModal').hidden) bzCloseModal();
   bzUpdateCircuit();
   // live marker while a job (or manual motion during one) is happening
@@ -132,6 +133,8 @@ function uiConn(on){
   if (!on) refreshConnectLabel();
   document.getElementById('connChip').textContent = on ? 'connected' : 'not connected';
   document.getElementById('mControls').classList.toggle('disabledArea', !on);
+  document.getElementById('spBody').classList.toggle('disabledArea', !on);
+  document.getElementById('consoleIn').disabled = !on;    // the log stays readable
   document.getElementById('hdrMachine').classList.toggle('on', on);
   if (!on){
     var chipTop = document.getElementById('hdrState');

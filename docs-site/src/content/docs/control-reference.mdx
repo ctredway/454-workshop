@@ -44,10 +44,11 @@ new in the air first.
 
 ## The Machine tab
 
-Everything for running the machine, top to bottom: connecting, homing, jogging and zeroing, probing, the
-spindle, quick actions, and running a job. It's the tab Control opens on.
+Everything for running the machine, in the order you use it: connecting and homing, setting up (jogging and
+zeroing, probing, the spindle), running a job, and quick actions. The console opens in a window of its own. It's
+the tab Control opens on.
 
-<Shot src={machineTab} alt="The Machine tab, connected: Disconnect; Home, Unlock and Reset; Open jog panel; BitZero Z zero; the spindle speed with Start and Spindle off; quick actions; Run loaded file, Recover, Hold, Resume and End job; and the console." />
+<Shot src={machineTab} alt="The Machine tab, connected: Disconnect; Home, Unlock and Reset; Set up, with Jog & zero, Probe Z and Spindle; Run loaded file, Recover, Hold, Resume and End job; quick actions; and the Console button with the controller's latest message." />
 
 ### Connecting
 
@@ -75,10 +76,10 @@ its own. Everything else, including opening and checking G-code, works anywhere.
 
 ### Jog and zero
 
-**Open jog panel** moves the machine by hand and sets your work zero: where the job's X0, Y0 and Z0 are on
+**Jog & zero**, under **Set up**, moves the machine by hand and sets your work zero: where the job's X0, Y0 and Z0 are on
 the material.
 
-<Shot src={jogPanel} alt="The jog panel: a STOP button, the work position in large figures, step sizes 0.025, 0.1, 1, 10 and Fast, buttons for each direction in X, Y and Z, rapid-position buttons for nine points around the table, and Zero X, Zero Y, Zero Z, Zero all, Go to XY zero, Z +6 mm and Probe." />
+<Shot src={jogPanel} alt="The jog panel: a STOP button, the work position in large figures, step sizes 0.025, 0.1, 1, 10 and Fast, buttons for each direction in X, Y and Z, rapid-position buttons for nine points around the table, and Zero X, Zero Y, Zero Z, Zero all, Go to XY zero, Z +6 mm, Probe and Change tool." />
 
 - **Move** sets how far each press goes: 0.025, 0.1, 1 or 10 mm. In **Fast**, the machine moves while you
   hold a button or key, at the **Fast XY** and **Fast Z** speeds, and stops the moment you let go.
@@ -90,10 +91,16 @@ the material.
   axes. The zero is stored in the controller, so it survives homing and restarting Control.
 - **Go to XY zero** raises Z first, then moves over the job's X0 Y0. **Z +6 mm** lifts the tool 6 mm from
   where it is, as in Carbide Motion. **Probe…** opens the BitZero panel.
+- **Change tool…** changes the bit outside a job, as Carbide Motion's Change tool does. The machine lifts Z right
+  up, stops the spindle, goes to the tool-change position (Settings → Machine → Parking) and waits. Change the bit,
+  then press **Measure the new bit**: with the BitSetter set up and a reference taken when you set Z zero, the new
+  bit is measured and its length applied, so your Z zero is kept. Without a BitSetter, set Z zero again for the
+  new bit before cutting; until you do, Start warns you. It needs a homed machine, and isn't offered during a
+  job, whose tool changes have their own prompt.
 
 ### Probe
 
-**BitZero Z zero…** sets Z zero with the BitZero touch plate, which puts Z0 at the top of your material.
+**Probe Z…**, under **Set up**, sets Z zero with the BitZero touch plate, which puts Z0 at the top of your material.
 
 <Steps>
 
@@ -110,16 +117,11 @@ the material.
 
 ### Spindle
 
-Type a speed and press **Start (M3)**, or **Spindle off**. With a VFD, the speed shown is what was asked
-for, not a measurement. Starting by hand here doesn't wait for the spindle to reach speed, so give it a few
-seconds before cutting. Jobs are different: Control adds a spin-up wait after every spindle start
+**Spindle…**, under **Set up**, opens a small window: type a speed and press **Start (M3)**, or **Spindle
+off**. Starting needs the machine idle, and the spindle chip in the header stops the spindle from anywhere.
+With a VFD, the speed shown is what was asked for, not a measurement. Starting by hand here doesn't wait for
+the spindle to reach speed, so give it a few seconds before cutting. Jobs are different: Control adds a spin-up wait after every spindle start
 automatically, set in **Settings → Accessories**.
-
-### Quick actions
-
-Saved G-code for things you do often, like **Raise Z to top** or **Spindle warm-up**. **+ Add** makes a new
-one, and the pencil edits one. Lines are sent one at a time, each waiting for the controller to confirm the
-last, and any error, alarm or reset stops the action at once. They're saved with your machine profile.
 
 ### Running a job
 
@@ -162,10 +164,20 @@ listing what it would keep, and **Back to normal** there clears it. Setting Z ze
 line**, or scrub the preview to the spot. Control rebuilds the job's state up to that line, moves back
 carefully, and lets you back out at any point.
 
+### Quick actions
+
+Saved G-code for things you do often, like **Raise Z to top** or **Spindle warm-up**. **+ Add** makes a new
+one, and the pencil edits one. Lines are sent one at a time, each waiting for the controller to confirm the
+last, and any error, alarm or reset stops the action at once. They're saved with your machine profile.
+
 ### Console
 
-The raw conversation with the controller: everything Control sends, and everything it says back. You can
-type commands here for anything the app doesn't cover.
+**Console…** opens the raw conversation with the controller in its own window: everything Control sends, and
+everything it says back. You can type commands there for anything the app doesn't cover, once connected.
+
+Beside the button, the Machine tab shows the controller's latest message, in red if it's an error. A red number
+on the button counts the errors that arrived since you last opened the console, so one isn't missed while the
+window is shut.
 
 :::caution
 Commands typed in the console are sent exactly as written, with no checks and no lifting or spindle

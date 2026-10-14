@@ -17,12 +17,14 @@
     --on-accent:#1a1407;                  /* text on an accent-filled button */
     --err:#e06c5a; --warn:#d98e3f; --info:#6fa8dc; --ok:#7fb069;
     --mono:'JetBrains Mono',monospace; --sans:'Archivo',sans-serif;
+    --key:#3a4756; --key-hover:#45546a; --key-edge:#64748a; --key-ink:#eef2f6;   /* the jog panel's keys */
   }
   :root[data-theme="light"]{
     --bg:#eef1f4; --panel:#ffffff; --panel-deep:#f4f6f8; --line:#d3d9e0;
     --ink:#1c2228; --muted:#5d6b78; --faint:#8b98a5;
     --cut:#a8721f; --cut-done:#8a5a10; --rapid:#9bb0c4; --rapid-done:#4d7ba6;
     --err:#b3382a; --warn:#9a6413; --info:#1d6fb8; --ok:#3f7a2e;
+    --key:#dde4ec; --key-hover:#cfd8e2; --key-edge:#808ea0; --key-ink:#1c2228;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden}
@@ -165,6 +167,16 @@
   #jmDro{display:flex;gap:26px;font-family:var(--mono);font-size:26px;margin:8px 0 14px}
   #jmDro .ax i{color:var(--muted);font-size:12px;margin-right:7px;font-style:normal}
   #jogGrid button.kbdOn{background:var(--amber);border-color:var(--amber);color:#1a1407}
+  /* The jog panel's buttons are raised keys, lighter than the panel with a clear edge, so they stand out from it
+     (they were the panel's own colour with a faint outline). STOP, the selected step and a held key keep their colours. */
+  #jogPanel button:not(.estop):not(.primary):not(.danger):not(.incOn):not(.kbdOn):not(.helpI):not(#jogClose){
+    background:var(--key);border-color:var(--key-edge);color:var(--key-ink);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 2px 0 rgba(0,0,0,.28)}
+  #jogPanel button:not(.estop):not(.primary):not(.danger):not(.incOn):not(.kbdOn):not(.helpI):not(#jogClose):hover{background:var(--key-hover)}
+  #jogPanel button:not(.estop):not(.primary):not(.danger):not(.incOn):not(.kbdOn):not(.helpI):not(#jogClose):active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+  #jogGrid button{font-weight:600}
+  #jogClose{background:none;border-color:transparent;color:var(--muted)}
+  #jogClose:hover{color:var(--ink);border-color:var(--line)}
   .kbdHint{color:var(--faint);font-size:12px;margin-top:12px;line-height:1.6}
   #setModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:70}
   #setModal[hidden]{display:none}
@@ -255,6 +267,21 @@
   .iconBtn svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .iconBtn.primary svg{stroke:#1a1407}
   @media (max-width: 1180px){ header .sub{display:none} }
+  .mSetup button{min-width:96px}
+  #conOpen{position:relative}
+  #conBadge{display:inline-block;min-width:18px;margin-left:7px;padding:0 5px;border-radius:9px;background:var(--err);color:#fff;font-family:var(--mono);font-size:11px;line-height:17px;text-align:center}
+  #conBadge[hidden]{display:none}
+  #conLast{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  #conLast.err{color:var(--err)}
+  #spModal,#conModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:65}
+  #spModal[hidden],#conModal[hidden]{display:none}
+  #spPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;width:min(460px,94vw);box-shadow:0 14px 44px rgba(0,0,0,.55)}
+  #spHead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  #spClose{padding:4px 10px}
+  #conPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;width:min(720px,94vw);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 14px 44px rgba(0,0,0,.55)}
+  #conBody{padding:12px 16px;display:flex;flex-direction:column;min-height:0}
+  #conBody #consoleLog{height:min(52vh,440px)}
+  #consoleIn:disabled{opacity:.5}
   #consoleLog{background:var(--panel-deep);border:1px solid var(--line);border-radius:4px;height:150px;overflow-y:auto;font-family:var(--mono);font-size:11.5px;line-height:17px;padding:6px 8px;margin-bottom:6px;overflow-wrap:anywhere}
   #consoleLog .tx{color:#9a8a6a}
   #consoleLog .rx{color:#93a4b5}
@@ -447,36 +474,11 @@
           </div>
 
           <div class="mSection">
-            <h3>Jog &amp; zero <span class="helpAt" data-k="jogpanel"></span></h3>
-            <div class="mRow">
-              <button id="jogOpen" class="primary">Open jog panel</button>
-              <span style="color:var(--faint);font-size:12px">arrow keys &amp; PgUp/PgDn work while it's open</span>
-            </div>
-          </div>
-
-          <div class="mSection">
-            <h3>Probe <span class="helpAt" data-k="probepanel"></span></h3>
-            <div class="mRow">
-              <button id="bzOpen">BitZero Z zero…</button>
-            </div>
-          </div>
-
-          <div class="mSection">
-            <h3>Spindle <span class="helpAt" data-k="spindlepanel"></span></h3>
-            <div class="mRow">
-              <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
-              <button id="spinOn">Start (M3)</button>
-              <button id="spinOff" class="danger" title="Turn the spindle off (M5)">Spindle off</button>
-              <span class="chip" id="spinState">stopped</span>
-            </div>
-          </div>
-
-          <div class="mSection">
-            <h3 class="qaHead">Quick actions <span class="helpAt" data-k="quick"></span> <button id="qaAdd" class="qaAddBtn" title="Add a quick action">+ Add</button></h3>
-            <div id="qaList"></div>
-            <div class="mRow" id="qaRunRow" style="display:none">
-              <span id="qaStatus" style="color:var(--amber);font-size:12.5px;flex:1"></span>
-              <button id="qaCancel" class="danger" title="Stop sending the rest of the action. The current move finishes; use STOP for an immediate halt.">Cancel</button>
+            <h3>Set up <span class="helpAt" data-k="jogpanel"></span></h3>
+            <div class="mRow mSetup">
+              <button id="jogOpen" class="primary" title="Move the machine by hand and set your work zero. Arrow keys and PgUp/PgDn jog while it&rsquo;s open.">Jog &amp; zero</button>
+              <button id="bzOpen" title="Set Z zero on top of the material with the BitZero">Probe Z&hellip;</button>
+              <button id="spOpen" title="Start and stop the spindle by hand">Spindle&hellip;</button>
             </div>
           </div>
 
@@ -496,11 +498,21 @@
             <div class="mRow" style="color:var(--muted);font-size:12px" id="jobStatus">no job running</div>
           </div>
 
-          <div class="mSection" style="margin-bottom:4px">
-            <h3>Console <span class="helpAt" data-k="console"></span></h3>
-            <div id="consoleLog"></div>
-            <input id="consoleIn" placeholder="type a command — Enter to send ($$, G0 X10, ?, !, ~)" autocomplete="off">
-            <div class="mRow" style="margin-top:6px"><input type="checkbox" id="verboseChk"><label for="verboseChk">Show status reports and job acks</label></div>
+          <div class="mSection">
+            <h3 class="qaHead">Quick actions <span class="helpAt" data-k="quick"></span> <button id="qaAdd" class="qaAddBtn" title="Add a quick action">+ Add</button></h3>
+            <div id="qaList"></div>
+            <div class="mRow" id="qaRunRow" style="display:none">
+              <span id="qaStatus" style="color:var(--amber);font-size:12.5px;flex:1"></span>
+              <button id="qaCancel" class="danger" title="Stop sending the rest of the action. The current move finishes; use STOP for an immediate halt.">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mSection" id="conSection">
+          <h3>Console <span class="helpAt" data-k="console"></span></h3>
+          <div class="mRow">
+            <button id="conOpen" title="Everything sent to the controller and everything it answered, and a line to type commands">Console&hellip;<span id="conBadge" hidden></span></button>
+            <span id="conLast" title="The controller&rsquo;s latest message"></span>
           </div>
         </div>
       </div>
@@ -587,9 +599,42 @@
         <button id="gotoZero" title="Raises Z to 5 mm below the top of travel first (machine must be homed)">Go to XY zero</button>
         <button id="jogZ6" title="Lift Z 6 mm from where it is now, as in Carbide Motion. Stops short at the top of travel.">Z +6 mm</button>
         <button id="jogProbe" title="Jog over the plate, then probe — opens the BitZero panel">Probe…</button>
+        <button id="jogTool" title="Lift, stop the spindle and go to the tool-change position, then measure the new bit on the BitSetter">Change tool…</button>
       </div>
     </div>
     <p class="kbdHint">Keyboard: ← → = X &nbsp;·&nbsp; ↑ ↓ = Y &nbsp;·&nbsp; PgUp PgDn = Z. In Fast, hold to jog — release stops instantly. Esc closes.</p>
+  </div>
+</div>
+
+<div id="spModal" hidden>
+  <div id="spPanel">
+    <div id="spHead">
+      <button id="spEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
+      <b style="font-size:15px">Spindle</b> <span class="helpAt" data-k="spindlepanel"></span>
+      <div style="flex:1"></div>
+      <button id="spClose" title="Close (Esc)">✕</button>
+    </div>
+    <div id="spBody" class="disabledArea">
+      <div class="mRow">
+        <input type="number" id="rpmIn" value="10000" step="1000" style="width:84px"> <span style="color:var(--faint)">rpm</span>
+        <button id="spinOn">Start (M3)</button>
+        <button id="spinOff" class="danger" title="Turn the spindle off (M5)">Spindle off</button>
+        <span class="chip" id="spinState">stopped</span>
+      </div>
+      <p class="kbdHint">Start needs the machine idle. It doesn&rsquo;t wait for the spindle to reach speed, so give it a few seconds before you cut. The spindle chip in the header stops it too.</p>
+    </div>
+  </div>
+</div>
+
+<div id="conModal" hidden>
+  <div id="conPanel">
+    <div class="dlgHead"><b>Console</b><button id="conClose" title="Close (Esc)" aria-label="Close">✕</button></div>
+    <div id="conBody">
+      <div id="consoleLog"></div>
+      <input id="consoleIn" disabled placeholder="type a command — Enter to send ($$, G0 X10, ?, !, ~)" autocomplete="off">
+      <div class="mRow" style="margin-top:6px"><input type="checkbox" id="verboseChk"><label for="verboseChk">Show status reports and job acks</label></div>
+      <p class="kbdHint" style="margin-top:4px">Commands typed here are sent as they are, with no checks.</p>
+    </div>
   </div>
 </div>
 
@@ -844,7 +889,7 @@
   <div id="bzPanel">
     <div id="jogHead" style="margin-bottom:8px">
       <button id="bzEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
-      <b style="font-size:15px">BitZero — Z zero</b>
+      <b style="font-size:15px">BitZero — Z zero</b> <span class="helpAt" data-k="probepanel"></span>
       <div style="flex:1"></div>
       <button id="bzClose" title="Close (Esc)">✕</button>
     </div>
@@ -910,7 +955,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.31.24';
+var CONTROL_VERSION = '0.33.0';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -2513,6 +2558,8 @@ var HELP_FOR_WINDOW = [
   ['jogModal', 'control-quickstart.html#3-set-your-zero'],
   ['setModal', 'control-reference.html#settings'],
   ['toolModal', 'control-reference.html#the-machine-tab'],
+  ['spModal', 'control-reference.html#spindle'],
+  ['conModal', 'control-reference.html#console'],
   ['connModal', 'control-quickstart.html#1-open-and-connect'],
   ['homeModal', 'control-quickstart.html#1-open-and-connect']
 ];
@@ -2770,6 +2817,8 @@ function wire(){
     if (!document.getElementById('setModal').hidden) return;  // settings modal open
     if (!document.getElementById('bzModal').hidden) return;   // probe modal open
     if (!document.getElementById('qaModal').hidden) return;   // quick-action editor open
+    if (!document.getElementById('spModal').hidden) return;   // spindle window open
+    if (!document.getElementById('conModal').hidden) return;  // console window open
     if (!document.getElementById('homeModal').hidden) return; // homing prompt open
     if (!document.getElementById('connModal').hidden) return; // connect prompt open
     if (!document.getElementById('dlgModal').hidden) return;  // an in-app dialog owns the keyboard
@@ -3173,6 +3222,7 @@ function probeStart(kind, onDone){ // BitSetter entry point (job code calls this
 function clearToolOffset(){
   sendLine('G49');
   PROBE.tlo = 0;
+  PROBE.toolSwapped = false;                            // a bit changed without measuring: this zero is its
   if (typeof ZN !== 'undefined') ZN.val = 0;
 }
 // Setting Z zero makes the tool in the spindle the one every later tool must be measured
@@ -3284,6 +3334,67 @@ function bzStart(){
   bzGo();
 }
 
+/* ----- Change tool, from the jog panel (Carbide Motion's Change tool) ----- */
+// Outside a job: lift Z right up, stop the spindle (after lifting, so it never stops in the material), go to the
+// tool-change position, and wait while the bit is changed. With the BitSetter set up and a reference taken (when
+// Z was zeroed), the new bit is then measured and its length applied, so Z zero is kept. Otherwise Z zero belongs
+// to the old bit: Control says to set it again, and the next job's Start says so too until it is.
+// A job's own tool changes (M6) are handled by its tool-change prompt, not here.
+
+// What a change will do, worked out from the state alone (so it can be tested). o: {homed, liftCmd, spot,
+// bsOn, bsWhy (null = ready), refZ}. Returns {why} if it can't be done, or {steps, measure, intro, swap}.
+function toolChangePlan(o){
+  if (!o.homed) return {why: 'The machine hasn’t been homed since it was connected. Lifting to the top and going to the ' +
+                             'tool-change position use the machine’s own coordinates, which mean nothing until it homes.\n\nHome it first.'};
+  var steps = [o.liftCmd, 'M5'];
+  if (o.spot) steps.push('G53 G0 X' + o.spot.x.toFixed(3) + ' Y' + o.spot.y.toFixed(3));
+  var measure = o.bsWhy === null && o.refZ !== null;
+  var where = o.spot ? 'move to the tool-change position (' + o.spot.name + ', X' + o.spot.x.toFixed(1) + ' Y' + o.spot.y.toFixed(1) + ')'
+                     : 'stay where it is (no tool-change position is set: Settings → Machine → Parking)';
+  var intro = 'The machine will lift Z right up, stop the spindle, and ' + where + '. Then it waits while you change the bit.\n\n';
+  if (measure) intro += 'Afterwards the new bit is measured on the BitSetter and its length applied, so your Z zero is kept.';
+  else if (o.bsWhy === null) intro += '⚠ The BitSetter has no reference yet (it’s taken when you set Z zero), so the new bit can’t be ' +
+                                       'measured against the old one. After the change, set Z zero again with the new bit.';
+  else if (o.bsOn) intro += '⚠ The BitSetter is switched on but can’t be used: ' + o.bsWhy + '. After the change, set Z zero again with the new bit.';
+  else intro += 'Your Z zero was set with the old bit. After the change, set Z zero again with the new one.';
+  var swap = 'The spindle is off. Wait for it to stop turning, then change the bit and check its stickout.\n\n' +
+             (measure ? 'Press Measure the new bit when it’s in, and keep clear: the machine moves to the BitSetter straight away.'
+                      : 'Press Done when it’s in, then set Z zero for the new bit (Zero Z, or Probe…) before you cut.');
+  return {steps: steps, measure: measure, intro: intro, swap: swap};
+}
+
+function toolChangeStart(){
+  if (!SERIAL.connected){ logC('err', 'connect to the machine first'); return; }
+  if (JOB.active){ logC('err', 'Change tool: a job is running, and its own tool-change prompt handles its changes.'); return; }
+  if (PROBE.active || qaBusy('change the tool')) return;
+  if (!requireIdle('tool change')) return;
+  var p = toolChangePlan({homed: !!SERIAL.homedSeen, liftCmd: SERIAL.homedSeen ? zHighCmd(topZ()) : null, spot: toolChangeSpot(),
+                          bsOn: !!PROFILE.bitSetter.enabled, bsWhy: bitSetterReady(), refZ: PROBE.refZ});
+  if (p.why){ uiNote('The tool can’t be changed yet', p.why); return; }
+  uiDialog({title: 'Change the tool?', body: p.intro, ok: 'Go'}).then(function (go) {
+    if (!go) return;
+    jogModalClose();                                     // releases keyboard jog; it opens again afterwards
+    updateJobUI('Tool change: moving…');
+    probeRun('Tool change', p.steps, function () {
+      uiDialog({title: 'Change the bit now', body: p.swap, ok: p.measure ? 'Measure the new bit' : 'Done',
+                cancel: 'Don’t measure', note: !p.measure}).then(function (ok) {
+        if (p.measure && ok){
+          probeStart('tool', function () {
+            PROBE.toolSwapped = false;
+            updateJobUI('Tool changed and measured: Z zero is kept.');
+            jogModalOpen();
+          });
+          return;
+        }
+        // Not measured: Z zero is the old bit's until it's set again (clearToolOffset clears this, by every route).
+        PROBE.toolSwapped = true;
+        logC('err', 'tool changed but not measured — set Z zero for the new bit before cutting');
+        updateJobUI('Tool changed: set Z zero for the new bit before cutting.');
+        jogModalOpen();
+      });
+    });
+  });
+}
 /* ---------------- real-time overrides + Z nudge ---------------- */
 var OV_BYTES = {'f0':0x90,'f+10':0x91,'f-10':0x92,'f+1':0x93,'f-1':0x94,
                 'r100':0x95,'r50':0x96,'r25':0x97,
@@ -3573,6 +3684,17 @@ function logC(cls, text){
   log.appendChild(d);
   while (log.childNodes.length > 600) log.removeChild(log.firstChild);
   log.scrollTop = log.scrollHeight;
+  // The console is a window now, so the Machine tab shows its latest message, and counts the errors not yet seen.
+  if (cls === 'err' || cls === 'sys'){
+    var last = document.getElementById('conLast');
+    if (last){ last.textContent = text; last.className = cls; }
+  }
+  if (cls === 'err' && document.getElementById('conModal').hidden){
+    var b = document.getElementById('conBadge');
+    var n = (parseInt(b.dataset.n, 10) || 0) + 1;
+    b.dataset.n = n; b.textContent = n > 99 ? '99+' : String(n); b.hidden = false;
+    b.title = n === 1 ? '1 error you haven\u2019t seen' : n + ' errors you haven\u2019t seen';
+  }
 }
 
 function rawWrite(u8){
@@ -3920,6 +4042,7 @@ function uiStatus(){
   document.getElementById('jogOpen').disabled = JOB.active && !atToolChange();
   if (JOB.active && !atToolChange() && !document.getElementById('jogModal').hidden) jogModalClose();
   document.getElementById('bzOpen').disabled = JOB.active && !atToolChange();
+  document.getElementById('jogTool').disabled = JOB.active;   // a job's changes are its tool-change prompt's
   if (JOB.active && !atToolChange() && !document.getElementById('bzModal').hidden) bzCloseModal();
   bzUpdateCircuit();
   // live marker while a job (or manual motion during one) is happening
@@ -3942,6 +4065,8 @@ function uiConn(on){
   if (!on) refreshConnectLabel();
   document.getElementById('connChip').textContent = on ? 'connected' : 'not connected';
   document.getElementById('mControls').classList.toggle('disabledArea', !on);
+  document.getElementById('spBody').classList.toggle('disabledArea', !on);
+  document.getElementById('consoleIn').disabled = !on;    // the log stays readable
   document.getElementById('hdrMachine').classList.toggle('on', on);
   if (!on){
     var chipTop = document.getElementById('hdrState');
@@ -5247,6 +5372,8 @@ function jobStart(opts){
   if (adjKeptText()) msg += '⚠ Kept from the last job (Adjust panel): ' + adjKeptText() + '.\n';
   if (!PROFILE.run.highStart)
     msg += '*** START & STOP HIGH IS OFF — the machine will travel at whatever height the file uses and will not lift before stopping the spindle. Turn it on in Machine settings unless you have a reason. ***\n';
+  if (PROBE.toolSwapped)
+    msg += '*** The bit was changed (Change tool) since Z zero was set, and wasn\u2019t measured. Set Z zero again with it before starting, or this job cuts at the old bit\u2019s depth. ***\n';
   msg += '\nWork zero set? Right tool loaded? Hand near the e-stop?\n' +
     'For a new file, consider an air cut first (zero Z above the stock).';
   uiDialog({title:'Start this job?', body:msg, ok:'Start job'}).then(function(go){
@@ -5562,6 +5689,20 @@ function handoffStart(){
   } catch (e) {}
 }
 /* ---------------- machine tab wiring ---------------- */
+// The Spindle and Console windows, opened from the Machine tab.
+function spOpenModal(){ document.getElementById('spModal').hidden = false; }
+function spCloseModal(){ document.getElementById('spModal').hidden = true; }
+function conOpenModal(){
+  var b = document.getElementById('conBadge');
+  b.hidden = true; b.dataset.n = '0';                  // seen now
+  document.getElementById('conModal').hidden = false;
+  var log = document.getElementById('consoleLog');
+  log.scrollTop = log.scrollHeight;                    // it can't scroll while it's hidden
+  var inp = document.getElementById('consoleIn');
+  if (!inp.disabled) inp.focus();
+}
+function conCloseModal(){ document.getElementById('conModal').hidden = true; }
+
 function wireMachine(){
   document.getElementById('connectBtn').addEventListener('click', function(){ serialConnect(false); });
   document.getElementById('choosePort').addEventListener('click', function(){ serialConnect(true); });
@@ -5674,7 +5815,13 @@ function wireMachine(){
       e.stopImmediatePropagation(); settingsClose(); return;
     }
     if (!document.getElementById('qaModal').hidden){
-      e.stopImmediatePropagation(); qaEditClose();
+      e.stopImmediatePropagation(); qaEditClose(); return;
+    }
+    if (!document.getElementById('spModal').hidden){
+      e.stopImmediatePropagation(); spCloseModal(); return;
+    }
+    if (!document.getElementById('conModal').hidden){
+      e.stopImmediatePropagation(); conCloseModal();
     }
   }, true);
 
@@ -5803,9 +5950,23 @@ function wireMachine(){
       rapidTo(f[0], f[1]);
     });
   });
+  document.getElementById('jogTool').addEventListener('click', toolChangeStart);
   document.getElementById('jogProbe').addEventListener('click', function(){
     jogModalClose();   // releases keyboard jog cleanly
     bzOpenModal();
+  });
+
+  // ----- Spindle and Console windows (they were sections of the Machine tab) -----
+  document.getElementById('spOpen').addEventListener('click', spOpenModal);
+  document.getElementById('spClose').addEventListener('click', spCloseModal);
+  document.getElementById('spEstop').addEventListener('click', emergencyStop);
+  document.getElementById('spModal').addEventListener('pointerdown', function(e){
+    if (e.target === e.currentTarget) spCloseModal();
+  });
+  document.getElementById('conOpen').addEventListener('click', conOpenModal);
+  document.getElementById('conClose').addEventListener('click', conCloseModal);
+  document.getElementById('conModal').addEventListener('pointerdown', function(e){
+    if (e.target === e.currentTarget) conCloseModal();
   });
 
   document.getElementById('spinOn').addEventListener('click', function(){
