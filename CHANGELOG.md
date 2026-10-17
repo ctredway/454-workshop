@@ -27,6 +27,22 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.45 — long jobs: the computer stays awake; a tidier Machine tab; Change tool
+- **(machine) The computer stays awake while the machine is busy:** a job, a probe, a jog or a quick action running,
+  the spindle on, or the machine moving. A PC that sleeps partway through a job stops feeding the machine with
+  the spindle running. The app asks Windows not to sleep (the screen can still turn off), checking every 10
+  seconds, and lets it sleep again once the machine is idle. If 454 Control can't be asked (a page too busy to
+  answer), it keeps what it had: it never lets the computer sleep on a guess. (`src/keep-awake.js`, 5 tests,
+  broken on purpose 5 ways, all caught; and in the app against the simulated machine: awake for homing, the
+  move to the work and the job, asleep again after each.)
+- Includes Control 0.34.0 **(machine)**: the 3D view is drawn when it changes, not 60 times a second.
+- Includes Control 0.33.0: **Change tool…** in the jog panel.
+- Includes Control 0.32.0: the Machine tab in working order, the Spindle and Console in windows of their own, and
+  raised keys in the jog panel.
+- **The soak test** (`apps/desktop/test/soak.sh`, in DEVELOPING.md): a long, dense job in the real app against
+  the simulated machine, recording whether the machine was ever left waiting with the spindle running, and
+  memory over time. Its first results led to the two changes above.
+
 ### 0.6.2-beta.44 — the V-bit flattens the floor its clearing cutter can't reach; faster calculation
 - Includes Design 0.130.0 **(cutting)**: a pocket with a stepover over half its cutter no longer leaves a thin
   strip standing down the middle of a channel.
@@ -579,6 +595,25 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.34.0 — the 3D view is drawn when it changes; the screen stays on during a job in a browser
+- **(machine) The 3D view is drawn when something in it changes,** not 60 times a second whatever happens. Turning,
+  panning, zooming, resizing, the view cube and playback still draw every frame; a job's progress and the tool's
+  position, at most 10 times a second; and once a second regardless. Why: the page that draws the view also feeds
+  the job to the machine. In the soak test on a computer drawing without a graphics card (as an old laptop, a
+  remote-desktop session or a graphics driver the browser won't use does), a 50,000-line job got 20 lines a
+  second of the 83 it needed, the machine waiting with the spindle running about 80% of the time. Now it runs at
+  83 a second, waiting 0.2 s in five minutes. Idle, the view is drawn once a second instead of 60 times.
+- A change is noticed by comparing what's drawn (the camera, and each object's position, visibility, colours and
+  geometry) with what was drawn last, so nothing has to remember to ask for a redraw. Tested (`viewer-draw.test.mjs`;
+  broken on purpose 4 ways, all caught), and in a browser: idle, 1 frame a second; dragging and playback, every
+  frame; a running job's progress, 9 a second; a theme change and a resize drawn within 80 ms.
+- **In a browser, the screen stays on while a job runs** (a screen wake lock), which keeps the computer awake. The
+  browser lets go of it when the tab is hidden, so Control asks again when the tab is back in front, and lets go
+  when the job ends or the machine disconnects. If the browser refuses, the console says to set the computer not to
+  sleep. Not used in the desktop app, which keeps the computer awake itself. (`keep-awake.test.mjs`, 5 tests,
+  broken on purpose 6 ways, all caught.)
+- **The guides** say to keep the computer awake for long jobs, and to turn off Windows' USB power saving.
 
 ### 0.33.0 — Change tool, in the jog panel
 - **Change tool…** in the jog panel, beside Probe…, does what Carbide Motion's Change tool does: the machine lifts

@@ -3,7 +3,7 @@
 // fetch their bundled files (fonts, the tool-database reader) and gives both one shared home for saved
 // data, so Design sees Control's work area and both share the tool library.
 'use strict';
-const { app, BrowserWindow, utilityProcess, MessageChannelMain, dialog, Menu, shell, protocol, net, ipcMain } = require('electron');
+const { app, BrowserWindow, utilityProcess, MessageChannelMain, dialog, Menu, shell, protocol, net, ipcMain, powerSaveBlocker } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
@@ -166,6 +166,11 @@ function openDocs(url) {
 
 // ---- automatic updates (src/updater.js): from GitHub Releases, never during a job, never forced
 const { createUpdater, installability } = require('./updater');
+// 454 Control's own judgement: a job, probe, quick action or jog running, the spindle on, the machine moving
+function machineBusyNow() {
+  return control && !control.isDestroyed()
+    ? control.webContents.executeJavaScript('typeof machineBusy === "function" ? machineBusy() : false', true) : Promise.resolve(false);
+}
 let updater = null;
 function askUser(opts) {
   // tests only: answers given in advance, and every question written down
@@ -190,8 +195,7 @@ function setupUpdates() {
     installable: feed ? { ok: true } : installability({ platform: process.platform, isPackaged: app.isPackaged, execPath: process.execPath,
                                                         env: process.env, fs, path, productName: '454 Workshop' }),
     // 454 Control's own judgement: a job, probe, quick action or jog running, the spindle on, the machine moving
-    isBusy: () => control && !control.isDestroyed()
-      ? control.webContents.executeJavaScript('typeof machineBusy === "function" ? machineBusy() : false', true) : Promise.resolve(false),
+    isBusy: machineBusyNow,
     ask: askUser,
     setProgress: (p) => BrowserWindow.getAllWindows().forEach((w) => { if (!w.isDestroyed()) w.setProgressBar(p); }),
     settingsFile: path.join(app.getPath('userData'), 'updates.json'),
@@ -302,6 +306,9 @@ function testHook() {
     const w = j.win();
     w.webContents.on('console-message', (_e, level, message, line, source) => fs.appendFileSync(j.out + '.console', `[${level}] ${message} (${path.basename(source || '')}:${line})\n`));
     w.webContents.once('did-finish-load', async () => {
+      // P454_E2E_HIDE="after:for" (seconds): hide the window for a while, as when it's minimised (the soak test)
+      const hide = /^(\d+):(\d+)$/.exec(process.env.P454_E2E_HIDE || '');
+      if (hide) setTimeout(() => { w.hide(); setTimeout(() => w.show(), hide[2] * 1000); }, hide[1] * 1000);
       await new Promise((r) => setTimeout(r, 1200));
       let result;
       try { result = await w.webContents.executeJavaScript(fs.readFileSync(j.script, 'utf8')); }
@@ -330,6 +337,11 @@ app.whenReady().then(() => {
   });
   Menu.setApplicationMenu(menu());
   startMachine();
+  // the computer stays awake while the machine is busy (src/keep-awake.js); P454_AWAKE_LOG records it, for tests
+  require('./keep-awake').createKeepAwake(powerSaveBlocker, machineBusyNow, {
+    everyMs: Number(process.env.P454_AWAKE_EVERY_MS) || 10000,
+    log: (m) => { console.log('[awake] ' + m); if (process.env.P454_AWAKE_LOG) fs.appendFileSync(process.env.P454_AWAKE_LOG, m + '\n'); },
+  });
   const testing = testHook();                      // starts any test jobs: call it once
   if (!testing || process.env.P454_UPDATE_FEED) setupUpdates();
   if (!testing) showDesign();                  // Design first; Control opens from the menu (Ctrl+1) or its header button

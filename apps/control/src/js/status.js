@@ -125,6 +125,7 @@ function uiStatus(){
     document.getElementById('jobStatus').textContent =
       'held (' + st + ') at line ' + JOB.lastLn + ' — Resume to continue';
   }
+  keepAwakeCheck();
 }
 
 function uiConn(on){
@@ -140,5 +141,6 @@ function uiConn(on){
     var chipTop = document.getElementById('hdrState');
     chipTop.textContent = 'offline'; chipTop.dataset.s = '';
   }
+  keepAwakeCheck();                                     // disconnected: no more status reports to let it go
 }
 

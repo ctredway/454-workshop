@@ -955,7 +955,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.33.0';
+var CONTROL_VERSION = '0.34.0';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -1567,11 +1567,44 @@ function initThree(){
     requestAnimationFrame(loop);
     tick();
     var w = viewportEl.clientWidth, h = viewportEl.clientHeight;
+    var cam = viewCamSig(w, h), content = viewSig(scene, [scene.background && scene.background.getHex ? scene.background.getHex() : 0]).join(',');
+    var interactive = cam !== VIEWDRAW.cam || !!VIEWANIM || (typeof playing !== 'undefined' && playing && !(typeof JOB !== 'undefined' && JOB.active));
+    if (!viewFrameDue(performance.now(), VIEWDRAW.last, interactive, content !== VIEWDRAW.content)) return;
+    VIEWDRAW.cam = cam; VIEWDRAW.content = content; VIEWDRAW.last = performance.now();
     renderer3.setViewport(0, 0, w, h);
     renderer3.setScissorTest(false);
     renderer3.render(scene, camera);
     renderViewCube(w, h);
   })();
+}
+
+// The 3D view is drawn when it changes, not 60 times a second whatever happens. Drawing a big toolpath is real work,
+// and the page that draws it also feeds the job to the machine: in the soak test (DEVELOPING.md), a PC drawing it
+// without a graphics card fed a 50,000-line job at 20 lines a second of the 83 it needed, the machine waiting with
+// the spindle running. Turning, panning, zooming, resizing, the view cube and playback draw at once, every frame;
+// what changes by itself (a job's progress, the tool's position) at most 10 times a second; and once a second
+// regardless, in case. A change is noticed by comparing what's drawn (the camera, and every object's position,
+// visibility, colours and geometry versions) with what was drawn last, so nothing has to remember to ask for it.
+var VIEWDRAW = {cam: '', content: '', last: -1e9};
+function viewFrameDue(now, last, interactive, changed){
+  if (interactive) return true;
+  if (changed) return now - last >= 100;
+  return now - last >= 1000;
+}
+function viewSig(root, out){
+  root.traverse(function (o) {
+    out.push(o.id, o.visible ? 1 : 0, o.position.x, o.position.y, o.position.z, o.scale.x, o.quaternion.x, o.quaternion.y, o.quaternion.z, o.quaternion.w);
+    var ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    ms.forEach(function (m) { out.push(m.version, m.opacity); if (m.color) out.push(m.color.getHex()); if (m.map) out.push(m.map.id, m.map.version); });
+    var g = o.geometry;
+    if (g && g.attributes){ for (var k in g.attributes) out.push(k, g.attributes[k].version); out.push(g.drawRange.start, g.drawRange.count); }
+  });
+  return out;
+}
+function viewCamSig(w, h){
+  camera.updateMatrixWorld();                          // applyCamera moved it; three.js only works this out when drawing
+  return w + ',' + h + ',' + camera.matrixWorld.elements.join(',') + ',' + camera.projectionMatrix.elements.join(',') +
+         ',' + viewSig(CUBE.scene, []).join(',');
 }
 
 function applyCamera(){
@@ -4057,6 +4090,7 @@ function uiStatus(){
     document.getElementById('jobStatus').textContent =
       'held (' + st + ') at line ' + JOB.lastLn + ' — Resume to continue';
   }
+  keepAwakeCheck();
 }
 
 function uiConn(on){
@@ -4072,8 +4106,37 @@ function uiConn(on){
     var chipTop = document.getElementById('hdrState');
     chipTop.textContent = 'offline'; chipTop.dataset.s = '';
   }
+  keepAwakeCheck();                                     // disconnected: no more status reports to let it go
 }
 
+/* ----- keep the computer awake during a job (in a browser) ----- */
+// A computer that goes to sleep partway through a job stops feeding the machine with the spindle running. In a
+// browser, Control holds a screen wake lock while a job runs, which keeps the screen on and so the computer awake.
+// The browser drops it whenever the tab is hidden, so it's asked for again once the tab is back in front.
+// The desktop app keeps the computer awake itself, whatever the machine is doing (apps/desktop/src/keep-awake.js).
+var WAKE = {lock: null, asking: false, failedAt: -1e9, said: false};
+function keepAwakeCheck(now){
+  if (typeof window !== 'undefined' && window.desktop454) return;
+  if (typeof navigator === 'undefined' || !navigator.wakeLock) return;
+  now = now === undefined ? Date.now() : now;
+  var want = !!JOB.active;
+  if (want && !WAKE.lock && !WAKE.asking && document.visibilityState === 'visible' && now - WAKE.failedAt > 30000){
+    WAKE.asking = true;
+    navigator.wakeLock.request('screen').then(function (l) {
+      WAKE.asking = false;
+      if (!JOB.active){ l.release(); return; }             // the job ended while it was being asked for
+      WAKE.lock = l;
+      l.addEventListener('release', function () { if (WAKE.lock === l) WAKE.lock = null; });
+      if (!WAKE.said){ WAKE.said = true; logC('sys', 'keeping the screen on (and the computer awake) while the job runs'); }
+    }, function (e) {
+      WAKE.asking = false; WAKE.failedAt = Date.now();
+      if (!WAKE.said){ WAKE.said = true; logC('sys', 'couldn’t keep the screen on (' + (e && e.message || e) + '): set the computer not to sleep during long jobs'); }
+    });
+  } else if (!want){
+    if (WAKE.lock){ WAKE.lock.release(); WAKE.lock = null; }
+    WAKE.said = false;                                    // say it again next job
+  }
+}
 /* ---------------- machine profile (persisted) ---------------- */
 var PROFILE = {
   bitSetter:{enabled:false, x:null, y:null},

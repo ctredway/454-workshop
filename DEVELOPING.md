@@ -164,6 +164,45 @@ takes the BitSetter reference, and runs a job that starts with a tool change: it
 The simulator answers a probe move as GRBL does: its [PRB:...] result, then ok; or ALARM:5 alone when it
 finds nothing. `npm run build` compiles it (packages/grbl) with the rest.
 
+## The soak test (long jobs)
+
+`apps/desktop/test/soak.sh` runs one long, dense job (a 3D-finishing-style raster: about 83 short moves a second)
+in the real desktop app against the simulated controller, and records whether the machine was ever left waiting
+with the spindle running (**starvation**: on a real machine, the cutter standing still in the cut), the page's
+memory and responsiveness, and each of the app's processes' memory. It needs `socat` and `xvfb-run`, like the
+end-to-end tests, and the simulator built (`npm run build`).
+
+```sh
+cd apps/desktop
+SOAK_MIN=10 sh test/soak.sh                                     # a 10-minute job, in real time
+SOAK_MIN=60 SOAK_RENDER_FPS=-1 SOAK_SAMPLE=60 sh test/soak.sh   # an hour, the 3D view not drawn
+SOAK_MIN=10 SOAK_FREEZES='[{"at":120,"ms":3000}]' SOAK_HIDE=470:90 sh test/soak.sh   # freeze the page; hide the window
+```
+
+Results go to `/tmp/p454-soak.json` (the page: samples of memory, timer lateness and lines a second),
+`/tmp/p454-soak-sim.json` (the machine: lines received, starvation, errors) and `/tmp/p454-soak-ps.log` (memory
+of each process, every 15 s). `P454_SIM_SPEED` runs the machine faster than real time. On a test computer with no
+graphics card, the 3D view is drawn by the processor and slows everything else, so set `SOAK_RENDER_FPS` (10, or
+-1 for not at all) to stand in for a PC that has one.
+
+First results (17 October 2026, Control 0.33.0, on a cloud computer with 2 processor cores and no graphics card):
+
+- **30 minutes in real time, 3D view not drawn:** 147,000 lines at a steady 83 a second; the machine waited 0.1 s
+  in all. Memory flat: the page's JavaScript about 120 MB throughout, the window's process 320 MB, the machine
+  process 165 MB. The page's size and the console's lines didn't grow.
+- **A frozen page stops the machine almost at once,** with the spindle running: frozen 1 s, the machine waited
+  0.95 s; 3 s, 2.9 s; 10 s, 9.9 s. The job is fed from the page, and the controller holds only about 50 ms of moves.
+- **Drawing the 3D view can starve the machine.** It's redrawn 60 times a second, whatever has changed. Drawn by
+  the processor (no graphics card), a 50,000-line job got 20 lines a second of the 83 it needed; a 1.2-million-line
+  job, 1 or 2. With drawing limited to 10 a second, or off, both ran at full speed.
+- **A very large file is heavy:** 1.2 million lines (35 MB) took about 690 MB of the page's memory, and the page
+  stopped for 8 s while loading it.
+- **Since Control 0.34.0** the 3D view is drawn only when it changes: the 50,000-line job drawn without a graphics
+  card now runs at 83 lines a second, waiting 0.2 s in five minutes. (The 1.2-million-line job drawn that way is
+  still slow: each frame of it takes the processor over a second.)
+- **A hidden (minimised) window kept feeding the job at full speed;** the page's timers slowed to once a second
+  (the position display updates less often), and once ran 31 s late just after the window came back.
+
 ## 454 Design's source
 
 Design's `design.html` is assembled from `apps/design/src` by `node apps/design/build.mjs`, the same way as

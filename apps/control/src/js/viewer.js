@@ -100,11 +100,44 @@ function initThree(){
     requestAnimationFrame(loop);
     tick();
     var w = viewportEl.clientWidth, h = viewportEl.clientHeight;
+    var cam = viewCamSig(w, h), content = viewSig(scene, [scene.background && scene.background.getHex ? scene.background.getHex() : 0]).join(',');
+    var interactive = cam !== VIEWDRAW.cam || !!VIEWANIM || (typeof playing !== 'undefined' && playing && !(typeof JOB !== 'undefined' && JOB.active));
+    if (!viewFrameDue(performance.now(), VIEWDRAW.last, interactive, content !== VIEWDRAW.content)) return;
+    VIEWDRAW.cam = cam; VIEWDRAW.content = content; VIEWDRAW.last = performance.now();
     renderer3.setViewport(0, 0, w, h);
     renderer3.setScissorTest(false);
     renderer3.render(scene, camera);
     renderViewCube(w, h);
   })();
+}
+
+// The 3D view is drawn when it changes, not 60 times a second whatever happens. Drawing a big toolpath is real work,
+// and the page that draws it also feeds the job to the machine: in the soak test (DEVELOPING.md), a PC drawing it
+// without a graphics card fed a 50,000-line job at 20 lines a second of the 83 it needed, the machine waiting with
+// the spindle running. Turning, panning, zooming, resizing, the view cube and playback draw at once, every frame;
+// what changes by itself (a job's progress, the tool's position) at most 10 times a second; and once a second
+// regardless, in case. A change is noticed by comparing what's drawn (the camera, and every object's position,
+// visibility, colours and geometry versions) with what was drawn last, so nothing has to remember to ask for it.
+var VIEWDRAW = {cam: '', content: '', last: -1e9};
+function viewFrameDue(now, last, interactive, changed){
+  if (interactive) return true;
+  if (changed) return now - last >= 100;
+  return now - last >= 1000;
+}
+function viewSig(root, out){
+  root.traverse(function (o) {
+    out.push(o.id, o.visible ? 1 : 0, o.position.x, o.position.y, o.position.z, o.scale.x, o.quaternion.x, o.quaternion.y, o.quaternion.z, o.quaternion.w);
+    var ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    ms.forEach(function (m) { out.push(m.version, m.opacity); if (m.color) out.push(m.color.getHex()); if (m.map) out.push(m.map.id, m.map.version); });
+    var g = o.geometry;
+    if (g && g.attributes){ for (var k in g.attributes) out.push(k, g.attributes[k].version); out.push(g.drawRange.start, g.drawRange.count); }
+  });
+  return out;
+}
+function viewCamSig(w, h){
+  camera.updateMatrixWorld();                          // applyCamera moved it; three.js only works this out when drawing
+  return w + ',' + h + ',' + camera.matrixWorld.elements.join(',') + ',' + camera.projectionMatrix.elements.join(',') +
+         ',' + viewSig(CUBE.scene, []).join(',');
 }
 
 function applyCamera(){
