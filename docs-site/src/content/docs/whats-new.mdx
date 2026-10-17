@@ -12,6 +12,20 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.45
+
+Not released yet
+
+- **(machine) The computer stays awake while the machine is busy:** a job, a probe, a jog or a quick action
+  running, or the spindle on. A computer that went to sleep partway through a job stopped feeding the machine
+  with the spindle running. The screen can still turn off. In a browser, Control keeps the screen on during a job.
+- **(machine) 454 Control's 3D view is drawn only when it changes,** not 60 times a second. On a computer without
+  graphics acceleration, drawing it starved a long job of lines, leaving the machine waiting mid-cut.
+- **Change tool…** in the jog panel, as in Carbide Motion: the machine lifts, stops the spindle, goes to the
+  tool-change position and waits. With a BitSetter, it then measures the new bit and keeps your Z zero.
+- **A tidier Machine tab,** in the order you work: Machine, Set up (Jog & zero, Probe Z, Spindle), Run job, Quick
+  actions. The spindle controls and the console open in windows of their own, and the jog keys stand out.
+
 ## 0.6.2-beta.44
 
 5 October 2026
