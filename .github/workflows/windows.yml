@@ -1,14 +1,18 @@
-# Builds 454 Workshop for Windows on GitHub's own Windows machines.
-#   - Run it by hand: Actions tab > "windows build" > Run workflow. The installer and zip are attached
-#     to the run as an artifact to download.
-#   - Change the version in apps/desktop/package.json and push: the version is tagged (v0.6.3), built, and
-#     drafted as a release with the installer, zip and update files, for you to review and publish. A
-#     version with a suffix (0.6.3-beta.1) is a pre-release, offered only on the Beta update channel.
+# Builds 454 Workshop on GitHub's own machines: the Windows installer and zip on Windows, and the Linux AppImage
+# on Linux. (The file keeps its old name, windows.yml; the workflow is "desktop build".)
+#   - Run it by hand: Actions tab > "desktop build" > Run workflow. The installer, zip and AppImage are
+#     attached to the run as artifacts to download.
+#   - Change the version in apps/desktop/package.json and push: the version is built and drafted as ONE
+#     release with both systems' files and update files, for you to review and publish. A version with a
+#     suffix (0.6.3-beta.1) is a pre-release, offered only on the Beta update channel. A change to this file
+#     builds too, if the version in package.json hasn't been released or drafted yet.
 #   - Pushing a version tag by hand (v0.6.3) does the same, as before. The tag GitHub makes when a draft is
 #     published builds nothing: that release already has its files.
+# Before the AppImage is kept, it runs a real job against the simulated machine (test/e2e-packaged.sh) and
+# Design saves a toolpath; if either fails, nothing is drafted.
 # Built from the repository's own index.html, design.html and docs/. CAM is included only if cam.js and
 # geom.js are in the repository, which they aren't until CAM is released.
-name: windows build
+name: desktop build
 
 on:
   workflow_dispatch:
@@ -16,13 +20,13 @@ on:
     tags: ['v*']
     # a new version in the desktop app's package.json tags itself and builds: no separate tag step
     branches: [main]
-    paths: ['apps/desktop/package.json']
+    paths: ['apps/desktop/package.json', '.github/workflows/windows.yml']
 
 permissions:
   contents: write          # to create the tag, and the draft release
 
 jobs:
-  # Which release this run makes, if any. A pushed tag: that one. A package.json change on main: its version,
+  # Which release this run makes, if any. A pushed tag: that one. A push to main: package.json's version,
   # unless that version already has a tag (released) or a draft (waiting to be published): then nothing is
   # built. By hand (Run workflow): a build to download from the run, with no release.
   #
@@ -144,8 +148,111 @@ jobs:
             apps/desktop/dist/*.blockmap
           if-no-files-found: error
 
-      - name: Draft a release (version tags only)
+  linux:
+    needs: version
+    if: needs.version.outputs.build == 'true'
+    # the oldest Ubuntu GitHub offers: an AppImage runs on Linux systems at least as new as the one it was built on
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/desktop/package-lock.json
+            docs-site/package-lock.json
+
+      - name: Install the tools the job test needs
+        # socat: a pair of virtual serial ports, one for the app and one for the simulated machine;
+        # xvfb: a screen for the app to open its windows on
+        run: sudo apt-get update && sudo apt-get install -y socat xvfb
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the simulated machine (the job test's far end)
+        run: cd ../.. && npm ci && npm run build
+
+      - name: Check the apps' sources
+        run: |
+          cd ../..
+          node apps/control/build.mjs --check || { echo "::error::index.html isn't the current 454 Control: it must match apps/control/src."; exit 1; }
+          node apps/design/build.mjs --check || { echo "::error::design.html isn't the current 454 Design: it must match apps/design/src."; exit 1; }
+
+      - name: Install the docs site (bundled into the app)
+        run: npm ci --prefix ../../docs-site
+
+      - name: Assemble the app's pages
+        run: npm run build:app
+
+      - name: Check the tag matches the app's version (version tags only)
         if: needs.version.outputs.tag != ''
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          app=$(node -p "require('./package.json').version")
+          [ "$app" = "${TAG#v}" ] || { echo "::error::The tag is $TAG but apps/desktop/package.json says $app."; exit 1; }
+
+      - name: Build the AppImage
+        run: npx electron-builder --linux AppImage --x64 --publish never
+
+      - name: Check the update file was made
+        # installed AppImages find a release through latest-linux.yml (beta-linux.yml for a pre-release may
+        # be made instead), which names the AppImage and its checksum
+        run: |
+          files=$(ls dist/latest-linux.yml dist/beta-linux.yml dist/alpha-linux.yml 2>/dev/null || true)
+          [ -n "$files" ] || { echo "::error::No Linux update file (latest-linux.yml, beta-linux.yml or alpha-linux.yml) in dist/."; ls dist; exit 1; }
+          img=$(basename "$(ls dist/*.AppImage | head -1)")
+          for f in $files; do grep -q "$img" "$f" || { echo "::error::$f doesn't name the AppImage ($img)."; exit 1; }; done
+          for f in $files; do echo "Update file OK: $f"; cat "$f"; done
+
+      - name: Run a job through the AppImage, against the simulated machine
+        run: |
+          sh test/e2e-packaged.sh
+          node -e "
+            const fs = require('fs'); let bad = false;
+            for (const [what, f] of [['454 Control ran a job', '/tmp/p454-pk-result.json'], ['454 Design saved a toolpath', '/tmp/p454-pk-design.json']]) {
+              let r = null; try { r = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) {}
+              if (r && r.ok) console.log('OK: ' + what);
+              else { bad = true; console.log('::error::Not done: ' + what + ' (' + (r ? r.error || 'it said not ok' : 'no result: the app may not have started') + ')'); }
+              if (r && r.log) console.log(r.log.join(' / '));
+            }
+            process.exit(bad ? 1 : 0);
+          " || { echo '--- the app:'; tail -50 /tmp/p454-pk-electron.log; echo '--- the simulated machine:'; tail -20 /tmp/p454-pk-bridge.log; exit 1; }
+
+      - name: Attach to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: 454-Workshop-linux
+          path: |
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/latest-linux.yml
+            apps/desktop/dist/beta-linux.yml
+            apps/desktop/dist/alpha-linux.yml
+          if-no-files-found: error
+
+  # One draft for both: each system's job drafting its own would make two drafts, as a draft has no tag for
+  # the other to find. Nothing is drafted unless both builds, and the AppImage's job test, passed.
+  release:
+    needs: [version, windows, linux]
+    if: needs.version.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List what's being released
+        run: ls -la dist
+
+      - name: Draft the release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
@@ -154,11 +261,11 @@ jobs:
           # the commit this build is from: the tag is made there when the draft is published
           target_commitish: ${{ github.sha }}
           prerelease: ${{ contains(needs.version.outputs.tag, '-') }}
-          # latest.yml and the blockmap are how installed copies find and download updates
+          # the update files (latest.yml, latest-linux.yml) and the blockmap are how installed copies find and
+          # download updates
           files: |
-            apps/desktop/dist/*.exe
-            apps/desktop/dist/*.zip
-            apps/desktop/dist/latest.yml
-            apps/desktop/dist/beta.yml
-            apps/desktop/dist/alpha.yml
-            apps/desktop/dist/*.blockmap
+            dist/*.exe
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.yml
+            dist/*.blockmap
