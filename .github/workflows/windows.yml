@@ -177,7 +177,8 @@ jobs:
         run: npm ci
 
       - name: Build the simulated machine (the job test's far end)
-        run: cd ../.. && npm ci && npm run build
+        # --force: build every file, whatever an old build record says is up to date
+        run: cd ../.. && npm ci && npm run build -- --force
 
       - name: Check the apps' sources
         run: |
