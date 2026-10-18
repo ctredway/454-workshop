@@ -1,15 +1,15 @@
 ---
 title: "The desktop app"
-description: "454 Workshop for Windows: installing it, keeping it up to date, and the beta channel."
+description: "454 Workshop for Windows and Linux: installing it, keeping it up to date, and the beta channel."
 ---
 
 import { Steps } from '@astrojs/starlight/components';
 
-The desktop app is 454 Design, 454 Control and these docs in one program for Windows, with no browser
+The desktop app is 454 Design, 454 Control and these docs in one program for Windows and Linux, with no browser
 needed and nothing loaded from the internet. It talks to the machine directly over USB.
 
 :::note
-The desktop app is in testing. **Download for Windows** on the [home page](/) gets the newest version. All of
+The desktop app is in testing. **Download for Windows** (or **for Linux**) on the [home page](/) gets the newest version. All of
 them are on the project's
 <a href="https://github.com/ctredway/454-workshop/releases" target="_blank" rel="noopener">GitHub Releases page<span class="sr-only"> (opens in a new tab)</span></a>,
 newest at the top.
@@ -40,6 +40,37 @@ Windows may warn that the installer is from an unrecognised publisher, because i
 454 Workshop is still running. Then launch it from the **Start menu**: an old pinned shortcut may still
 point at a copy you unzipped earlier. **454 Workshop → About 454 Workshop** shows which version you're
 running.
+
+## Installing on Linux
+
+The Linux version is new. It runs the same jobs as the Windows version against the simulated machine in the
+tests, but few people have tried it at a real machine yet: air-cut first, and tell us how it goes.
+
+It's one file, an **AppImage**, named like `454-Workshop-0.6.2-beta.46-linux-x86_64.AppImage`, for 64-bit Intel
+or AMD computers. It runs on most Linux systems (Ubuntu, Debian, Mint, Fedora and others) without installing
+anything, and **keeps itself up to date**.
+
+<Steps>
+
+1. Download the AppImage from the Releases page (under **Assets**), and put it somewhere it can stay, such as
+   a folder called `Applications` in your home folder. Updates replace the file where it is.
+2. Make it runnable: right-click it, **Properties → Permissions**, and tick **Allow executing file as
+   program**. Or in a terminal: `chmod +x 454-Workshop-*.AppImage`
+3. Let your user use the machine's USB port. On Ubuntu, Debian and Mint, run this once, then log out and back in:
+   `sudo usermod -a -G dialout $USER`  (on Arch, the group is `uucp`; on Fedora, `dialout`). Without it,
+   454 Control says it can't open the port and repeats this command.
+4. Double-click it to start.
+
+</Steps>
+
+:::tip
+**Nothing happens when you double-click it, or it says FUSE is missing?** Newer Ubuntu (22.04 and later) and
+Mint need a small package that AppImages use: `sudo apt install libfuse2t64` on Ubuntu 24.04 and later, or
+`sudo apt install libfuse2` on 22.04. Then try again.
+:::
+
+Your settings, tool library and drawings are kept in `~/.config/454`, separately from the program, so they carry
+over between versions.
 
 ## Updates
 

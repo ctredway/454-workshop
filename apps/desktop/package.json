@@ -1,7 +1,7 @@
 {
   "name": "454-desktop",
   "productName": "454 Workshop",
-  "version": "0.6.2-beta.45",
+  "version": "0.6.2-beta.46",
   "description": "454 Workshop",
   "license": "MIT",
   "main": "src/main.js",
@@ -72,6 +72,7 @@
       "repo": "454-workshop"
     },
     "npmRebuild": false,
-    "artifactName": "454-Workshop-${version}-${os}-${arch}.${ext}"
+    "artifactName": "454-Workshop-${version}-${os}-${arch}.${ext}",
+    "afterPack": "scripts/after-pack.js"
   }
 }

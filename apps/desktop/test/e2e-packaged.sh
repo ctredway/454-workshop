@@ -9,6 +9,6 @@ setsid nohup node test/e2e-bridge.mjs $B $SIM >/tmp/p454-pk-bridge.log 2>&1 < /d
 BRIDGE=$!
 sleep 0.5
 P454_SERIAL_PORTS=$A P454_AUTOPICK=1 P454_E2E=$(pwd)/test/e2e-page.js P454_E2E_OUT=$OUT P454_E2E_DESIGN=$(pwd)/test/e2e-design.js P454_E2E_DESIGN_OUT=$DOUT \
-  timeout 200 xvfb-run -a ./dist/454-0.2.0.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu >/tmp/p454-pk-electron.log 2>&1 || true
+  timeout 200 xvfb-run -a "$(ls -t ./dist/*.AppImage | head -1)" --appimage-extract-and-run --no-sandbox --disable-gpu >/tmp/p454-pk-electron.log 2>&1 || true
 kill -TERM $BRIDGE 2>/dev/null || true; sleep 0.5
 pkill -f "socat pty,raw,echo=0,link=$A" 2>/dev/null || true

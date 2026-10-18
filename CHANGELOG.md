@@ -27,6 +27,28 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.46 — a Linux version
+- **454 Workshop for Linux**, as an AppImage (`454-Workshop-<version>-linux-x86_64.AppImage`, 64-bit Intel and AMD):
+  one file that runs on most Linux systems without installing, and keeps itself up to date like the Windows
+  version. Settings, tools and drawings are kept in `~/.config/454`. New: tried against the simulated machine,
+  not yet at a real one.
+- **The release build makes both.** The workflow (`windows.yml`, now called "desktop build") builds the Windows
+  installer and zip and the Linux AppImage on GitHub's machines, and drafts **one** release with both and their
+  update files (`latest.yml`, `latest-linux.yml`). Before it does, the AppImage runs a real job against the
+  simulated machine and Design saves a toolpath (`test/e2e-packaged.sh`); a failure stops the release.
+- **It starts on Ubuntu 24.04 and later.** There, AppArmor stops an AppImage from using what Chromium's sandbox
+  needs, and an Electron AppImage quits at once ("The SUID sandbox helper binary was found, but is not configured
+  correctly"); the usual advice is to start it with --no-sandbox by hand. The AppImage now starts through a small
+  launcher (`scripts/linux-launcher.sh`, put in place by `scripts/after-pack.js`) that does that only where the
+  sandbox can't work: AppArmor restricting it, user namespaces switched off, or running as root. The app's
+  windows only show its own pages, and links elsewhere open in the web browser. Tested (`linux-launcher.test.mjs`,
+  5 tests, broken on purpose 4 ways, all caught), and for real: run as root with nothing added, the AppImage
+  quit at once before, and ran a job after.
+- **Updates on Linux, tried for real:** an AppImage of version 9.9.1, pointed at a local update server offering
+  9.9.2, found it, downloaded it, replaced its own file with it on Restart to update, and started as 9.9.2.
+- **The guides** say how to install it (make it runnable; the `dialout` group for the USB port; `libfuse2` on
+  newer Ubuntu), and the website offers **Download for Linux** once a published release has an AppImage.
+
 ### 0.6.2-beta.45 — long jobs: the computer stays awake; a tidier Machine tab; Change tool
 - **(machine) The computer stays awake while the machine is busy:** a job, a probe, a jog or a quick action running,
   the spindle on, or the machine moving. A PC that sleeps partway through a job stops feeding the machine with

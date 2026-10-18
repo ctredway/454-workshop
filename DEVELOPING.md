@@ -55,19 +55,30 @@ love for Chevy big blocks.
 MIT, except where a package says otherwise. All of 454 Workshop is free; there is no paid version. See
 `LICENSING.md`.
 
-## Building for Windows on GitHub
+## Building for Windows and Linux on GitHub
 
-The **windows build** workflow (`.github/workflows/windows.yml`) builds the installer and a zip on
-GitHub's Windows machines, from this repository's own `index.html`, `design.html` and `docs/`:
+The **desktop build** workflow (`.github/workflows/windows.yml`; the file keeps its old name) builds the
+Windows installer and a zip on GitHub's Windows machines, and the Linux AppImage on its Linux machines, from
+this repository's own `index.html`, `design.html` and `docs/`. Before the AppImage is kept, it runs a real job
+against the simulated machine (`apps/desktop/test/e2e-packaged.sh`). One job then drafts one release with both
+systems' files: two jobs drafting would make two drafts, as a draft has no tag for the other to find.
 
-- **By hand:** Actions tab, *windows build*, *Run workflow*. The installer and zip are attached to the
-  run as an artifact.
+- **By hand:** Actions tab, *desktop build*, *Run workflow*. The installer, zip and AppImage are attached to
+  the run as artifacts.
 - **For a release:** push a version tag (`git tag v0.5.0 && git push origin v0.5.0`). The same build,
   plus a **draft** release with the files attached, to review and publish.
 
 CAM is included only if `cam.js` and `geom.js` are in the repository; until CAM is released they
 aren't, and the build leaves CAM out (Design opens with it off). The builds aren't code-signed yet, so
 Windows SmartScreen warns on first run ("More info", then "Run anyway").
+
+**On Linux** the AppImage starts through `scripts/linux-launcher.sh` (put in place of the program by
+`scripts/after-pack.js`), which adds `--no-sandbox` only where Chromium's sandbox can't work: Ubuntu 24.04 and
+later (AppArmor), systems with user namespaces off, and root. To build one yourself on Linux:
+`cd apps/desktop && npm run build:app && npx electron-builder --linux AppImage --x64 --publish never`, then
+`sh test/e2e-packaged.sh` runs a job through it. Updates were tried by building two versions with
+`-c.extraMetadata.version=9.9.1` (and 9.9.2), serving the newer one's AppImage and `latest-linux.yml` with
+`python3 -m http.server`, and starting the older with `P454_UPDATE_FEED` set to that server.
 
 ## The docs
 

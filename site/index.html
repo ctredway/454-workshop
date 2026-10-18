@@ -62,6 +62,8 @@
   .btn.primary:hover{background:var(--brand-hi);border-color:var(--brand-hi);color:#0d1822}
   .btn.plain{color:var(--accent)}
   .btn.plain:hover{background:rgba(0,131,255,.12)}
+  .btn[hidden]{display:none}
+  .desk .btn{margin:0 6px 8px 0}
   .note{margin-top:18px;font-size:15px;color:var(--muted)}
   .desk{margin-top:26px;padding-top:18px;border-top:1px solid var(--grid)}
   .desk p{margin:0 0 12px;font-size:16px}
@@ -135,7 +137,7 @@
   "screenshot": ["https://454workshop.com/images/design.png", "https://454workshop.com/images/control.png"],
   "applicationCategory": "DesignApplication",
   "applicationSubCategory": "CNC CAD/CAM and G-code sender",
-  "operatingSystem": "Windows; any computer with Chrome or Edge",
+  "operatingSystem": "Windows, Linux; any computer with Chrome or Edge",
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
   "isAccessibleForFree": true,
   "license": "https://opensource.org/licenses/MIT",
@@ -171,12 +173,14 @@
         <p class="betaNote"><b>This is beta software.</b> It&rsquo;s new, and the toolpaths especially are still
           being tested. Check every job before you cut it. <a href="#beta">What that means</a></p>
         <div class="desk">
-          <p><b>Or get the desktop app for Windows:</b> 454 Design, 454 Control and the docs in one program. It
+          <p><b>Or get the desktop app for Windows or Linux:</b> 454 Design, 454 Control and the docs in one program. It
             connects to the machine over USB, works without an internet connection, and updates itself.</p>
           <a class="btn plain" id="dlBtn" href="https://github.com/ctredway/454-workshop/releases">Download for Windows</a>
+          <a class="btn plain" id="dlLinux" href="docs/desktop-app.html#installing-on-linux" hidden>Download for Linux</a>
           <span class="dlVer" id="dlVer"></span>
           <p class="note">Windows may warn that the installer is from an unrecognised publisher, as it isn&rsquo;t
-            signed yet: choose <b>More info</b>, then <b>Run anyway</b>. <a href="docs/desktop-app.html">Installing
+            signed yet: choose <b>More info</b>, then <b>Run anyway</b>. On Linux it&rsquo;s an AppImage: see
+            <a href="docs/desktop-app.html#installing-on-linux">installing on Linux</a>. <a href="docs/desktop-app.html">Installing
             and updating</a></p>
         </div>
       </div>
@@ -337,7 +341,7 @@
 </footer>
 
 <script>
-// Download for Windows: straight to the newest published release's installer, found on GitHub when the page
+// Download for Windows (and for Linux): straight to the newest published release's installer, found on GitHub when the page
 // opens. Every release is a beta for now, and GitHub's "latest release" link skips those, so it takes the newest
 // published one, beta or not. If GitHub can't be reached, the button stays a link to the Releases page.
 (function () {
@@ -348,6 +352,10 @@
     .then(function (list) {
       var rel = (list || []).filter(function (x) { return !x.draft; })[0];
       if (!rel) return;
+      // the Linux AppImage, once a release has one (the button stays hidden until then)
+      var img = (rel.assets || []).filter(function (a) { return /-linux-x86_64\.AppImage$/i.test(a.name); })[0];
+      var lb = document.getElementById('dlLinux');
+      if (img && lb){ lb.href = img.browser_download_url; lb.hidden = false; }
       var exe = (rel.assets || []).filter(function (a) { return /-win-x64\.exe$/i.test(a.name); })[0];
       if (!exe) return;
       btn.href = exe.browser_download_url;

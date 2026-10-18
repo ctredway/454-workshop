@@ -11,8 +11,8 @@ in `DEVELOPING.md`, `apps/control/README.md`, `apps/design/README.md` and `CHANG
   engine is `cam.js` and `geom.js` beside it.
 - **454 Control**: a GRBL sender (connect, home, jog, probe with BitZero and BitSetter, run jobs). The page is
   `index.html`.
-- **454 Workshop desktop app**: both, plus the docs, in one Electron app for Windows (`apps/desktop`), updating
-  itself from GitHub Releases.
+- **454 Workshop desktop app**: both, plus the docs, in one Electron app for Windows and Linux (an AppImage)
+  (`apps/desktop`), updating itself from GitHub Releases.
 - **Website**: https://454workshop.com, with the docs at /docs (Cloudflare).
 - **Repository**: https://github.com/ctredway/454-workshop (`main`).
 - **Working folder**: `C:\projects\454-workshop`, cloned fresh on 2026-09-29. Two old folders are left over
@@ -41,7 +41,7 @@ part. Correctness beats speed. Prove changes; don't assume them.
 | `packages/grbl/` | a GRBL simulator, for the end-to-end tests |
 | `docs-site/` | the docs (Astro Starlight): `src/content/docs/*.mdx`, screenshots in `src/assets/shots` |
 | `site/` | the website's landing page and `build.js` |
-| `.github/workflows/` | `test.yml` (every push), `windows.yml` (desktop builds and releases) |
+| `.github/workflows/` | `test.yml` (every push), `windows.yml` ("desktop build": Windows and Linux builds, one draft release) |
 
 ## Rules
 
@@ -155,5 +155,8 @@ without a published release looks to them like a newest release with nothing in 
 - **Offered, not done:** publishing beta releases automatically instead of as drafts.
 - **Next restructuring steps:** tests for Control's status parsing, time estimates and recovery; for Design,
   nesting and the geometry operations; the small quirks each README lists from the byte-identical splits.
-- **Later:** code signing (Windows shows a SmartScreen warning), a Linux AppImage release, GitHub Sponsors,
+- **Linux (beta.46):** built and tested against the simulator; not yet tried at a real machine, or on Ubuntu
+  24.04 as a normal user (the launcher's --no-sandbox path was tested as root only). A Raspberry Pi (arm64) build
+  was offered, not done.
+- **Later:** code signing (Windows shows a SmartScreen warning), GitHub Sponsors,
   and seeing the Shapeoko 5.1 Pro connect for real (Control should name it "Shapeoko 5 Pro 4×4, ballscrew Z").
