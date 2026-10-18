@@ -223,9 +223,15 @@ jobs:
               if (r && r.ok) console.log('OK: ' + what);
               else { bad = true; console.log('::error::Not done: ' + what + ' (' + (r ? r.error || 'it said not ok' : 'no result: the app may not have started') + ')'); }
               if (r && r.log) console.log(r.log.join(' / '));
+              if (r && !r.ok) console.log('state: ' + r.state + '\nconsole: ' + JSON.stringify(r.console, null, 1));
             }
             process.exit(bad ? 1 : 0);
-          " || { echo '--- the app:'; tail -50 /tmp/p454-pk-electron.log; echo '--- the simulated machine:'; tail -20 /tmp/p454-pk-bridge.log; exit 1; }
+          " || {
+            # (the AppImage lists every file it unpacks: those lines are left out)
+            echo '--- the app:'; grep -v appimage_extracted_ /tmp/p454-pk-electron.log | tail -80
+            echo '--- the simulated machine:'; cat /tmp/p454-pk-bridge.log
+            echo '--- the routes the app took:'; cat /tmp/p454-pk-result.json.routes 2>/dev/null | tail -20
+            exit 1; }
 
       - name: Attach to this run
         uses: actions/upload-artifact@v4
