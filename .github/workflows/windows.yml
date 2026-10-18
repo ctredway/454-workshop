@@ -5,7 +5,8 @@
 #   - Change the version in apps/desktop/package.json and push: the version is built and drafted as ONE
 #     release with both systems' files and update files, for you to review and publish. A version with a
 #     suffix (0.6.3-beta.1) is a pre-release, offered only on the Beta update channel. A change to this file
-#     builds too, if the version in package.json hasn't been released or drafted yet.
+#     or to the app's own code builds too, if the version in package.json hasn't been released or drafted yet
+#     (so a release whose build failed can be fixed and built again without a new version).
 #   - Pushing a version tag by hand (v0.6.3) does the same, as before. The tag GitHub makes when a draft is
 #     published builds nothing: that release already has its files.
 # Before the AppImage is kept, it runs a real job against the simulated machine (test/e2e-packaged.sh) and
@@ -20,7 +21,7 @@ on:
     tags: ['v*']
     # a new version in the desktop app's package.json tags itself and builds: no separate tag step
     branches: [main]
-    paths: ['apps/desktop/package.json', '.github/workflows/windows.yml']
+    paths: ['apps/desktop/package.json', 'apps/desktop/src/**', 'apps/desktop/scripts/**', '.github/workflows/windows.yml']
 
 permissions:
   contents: write          # to create the tag, and the draft release
