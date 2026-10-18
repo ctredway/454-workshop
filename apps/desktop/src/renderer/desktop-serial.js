@@ -64,7 +64,12 @@
   function pick(ports) {
     return new Promise(function (resolve, reject) {
       if (!ports.length) { reject(new DOMException('No serial ports found. Is the controller plugged in and switched on?', 'NotFoundError')); return; }
-      if (window.desktop454.autopick) { resolve(ports[0]); return; }
+      // tests: the port the test added (P454_SERIAL_PORTS), not a real one the computer happens to have (GitHub's
+      // Linux machines have /dev/ttyS*, listed first)
+      if (window.desktop454.autopick){
+        var testPort = ports.filter(function (p) { return p.manufacturer === 'test port'; })[0];
+        resolve(testPort || ports[0]); return;
+      }
       var box = document.createElement('div');
       box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Choose the machine\u2019s port');
       box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999;font:14px system-ui,sans-serif';
