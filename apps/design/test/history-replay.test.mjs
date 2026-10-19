@@ -19,7 +19,7 @@ function setup() {
   D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 300, h: 200, t: 12, zero: 'top'});
     DOC.layers = [{id: 'L1', name: 'Layer 1', visible: true, locked: false}]; DOC.activeLayer = 'L1';
     DOC.ents = []; DOC.toolpaths = []; DOC.dims = []; DOC.guides = []; DOC.params = []; DOC.tpGroups = []; DOC.images = []; delete DOC.sheets;
-    UNDO = []; REDO = []; SEL = []; UICFG.stockUnits = 'mm'; UICFG.filletType = 'round'; UICFG.filletAllWhich = 'all'; 1`);
+    UNDO = []; REDO = []; SEL = []; HIST_EDITS = []; HIST_EDITS_UNDONE = []; UICFG.stockUnits = 'mm'; UICFG.filletType = 'round'; UICFG.filletAllWhich = 'all'; 1`);
 }
 // a session with the real tools: every kind of step
 function session() {
@@ -228,4 +228,72 @@ test('the History bar: a double-click opens the step’s numbers; Change does it
   assert.ok(D.document.getElementById('histEdit'), 'kept open');
   Array.from(b2.querySelectorAll('button')).find((b) => b.textContent === 'Cancel').dispatchEvent(new D.window.Event('click'));
   assert.equal(D.document.getElementById('histEdit'), null);
+});
+
+const line = () => plain(D.run('histLine().s.map(histJoin)'));
+test('Undo takes back a change to a step, exactly, and Redo puts it back', () => {
+  session();
+  const before = line(), namesBefore = names();
+  D.run(`histEdit(0, {x: 20, y: 20, w: 150, h: 60})`);
+  const after = line(), namesAfter = names();
+  assert.notDeepEqual(after, before);
+  D.run('doUndo(); 1');
+  assert.deepEqual(line(), before);
+  assert.deepEqual(names(), namesBefore);
+  assert.match(D.run('MSG_LOG[0].title'), /Took back the change to .Rectangle./);
+  D.run('doRedo(); 1');
+  assert.deepEqual(line(), after);
+  assert.deepEqual(names(), namesAfter);
+  D.run('doUndo(); 1');
+  assert.deepEqual(line(), before, 'and back again');
+  D.run('doUndo(); 1');
+  assert.equal(D.run('REDO.length'), 1, 'then undo steps back as usual');
+});
+
+test('a step made after a change is undone first; then the change', () => {
+  session();
+  const before = line();
+  D.run(`histEdit(0, {x: 20, y: 20, w: 150, h: 60})`);
+  D.run(`pushUndo(); DOC.ents.push({t: 'circle', cx: 5, cy: 5, r: 2, layer: 'L1'}); persist(); 1`);
+  const n = D.run('UNDO.length');
+  D.run('doUndo(); 1');
+  assert.equal(D.run('UNDO.length'), n - 1, 'the new step');
+  assert.equal(D.run('REDO.length'), 1, 'undone, to redo');
+  assert.equal(D.run('DOC.ents.some(function (e) { return e.t === "circle" && e.r === 2; })'), false);
+  D.run('histGoTo(3); 1');
+  assert.equal(D.run('entBBox(DOC.ents[0]).x1 - entBBox(DOC.ents[0]).x0'), 150, 'the change still made');
+  D.run('histGoTo(UNDO.length + REDO.length - 1); 1');          // back to just before the new step
+  D.run('doUndo(); 1');
+  assert.deepEqual(line(), before, 'then the change');
+});
+
+test('after taking back a change, a new step means Redo doesn’t put it back', () => {
+  session();
+  D.run(`histEdit(0, {x: 20, y: 20, w: 150, h: 60}); doUndo(); pushUndo(); DOC.stock.t = 5; persist(); 1`);
+  const now = line();
+  D.run('doRedo(); 1');
+  assert.deepEqual(line(), now);
+});
+
+test('pieces let go of while a change can still be taken back: taking it back is still exact', () => {
+  session();
+  const before = line();
+  D.run(`histEdit(0, {x: 20, y: 20, w: 150, h: 60})`);
+  const after = line();
+  D.run('HIST_SWEEP_AT = 0; histSweep(); 1');
+  D.run('doUndo(); 1');
+  assert.deepEqual(line(), before);
+  D.run('doRedo(); 1');
+  assert.deepEqual(line(), after);
+});
+
+test('a shape a tool makes before its step is recorded (Fillet corners) keeps its id: a move of it after still finds it', () => {
+  setup();
+  D.run(`pushUndo(); DOC.ents.push({t: 'rect', x: 20, y: 20, w: 100, h: 60, layer: 'L1'}); persist();
+    SEL = [0]; UICFG.filletR = 8; fallOpen(); fallApply();
+    SEL = [0]; selBoxDo('x', 150, {anchor: 'bl', lock: true}); SEL = []; 1`);
+  assert.equal(D.run('UNDO[1].recipe.ids[0] === UNDO[2].recipe.ids[0]'), true, 'the same shape');
+  assert.equal(D.run(`histEdit(0, {x: 20, y: 20, w: 160, h: 60})`), 0);
+  assert.equal(D.run('entBBox(DOC.ents[0]).x0'), 150);
+  assert.equal(D.run('entBBox(DOC.ents[0]).x1'), 310);
 });

@@ -189,3 +189,109 @@ test('saved and opened: a weld done again still gives its shape the same id', ()
   assert.ok(D.run(`!!${byId(ids.weld)}`));
   assert.equal(D.run('DOC.toolpaths[0].ents[0]'), ids.weld);
 });
+
+// the pointer on the drawing, as a mouse moves it: drawing X, Y (1 mm a pixel, zero at 100, 500 on the canvas)
+function pointer(type, x, y, buttons) {
+  D.run(`(function () { var e = new Event(${JSON.stringify(type)}); e.clientX = ${100 + x}; e.clientY = ${500 - y}; e.buttons = ${buttons}; e.button = 0; e.pointerId = 1; cv.dispatchEvent(e); })(); 1`);
+}
+function canvasReady() {
+  D.run(`cv.setPointerCapture = function () {}; cv.getBoundingClientRect = function () { return {left: 0, top: 0, width: 800, height: 600}; };
+    VIEW.scale = 1; VIEW.ox = 100; VIEW.oy = 500; 1`);
+}
+function dragPoint(ent, from, to) {
+  D.run(`setTool('node'); NODE = {ent: ${ent}, drag: null}; 1`);
+  pointer('pointermove', from[0], from[1], 0);
+  pointer('pointerdown', from[0], from[1], 1);
+  pointer('pointermove', (from[0] + to[0]) / 2, (from[1] + to[1]) / 2, 1);
+  pointer('pointermove', to[0], to[1], 1);
+  pointer('pointerup', to[0], to[1], 0);
+  D.run(`setTool('select'); persist(); 1`);
+}
+
+test('a point dragged with the Node tool: the same point, moved as far, after the shape was moved somewhere else; and how far can be changed', () => {
+  setup(); canvasReady();
+  D.run(`pushUndo(); DOC.ents.push({t: 'poly', pts: [[0, 0], [50, 0], [50, 40], [0, 40]], closed: true, layer: 'L1'}); persist();
+    SEL = [0]; selBoxDo('x', 100, {anchor: 'bl', lock: true}); SEL = []; 1`);
+  dragPoint(0, [150, 40], [160, 50]);
+  assert.deepEqual(names(), ['Shape', 'Move', 'Move point 3']);
+  assert.deepEqual(plain(D.run('DOC.ents[0].pts[2]')), [160, 50]);
+  assert.equal(D.run(`histEdit(1, {v: 200})`), 0);
+  assert.deepEqual(plain(D.run('DOC.ents[0].pts')), [[200, 0], [250, 0], [260, 50], [200, 40]]);
+  assert.equal(D.run(`histEdit(2, {dx: 20, dy: 0})`), 0);
+  assert.deepEqual(plain(D.run('DOC.ents[0].pts[2]')), [270, 40]);
+});
+
+test('a point dragged on an outline that has a different number of points by then is red', () => {
+  setup(); canvasReady();
+  D.run(`pushUndo(); DOC.ents.push({t: 'poly', pts: [[0, 0], [50, 0], [50, 40], [0, 40]], closed: true, layer: 'L1'}); persist();
+    VIEW.scale = 3; doFillet({x: 0, y: 0}, 5); VIEW.scale = 1; persist(); 1`);
+  const n = D.run('DOC.ents[0].pts.length');
+  dragPoint(0, [50, 40], [60, 50]);
+  assert.equal(D.run('UNDO[2].recipe.n'), n);
+  assert.equal(D.run(`histEdit(1, {r: 100})`), 2, 'the fillet doesn’t fit, so the outline has 4 points again');
+  assert.match(D.run('histSteps()[2].failed'), /different number of points/);
+});
+
+test('Join done again on lines changed before it; as two pieces if they no longer meet', () => {
+  setup();
+  D.run(`pushUndo(); DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 50, y2: 0, layer: 'L1'}); persist();
+    pushUndo(); DOC.ents.push({t: 'line', x1: 50, y1: 0, x2: 50, y2: 30, layer: 'L1'}); persist();
+    SEL = [0, 1]; doJoin(); persist(); 1`);
+  const joined = D.run('DOC.ents[0]._id');
+  D.run(`SEL = [0]; selBoxDo('x', 100, {anchor: 'bl', lock: true}); SEL = []; 1`);
+  assert.deepEqual(names().slice(0, 4), ['Line', 'Line', 'Join', 'Move']);
+  // both lines longer, still meeting: joined again, the same shape, and still moved
+  assert.equal(D.run(`histEdit(0, {x1: -20, y1: 0, x2: 50, y2: 0})`), 0);
+  assert.equal(D.run(`histEdit(1, {x1: 50, y1: 0, x2: 50, y2: 60})`), 0);
+  assert.equal(D.run('DOC.ents.length'), 1);
+  assert.equal(D.run('DOC.ents[0]._id'), joined);
+  assert.deepEqual(plain(D.run('DOC.ents[0].pts')), [[100, 0], [170, 0], [170, 60]]);
+  // the second line moved away: they don't meet, so Join leaves them as two pieces, as it would if used on them now
+  assert.equal(D.run(`histEdit(1, {x1: 80, y1: 0, x2: 80, y2: 60})`), 0);
+  assert.equal(D.run('DOC.ents.length'), 2);
+});
+
+test('Explode done again on a rectangle made bigger: its lines keep their ids, so a move of one still finds it', () => {
+  setup();
+  D.run(`pushUndo(); DOC.ents.push({t: 'rect', x: 0, y: 0, w: 50, h: 40, layer: 'L1'}); persist();
+    SEL = [0]; doExplode(); persist(); 1`);
+  const top = D.run('DOC.ents.filter(function (e) { return e.t === "line" && e.y1 === 40 && e.y2 === 40; })[0]._id');
+  D.run(`SEL = [DOC.ents.indexOf(entById(${JSON.stringify(top)}))]; selBoxDo('y', 60, {anchor: 'bl', lock: true}); SEL = []; 1`);
+  assert.deepEqual(names(), ['Rectangle', 'Explode', 'Move']);
+  assert.equal(D.run(`histEdit(0, {x: 0, y: 0, w: 80, h: 40})`), 0);
+  const e = plain(D.run(`entById(${JSON.stringify(top)})`));
+  assert.deepEqual([Math.min(e.x1, e.x2), Math.max(e.x1, e.x2), e.y1, e.y2], [0, 80, 60, 60], 'the top line, 80 long now, still moved up to 60');
+});
+
+test('dragging shapes with the Select tool is a Move whose distance can be changed', () => {
+  setup(); canvasReady();
+  D.run(`pushUndo(); DOC.ents.push({t: 'rect', x: 0, y: 0, w: 50, h: 40, layer: 'L1'}); persist(); setTool('select'); SEL = [0]; 1`);
+  pointer('pointermove', 25, 0, 0);                                       // the pointer comes over its edge
+  pointer('pointerdown', 25, 0, 1);
+  pointer('pointermove', 35, 5, 1);
+  pointer('pointermove', 45, 10, 1);
+  pointer('pointerup', 45, 10, 0);
+  D.run('persist(); 1');
+  assert.deepEqual(names(), ['Rectangle', 'Move']);
+  assert.deepEqual(plain(D.run('[DOC.ents[0].x, DOC.ents[0].y]')), [20, 10]);
+  assert.deepEqual(plain(D.run('histEditInfo(histLine(), 1).fields.map(function (f) { return f.value; })')), [20, 10], 'as far as it was dragged');
+  assert.equal(D.run(`histEdit(1, {dx: 5, dy: 0})`), 0);
+  assert.deepEqual(plain(D.run('[DOC.ents[0].x, DOC.ents[0].y]')), [5, 0]);
+});
+
+test('Join that made two outlines: each keeps its id when done again, so a move of the second still moves the second', () => {
+  setup();
+  D.run(`pushUndo(); DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 50, y2: 0, layer: 'L1'}); persist();
+    pushUndo(); DOC.ents.push({t: 'line', x1: 50, y1: 0, x2: 50, y2: 30, layer: 'L1'}); persist();
+    pushUndo(); DOC.ents.push({t: 'line', x1: 0, y1: 100, x2: 50, y2: 100, layer: 'L1'}); persist();
+    pushUndo(); DOC.ents.push({t: 'line', x1: 50, y1: 100, x2: 50, y2: 130, layer: 'L1'}); persist();
+    SEL = [0, 1, 2, 3]; doJoin(); persist(); 1`);
+  assert.equal(D.run('DOC.ents.length'), 2);
+  const upper = D.run('DOC.ents.filter(function (e) { return e.pts[0][1] >= 100 || e.pts[1][1] >= 100; })[0]._id');
+  D.run(`SEL = [DOC.ents.indexOf(entById(${JSON.stringify(upper)}))]; selBoxDo('x', 200, {anchor: 'bl', lock: true}); SEL = []; 1`);
+  assert.equal(D.run(`histEdit(0, {x1: -20, y1: 0, x2: 50, y2: 0})`), 0);
+  const lower = plain(D.run(`DOC.ents.filter(function (e) { return e._id !== ${JSON.stringify(upper)}; })[0].pts`));
+  assert.ok(lower.some((q) => q[0] === -20), 'the lower one is longer, and where it was');
+  const up = plain(D.run(`entById(${JSON.stringify(upper)}).pts`));
+  assert.ok(up.every((q) => q[0] >= 200), 'the upper one still moved');
+});

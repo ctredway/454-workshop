@@ -147,9 +147,11 @@ function doJoin(){
     var merged = mergeWithBridges(SEL.slice());
     if (merged){
       pushUndo('Join');
+      histRecipe({op: 'join', ids: histIdsOf(SEL)});              // done again on the same shapes (history-replay.js)
       var keepEnts = DOC.ents.filter(function(_, i){ return SEL.indexOf(i) < 0; });
       keepEnts.push(merged);
       DOC.ents = keepEnts;
+      histGiveIds();
       SEL = [];
       doJoin.lastMiss = null; doJoin.merged = true;
       return true;
@@ -228,6 +230,7 @@ function doJoin(){
   }
 
   pushUndo('Join');
+  histRecipe({op: 'join', ids: histIdsOf(SEL)});
   var keep = DOC.ents.filter(function(_, i){ return src.indexOf(i) < 0; });
   chains.forEach(function(c){
     var allStraight = c.pts.every(function(pt){ return Math.abs(pt[2] || 0) < 1e-12; });
@@ -236,6 +239,7 @@ function doJoin(){
       : {t:'path', pts:c.pts.map(function(pt){ return [pt[0], pt[1], pt[2] || 0]; }), closed:c.closed});
   });
   DOC.ents = keep;
+  histGiveIds();
   SEL = [];
   return true;
 }
@@ -276,8 +280,10 @@ function doExplode(){
     }
   });
   if (!any) return false;
-  pushUndo();
+  pushUndo('Explode');
+  histRecipe({op: 'explode', ids: histIdsOf(SEL)});
   DOC.ents = DOC.ents.filter(function(_, i){ return !victims[i]; }).concat(out);
+  histGiveIds();
   SEL = [];
   return true;
 }

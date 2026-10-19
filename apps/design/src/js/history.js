@@ -102,6 +102,7 @@ function histSweep(){
     e.p = re(e.p);
     if (e.orig) e.orig = {b: re(e.orig.b), a: re(e.orig.a)};
   });
+  if (typeof histSweepEdits === 'function') histSweepEdits(re);   // the changes to steps that can be undone
   HIST_STR = str; HIST_ID = ids; HIST_KEYOF = {ents: new Map(), toolpaths: new Map()};
   HIST_SWEEP_AT = Math.max(20000, str.length * 2);
 }
@@ -128,7 +129,8 @@ function pushUndo(name, kind){
   HIST_MADE = HIST_MADE.filter(function (id) { return inDoc[id]; });
   histMadeFlush();
   HIST_MADE = later;
-  UNDO.push({p: p, name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null});
+  UNDO.push({p: p, name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null, seq: ++HIST_SEQ});
+  HIST_EDITS_UNDONE = [];                               // a new step: a change to a step that was undone stays undone
   if (UNDO.length > HIST_MAX) UNDO.shift();
   REDO = [];
   histSweep();
@@ -146,10 +148,20 @@ function histGoTo(n){
   histMadeFlush();
   while (UNDO.length > n){ var e = UNDO.pop(); REDO.push(histMoved(e, cur)); cur = e.p; }
   while (UNDO.length < n){ var r = REDO.pop(); UNDO.push(histMoved(r, cur)); cur = r.p; }
+  HIST_EDITS_UNDONE = [];
   docRestore(histJoin(cur)); SEL = []; draw(); persist(); histChanged();
 }
-function doUndo(){ if (UNDO.length) histGoTo(UNDO.length - 1); }
-function doRedo(){ if (REDO.length) histGoTo(UNDO.length + 1); }
+// Undo takes back whichever came last: a step, or a change made to a step on the History bar (history-replay.js).
+// Redo, straight after taking back a change to a step, puts it back.
+function doUndo(){
+  var ed = HIST_EDITS[HIST_EDITS.length - 1], top = UNDO[UNDO.length - 1];
+  if (ed && !(top && top.seq > ed.seq)){ histEditUndo(); return; }
+  if (UNDO.length) histGoTo(UNDO.length - 1);
+}
+function doRedo(){
+  if (HIST_EDITS_UNDONE.length){ histEditRedo(); return; }
+  if (REDO.length) histGoTo(UNDO.length + 1);
+}
 
 /* ---- names: what a step did, from the drawing before and after it */
 function histShapeName(e){

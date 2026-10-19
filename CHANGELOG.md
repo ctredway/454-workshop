@@ -1124,6 +1124,29 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.140.0 — Undo takes back a change to a step; Join, Explode and points moved follow too
+- **Undo takes back a change made to a step on the History bar,** the whole history as it was before it, exactly;
+  Redo straight after puts it back. Undo takes back whichever came last, a step or a change to one. (A change
+  used to be undone only by changing it back.) The last 30 changes can be taken back, while Design is open.
+- **A point dragged with the Node tool** is a step "Move point 3", done again as the same point of the outline moved
+  as far (not to the same place), so it follows the shape if an earlier step moved it. How far can be changed. If
+  the outline has a different number of points by then, it's red: it never moves a point it has to guess at.
+- **Join and Explode** are done again on the same shapes, and the shapes they made keep their ids: a move of one of
+  an exploded rectangle's lines still moves that line after the rectangle is made bigger. Join on lines that no
+  longer meet leaves them as pieces, as Join would used on them now.
+- **Dragging shapes with the Select tool** was already a Move with a distance; now tested with the pointer itself.
+- **Fixed, found in the app:** a rectangle made wider lost the move made after its Fillet corners (red: "A shape it
+  works on is gone"). Fillet corners works out its result before its step is recorded, and the rectangle had no id
+  yet then (ids were given when the next step was recorded), so the filleted shape came out with a new one. Every
+  shape now has its id from the change that made it (persist), so a tool that works ahead keeps it.
+- **Proven:** a change taken back gives exactly the history before it, and put back exactly the one after it, also
+  after pieces are let go of; a step made after a change is taken back first; a new step after taking a change back
+  stops Redo putting it back. A point dragged (with real pointer events) after a move that's then changed; on an
+  outline with a different number of points (red); Join done again on longer lines, into two outlines that keep
+  their ids; Explode's lines keep theirs. Each check was broken on purpose and failed (but one: Join gives its
+  shapes their ids in the drawing's order as it finishes, against code that might ask for one in between, which
+  none does yet, so no test can tell).
+
 ### 0.139.0 — more tools follow a changed step: one-corner fillets, Mirror, Weld, Subtract, Intersect, the handles
 More of the History bar's steps are done again by their tool, on their shapes as they are, instead of from what they
 first changed (which turns red as soon as the shape is different).

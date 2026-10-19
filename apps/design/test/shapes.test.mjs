@@ -103,7 +103,8 @@ test('Ellipse: clicking a corner of its box; a round one is a circle; a flat one
   const xs = e.pts.map((p) => p[0]), ys = e.pts.map((p) => p[1]);
   near(Math.max(...xs), 30, 1e-9, 'reaches the corner across'); near(Math.min(...ys), -10, 1e-9, 'and down');
   click(D, 0, 0); click(D, 10, 10);
-  assert.deepEqual(ents(D)[1], { t: 'circle', cx: 0, cy: 0, r: 10 });
+  const c = ents(D)[1]; delete c._id;                         // (every shape has an id from the change that made it)
+  assert.deepEqual(c, { t: 'circle', cx: 0, cy: 0, r: 10 });
   click(D, 0, 0); click(D, 10, 0);
   assert.equal(ents(D).length, 2, 'no height: nothing made');
 });

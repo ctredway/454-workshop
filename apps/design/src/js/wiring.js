@@ -685,9 +685,15 @@ function wire(){
     if (TOOL === 'node' && NODE && NODE.drag !== null && NODE.drag !== undefined && (e.buttons & 1)){
       var ndEnt = DOC.ents[NODE.ent];
       if (ndEnt && ndEnt.pts && ndEnt.pts[NODE.drag]){
-        if (!NODE.pushed){ pushUndo(); NODE.pushed = true; }
+        if (!NODE.pushed){
+          pushUndo(); NODE.pushed = true;
+          // done again (history-replay.js): the same point of the outline, moved as far
+          NODE.recipe = histRecipe({op: 'node', ids: [entId(ndEnt)], vi: NODE.drag, n: ndEnt.pts.length, dx: 0, dy: 0,
+                                    from: [ndEnt.pts[NODE.drag][0], ndEnt.pts[NODE.drag][1]]});
+        }
         ndEnt.pts[NODE.drag][0] = MOUSE.snap.x;
         ndEnt.pts[NODE.drag][1] = MOUSE.snap.y;
+        if (NODE.recipe){ NODE.recipe.dx = MOUSE.snap.x - NODE.recipe.from[0]; NODE.recipe.dy = MOUSE.snap.y - NODE.recipe.from[1]; }
         ndEnt._tess = null; ndEnt._tess2 = null;
         persist(); draw();
       }
@@ -709,7 +715,7 @@ function wire(){
   cv.addEventListener('pointerup', function(){
     pan = null;
     if (TOOL === 'node' && NODE && NODE.drag !== null && NODE.drag !== undefined){
-      NODE.drag = null; NODE.pushed = false; draw();
+      NODE.drag = null; NODE.pushed = false; NODE.recipe = null; draw();
     }
     if (TOOL === 'select' && DRAW && DRAW.stage === 'xform'){
       var fin = DRAW; DRAW = null;

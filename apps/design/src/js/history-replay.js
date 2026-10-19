@@ -130,6 +130,28 @@ var HIST_OPS = {
       return res.ok ? true : res.title + '.';
     }
   },
+  join: {
+    name: function () { return 'Join'; },
+    fields: function () { return []; },
+    run: function (r, idx) { SEL = idx; return doJoin() ? true : 'Its shapes don\u2019t join up now.'; }
+  },
+  explode: {
+    name: function () { return 'Explode'; },
+    fields: function () { return []; },
+    run: function (r, idx) { SEL = idx; return doExplode() ? true : 'There\u2019s nothing in it to break apart now.'; }
+  },
+  node: {                       // a point dragged with the Node tool: the same point, by its place in the outline, as far
+    name: function (r) { return 'Move point ' + (r.vi + 1); },
+    fields: function () { return [{k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}]; },
+    run: function (r, idx) {
+      var e = DOC.ents[idx[0]];
+      if (!e.pts || (e.t !== 'poly' && e.t !== 'path')) return 'Its shape has no points to move now.';
+      if (e.pts.length !== r.n) return 'Its outline has a different number of points now, so it can\u2019t tell which one to move.';
+      e.pts[r.vi][0] += r.dx; e.pts[r.vi][1] += r.dy;
+      e._tess = null; e._tess2 = null;
+      return true;
+    }
+  },
   filletAll: {
     name: function (r) { return (r.kind === 'dogbone' ? 'Dog-bone corners ' : r.kind === 'tbone' ? 'T-bone corners ' : 'Fillet corners ') + histLen(r.r); },
     fields: function () { return [{k: 'r', label: 'Radius', kind: 'len', min: 0}]; },
@@ -294,16 +316,61 @@ function histEditInfo(L, i){
             s.orig = {b: o.b, a: a};
           }};
 }
+/* ---- taking back a change to a step: the whole line of steps as it was before it (HIST_EDITS), and as it was
+   after it, to put it back (HIST_EDITS_UNDONE). A copy of the line is cheap: its drawings are shared pieces. The
+   last 30 changes. HIST_SEQ orders them among the steps, so that Undo takes back whichever came last. */
+var HIST_EDITS = [], HIST_EDITS_UNDONE = [], HIST_SEQ = 0, HIST_EDITS_MAX = 30;
+function histEntryCopy(e){ var o = {}; for (var k in e) o[k] = e[k]; return o; }
+function histLineCopy(){
+  var cur = histPack();
+  histMadeFlush();
+  return {undo: UNDO.map(histEntryCopy), redo: REDO.map(histEntryCopy), cur: cur};
+}
+function histLinePut(c){
+  UNDO = c.undo.map(histEntryCopy); REDO = c.redo.map(histEntryCopy);
+  docRestore(histJoin(c.cur)); SEL = []; draw(); persist(); histChanged();
+}
+function histEditUndo(){
+  var ed = HIST_EDITS.pop();
+  if (!ed) return;
+  histLinePut(ed.before);
+  HIST_EDITS_UNDONE.push(ed);
+  toast('info', 'Took back the change to \u201c' + ed.name + '\u201d', 'The steps after it are as they were before it. Redo (Ctrl+Y) puts the change back.');
+}
+function histEditRedo(){
+  var ed = HIST_EDITS_UNDONE.pop();
+  if (!ed) return;
+  histLinePut(ed.after);
+  ed.seq = ++HIST_SEQ;
+  HIST_EDITS.push(ed);
+  toast('info', 'Put back the change to \u201c' + ed.name + '\u201d', '');
+}
+// pieces let go of (histSweep): the copies' drawings too
+function histSweepEdits(re){
+  var fix = function (c) {
+    c.cur = re(c.cur);
+    c.undo.concat(c.redo).forEach(function (e) { e.p = re(e.p); if (e.orig) e.orig = {b: re(e.orig.b), a: re(e.orig.a)}; });
+  };
+  HIST_EDITS.concat(HIST_EDITS_UNDONE).forEach(function (ed) { fix(ed.before); fix(ed.after); });
+}
+
 // Change step i (values: {field: value}), and do the steps after it again. Returns how many turned red; or, when
 // there are more than HIST_BUSY_STEPS to do again, a promise of it, done in parts with the Working panel up.
 var HIST_BUSY_STEPS = 40, HIST_BUSY_PART = 25;
 function histEdit(i, values){
   var L = histLine(), info = histEditInfo(L, i);
   if (!info) return -1;
+  var before = histLineCopy(), title = info.title;                  // (before anything changes: to take it back)
   histKeepOrig(L, i);
   info.change(L.steps[i], values);
   L.edited = i;
-  var finish = function (failed) { histSetLine(L); SEL = []; draw(); persist(); histChanged(); return failed; };
+  var finish = function (failed) {
+    histSetLine(L); SEL = []; draw(); persist(); histChanged();
+    HIST_EDITS.push({before: before, after: histLineCopy(), name: title, seq: ++HIST_SEQ});
+    if (HIST_EDITS.length > HIST_EDITS_MAX) HIST_EDITS.shift();
+    HIST_EDITS_UNDONE = [];
+    return failed;
+  };
   if (L.steps.length - i <= HIST_BUSY_STEPS || typeof busyRun !== 'function') return finish(histReplay(L, i));
   var failed = 0, parts = [];
   for (var a = i; a < L.steps.length; a += HIST_BUSY_PART) (function (a) {
@@ -321,7 +388,7 @@ function histEditOpen(i, chip){
     if (st && st.recipe && HIST_OPS[st.recipe.op])
       toast('info', 'Nothing to change in this step', 'It has no numbers of its own. When you change a step before it, it\u2019s done again on its shapes as they are then.');
     else
-      toast('info', 'This step can\u2019t be changed', 'Steps that drew a rectangle, circle, line or text, and fillets, offsets, moves, resizes, rotations and stretches, can be changed. Others can be gone back to, not changed (yet).');
+      toast('info', 'This step can\u2019t be changed', 'Steps that drew a rectangle, circle, line or text, and fillets, offsets, moves, resizes, rotations, stretches and points moved, can be changed. Others can be gone back to, not changed (yet).');
     return;
   }
   histEditClose();
@@ -346,7 +413,7 @@ function histEditOpen(i, chip){
     inputs.push({f: f, inp: inp});
   });
   var note = document.createElement('p'); note.className = 'heNote';
-  note.textContent = 'The steps after it are done again. Any that can’t be turn red and are skipped.';
+  note.textContent = 'The steps after it are done again. Any that can\u2019t be turn red and are skipped. Undo (Ctrl+Z) takes the change back.';
   box.appendChild(note);
   var btns = document.createElement('div'); btns.className = 'mirBtns';
   var cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel';
