@@ -1124,6 +1124,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.141.0 — Trim and Extend follow a changed step
+- **Trim** is done again on the same shape, at the same place on it (where it was clicked, as a place on the shape's
+  box, so the same side of a rectangle made wider), between whatever crosses it now: move the line it was trimmed
+  against, and it's trimmed to where the line is. Nothing crossing there any more: red ("Nothing crosses it there
+  now, so there's no piece to trim."), and the shape is left whole.
+- **Extend** is done again on the same end of the same shape, to whatever it reaches now; red if nothing.
+- Trim and Extend can be given the shape to work on (the History bar does), instead of picking the one under the
+  click.
+- **Proven:** trimmed to a cutting line that moved, red when it moved clear, the same side of a rectangle made
+  wider, extended to a boundary that moved, red when it's no longer in the way. Each check was broken on purpose and
+  failed, but one: the click's place kept still instead of on the shape's box trims the same piece in these tests too,
+  since Trim takes the piece nearest the click.
+
 ### 0.140.0 — Undo takes back a change to a step; Join, Explode and points moved follow too
 - **Undo takes back a change made to a step on the History bar,** the whole history as it was before it, exactly;
   Redo straight after puts it back. Undo takes back whichever came last, a step or a change to one. (A change

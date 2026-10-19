@@ -240,14 +240,16 @@ function toolClick(w, snap){
       toast('info', 'Ungroup it first', 'That shape is part of a group. Select the group and press Ungroup (Ctrl+Shift+G), then trim the piece you want.');
       return;
     }
-    if (doTrim(w)){ persist(); stagePrompt('trim0'); }
+    var trAt = histClickAt(trHit, w);
+    if (doTrim(w)){ histRecipe(trAt && {op: 'trim', ids: [trAt.id], at: trAt.at}); persist(); stagePrompt('trim0'); }
     else {
       stagePrompt('editMiss');
       toast('warn', 'Nothing to trim there', 'Trim cuts where another shape crosses this one. Nothing crosses at that spot, so there is no piece to remove.');
     }
   }
   else if (TOOL === 'extend'){
-    if (doExtend(w)){ persist(); stagePrompt('extend0'); }
+    var exAt = histClickAt(pickEntity(w), w);
+    if (doExtend(w)){ histRecipe(exAt && {op: 'extend', ids: [exAt.id], at: exAt.at}); persist(); stagePrompt('extend0'); }
     else {
       stagePrompt('editMiss');
       toast('warn', 'Nothing to extend to', 'Extend runs a line or arc out to the next shape it would meet. Nothing lies ahead of that end.');

@@ -295,3 +295,41 @@ test('Join that made two outlines: each keeps its id when done again, so a move 
   const up = plain(D.run(`entById(${JSON.stringify(upper)}).pts`));
   assert.ok(up.every((q) => q[0] >= 200), 'the upper one still moved');
 });
+
+test('Trim, done again against a cutting line that has moved: the same side is trimmed, to where it crosses now; red if nothing does', () => {
+  setup();
+  D.run(`pushUndo(); DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 100, y2: 0, layer: 'L1'}); persist();
+    pushUndo(); DOC.ents.push({t: 'line', x1: 60, y1: -20, x2: 60, y2: 20, layer: 'L1'}); persist();
+    setTool('trim'); toolClick({x: 90, y: 0}, {x: 90, y: 0}); setTool('select'); 1`);
+  assert.deepEqual(names(), ['Line', 'Line', 'Trim']);
+  const piece = () => plain(D.run('DOC.ents.filter(function (e) { return e.y1 === 0 && e.y2 === 0; }).map(function (e) { return [e.x1, e.x2]; })'));
+  assert.deepEqual(piece(), [[0, 60]]);
+  assert.equal(D.run(`histEdit(1, {x1: 40, y1: -20, x2: 40, y2: 20})`), 0);
+  assert.deepEqual(piece(), [[0, 40]], 'trimmed to the cutter where it is now');
+  assert.equal(D.run(`histEdit(1, {x1: 140, y1: -20, x2: 140, y2: 20})`), 1, 'nothing crosses it now');
+  assert.match(D.run('histSteps()[2].failed'), /no piece to trim/);
+  assert.deepEqual(piece(), [[0, 100]], 'left whole');
+});
+
+test('Trim, done again on a rectangle made wider: the same side of it is trimmed', () => {
+  setup();
+  D.run(`pushUndo(); DOC.ents.push({t: 'rect', x: 0, y: 0, w: 100, h: 40, layer: 'L1'}); persist();
+    pushUndo(); DOC.ents.push({t: 'line', x1: 60, y1: -20, x2: 60, y2: 60, layer: 'L1'}); persist();
+    setTool('trim'); toolClick({x: 100, y: 20}, {x: 100, y: 20}); setTool('select'); 1`);
+  assert.equal(D.run(`histEdit(0, {x: 0, y: 0, w: 150, h: 40})`), 0);
+  const xs = plain(D.run('DOC.ents.filter(function (e) { return e.t !== "line"; })[0].pts.map(function (q) { return q[0]; })'));
+  assert.ok(Math.max(...xs) <= 60 + 1e-9, 'the right-hand part, now 90 long, trimmed away at the line');
+});
+
+test('Extend, done again to a boundary that has moved; red if there’s nothing to reach', () => {
+  setup();
+  D.run(`pushUndo(); DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 50, y2: 0, layer: 'L1'}); persist();
+    pushUndo(); DOC.ents.push({t: 'line', x1: 80, y1: -20, x2: 80, y2: 20, layer: 'L1'}); persist();
+    setTool('extend'); toolClick({x: 45, y: 0}, {x: 45, y: 0}); setTool('select'); 1`);
+  assert.deepEqual(names(), ['Line', 'Line', 'Extend']);
+  assert.equal(D.run('DOC.ents[0].x2'), 80);
+  assert.equal(D.run(`histEdit(1, {x1: 120, y1: -20, x2: 120, y2: 20})`), 0);
+  assert.equal(D.run('DOC.ents[0].x2'), 120);
+  assert.equal(D.run(`histEdit(1, {x1: 120, y1: 10, x2: 120, y2: 20})`), 1, 'it no longer reaches across the line’s path');
+  assert.match(D.run('histSteps()[2].failed'), /nothing for it to reach/);
+});

@@ -1,6 +1,8 @@
 /* ---------------- edit ops: trim / extend / fillet ---------------- */
-function doTrim(w){
-  var idx = pickEntity(w);
+// w: where it was clicked. at (optional): the shape, by its place in the drawing, when it's already known (the History
+// bar doing the step again, history-replay.js); otherwise the one under the click.
+function doTrim(w, at){
+  var idx = at !== undefined ? at : pickEntity(w);
   if (idx === null) return false;
   var e = DOC.ents[idx];
   if (e.t === 'line'){
@@ -188,8 +190,8 @@ function trimPathEntity(idx, w, as){
   DOC.ents.splice.apply(DOC.ents, [idx,1].concat(newEnts));
   return true;
 }
-function doExtend(w){
-  var idx = pickEntity(w);
+function doExtend(w, at){
+  var idx = at !== undefined ? at : pickEntity(w);
   if (idx === null) return false;
   var e = DOC.ents[idx];
   if (e.t === 'line'){

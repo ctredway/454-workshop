@@ -1279,7 +1279,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.140.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.141.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -2934,6 +2934,11 @@ function histFrac(b, x, y){
   var w = b.x1 - b.x0, h = b.y1 - b.y0;
   return {fx: w > 1e-9 ? (x - b.x0) / w : 0.5, fy: h > 1e-9 ? (y - b.y0) / h : 0.5};
 }
+// where a shape was clicked, as a place on its box (so the same place on it when it's bigger or moved), and its id
+function histClickAt(i, w){
+  var e = i !== null && i !== undefined ? DOC.ents[i] : null, b = e && entBBox(e);
+  return b ? {id: entId(e), at: histFrac(b, w.x, w.y)} : null;
+}
 function histFromFrac(b, f){ return {x: b.x0 + f.fx * (b.x1 - b.x0), y: b.y0 + f.fy * (b.y1 - b.y0)}; }
 var HIST_SELBOX_LABEL = {x: 'X', y: 'Y', w: 'Width', h: 'Height', r: 'Angle'};
 var HIST_OPS = {
@@ -3038,6 +3043,22 @@ var HIST_OPS = {
       e.pts[r.vi][0] += r.dx; e.pts[r.vi][1] += r.dy;
       e._tess = null; e._tess2 = null;
       return true;
+    }
+  },
+  trim: {                       // the piece of the shape where it was clicked, between whatever crosses it now
+    name: function () { return 'Trim'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      var b = entBBox(DOC.ents[idx[0]]);
+      return b && doTrim(histFromFrac(b, r.at), idx[0]) ? true : 'Nothing crosses it there now, so there\u2019s no piece to trim.';
+    }
+  },
+  extend: {                     // the end nearer where it was clicked, to whatever it reaches now
+    name: function () { return 'Extend'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      var b = entBBox(DOC.ents[idx[0]]);
+      return b && doExtend(histFromFrac(b, r.at), idx[0]) ? true : 'There\u2019s nothing for it to reach now.';
     }
   },
   filletAll: {
@@ -3973,14 +3994,16 @@ function toolClick(w, snap){
       toast('info', 'Ungroup it first', 'That shape is part of a group. Select the group and press Ungroup (Ctrl+Shift+G), then trim the piece you want.');
       return;
     }
-    if (doTrim(w)){ persist(); stagePrompt('trim0'); }
+    var trAt = histClickAt(trHit, w);
+    if (doTrim(w)){ histRecipe(trAt && {op: 'trim', ids: [trAt.id], at: trAt.at}); persist(); stagePrompt('trim0'); }
     else {
       stagePrompt('editMiss');
       toast('warn', 'Nothing to trim there', 'Trim cuts where another shape crosses this one. Nothing crosses at that spot, so there is no piece to remove.');
     }
   }
   else if (TOOL === 'extend'){
-    if (doExtend(w)){ persist(); stagePrompt('extend0'); }
+    var exAt = histClickAt(pickEntity(w), w);
+    if (doExtend(w)){ histRecipe(exAt && {op: 'extend', ids: [exAt.id], at: exAt.at}); persist(); stagePrompt('extend0'); }
     else {
       stagePrompt('editMiss');
       toast('warn', 'Nothing to extend to', 'Extend runs a line or arc out to the next shape it would meet. Nothing lies ahead of that end.');
@@ -14689,8 +14712,10 @@ function arcPtAt(e, sp){ // point at sweep-param sp
 }
 
 /* ---------------- edit ops: trim / extend / fillet ---------------- */
-function doTrim(w){
-  var idx = pickEntity(w);
+// w: where it was clicked. at (optional): the shape, by its place in the drawing, when it's already known (the History
+// bar doing the step again, history-replay.js); otherwise the one under the click.
+function doTrim(w, at){
+  var idx = at !== undefined ? at : pickEntity(w);
   if (idx === null) return false;
   var e = DOC.ents[idx];
   if (e.t === 'line'){
@@ -14878,8 +14903,8 @@ function trimPathEntity(idx, w, as){
   DOC.ents.splice.apply(DOC.ents, [idx,1].concat(newEnts));
   return true;
 }
-function doExtend(w){
-  var idx = pickEntity(w);
+function doExtend(w, at){
+  var idx = at !== undefined ? at : pickEntity(w);
   if (idx === null) return false;
   var e = DOC.ents[idx];
   if (e.t === 'line'){

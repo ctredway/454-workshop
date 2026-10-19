@@ -46,6 +46,11 @@ function histFrac(b, x, y){
   var w = b.x1 - b.x0, h = b.y1 - b.y0;
   return {fx: w > 1e-9 ? (x - b.x0) / w : 0.5, fy: h > 1e-9 ? (y - b.y0) / h : 0.5};
 }
+// where a shape was clicked, as a place on its box (so the same place on it when it's bigger or moved), and its id
+function histClickAt(i, w){
+  var e = i !== null && i !== undefined ? DOC.ents[i] : null, b = e && entBBox(e);
+  return b ? {id: entId(e), at: histFrac(b, w.x, w.y)} : null;
+}
 function histFromFrac(b, f){ return {x: b.x0 + f.fx * (b.x1 - b.x0), y: b.y0 + f.fy * (b.y1 - b.y0)}; }
 var HIST_SELBOX_LABEL = {x: 'X', y: 'Y', w: 'Width', h: 'Height', r: 'Angle'};
 var HIST_OPS = {
@@ -150,6 +155,22 @@ var HIST_OPS = {
       e.pts[r.vi][0] += r.dx; e.pts[r.vi][1] += r.dy;
       e._tess = null; e._tess2 = null;
       return true;
+    }
+  },
+  trim: {                       // the piece of the shape where it was clicked, between whatever crosses it now
+    name: function () { return 'Trim'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      var b = entBBox(DOC.ents[idx[0]]);
+      return b && doTrim(histFromFrac(b, r.at), idx[0]) ? true : 'Nothing crosses it there now, so there\u2019s no piece to trim.';
+    }
+  },
+  extend: {                     // the end nearer where it was clicked, to whatever it reaches now
+    name: function () { return 'Extend'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      var b = entBBox(DOC.ents[idx[0]]);
+      return b && doExtend(histFromFrac(b, r.at), idx[0]) ? true : 'There\u2019s nothing for it to reach now.';
     }
   },
   filletAll: {

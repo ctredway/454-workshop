@@ -235,8 +235,10 @@ How the steps after it are done again:
   tool,** on the shapes they worked on, as those shapes are now. Make a rectangle wider and its rounded corners are
   rounded again at the new size; an offset or a mirror copy of it follows it; a weld it was part of is welded
   again; a move still moves it by the same amount. The shapes a step made keep their identity, so the steps after
-  it still find them, and toolpaths cut the shapes as they now are. Mirror, Weld, Join and Explode have no numbers
-  of their own, but follow the steps before them.
+  it still find them, and toolpaths cut the shapes as they now are. Mirror, Weld, Join, Explode, Trim and Extend
+  have no numbers of their own, but follow the steps before them: Trim cuts the same part of the shape (the same
+  side of it, if it's grown) where whatever crosses it crosses it now, and Extend reaches whatever is in its way
+  now.
 - **A rounded corner, or a point moved, is the same one of the outline,** counted round it. If the outline has a
   different number of corners or points by then, the step is red rather than changing the wrong one. A point moved
   is moved as far as it was, from wherever the shape now is.
