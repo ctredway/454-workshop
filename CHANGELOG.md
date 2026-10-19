@@ -1136,6 +1136,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.142.1 — the History bar as icons
+Clint: "instead of text for the history items, we should use icons, and make the text the hover state. Using icons
+takes up less room than text."
+- **Each step is its tool's icon**, the same as its button in the tools (Fillet corners, Offset, Weld, Mirror, a
+  rectangle, a circle, text), with a few added where there's no button: a move, a resize, a deletion, a toolpath,
+  layers, a picture, a change made by hand (a pencil). Named steps take theirs from their name ("Opened…": Open),
+  and the rest from what they changed (a circle added: the circle).
+- **The name shows at once over the bar on hover or keyboard focus,** with when it was made, why it was skipped if
+  it's red, and what a click and a double-click do. Screen readers read the name (aria-label).
+- The bar is as wide as its steps (it used to span the drawing), so it covers less of it; Start is an icon too.
+  A red step is red (no longer crossed out); a step that opened or started a drawing is ringed.
+
 ### 0.142.0 — a new drawing, a new history
 Clint: "if the document is reset, the history should be cleared as well."
 - **New, Open, Recover, opening a Carbide Create project, and Don't save on closing start a new history.** The steps

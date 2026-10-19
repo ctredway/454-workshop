@@ -202,7 +202,7 @@ test('and when that’s done in parts with the Working panel up, too', async () 
 test('the History bar: a double-click opens the step’s numbers; Change does it; a step that can’t be changed says so', () => {
   session();
   D.run('histRender(); 1');
-  const chip = (name) => Array.from(D.document.querySelectorAll('#histSteps .hStep')).find((b) => b.textContent === name);
+  const chip = (name) => Array.from(D.document.querySelectorAll('#histSteps .hStep')).find((b) => b.getAttribute('aria-label') === name);
   // the second click of a double-click: on the button the first click's redraw put there
   let last = null;
   const dbl = () => chip(last).dispatchEvent(new D.window.Event('click'));

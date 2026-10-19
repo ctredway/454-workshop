@@ -210,35 +210,70 @@ function histPair(d, idOf){
   for (var id in gone) out.removed.push(gone[id]);
   return out;
 }
-function histAutoName(a, b){
-  var at = function (p, k) { return p[HIST_KEYS.indexOf(k)]; }, said = [];
+function histAutoName(a, b){ return histAuto(a, b).name; }
+// What a step did, from the drawing before and after it: {name, icon} (the icon a key of ICON or HIST_ICON).
+function histAuto(a, b){
+  var at = function (p, k) { return p[HIST_KEYS.indexOf(k)]; }, said = [], icons = [];
+  var say = function (n, ic) { said.push(n); icons.push(ic || 'changed'); };
   var s = histPair(histListDiff(at(a, 'ents'), at(b, 'ents')), function (o) { return o._id; });
   var one = function (list, verb) { return list.length === 1 ? verb + histLower(histShapeName(list[0])) : verb + list.length + ' shapes'; };
-  if (s.added.length && !s.removed.length && !s.changed.length) said.push(s.added.length === 1 ? histShapeName(s.added[0]) : 'Added ' + s.added.length + ' shapes');
-  else if (s.removed.length && !s.added.length && !s.changed.length) said.push(one(s.removed, 'Deleted '));
-  else if (s.changed.length && !s.added.length && !s.removed.length) said.push(one(s.changed, 'Changed '));
+  if (s.added.length && !s.removed.length && !s.changed.length)
+    say(s.added.length === 1 ? histShapeName(s.added[0]) : 'Added ' + s.added.length + ' shapes', s.added.length === 1 ? histShapeIcon(s.added[0]) : 'copy');
+  else if (s.removed.length && !s.added.length && !s.changed.length) say(one(s.removed, 'Deleted '), 'trash');
+  else if (s.changed.length && !s.added.length && !s.removed.length) say(one(s.changed, 'Changed '));
   else if (s.added.length || s.removed.length || s.changed.length){
     var many = Math.max(s.added.length + s.changed.length, s.removed.length + s.changed.length);
-    said.push(many === 1 ? 'Changed ' + histLower(histShapeName((s.changed.concat(s.added))[0])) : 'Changed ' + many + ' shapes');
+    say(many === 1 ? 'Changed ' + histLower(histShapeName((s.changed.concat(s.added))[0])) : 'Changed ' + many + ' shapes');
   }
-  else if (histListDiff(at(a, 'ents'), at(b, 'ents')).moved) said.push('Shape order');
+  else if (histListDiff(at(a, 'ents'), at(b, 'ents')).moved) say('Shape order');
   var t = histPair(histListDiff(at(a, 'toolpaths'), at(b, 'toolpaths')), function (o) { return o.id; });
   var tn = function (o) { return o && o.name ? o.name : 'toolpath'; };
-  if (t.added.length === 1 && !t.removed.length && !t.changed.length) said.push('Toolpath ' + tn(t.added[0]));
-  else if (t.removed.length === 1 && !t.added.length && !t.changed.length) said.push('Deleted ' + tn(t.removed[0]));
-  else if (t.changed.length === 1 && !t.added.length && !t.removed.length) said.push('Edited ' + tn(t.changed[0]));
-  else if (t.added.length || t.removed.length || t.changed.length) said.push('Toolpaths');
-  else if (histListDiff(at(a, 'toolpaths'), at(b, 'toolpaths')).moved) said.push('Toolpath order');
-  var other = [['dims', 'Dimensions'], ['guides', 'Guide lines'], ['params', 'Parameters'], ['stock', 'Material'], ['sheets', 'Sheets'],
-               ['layers', 'Layers'], ['activeLayer', 'Layers'], ['images', 'Pictures'], ['tpGroups', 'Toolpath groups'], ['vcConverted', 'Toolpaths']];
+  if (t.added.length === 1 && !t.removed.length && !t.changed.length) say('Toolpath ' + tn(t.added[0]), 'toolpath');
+  else if (t.removed.length === 1 && !t.added.length && !t.changed.length) say('Deleted ' + tn(t.removed[0]), 'trash');
+  else if (t.changed.length === 1 && !t.added.length && !t.removed.length) say('Edited ' + tn(t.changed[0]), 'toolpath');
+  else if (t.added.length || t.removed.length || t.changed.length) say('Toolpaths', 'toolpath');
+  else if (histListDiff(at(a, 'toolpaths'), at(b, 'toolpaths')).moved) say('Toolpath order', 'toolpath');
+  var other = [['dims', 'Dimensions', 'dim'], ['guides', 'Guide lines', 'guide'], ['params', 'Parameters', 'params'], ['stock', 'Material', 'mach'],
+               ['sheets', 'Sheets', 'layers'], ['layers', 'Layers', 'layers'], ['activeLayer', 'Layers', 'layers'], ['images', 'Pictures', 'image'],
+               ['tpGroups', 'Toolpath groups', 'toolpath'], ['vcConverted', 'Toolpaths', 'toolpath']];
   other.forEach(function (o) {
     var x = at(a, o[0]), y = at(b, o[0]);
     var same = Array.isArray(x) && Array.isArray(y) ? x.length === y.length && x.every(function (j, i) { return j === y[i]; }) : x === y;
-    if (!same && said.indexOf(o[1]) < 0) said.push(o[1]);
+    if (!same && said.indexOf(o[1]) < 0) say(o[1], o[2]);
   });
-  if (!said.length) return 'No change';
-  return said.length > 2 ? said.slice(0, 2).join(', ') + '…' : said.join(', ');
+  if (!said.length) return {name: 'No change', icon: 'dot'};
+  return {name: said.length > 2 ? said.slice(0, 2).join(', ') + '\u2026' : said.join(', '), icon: icons[0]};
 }
+// the icon for a shape a step added: its tool's
+function histShapeIcon(e){
+  return {rect: 'rect', circle: 'circ', line: 'line', arc: 'arc', path: 'curves', text: 'text', group: 'group'}[e && e.t] ||
+         (e && e.t === 'poly' ? (e.closed ? 'polygon' : 'poly') : 'changed');
+}
+// The icons the toolbar hasn't got, in its style (ICON, move.js, has the rest).
+var HIST_ICON = {
+  move: '<svg viewBox="0 0 18 18"><path d="M9 2v14M2 9h14"/><path d="M7 4l2-2 2 2M7 14l2 2 2-2M4 7l-2 2 2 2M14 7l2 2-2 2"/></svg>',
+  resize: '<svg viewBox="0 0 18 18"><rect x="2.5" y="8.5" width="7" height="7"/><path d="M9 3h6v6M15 3l-6 6"/></svg>',
+  trash: '<svg viewBox="0 0 18 18"><path d="M3 5h12M7 5V3h4v2M4.5 5l1 10.5h7l1-10.5M7.5 8v5M10.5 8v5"/></svg>',
+  toolpath: '<svg viewBox="0 0 18 18"><path d="M7 2h4v5.5L9 16 7 7.5z"/><path d="M7 4.5l4 1.5M7 7.5l3.5-1.2"/></svg>',
+  layers: '<svg viewBox="0 0 18 18"><path d="M9 3l7 3.5-7 3.5-7-3.5z"/><path d="M2 10.5l7 3.5 7-3.5"/></svg>',
+  image: '<svg viewBox="0 0 18 18"><rect x="2" y="3" width="14" height="12" rx="1"/><circle cx="6.5" cy="7" r="1.3"/><path d="M3 14l4.5-4 3 2.5 2.5-2 3 3"/></svg>',
+  changed: '<svg viewBox="0 0 18 18"><path d="M3 15l1-4 8-8 3 3-8 8z"/><path d="M10.5 4.5l3 3"/></svg>',
+  start: '<svg viewBox="0 0 18 18"><path d="M4 3v12"/><path d="M14 4L7 9l7 5z"/></svg>',
+  dot: '<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="2"/></svg>'
+};
+// A named step's icon, by what its name starts with (the tools name their steps: Fillet 6 mm, Opened shelf.454.json).
+var HIST_NAME_ICON = [['Opened', 'load'], ['New drawing', 'neu'], ['Recovered', 'recover'], ['Import', 'import'], ['Paste', 'copy'],
+  ['Duplicate', 'copy'], ['Align', 'aLeft'], ['Space evenly', 'aDistH'], ['Flip', 'flipH'], ['Nest', 'nest'], ['Trace image', 'image'],
+  ['Text on curve', 'textCurve'], ['Inlay wizard', 'toolpath'], ['Make editable', 'toolpath'], ['Template', 'toolpath'], ['Fix shapes', 'node'],
+  ['Fillet corners', 'filletall'], ['Dog-bone corners', 'filletall'], ['T-bone corners', 'filletall'], ['Fillet', 'fillet'], ['Dog-bone', 'fillet'],
+  ['T-bone', 'fillet'], ['Weld', 'weld'], ['Subtract', 'subtract'], ['Intersect', 'intersect'], ['Join', 'join'], ['Explode', 'expl'],
+  ['Mirror', 'mirror'], ['Offset', 'offs'], ['Move point', 'node'], ['Move', 'move'], ['Resize', 'resize'], ['Scale', 'resize'],
+  ['Stretch', 'resize'], ['Rotate', 'rotate'], ['Trim', 'trim'], ['Extend', 'extend']];
+function histNameIcon(name){
+  for (var i = 0; i < HIST_NAME_ICON.length; i++) if (name.indexOf(HIST_NAME_ICON[i][0]) === 0) return HIST_NAME_ICON[i][1];
+  return null;
+}
+function histIconSvg(key){ return HIST_ICON[key] || (typeof ICON !== 'undefined' && ICON[key]) || HIST_ICON.changed; }
 
 /* ---- the whole line of steps: s, the drawings (s[i] before step i, s[i + 1] after it); steps, each step's record
    ({name, at, kind, recipe, orig, failed}); n, how many are done (s[n] is the drawing as it is) */
@@ -267,7 +302,8 @@ function histSteps(){
     // unnamed: named by its recipe (a handle drag's, once it's moved), or for what it changed
     var op = e.recipe && typeof HIST_OPS !== 'undefined' && HIST_OPS[e.recipe.op];
     var named = e.name || (op && (e.recipe.op !== 'xform' || e.recipe.kind) ? op.name(e.recipe) : null);
-    return {name: named || histAutoName(o.b, o.a), at: e.at, kind: e.kind, n: i + 1, done: i < L.n,
+    var auto = named ? null : histAuto(o.b, o.a);
+    return {name: named || auto.name, icon: (named && histNameIcon(named)) || (auto && auto.icon) || 'changed', at: e.at, kind: e.kind, n: i + 1, done: i < L.n,
             failed: e.failed || null, i: i};
   });
 }
@@ -387,22 +423,26 @@ function histRender(){
   var list = document.getElementById('histSteps'), note = document.getElementById('histNote');
   list.textContent = '';
   if (!open){ note.textContent = ''; return; }
+  histTipHide();
   var steps = histSteps(), done = UNDO.length;
+  // each step is its tool's icon; its name shows on hover, or when it has the keyboard's focus (histTip)
   var start = document.createElement('button');
   start.type = 'button'; start.className = 'hStep hStart' + (done === 0 ? ' now' : '');
-  start.textContent = 'Start';
-  start.title = steps.length ? 'The drawing before the first step kept here' : 'Every change you make shows here, to go back to';
+  start.innerHTML = HIST_ICON.start;
+  start.setAttribute('aria-label', 'Start');
+  histTipOn(start, function () { return {name: 'Start', more: steps.length ? 'The drawing before the first step kept here.' : 'Every change you make shows here, to go back to.'}; });
   start.addEventListener('click', function () { histGoTo(0); });
   list.appendChild(start);
   steps.forEach(function (s) {
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'hStep' + (s.done ? '' : ' undone') + (s.n === done ? ' now' : '') + (s.kind ? ' hDoc' : '') + (s.failed ? ' failed' : '');
-    b.textContent = s.name;
-    b.title = s.name + (s.at ? ' · ' + histWhen(s.at) : '') +
-      (s.failed ? '\nSkipped: ' + s.failed : '') +
-      (s.n === done ? '\nThe drawing is as it was just after this step.' : '\nClick to see the drawing as it was just after this step.') +
-      (s.kind ? '' : '\nDouble-click to change it.');
+    b.innerHTML = histIconSvg(s.icon);
+    b.setAttribute('aria-label', s.name + (s.failed ? ' (skipped)' : ''));
+    histTipOn(b, function () {
+      return {name: s.name, when: s.at ? histWhen(s.at) : '', why: s.failed,
+              more: (s.n === done ? 'The drawing is as it was just after it.' : 'Click to go back to just after it.') + (s.kind ? '' : ' Double-click to change it.')};
+    });
     // A click goes there; a double-click (a second click on the same step soon after) changes it. Counted here, not
     // left to the browser: the first click redraws the bar, so the second lands on a new button.
     b.addEventListener('click', function () {
@@ -418,6 +458,29 @@ function histRender(){
   var now = list.querySelector('.now');
   if (now && now.scrollIntoView) now.scrollIntoView({block: 'nearest', inline: 'center'});
 }
+// The label over the History bar naming the step under the pointer (or with the keyboard's focus): shown at once,
+// where a browser's own tooltip would wait.
+function histTipOn(b, what){
+  var show = function () {
+    var tip = document.getElementById('histTip'), w = what();
+    if (!tip) return;
+    tip.textContent = '';
+    var n = document.createElement('b'); n.textContent = w.name; tip.appendChild(n);
+    if (w.when){ var t = document.createElement('span'); t.className = 'htWhen'; t.textContent = w.when; tip.appendChild(t); }
+    if (w.why){ var y = document.createElement('span'); y.className = 'htWhy'; y.textContent = 'Skipped: ' + w.why; tip.appendChild(y); }
+    if (w.more){ var m = document.createElement('span'); m.className = 'htMore'; m.textContent = w.more; tip.appendChild(m); }
+    tip.hidden = false;
+    var bar = document.getElementById('histBar'), list = document.getElementById('histSteps');
+    var left = bar.offsetLeft + b.offsetLeft - list.scrollLeft;          // (a step's place is from the bar's edge)
+    var room = bar.parentNode ? bar.parentNode.offsetWidth : 0;          // (kept inside the drawing's area)
+    tip.style.left = Math.max(10, room ? Math.min(left, room - tip.offsetWidth - 10) : left) + 'px';
+  };
+  b.addEventListener('mouseenter', show);
+  b.addEventListener('focus', show);
+  b.addEventListener('mouseleave', histTipHide);
+  b.addEventListener('blur', histTipHide);
+}
+function histTipHide(){ var tip = document.getElementById('histTip'); if (tip) tip.hidden = true; }
 function histWire(){
   var fold = document.getElementById('histFold');
   if (!fold || fold.wired) return;

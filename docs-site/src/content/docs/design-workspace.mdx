@@ -185,13 +185,14 @@ The gear in the header.
 
 ## History
 
-Every change you make is a step on the **History bar**, along the bottom of the drawing, oldest on the left:
-**Rectangle**, **Fillet corners 6 mm**, **Offset 3 mm**, **Toolpath Pocket 1**. It's the same list Undo goes back
-through, but you can see it and jump straight to any step.
+Every change you make is a step on the **History bar**, along the bottom of the drawing, oldest on the left. Each
+step is its tool's icon (a rectangle, a fillet, an offset, a toolpath); point at one, or tab to it, to see its name:
+**Rectangle**, **Fillet corners 6 mm**, **Offset 3 mm**, **Toolpath Pocket 1**, and when it was made. It's the same
+list Undo goes back through, but you can see it and jump straight to any step.
 
 - **Click a step** to see the drawing as it was just after it, toolpaths and all. The steps after it stay on the
   bar, faded, and the step you're on is underlined. Click a later step to come forward again; nothing is lost
-  by looking. **Start** is the drawing before the first step.
+  by looking. The first button, **Start**, is the drawing before the first step.
 - **Undo** (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) and **Redo** (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) move one step along the same line.
 - **Changing something while you're back at an earlier step** carries on from there, and drops the faded steps
   after it, as Undo always has. The bar says so while you're back: "Back 2 steps: a change here drops the 2
@@ -200,8 +201,8 @@ through, but you can see it and jump straight to any step.
   back, so you can go back to how a project was last week. It's kept between visits too, with the drawing.
 - **A new drawing starts a new history,** and an opened one has its own, saved with it. The drawing that was open
   is in its file, or put aside for **File → Recover last drawing**.
-- **Hover over a step** for when it was made. Scroll the mouse wheel over the bar to move along a long history,
-  and click **History** to fold the bar away, or open it again.
+- Scroll the mouse wheel over the bar to move along a long history, and click **History** to fold the bar away,
+  or open it again.
 
 The last 500 steps are kept.
 
@@ -247,7 +248,7 @@ How the steps after it are done again:
 - **A step that can't be done again turns red** and is skipped: the shape it works on is gone (an offset too big
   to leave a shape, say), or it changed a shape that's now different, such as a point dragged by hand on an outline
   that's now a different size. 454 never guesses what you meant. Hover over a red step to see why. A later change
-  that makes it possible again brings it back.
+  that makes it possible again brings it back. A red step's icon is red, and its name says why it was skipped.
 
 **Undo** (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) takes back a change to a step, as it takes back anything else: whichever you did
 last. **Redo** (<kbd>Ctrl</kbd>+<kbd>Y</kbd>), straight after, puts it back.

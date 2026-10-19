@@ -574,21 +574,27 @@
   #promptHint{position:absolute;left:50%;transform:translateX(-50%);bottom:60px;color:var(--muted);font-size:12px;z-index:5;background:var(--panel);padding:3px 10px;border-radius:4px;display:none}
   #promptHint.on{display:block}
   /* the History bar: every change, along the bottom of the drawing (history.js) */
-  #histBar{position:absolute;left:10px;right:10px;bottom:10px;z-index:5;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 6px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:12px}
-  #histBar.folded{right:auto}
+  #histBar{position:absolute;left:10px;max-width:calc(100% - 20px);bottom:10px;z-index:5;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 6px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:12px}
   #histBar.folded #histSteps,#histBar.folded #histNote{display:none}
   #histFold{flex:none;font-size:12px;padding:3px 8px}
   #histSteps{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:1px 0}
   #histSteps::-webkit-scrollbar{display:none}
-  .hStep{flex:none;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel-deep);color:var(--ink);font-size:12px;cursor:pointer}
+  .hStep{flex:none;width:28px;height:26px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--line);border-radius:4px;background:var(--panel-deep);color:var(--ink);cursor:pointer}
+  .hStep svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
   .hStep:hover{border-color:var(--muted)}
   .hStep.undone{opacity:.5;border-style:dashed}
   .hStep.now{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
-  .hStep.hDoc{font-weight:600}
+  .hStep.hDoc{box-shadow:inset 0 0 0 1px var(--muted)}
+  .hStep.hDoc.now{box-shadow:inset 0 0 0 1px var(--muted),inset 0 -2px 0 var(--accent)}
   .hStep.hStart{color:var(--muted)}
+  /* the step's name, over the bar, on hover or focus (history.js histTipOn) */
+  #histTip{position:absolute;bottom:50px;z-index:8;max-width:300px;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:6px 9px;box-shadow:0 4px 16px rgba(0,0,0,.35);font-size:12px;line-height:1.4;pointer-events:none}
+  #histTip b{display:block;color:var(--ink)}
+  #histTip span{display:block;color:var(--muted)}
+  #histTip .htWhy{color:var(--err)}
   #histNote{flex:none;color:var(--muted);white-space:nowrap}
   #histNote:empty{display:none}
-  .hStep.failed{border-color:var(--err);color:var(--err);text-decoration:line-through}
+  .hStep.failed{border-color:var(--err);color:var(--err);background:color-mix(in srgb, var(--err) 12%, var(--panel-deep))}
   /* changing a step: double-click it on the History bar (history-replay.js) */
   #histEdit{position:absolute;bottom:52px;left:10px;z-index:7;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:12.5px}
   #histEdit .heHead{margin-bottom:8px}

@@ -465,7 +465,7 @@ function histEditOpen(i, chip){
   document.getElementById('canvasWrap').appendChild(box);
   if (chip && chip.offsetLeft !== undefined){
     var bar = document.getElementById('histBar'), list = document.getElementById('histSteps');
-    box.style.left = Math.max(10, Math.min(bar.offsetLeft + list.offsetLeft + chip.offsetLeft - list.scrollLeft, bar.offsetLeft + bar.offsetWidth - 280)) + 'px';
+    box.style.left = Math.max(10, Math.min(bar.offsetLeft + chip.offsetLeft - list.scrollLeft, bar.offsetLeft + bar.offsetWidth - 280)) + 'px';
   }
   if (inputs[0]){ inputs[0].inp.focus(); if (inputs[0].inp.select) inputs[0].inp.select(); }
 }

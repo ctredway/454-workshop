@@ -222,7 +222,7 @@ test('the History bar: a Start and a button per step, the current one marked; cl
   step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
   D.run('histRender(); 1');
   const bs = () => Array.from(D.document.querySelectorAll('#histSteps .hStep'));
-  assert.deepEqual(bs().map((b) => b.textContent), ['Start', 'Rectangle', 'Circle']);
+  assert.deepEqual(bs().map((b) => b.getAttribute('aria-label')), ['Start', 'Rectangle', 'Circle']);
   assert.ok(bs()[2].classList.contains('now'));
   bs()[1].dispatchEvent(new D.window.Event('click'));
   assert.equal(D.run('DOC.ents.length'), 1);
@@ -255,4 +255,44 @@ test('if the drawing before couldn\u2019t be put aside (storage full), its steps
   assert.deepEqual(names(), ['Rectangle', 'New drawing']);
   D.run('doUndo(); 1');
   assert.equal(D.run('DOC.ents.length'), 1, 'back');
+});
+
+test('the History bar shows each step as its tool’s icon, and its name on hover and on keyboard focus', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30, layer: 'L1'})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15, layer: 'L1'})`);
+  D.run(`SEL = [0]; UICFG.filletR = 5; fallOpen(); fallApply(); SEL = [1]; offOpen(); OFF.dist = 3; offRender(); offApply(); SEL = []; 1`);
+  step(`DOC.ents.pop()`);
+  step(`DOC.stock.t = 9`);
+  D.run('histRender(); 1');
+  const bs = Array.from(D.document.querySelectorAll('#histSteps .hStep'));
+  const icon = (k) => D.run(`(HIST_ICON[${JSON.stringify(k)}] || ICON[${JSON.stringify(k)}])`);
+  assert.deepEqual(bs.map((b) => b.getAttribute('aria-label')), ['Start', 'Rectangle', 'Circle', 'Fillet corners 5 mm', 'Offset 3 mm', 'Deleted circle', 'Material']);
+  const same = (h) => h.replace(/\s*\/>/g, '/>');                         // (the page writes <path />)
+  assert.deepEqual(bs.map((b) => same(b.innerHTML)), ['start', 'rect', 'circ', 'filletall', 'offs', 'trash', 'mach'].map(icon).map(same), 'each its tool’s icon');
+  assert.equal(bs[1].textContent, '', 'no text on the bar itself');
+  const tip = D.document.getElementById('histTip');
+  assert.equal(tip.hidden, true);
+  bs[3].dispatchEvent(new D.window.Event('mouseenter'));
+  assert.equal(tip.hidden, false);
+  assert.match(tip.textContent, /^Fillet corners 5 mm/);
+  assert.match(tip.textContent, /Double-click to change it/);
+  bs[3].dispatchEvent(new D.window.Event('mouseleave'));
+  assert.equal(tip.hidden, true);
+  bs[6].dispatchEvent(new D.window.Event('focus'));
+  assert.match(tip.textContent, /^Material/);
+  bs[6].dispatchEvent(new D.window.Event('blur'));
+  assert.equal(tip.hidden, true);
+});
+
+test('a red step’s label says why it was skipped', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 0, y: 0, w: 50, h: 40, layer: 'L1'})`);
+  step(`DOC.ents[0].x = 5`);
+  D.run(`histEdit(0, {x: 0, y: 0, w: 80, h: 40}); histRender(); 1`);
+  const b = D.document.querySelectorAll('#histSteps .hStep')[2];
+  assert.ok(b.classList.contains('failed'));
+  assert.equal(b.getAttribute('aria-label'), 'Changed rectangle (skipped)');
+  b.dispatchEvent(new D.window.Event('mouseenter'));
+  assert.match(D.document.getElementById('histTip').textContent, /Skipped: A shape it changes is different now/);
 });
