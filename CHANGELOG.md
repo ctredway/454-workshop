@@ -35,6 +35,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
   Explode, Trim, Extend, moves, resizes, rotations, the selection's handles and points moved follow a changed step;
   Undo takes back a change to a step.
 - Includes Design 0.142.0: a new or opened drawing starts its own history.
+- The desktop build now also starts when Control, Design or the CAM engine change, not only the app's own files:
+  a fix pushed while a version waits to be released goes into its draft (one already drafted or released builds
+  nothing). Beta.50's first draft was built without Design 0.142.0, deleted, and built again this way.
 
 ### 0.6.2-beta.49 — the Inlay wizard; a Working panel; undo without the wait
 - Includes Design 0.135.0: the Inlay wizard (both halves from the bits chosen first, the plug on a sheet of its

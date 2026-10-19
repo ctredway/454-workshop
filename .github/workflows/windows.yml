@@ -21,7 +21,10 @@ on:
     tags: ['v*']
     # a new version in the desktop app's package.json tags itself and builds: no separate tag step
     branches: [main]
-    paths: ['apps/desktop/package.json', 'apps/desktop/src/**', 'apps/desktop/scripts/**', '.github/workflows/windows.yml']
+    # and the apps it carries (Control, Design, the CAM engine): a change to them builds a version not yet released
+    # or drafted (one that is builds nothing), so a fix made before publishing goes into its draft
+    paths: ['apps/desktop/package.json', 'apps/desktop/src/**', 'apps/desktop/scripts/**', '.github/workflows/windows.yml',
+            'index.html', 'design.html', 'cam.js', 'geom.js']
 
 permissions:
   contents: write          # to create the tag, and the draft release
