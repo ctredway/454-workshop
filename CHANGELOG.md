@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.48 — V-carving with a tapered ball nose; flat and ball tips stay inside the walls
+- Includes Design 0.134.0 **(cutting)**: a tapered ball nose is carved with its ball; where a V-carve climbs to a
+  corner, a flat or ball tip no longer cuts past the walls; Preview in wood shows sloping cuts as deep as they are.
+
 ### 0.6.2-beta.47 — Fillet corners, toolpath groups, and choosing a material by clicking it
 - Includes Design 0.131.0: **Fillet corners** rounds every corner of the selected shapes at once, and rings in red
   any it can't do.
