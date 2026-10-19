@@ -360,6 +360,21 @@ function draw(){
     }
   })();
 
+  // ---- Fillet corners: the new corners in green, and a red ring on each it can't do (after OK, the rings
+  // stay until the next change) ----
+  var fallMiss = TOOL === 'filletall' && FALL && FALL.plan ? FALL.plan.missed : FALL_MARKS;
+  if (TOOL === 'filletall' && FALL && FALL.plan && FALL.plan.results.length){
+    ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
+    FALL.plan.results.forEach(function (r) { drawEntityOutline(r.ne); });
+    ctx.restore();
+  }
+  if (fallMiss && fallMiss.length){
+    ctx.save(); ctx.strokeStyle = '#e06c5a'; ctx.lineWidth = 2.5;   // the Fillet tool's own colour for a corner it can't do
+    ctx.setLineDash([]);
+    fallMiss.forEach(function (m) { var c = w2s(m.x, m.y); ctx.beginPath(); ctx.arc(c.x, c.y, 9, 0, Math.PI * 2); ctx.stroke(); });
+    ctx.restore();
+  }
+
   // ---- offset preview ----
   if (TOOL === 'offset' && OFF){
     var offRes = offResults();

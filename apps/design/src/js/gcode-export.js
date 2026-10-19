@@ -1,7 +1,8 @@
 // G-code for every toolpath, in order: one file, or, for a job with more than one bit, one file per bit if asked
-function tpExport(checked){
-  if (checked !== true){ tpDepthGate('Save anyway', function () { tpExport(true); }); return; }   // past the material? ask first
-  var j = tpJob();
+// only: {ids, name} to save just those toolpaths (a group's), in a file named for them
+function tpExport(checked, only){
+  if (checked !== true){ tpDepthGate('Save anyway', function () { tpExport(true, only); }, only); return; }   // past the material? ask first
+  var j = tpJob(only);
   if (!j) return;
   var files = tpBitFiles(j);
   if (files.length < 2){ gcodeSave(j.gc, j.base + '.nc', j.said); return; }
@@ -18,9 +19,9 @@ function tpExport(checked){
 // Before anything leaves Design (Save G-code, Preview in 454 Control): any toolpath that goes past the bottom of
 // the material is listed, and nothing happens unless the person says so. If the material's thickness isn't set,
 // depths can't be checked, and it says that instead. go() runs once it's clear, or when they choose `anyway`.
-function tpDepthGate(anyway, go){
+function tpDepthGate(anyway, go, only){
   if (!camReady()){ go(); return; }
-  var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });
+  var chosen = tpList().filter(function (tp) { return tpForJob(tp, only); });
   var broken = chosen.filter(function (tp) { return tpExprProblem(tp); });
   if (broken.length){
     uiDialog({title: 'Parameters can’t be worked out', note: true,
@@ -61,10 +62,17 @@ function tpBitFiles(j){
 }
 // The job's G-code, exactly as Save G-code writes it, after the same checks; null if something needs
 // fixing first (the checks say what).
-function tpJob(){
+// Which toolpaths go in the G-code: the ticked ones on the sheet shown (one sheet per file), or, given `only`
+// ({ids}), just those of them.
+function tpForJob(tp, only){
+  if (tp.exclude || (multiSheet() && tpSheetOf(tp) !== DOC.activeSheet)) return false;
+  return !only || only.ids.indexOf(tp.id) >= 0;
+}
+function tpJob(only){
   if (!camReady() || !tpList().length) return null;
+  tpGroupsTidy();                                // (the order the panel shows)
   var toolNumber = toolNumbering();              // the same numbers the job sheet shows
-  var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });   // one sheet per file
+  var chosen = tpList().filter(function (tp) { return tpForJob(tp, only); });
   var noTool = chosen.filter(function (tp) { return !tpToolChosen(tp); });
   if (noTool.length){
     uiDialog({title: 'Choose a tool first',
@@ -101,6 +109,7 @@ function tpJob(){
   var safeZ = tpSurface() + 6, gc = Cam.toGcodeJob(parts, {safeZ: safeZ, notes: notes});
   var base = (DOC.name || UICFG.lastGcodeName || 'toolpaths').replace(/\.(nc|gcode|tap|ngc)$/i, '');
   if (multiSheet()) base += ' - ' + sheetTitle(DOC.activeSheet);       // one file per sheet, named for it
+  if (only && only.name) base += ' - ' + only.name;                     // a group's own file
   var tools = {}; parts.forEach(function (p) { tools[p.tool] = 1; });
   var nt = Object.keys(tools).length;
   var total = multiSheet() ? tpList().filter(function (tp) { return tpSheetOf(tp) === DOC.activeSheet; }).length : tpList().length;

@@ -69,6 +69,16 @@ Toolpaths are made from selected vectors, listed in the order they’ll run, and
 
 </Compare>
 
+### Groups
+
+**Groups** keep toolpaths that belong together under one name, such as an inlay's pocket and its clearing, or every cut on one part.
+
+- **Make one:** click a toolpath card, then <kbd>Ctrl</kbd>+click the others, then right-click one of them and choose **Group these toolpaths**. Type the group's name and press Enter. A single toolpath's right-click menu also has **Make a group of this toolpath**, **Add to** each group on the sheet, and **Take out of** its group.
+- **The group's header line** folds the group to that one line (the arrow, or a click on the line), ticks all its toolpaths in or out of the G-code (the tick box shows a dash when only some are in), shows or hides them all on the drawing (the eye), and says how many it holds. Double-click its name to rename it. Folded, it shows ⚠ if any of its toolpaths has a warning; rest the pointer on it to see which.
+- **Right-click the header** to recalculate the whole group, **Save G-code for this group…** (one file with just its ticked toolpaths, named after the group), move the group earlier or later, **Ungroup** (the toolpaths stay, in the same order), or delete the group and its toolpaths.
+- **In the cutting order** a group's toolpaths always stay together. The arrows on a toolpath in a group move it within the group; a toolpath outside a group steps past a whole group at once. Drag a group by the dots on its header to move it. Drag a card onto a card in a group to put it in that group, or onto a card outside any group to take it out.
+- **One sheet:** a group's toolpaths are all cut from the same piece of material, so a group holds toolpaths from one sheet only.
+
 ## Profile
 
 Cuts along an outline. Choose **Profile, outside** (the part keeps the outline’s size), **Profile, inside** (a hole keeps its size), or **Profile, on the line** (the cutter’s centre follows the line).

@@ -101,6 +101,25 @@ function wire(){
   })();
   document.getElementById('settingsBtn').addEventListener('click', openSettings);
   document.getElementById('offObjs').addEventListener('click', function(){ if (OFF) offRender(); });
+  // Fillet corners: the radius and kind are the Fillet tool's own, so the two always agree
+  document.getElementById('fallObjs').addEventListener('click', function(){ if (FALL) fallRender(); });
+  document.getElementById('fallR').addEventListener('input', function(e){
+    if (!FALL) return;
+    var v = lenIn(e.target.value);
+    if (!isNaN(v) && v > 0) UICFG.filletR = v;
+    fallRender();
+  });
+  document.getElementById('fallR').addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); fallApply(); } });
+  Array.prototype.forEach.call(document.querySelectorAll('#fallKind button'), function (b) {
+    b.addEventListener('click', function(){ if (!FALL) return; UICFG.filletType = b.dataset.k; uiCfgSave(); refreshFilletTypes(); fallRender(); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#fallWhich button'), function (b) {
+    b.addEventListener('click', function(){ if (!FALL || b.disabled) return; UICFG.filletAllWhich = b.dataset.w; uiCfgSave(); fallRender(); });
+  });
+  document.getElementById('fallOk').addEventListener('click', fallApply);
+  document.getElementById('fallCancel').addEventListener('click', function(){ fallClose(); setTool('select'); });
+  document.getElementById('fallX').addEventListener('click', function(){ fallClose(); setTool('select'); });
+  document.getElementById('filletAllBtn').addEventListener('click', function(){ setTool('filletall'); });
   document.getElementById('offFlip').addEventListener('click', function(){ if (OFF){ OFF.flip = !OFF.flip; offRender(); } });
   document.getElementById('offDist').addEventListener('input', function(e){
     if (!OFF) return;
@@ -257,9 +276,6 @@ function wire(){
   });
   document.getElementById('libMachine').addEventListener('change', function(e){
     UICFG.libMachine = e.target.value; uiCfgSave(); libRenderTree(e.target.value); libRenderDetail(e.target.value); renderToolpathPanel();
-  });
-  document.getElementById('libMaterial').addEventListener('change', function(e){
-    UICFG.libMaterial = e.target.value; uiCfgSave(); libRenderDetail(libDefaultMachine()); libPickState();
   });
   document.getElementById('libSearch').addEventListener('input', function(e){ LIBUI.q = e.target.value; libRenderTree(libDefaultMachine()); });
   document.getElementById('libPanel').addEventListener('keydown', function(e){
@@ -821,6 +837,8 @@ function wire(){
       else if (CUT){ cutClose(); }                             // cancel the toolpath editor
       else if (MIR){ mirClose(); setTool('select'); }          // cancel the mirror
       else if (OFF){ offClose(); setTool('select'); }          // cancel the offset
+      else if (FALL){ fallClose(); setTool('select'); }        // cancel Fillet corners
+      else if (FALL_MARKS){ FALL_MARKS = null; }               // clear the rings on corners Fillet corners couldn't do
       else if (MEAS){ MEAS = null; }                           // clear the last measurement
       else if (TOOL !== 'select'){ setTool('select'); }
       else if (HANDLES.active){ HANDLES.active = false; }

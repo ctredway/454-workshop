@@ -30,6 +30,7 @@ var ICON = {
  mirror:'<svg viewBox="0 0 18 18"><line x1="9" y1="2.5" x2="9" y2="15.5" stroke-dasharray="2.6 2.2"/><path d="M6.5 5 L3 9 L6.5 13 Z"/><path d="M11.5 5 L15 9 L11.5 13 Z" fill="none"/></svg>',
  rotate:'<svg viewBox="0 0 18 18"><path d="M14.5 9 A 5.5 5.5 0 1 1 9 3.5"/><path d="M9 1 L12.2 3.5 L9 6"/><circle cx="9" cy="9" r="1"/></svg>',
  array:'<svg viewBox="0 0 18 18"><circle cx="4.5" cy="4.5" r="1.7"/><circle cx="11" cy="4.5" r="1.7"/><circle cx="4.5" cy="11" r="1.7"/><circle cx="11" cy="11" r="1.7" opacity=".45"/></svg>',
+ filletall:'<svg viewBox="0 0 18 18"><path d="M3 15 V7 A 4 4 0 0 1 7 3 H11 A 4 4 0 0 1 15 7 V15"/><path d="M3 15 H15" opacity=".45"/></svg>',
  offs:'<svg viewBox="0 0 18 18"><rect x="6" y="6" width="6" height="6"/><rect x="2.5" y="2.5" width="13" height="13" opacity=".5" stroke-dasharray="2.4 2"/></svg>',
  weld:'<svg viewBox="0 0 18 18"><path d="M9 4.97 A4.5 4.5 0 1 0 9 13.03 A4.5 4.5 0 1 0 9 4.97 Z"/><path d="M9 4.97 A4.5 4.5 0 0 1 9 13.03 M9 4.97 A4.5 4.5 0 0 0 9 13.03" opacity=".35" stroke-dasharray="1.6 1.6"/></svg>',
  subtract:'<svg viewBox="0 0 18 18"><path d="M9 4.97 A4.5 4.5 0 1 0 9 13.03 A4.5 4.5 0 0 1 9 4.97 Z"/><circle cx="11" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/></svg>',
@@ -120,6 +121,7 @@ var PANEL_BTNS = {
  rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 select first; click the rotation center, then type the angle in degrees (+ CCW)'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 select first; type N@dx,dy for a linear array, or click a center then type N<step\u00b0 for a circular one'},
  fillet:{tool:'fillet', icon:'fillet', title:'Fillet (F) \u2014 type a radius, then click a corner: a poly/rect corner, or where two lines meet'},
+ filletAllT:{tool:'filletall', icon:'filletall', title:'Fillet corners \u2014 select shapes first, or click them: rounds every corner at once (or only those pointing out or in), and rings any that won\u2019t fit'},
  trim:  {tool:'trim', icon:'trim', title:'Trim (T) \u2014 click the part of a shape to remove, up to where other shapes cross it'},
  extend:{tool:'extend', icon:'extend', title:'Extend (E) \u2014 click near the end of a line or arc to run it out to the next crossing'},
  guide: {tool:'guide', icon:'guide', title:'Offset guide (G) \u2014 click an edge, type the offset. Guides and their intersections snap.'},
@@ -140,7 +142,7 @@ var PANEL_BTNS = {
 var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
+ {id:'edit',   label:'Edit Vectors',   btns:['fillet','filletAllT','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
  /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */

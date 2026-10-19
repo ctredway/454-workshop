@@ -73,6 +73,9 @@ function toolClick(w, snap){
       }
     }
   }
+  else if (TOOL === 'filletall'){
+    if (FALL){ fallClick(w); return; }               // the panel owns the picking
+  }
   else if (TOOL === 'offset'){
     if (OFF){ offClick(w); return; }                 // the panel owns the picking
     var oh = pickEntity(w);

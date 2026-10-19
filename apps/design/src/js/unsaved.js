@@ -95,6 +95,7 @@ function clearDrawing(){
   DOC.vcConverted = false; DOC.vcPreview = [];
   DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
   DOC.toolpaths = [];
+  DOC.tpGroups = [];
   CUTSEL = null;
   renderToolpathPanel();
   SEL.length = 0;

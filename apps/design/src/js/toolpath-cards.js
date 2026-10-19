@@ -54,6 +54,7 @@ function tpRename(tp, name){
 // sheet being shown that isn't hidden.
 function tpDrawn(tp){
   if (!tpOnSheet(tp)) return false;
+  if (TP_PICKED.length) return TP_PICKED.indexOf(tp.id) >= 0;   // several picked (Ctrl+click): just those
   if (CUTSEL) return tp.id === CUTSEL;
   return !tp.hidden;
 }
@@ -82,12 +83,21 @@ function tpFoldAll(){
 }
 function renderMyToolpaths(){
   var box = document.getElementById('tpList');
+  tpGroupsTidy();                                        // a group's toolpaths together, before anything is drawn
+  TP_PICKED = TP_PICKED.filter(function (id) { return tpList().some(function (t) { return t.id === id; }); });
   var all = tpList(), renameBox = null;
   all.forEach(function (tp, idx) {
     if (multiSheet() && tpSheetOf(tp) !== DOC.activeSheet) return;   // other sheets' toolpaths: shown with their sheet
+    var grp = tpGroupOf(tp);
+    if (grp){
+      var gm = tpGroupMembers(grp.id);
+      if (gm[0] === tp){ var gh = tpGroupHeader(grp, gm); box.appendChild(gh); if (gh._rename) renameBox = gh._rename; }
+      if (grp.folded) return;                            // folded: the header stands for them
+    }
     var stale = tpStale(tp);
     var card = document.createElement('div');
-    card.className = 'tpCard tpMine' + (stale || !tpToolChosen(tp) ? ' tpStale' : '') + (tp.exclude ? ' tpExcluded' : '') + (tp.folded ? ' tpFolded' : '');
+    card.className = 'tpCard tpMine' + (stale || !tpToolChosen(tp) ? ' tpStale' : '') + (tp.exclude ? ' tpExcluded' : '') + (tp.folded ? ' tpFolded' : '') +
+                     (grp ? ' tpInGroup' : '') + (TP_PICKED.indexOf(tp.id) >= 0 ? ' tpPicked' : '');
     card.dataset.idx = idx;
     var h = document.createElement('div'); h.className = 'tpName';
     // fold the card to its title, or open it
@@ -195,9 +205,9 @@ function renderMyToolpaths(){
       b.addEventListener('click', function (ev) { ev.stopPropagation(); fn(); });
       return b;
     }
-    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, tpNeighbour(idx, -1)); });
-    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, tpNeighbour(idx, 1)); });
-    up.disabled = tpNeighbour(idx, -1) < 0; dn.disabled = tpNeighbour(idx, 1) < 0;
+    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, tpStep(idx, -1)); });
+    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, tpStep(idx, 1)); });
+    up.disabled = tpStep(idx, -1) < 0; dn.disabled = tpStep(idx, 1) < 0;
     bar.appendChild(up); bar.appendChild(dn);
     var gap = document.createElement('span'); gap.style.flex = '1'; bar.appendChild(gap);
     var rc = btn('regen', stale ? 'Out of date: recalculate this toolpath from its shapes and the material as they are now'
@@ -211,10 +221,27 @@ function renderMyToolpaths(){
     card.appendChild(bar);
     }
 
-    card.addEventListener('click', function () { CUTSEL = CUTSEL === tp.id ? null : tp.id; renderToolpathPanel(); draw(); });
+    card.addEventListener('click', function (ev) {
+      if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey)){   // pick several, to group them
+        if (!TP_PICKED.length && CUTSEL && CUTSEL !== tp.id) TP_PICKED.push(CUTSEL);
+        var at = TP_PICKED.indexOf(tp.id);
+        if (at >= 0) TP_PICKED.splice(at, 1); else TP_PICKED.push(tp.id);
+        CUTSEL = null;
+      } else { TP_PICKED = []; CUTSEL = CUTSEL === tp.id ? null : tp.id; }
+      renderToolpathPanel(); draw();
+    });
     card.addEventListener('contextmenu', function (e) {
       e.preventDefault();
-      ctxMenuOpen(e.clientX, e.clientY, [
+      // grouping: the toolpaths picked with Ctrl+click (this one among them), or this one
+      var picked = TP_PICKED.indexOf(tp.id) >= 0 && TP_PICKED.length > 1 ? TP_PICKED.slice() : null;
+      var groupItems = picked ? [{label: 'Group these ' + picked.length + ' toolpaths', fn: function () { tpGroupMake(picked); }}]
+                              : [{label: tp.group ? 'Take out of \u201c' + tpGroupOf(tp).name + '\u201d' : 'Make a group of this toolpath',
+                                  fn: function () { if (tp.group) tpGroupLeave(tp); else tpGroupMake([tp.id]); }}];
+      if (!picked) tpGroups().forEach(function (g) {
+        var gm = tpGroupMembers(g.id);
+        if (g.id !== tp.group && gm.length && tpSheetOf(gm[0]) === tpSheetOf(tp)) groupItems.push({label: 'Add to \u201c' + g.name + '\u201d', fn: function () { tpGroupJoin(tp, g.id); }});
+      });
+      ctxMenuOpen(e.clientX, e.clientY, groupItems.concat([null,
         {label: stale ? 'Recalculate (out of date)' : 'Recalculate', fn: function () { tpRecalc(tp); }},
         {label: 'Edit\u2026', fn: function () { setTool('select'); cutOpen(tp); }},
         {label: 'Rename\u2026', fn: function () { tpRenameStart(tp); }},
@@ -223,21 +250,23 @@ function renderMyToolpaths(){
         {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tpShowHide(tp); }},
         {label: tp.exclude ? 'Include in the G-code' : 'Leave out of the G-code', fn: function () { tp.exclude = !tp.exclude; persist(); renderToolpathPanel(); }},
         null,
-        {label: 'Run earlier', disabled: tpNeighbour(idx, -1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, -1)); }},
-        {label: 'Run later', disabled: tpNeighbour(idx, 1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, 1)); }},
+        {label: 'Run earlier', disabled: tpStep(idx, -1) < 0, fn: function () { tpMoveTo(idx, tpStep(idx, -1)); }},
+        {label: 'Run later', disabled: tpStep(idx, 1) < 0, fn: function () { tpMoveTo(idx, tpStep(idx, 1)); }},
         null,
         {label: 'Delete', danger: true, fn: function () { tpDelete(tp.id); }}
-      ]);
+      ]));
     });
     // drag a card onto another to move it there
     card.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; card.classList.add('tpDropOver'); });
     card.addEventListener('dragleave', function () { card.classList.remove('tpDropOver'); });
     card.addEventListener('drop', function (e) {
       e.preventDefault(); card.classList.remove('tpDropOver');
-      var from = parseInt(e.dataTransfer.getData('text/plain'), 10);
-      if (!isNaN(from)) tpMoveTo(from, idx);
+      var d = e.dataTransfer.getData('text/plain');
+      if (/^g:/.test(d)){ tpGroupDropAt(d.slice(2), idx); return; }   // a whole group, to start here
+      var from = parseInt(d, 10);
+      if (!isNaN(from)) tpDropOn(from, idx);              // and into this card's group, or out of one
     });
-    if (CUTSEL === tp.id) card.style.background = 'var(--accent-faint)';
+    if (CUTSEL === tp.id || TP_PICKED.indexOf(tp.id) >= 0) card.style.background = 'var(--accent-faint)';
     box.appendChild(card);
   });
   if (renameBox){ if (renameBox.focus) renameBox.focus(); if (renameBox.select) renameBox.select(); }

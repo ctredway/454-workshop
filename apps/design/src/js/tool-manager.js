@@ -25,6 +25,7 @@ var TOOLS = {
   node:  {kind:'edit',   prompt:'node0',   hover:hoverNode},
   dim:   {kind:'edit',   prompt:'dim0',    hover:hoverDim},
   offset:{kind:'transform', prompt:'offset0', keepSel:true},
+  filletall:{kind:'transform', prompt:'filletall0', keepSel:true},
   copy:  {kind:'transform', prompt:'copy0',   keepSel:true},
   mirror:{kind:'transform', prompt:'mirror0', keepSel:true, letters:'hv'},
   rotate:{kind:'transform', prompt:'rotate0', keepSel:true},
@@ -256,6 +257,7 @@ function toolMgrEnter(t){
   DRAW = null;
   if (t !== 'mirror' && MIR) mirClose();
   if (t !== 'offset' && OFF) offClose();
+  if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
   MEAS = null;
@@ -263,6 +265,8 @@ function toolMgrEnter(t){
   if (ftBox){ ftBox.hidden = t !== 'fillet'; refreshFilletTypes(); }
   var frBox = document.getElementById('filletRBox');
   if (frBox){ frBox.hidden = t !== 'fillet'; if (t === 'fillet') filletRShow(); }
+  var faBtn = document.getElementById('filletAllBtn');
+  if (faBtn) faBtn.hidden = t !== 'fillet';
   var pinEl = document.getElementById('promptIn');
   if (pinEl){ pinEl.value = ''; pinEl.blur(); }
   hidePrompt();
@@ -272,6 +276,7 @@ function toolMgrEnter(t){
   if (desc.prompt) stagePrompt(desc.prompt);
   if (t === 'mirror' && !MIR) mirOpen();            // the panel is the tool
   if (t === 'offset' && !OFF) offOpen();
+  if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){
     b.classList.toggle('active', b.dataset.tool === t);

@@ -345,6 +345,24 @@ Rounds a corner, or cuts a relief into it so a square part fits a CNC-cut pocket
 
 <Shot src={filletBar} alt="The prompt bar: instructions, the Radius box reading 12.00 mm, and the Round, Dog-bone and T-bone buttons." caption="The Radius box and corner types, along the bottom of the drawing while Fillet is active." />
 
+### Fillet corners
+
+Rounds every corner of some shapes at once, instead of clicking them one by one. Select the shapes first, then click **Fillet corners** beside Fillet in the toolbar, or **All corners…** at the bottom of the drawing while Fillet is active. A panel opens:
+
+- **Shapes:** how many are chosen. Click a shape on the drawing to add it or take it out.
+- **Radius:** the size, the same as the Fillet tool’s. For a dog-bone or T-bone it’s the bit’s radius.
+- **Corner:** **Round**, **Dog-bone** or **T-bone**, as for Fillet.
+- **Which:** **All** corners, only those **Pointing out** of the shape, or only those **Pointing in**. An L-shape has five corners pointing out and one pointing in.
+
+The drawing shows what OK will do: each new corner in green, and a **red ring** on any corner that can’t be done. That’s a corner whose radius is too big for the edges beside it (two fillets on a short edge would run into each other), or a dog-bone or T-bone beside a curved edge. Those corners stay sharp. The rings stay on the drawing after OK, so you can find them and round them with the Fillet tool and a smaller radius. They go at your next change, or when you press <kbd>Esc</kbd>.
+
+**Dog-bones and T-bones** go only where the bit can’t reach into a corner, so **All** isn’t offered for them:
+
+- **Pointing out**, for a pocket or an inside cut: the corners of the hole.
+- **Pointing in**, for a part cut out round its outside: its inside corners.
+
+A curve drawn as many short straight pieces, as in a traced picture or an imported outline, isn’t treated as corners: only turns of more than 10° are. Open shapes are rounded with **All**, and left out with Pointing out or in, since they have no inside. One Undo puts everything back.
+
 ### Trim
 
 Shortcut: <kbd>T</kbd>

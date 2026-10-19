@@ -47,6 +47,7 @@ var STAGE_LABEL = {
   star2:  'Star — click where the inner corners go, or type their radius, e.g. 15',
   poly0:  'Polyline \u2014 click first point, or type "x,y"',
   poly1:  'Polyline \u2014 next point ("@dx,dy" / "50<45" ok) \u00b7 Enter finishes \u00b7 click start closes',
+  filletall0:'Fillet corners \u2014 click shapes to add or remove them, set the radius and which corners, then OK',
   offset0:'Offset \u2014 select or click shapes, then type the distance: "+2" outward copy, "-1.5" inward',
   copy0:  'Copy \u2014 click base point, or type the offset "@dx,dy"',
   copy1:  'Copy \u2014 click destination, or type "x,y" / "@dx,dy"',

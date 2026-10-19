@@ -27,6 +27,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.47 — Fillet corners, toolpath groups, and choosing a material by clicking it
+- Includes Design 0.131.0: **Fillet corners** rounds every corner of the selected shapes at once, and rings in red
+  any it can't do.
+- Includes Design 0.132.0: **toolpath groups**.
+- Includes Design 0.133.0: in the tool library, the material is chosen by clicking it in a tool's feeds and
+  speeds, not from a dropdown.
+
 ### 0.6.2-beta.46 — a Linux version
 - **454 Workshop for Linux**, as an AppImage (`454-Workshop-<version>-linux-x86_64.AppImage`, 64-bit Intel and AMD):
   one file that runs on most Linux systems without installing, and keeps itself up to date like the Windows
@@ -1096,6 +1103,63 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.133.0 — the tool library: choose the material by clicking it
+- **The Material dropdown is gone.** A tool's **Feeds and speeds** list is the way to choose: click a material's
+  row and it's highlighted (with a bar down its edge), and new toolpaths take that material's feeds and speeds, as
+  the dropdown's choice did. Enter or Space on a row does the same; it doesn't also choose the tool.
+- **Every material in the library is listed,** so one the tool has no feeds and speeds for says "no feeds and
+  speeds yet": choose it and Edit to add them. Feeds recorded for a material the library doesn't know are shown as
+  Any, and can't be chosen.
+- **Editing a tool,** the materials are a row of buttons above its feeds and speeds. Switching keeps what was typed
+  for the material being left.
+- Asked for by Clint.
+- **Tested** (3 tests in `tool-material.test.mjs`; broken on purpose 7 ways, all caught), and looked at in the app.
+
+### 0.132.0 — toolpath groups
+- **Groups** keep toolpaths that belong together under one name (an inlay's pocket half, every cut on one part).
+  Click a toolpath card and **Ctrl+click** others, right-click, **Group these 3 toolpaths**, and type its name. A
+  card's right-click menu also makes a group of one, adds it to a group on its sheet, or takes it out of its group.
+- **The header line** folds the group to one line, ticks all its toolpaths in or out of the G-code (a dash when only
+  some are in), shows or hides them all, and says how many it holds; double-click the name to rename. Folded, it
+  shows ⚠ when any of its toolpaths has a warning, and names which.
+- **Right-click the header:** recalculate the group, **Save G-code for this group…** (one file of just its ticked
+  toolpaths, named "<job> - <group>.nc", after the same depth and tool checks as Save G-code), move it earlier or
+  later, **Ungroup** (the toolpaths stay, in order), or delete it with its toolpaths (after asking).
+- **The cutting order:** a group's toolpaths always stay together, where its first one is. A toolpath in a group
+  moves within it; one outside a group steps past a whole group at once; a group moves, or is dragged by its
+  header, as a block. A card dragged onto a card in a group joins that group; onto one outside any group, it
+  leaves its own. Save G-code, Preview in wood and the job sheet use that same order.
+- **One sheet each:** a group's toolpaths are cut from one piece of material, so a group holds one sheet's.
+- Groups are saved with the drawing and undone like any other change (showing, hiding and ticking aren't edits,
+  so undo leaves those as they are, as before). Templates don't carry groups yet.
+- Asked for by Clint: folding, acting on several at once, and keeping order and files together.
+- **Tested** (9 tests in `toolpath-groups.test.mjs`; broken on purpose 19 ways: 13 caught at once, 3 more after
+  making the tests stronger, and 3 that are backed up by each other, all three together caught), and looked at in
+  the app.
+
+### 0.131.0 — Fillet corners: every corner of the selected shapes at once
+- **Fillet corners**, beside Fillet in the toolbar (and **All corners…** at the bottom of the drawing while Fillet
+  is active): select shapes, or click them while it's open, and a panel rounds all their corners at once. It has
+  the radius and kind of corner (Round, Dog-bone, T-bone; the Fillet tool's own, so the two always agree), and
+  **which** corners: all, only those **pointing out** of the shape, or only those **pointing in**.
+- **The drawing shows what OK will do:** the new corners in green, and a **red ring** on each corner that can't be
+  done: the radius is too big for the edges beside it (two fillets on a short edge would meet), or a dog-bone or
+  T-bone beside a curved edge. Those stay sharp, and the panel and the message after OK say how many and why.
+  The rings stay on the drawing after OK, so they can be found and rounded with the Fillet tool, until the next
+  change or Esc. (Red is the Fillet tool's own colour for a corner it can't do; amber was tried first, and
+  disappeared into the selection colour in the amber accent.)
+- **Dog-bones and T-bones** go only where a bit can't reach into a corner, so they don't offer "all": **pointing
+  out** for a pocket or an inside cut, **pointing in** for a part cut out round its outside.
+- **What counts as a corner:** a turn of more than 10°. A curve drawn as many short straight pieces (a traced
+  picture, an imported outline) isn't ringed at every point. Corners where an arc meets a line are corners;
+  smooth joins aren't. Open shapes are rounded with All, and left out (and said so) with pointing out or in.
+- One undo puts everything back. Each shape keeps its layer, sheet and IDs. Only the selected shapes change.
+- Asked for by Clint, who suggested the panel and marking the corners that won't fillet.
+- **Tested** (9 tests in `fillet-all.test.mjs`: rectangles, an L both ways round, a strip too narrow for its radius,
+  a D, a circle as 96 pieces, a slot, dog-bones and T-bones, an open shape, the panel, undo, and the rings going
+  with the next change; broken on purpose 12 ways, 11 caught and the last after adding a check), and looked at in
+  the app.
 
 ### 0.130.0 — a pocket with a wide stepover no longer leaves a strip down the middle of a channel (cutting)
 - **What was wrong:** a pocket is cleared in rings, each a stepover further in than the last, and each ring clears

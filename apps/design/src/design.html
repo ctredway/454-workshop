@@ -257,7 +257,6 @@
       </div>
       <div class="libBar" id="libBar">
         <label for="libMachine">Machine <select id="libMachine"></select></label>
-        <label for="libMaterial">Material <select id="libMaterial"></select></label>
         <input id="libSearch" type="search" placeholder="Search tools" aria-label="Search tools">
         <span class="grow" style="flex:1"></span>
         <button id="libNewTool" title="Add a tool to the library">+ Tool</button>
@@ -497,6 +496,15 @@
       <p class="mirHint" id="offHint"></p>
       <div class="mirBtns"><button id="offCancel">Cancel</button><button id="offOk" class="primary">OK</button></div>
     </div>
+    <div id="fallPanel" hidden role="dialog" aria-label="Fillet corners">
+      <div class="modalHead"><h3>Fillet corners</h3><button class="modalX" id="fallX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="fallObjs"><span class="mirLbl">Shapes</span><span class="mirVal" id="fallObjsVal">none</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="fallR" id="fallRLbl">Radius</label></span><input id="fallR" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal" id="fallRU">mm</span></div>
+      <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Corner</span><span id="fallKind" role="group" aria-label="Kind of corner"><button data-k="round">Round</button><button data-k="dogbone">Dog-bone</button><button data-k="tbone">T-bone</button></span></div>
+      <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Which</span><span id="fallWhich" role="group" aria-label="Which corners"><button data-w="all">All</button><button data-w="out" title="Corners that point out of the shape: a pocket's or an inside cut's">Pointing out</button><button data-w="in" title="Corners that point into the shape: a part's, cut out round its outside">Pointing in</button></span></div>
+      <p class="mirHint" id="fallHint"></p>
+      <div class="mirBtns"><button id="fallCancel">Cancel</button><button id="fallOk" class="primary">OK</button></div>
+    </div>
     <div id="tracePanel" hidden role="dialog" aria-labelledby="traceTitle">
       <div class="mirHead"><b id="traceTitle">Trace image</b><button id="traceX" class="modalX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
       <div class="trRow"><label for="trThr">Threshold</label><input type="range" id="trThr" min="1" max="254" value="128">
@@ -527,6 +535,7 @@
       <span id="filletTypes" hidden role="group" aria-label="Corner type">
         <button data-ft="round">Round</button><button data-ft="dogbone">Dog-bone</button><button data-ft="tbone">T-bone</button>
       </span>
+      <button id="filletAllBtn" hidden title="Fillet every corner of some shapes at once: opens the Fillet corners panel">All corners…</button>
     </div>
   </div>
 
@@ -622,6 +631,7 @@
 @@include js/job-sheet.js
 @@include js/context-menu.js
 @@include js/toolpath-cards.js
+@@include js/toolpath-groups.js
 @@include js/preview-in-control.js
 @@include js/wood-preview.js
 @@include js/wood-3d.js
@@ -656,6 +666,7 @@
 @@include js/nesting.js
 @@include js/measuring.js
 @@include js/fillets.js
+@@include js/fillet-all.js
 @@include js/transforms.js
 @@include js/alignment.js
 @@include js/offset.js

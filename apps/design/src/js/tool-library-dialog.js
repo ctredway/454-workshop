@@ -1,8 +1,8 @@
 // ---- the Tool library dialog ----
 var LIBUI = {sel:null, q:'', pick:null, edit:null, draft:null};           // pick: set when choosing a tool for a toolpath
 // Opened to manage tools, or (with onPick) to choose one for a toolpath, the way VCarve's
-// Tool Database is used both ways. The Machine and Material pickers at the top decide which
-// feeds and speeds the chosen tool brings with it.
+// Tool Database is used both ways. The Machine picker at the top, and the material clicked in a tool's
+// Feeds and speeds list, decide which feeds and speeds the chosen tool brings with it.
 function libOpen(selectId, onPick){
   if (selectId) LIBUI.sel = selectId;
   LIBUI.pick = onPick || null;
@@ -45,14 +45,11 @@ function libRender(){
     ? TOOLLIB.tools.length + ' tools \u00b7 from ' + TOOLLIB.source.file + ' \u00b7 ' + new Date(TOOLLIB.source.importedAt).toLocaleDateString()
     : '';
   if (!has) return;
-  var mSel = document.getElementById('libMachine'), matSel = document.getElementById('libMaterial');
+  var mSel = document.getElementById('libMachine');
   var mid = libDefaultMachine();
   mSel.innerHTML = '';
   TOOLLIB.machines.forEach(function(m){ var o = document.createElement('option'); o.value = m.id; o.textContent = m.name; mSel.appendChild(o); });
   mSel.value = mid;
-  matSel.innerHTML = '<option value="">All materials</option>';
-  TOOLLIB.materials.forEach(function(m){ var o = document.createElement('option'); o.value = m.id; o.textContent = m.name; matSel.appendChild(o); });
-  matSel.value = UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? UICFG.libMaterial : '';
   libRenderTree(mid);
   libRenderDetail(mid);
   libPickState();
@@ -63,7 +60,7 @@ function libPickState(){
   var t = LIBUI.sel ? libTool(LIBUI.sel) : null;
   go.disabled = !t;
   document.getElementById('libPickNote').textContent = t
-    ? t.name + (UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? ' \u00b7 feeds for ' + libMaterialName(UICFG.libMaterial) : ' \u00b7 choose a material for its feeds')
+    ? t.name + (libMatNow() ? ' \u00b7 feeds for ' + libMaterialName(libMatNow()) : ' \u00b7 click a material in its feeds and speeds')
     : 'Pick a tool, then Select \u2014 or double-click it.';
 }
 function libToolRow(t, mid){
@@ -175,10 +172,29 @@ function libAddMaterial(name){
   UICFG.libMaterial = id; uiCfgSave();
   libCommit('Added ' + name + ': choose a tool and Edit to give it feeds and speeds');
 }
+// The material chosen for feeds and speeds: picked by clicking it in a tool's Feeds and speeds list (or the row of
+// materials while editing a tool). It's remembered, and new toolpaths take that material's feeds. '' when none.
+function libMatNow(){ return UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? UICFG.libMaterial : ''; }
+function libPickMaterial(id){
+  if (LIBUI.edit) libReadDraft();                       // what's been typed for the material being left is kept
+  UICFG.libMaterial = id; uiCfgSave();
+  if (LIBUI.edit) libRender(); else { libRenderDetail(libDefaultMachine()); libPickState(); }
+}
+// The materials as a row of buttons, the chosen one pressed (for the tool editor).
+function libMaterialButtons(){
+  var row = document.createElement('div'); row.className = 'libMatRow'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Material');
+  TOOLLIB.materials.forEach(function (m) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = m.name;
+    b.setAttribute('aria-pressed', m.id === libMatNow() ? 'true' : 'false');
+    b.addEventListener('click', function () { libPickMaterial(m.id); });
+    row.appendChild(b);
+  });
+  return row;
+}
 function libCutOf(t, mid, mat){ return t.cuts.filter(function (c) { return c.machine === mid && c.material === mat; })[0] || null; }
 function libRenderEditor(box, t, mid){
   if (!LIBUI.draft || LIBUI.draft.id !== t.id) LIBUI.draft = JSON.parse(JSON.stringify(t));
-  var d = LIBUI.draft, mat = document.getElementById('libMaterial').value || '';
+  var d = LIBUI.draft, mat = libMatNow();
   function el(tag, txt, cls){ var e = document.createElement(tag); if (txt !== undefined) e.textContent = txt; if (cls) e.className = cls; return e; }
   function field(form, label, input, unit){
     var l = el('label', label); l.htmlFor = input.id; form.appendChild(l);
@@ -203,8 +219,10 @@ function libRenderEditor(box, t, mid){
   box.appendChild(g);
   // feeds and speeds for the chosen material
   box.appendChild(el('h5', 'Feeds and speeds' + (mat ? ' for ' + libMaterialName(mat) : '') + ' on ' + libMachineName(mid)));
+  if (TOOLLIB.materials.length) box.appendChild(libMaterialButtons());
   if (!mat){
-    box.appendChild(el('p', 'Choose a material above to set this tool\u2019s feeds and speeds for it. Each material keeps its own.', 'libNote'));
+    box.appendChild(el('p', TOOLLIB.materials.length ? 'Pick a material to set this tool\u2019s feeds and speeds for it. Each material keeps its own.'
+                                                   : 'Add a material with + Material, to give this tool feeds and speeds for it.', 'libNote'));
   } else {
     var c = libCutOf(d, mid, mat);
     if (!c){
@@ -264,7 +282,7 @@ function libReadDraft(){
   if (v('ltNotes') !== undefined) d.notes = v('ltNotes');
   var mid = libDefaultMachine(), n = nv('ltNum');
   if (v('ltNum') !== undefined){ if (n === null) delete d.numbers[mid]; else d.numbers[mid] = Math.round(n); }
-  var mat = document.getElementById('libMaterial').value || '', c = mat ? libCutOf(d, mid, mat) : null;
+  var mat = libMatNow(), c = mat ? libCutOf(d, mid, mat) : null;
   if (c && v('lcFeed') !== undefined){
     c.feed = nv('lcFeed'); c.plunge = nv('lcPlunge'); c.rpm = nv('lcRpm'); c.stepdown = nv('lcDown'); c.stepover = nv('lcOver');
     c.rateUnits = +v('lcRate'); c.lengthUnits = d.units;
@@ -314,17 +332,38 @@ function libRenderDetail(mid){
   TOOLLIB.machines.forEach(function(m){ if (t.numbers[m.id] !== undefined){ any = true; nums.appendChild(el('dt', m.name)); nums.appendChild(el('dd', 'T' + t.numbers[m.id])); } });
   box.appendChild(any ? nums : el('p', 'No tool number on any machine.'));
   box.appendChild(el('h5', 'Feeds and speeds \u2014 ' + libMachineName(mid)));
+  // Every material in the library, one row each: click one to use its feeds and speeds (it stays highlighted). A
+  // material this tool has none for says so; choose it and Edit to add them. Feeds recorded for a material the
+  // library doesn't know are listed too, as Any, but can't be chosen.
   var cuts = t.cuts.filter(function(c){ return c.machine === mid; });
-  if (!cuts.length){ box.appendChild(el('p', 'No feeds and speeds for this machine yet: choose a material above, then Edit.')); return; }
+  if (!TOOLLIB.materials.length && !cuts.length){ box.appendChild(el('p', 'No materials yet: add one with + Material, then Edit to give this tool feeds and speeds for it.')); return; }
+  box.appendChild(el('p', 'Click a material to use its feeds and speeds.', 'libNote'));
   var tb = el('table'), hr = el('tr');
+  tb.className = 'libCuts';
   ['Material', 'Feed', 'Plunge', 'Spindle', 'Stepdown', 'Stepover'].forEach(function(h){ hr.appendChild(el('th', h)); });
   tb.appendChild(hr);
-  var matSel = document.getElementById('libMaterial').value;
-  cuts.forEach(function(c){
+  var matSel = libMatNow();
+  var rows = TOOLLIB.materials.map(function (m) { return {mat: m.id, cut: libCutOf(t, mid, m.id)}; })
+    .concat(cuts.filter(function (c) { return !libMaterialName(c.material); }).map(function (c) { return {mat: null, cut: c}; }));
+  rows.forEach(function(r){
+    var c = r.cut, tr = el('tr');
+    if (r.mat){
+      tr.className = 'pick' + (r.mat === matSel ? ' on' : '');
+      tr.tabIndex = 0;
+      tr.setAttribute('role', 'button');
+      tr.setAttribute('aria-pressed', r.mat === matSel ? 'true' : 'false');
+      tr.title = c ? 'Use the feeds and speeds for ' + libMaterialName(r.mat) : 'No feeds and speeds for ' + libMaterialName(r.mat) + ' yet: choose it, then Edit to add them';
+      tr.addEventListener('click', function () { libPickMaterial(r.mat); });
+      tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); libPickMaterial(r.mat); } });   // (not the panel's Enter, which picks the tool)
+    }
+    var name = r.mat ? libMaterialName(r.mat) : 'Any';
+    if (!c){
+      tr.appendChild(el('td', name));
+      var none = el('td', 'no feeds and speeds yet', 'libNone'); none.colSpan = 5; tr.appendChild(none);
+      tb.appendChild(tr); return;
+    }
     var ru = RATE_UNITS[c.rateUnits] || ('code ' + c.rateUnits), lu = c.lengthUnits === 'in' ? ' in' : ' mm';
-    var tr = el('tr');
-    if (matSel && c.material === matSel) tr.className = 'on';
-    [libMaterialName(c.material) || 'Any',
+    [name,
      c.feed !== null ? libTrim(c.feed, 2) + ' ' + ru : '\u2014',
      c.plunge !== null ? libTrim(c.plunge, 2) + ' ' + ru : '\u2014',
      c.rpm !== null ? c.rpm + ' rpm' : '\u2014',

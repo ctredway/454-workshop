@@ -292,6 +292,16 @@
   #libDetail th{text-align:left;color:var(--muted);font-weight:500;padding:4px 8px;border-bottom:1px solid var(--line)}
   #libDetail td{padding:4px 8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px}
   #libDetail tr.on td{background:var(--accent-soft)}
+  /* a material is picked by clicking its row in a tool's feeds and speeds (or its button while editing a tool) */
+  #libDetail tr.pick{cursor:pointer}
+  #libDetail tr.pick:hover td{background:var(--accent-faint)}
+  #libDetail tr.pick.on:hover td{background:var(--accent-soft)}
+  #libDetail tr.pick:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+  #libDetail tr.on td:first-child{box-shadow:inset 3px 0 0 var(--amber);font-weight:600}
+  #libDetail td.libNone{color:var(--muted);font-style:italic}
+  .libMatRow{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 8px}
+  .libMatRow button{font-size:12px;padding:3px 9px;border-radius:12px}
+  .libMatRow button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--amber);color:var(--ink)}
   #libEmpty{padding:28px 32px;font-size:13.5px;line-height:1.6;color:var(--ink)}
   #libEmpty ol{margin:8px 0 0 18px;padding:0}
   .tpLib{display:block;width:100%;text-align:left;background:none;border:0;border-radius:4px;padding:3px 0 0;margin-top:3px;font-size:11.5px;line-height:1.4;cursor:pointer}
@@ -392,6 +402,17 @@
   #cutPanel #cutFinRow{flex-wrap:wrap;row-gap:4px}      /* too wide once the panel scrolls, which made it scroll sideways too */
   #cutPanel #cutName{flex:1 1 0;width:0;min-width:0;margin-left:10px;font-family:inherit}
   .tpDragging{opacity:.45}
+  /* toolpath groups: a header line, and its toolpaths indented under it with a rule down the side */
+  .tpGroupHead{display:flex;align-items:center;margin:10px 10px 0;padding:7px 10px;border:1px solid var(--line);border-radius:5px;
+    background:var(--accent-faint);font-weight:600;font-size:13px;color:var(--ink);cursor:pointer}
+  .tpGroupHead > *{flex:none}
+  .tpGroupHead .tpNm,.tpGroupHead .tpNmEdit{flex:1 1 auto}
+  .tpGroupHead .tpInc{margin:0 6px 0 0}
+  .tpGroupHead .tpEye{margin-left:6px}
+  .tpGroupCount{font-weight:400;font-size:11.5px;color:var(--muted);margin-left:8px}
+  .tpCard.tpInGroup{margin-left:24px;position:relative}
+  .tpCard.tpInGroup::before{content:'';position:absolute;left:-12px;top:-9px;bottom:-9px;border-left:1px solid var(--line)}
+  .tpCard.tpPicked{outline:2px solid var(--amber);outline-offset:-2px}         /* --amber is the accent colour, whichever the theme */
   .tpDropOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tpStale{border-left-color:var(--err)}
   #tpPanel .tpHead b{flex:1}
@@ -468,6 +489,18 @@
   #offPanel{position:absolute;top:12px;right:12px;z-index:9;width:214px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #offPanel[hidden]{display:none}
   #offPanel h3{font-size:14px}
+  /* Fillet corners: a panel like Offset's, a little wider for its two rows of choices */
+  #fallPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #fallPanel[hidden]{display:none}
+  #fallPanel h3{font-size:14px}
+  #fallR{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #fallKind,#fallWhich{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #fallKind button,#fallWhich button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
+  #fallKind button+button,#fallWhich button+button{border-left:1px solid var(--line)}
+  #fallKind button[aria-pressed=true],#fallWhich button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  #fallWhich button:disabled{opacity:.4;cursor:default}
+  #filletAllBtn{margin-left:6px;font-size:12px;padding:4px 9px}
+  #filletAllBtn[hidden]{display:none}
   #offDist{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #tracePanel{position:absolute;top:12px;right:12px;z-index:9;width:250px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
   #tracePanel[hidden]{display:none}
@@ -823,7 +856,6 @@
       </div>
       <div class="libBar" id="libBar">
         <label for="libMachine">Machine <select id="libMachine"></select></label>
-        <label for="libMaterial">Material <select id="libMaterial"></select></label>
         <input id="libSearch" type="search" placeholder="Search tools" aria-label="Search tools">
         <span class="grow" style="flex:1"></span>
         <button id="libNewTool" title="Add a tool to the library">+ Tool</button>
@@ -1063,6 +1095,15 @@
       <p class="mirHint" id="offHint"></p>
       <div class="mirBtns"><button id="offCancel">Cancel</button><button id="offOk" class="primary">OK</button></div>
     </div>
+    <div id="fallPanel" hidden role="dialog" aria-label="Fillet corners">
+      <div class="modalHead"><h3>Fillet corners</h3><button class="modalX" id="fallX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="fallObjs"><span class="mirLbl">Shapes</span><span class="mirVal" id="fallObjsVal">none</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="fallR" id="fallRLbl">Radius</label></span><input id="fallR" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal" id="fallRU">mm</span></div>
+      <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Corner</span><span id="fallKind" role="group" aria-label="Kind of corner"><button data-k="round">Round</button><button data-k="dogbone">Dog-bone</button><button data-k="tbone">T-bone</button></span></div>
+      <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Which</span><span id="fallWhich" role="group" aria-label="Which corners"><button data-w="all">All</button><button data-w="out" title="Corners that point out of the shape: a pocket's or an inside cut's">Pointing out</button><button data-w="in" title="Corners that point into the shape: a part's, cut out round its outside">Pointing in</button></span></div>
+      <p class="mirHint" id="fallHint"></p>
+      <div class="mirBtns"><button id="fallCancel">Cancel</button><button id="fallOk" class="primary">OK</button></div>
+    </div>
     <div id="tracePanel" hidden role="dialog" aria-labelledby="traceTitle">
       <div class="mirHead"><b id="traceTitle">Trace image</b><button id="traceX" class="modalX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
       <div class="trRow"><label for="trThr">Threshold</label><input type="range" id="trThr" min="1" max="254" value="128">
@@ -1093,6 +1134,7 @@
       <span id="filletTypes" hidden role="group" aria-label="Corner type">
         <button data-ft="round">Round</button><button data-ft="dogbone">Dog-bone</button><button data-ft="tbone">T-bone</button>
       </span>
+      <button id="filletAllBtn" hidden title="Fillet every corner of some shapes at once: opens the Fillet corners panel">All corners…</button>
     </div>
   </div>
 
@@ -1162,7 +1204,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.130.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.133.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -2278,7 +2320,7 @@ function docForStorage(pretty){
   }
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
-function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), vcConverted: !!DOC.vcConverted, stock: DOC.stock,
+function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock,
   layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null}); }
 function docRestore(str){
   var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
@@ -2292,11 +2334,12 @@ function docRestore(str){
   var keep = {};
   (DOC.toolpaths || []).forEach(function (tp) { keep[tp.id] = {hidden: tp.hidden, exclude: tp.exclude}; });
   DOC.toolpaths = s.toolpaths || [];
+  DOC.tpGroups = s.tpGroups || [];
   DOC.toolpaths.forEach(function (tp) { if (keep[tp.id]){ tp.hidden = keep[tp.id].hidden; tp.exclude = keep[tp.id].exclude; } });
   tpRebuildAll();
   if (typeof renderToolpathPanel === 'function') renderToolpathPanel();
 }
-function pushUndo(){ if (typeof DRY !== 'undefined' && DRY) return; UNDO.push(docSnap()); if (UNDO.length>200) UNDO.shift(); REDO = []; }
+function pushUndo(){ if (typeof DRY !== 'undefined' && DRY) return; FALL_MARKS = null; UNDO.push(docSnap()); if (UNDO.length>200) UNDO.shift(); REDO = []; }
 function doUndo(){ if (!UNDO.length) return; REDO.push(docSnap()); docRestore(UNDO.pop()); SEL=[]; draw(); persist(); }
 function doRedo(){ if (!REDO.length) return; UNDO.push(docSnap()); docRestore(REDO.pop()); SEL=[]; draw(); persist(); }
 
@@ -2349,6 +2392,7 @@ var STAGE_LABEL = {
   star2:  'Star — click where the inner corners go, or type their radius, e.g. 15',
   poly0:  'Polyline \u2014 click first point, or type "x,y"',
   poly1:  'Polyline \u2014 next point ("@dx,dy" / "50<45" ok) \u00b7 Enter finishes \u00b7 click start closes',
+  filletall0:'Fillet corners \u2014 click shapes to add or remove them, set the radius and which corners, then OK',
   offset0:'Offset \u2014 select or click shapes, then type the distance: "+2" outward copy, "-1.5" inward',
   copy0:  'Copy \u2014 click base point, or type the offset "@dx,dy"',
   copy1:  'Copy \u2014 click destination, or type "x,y" / "@dx,dy"',
@@ -2418,6 +2462,7 @@ var TOOLS = {
   node:  {kind:'edit',   prompt:'node0',   hover:hoverNode},
   dim:   {kind:'edit',   prompt:'dim0',    hover:hoverDim},
   offset:{kind:'transform', prompt:'offset0', keepSel:true},
+  filletall:{kind:'transform', prompt:'filletall0', keepSel:true},
   copy:  {kind:'transform', prompt:'copy0',   keepSel:true},
   mirror:{kind:'transform', prompt:'mirror0', keepSel:true, letters:'hv'},
   rotate:{kind:'transform', prompt:'rotate0', keepSel:true},
@@ -2649,6 +2694,7 @@ function toolMgrEnter(t){
   DRAW = null;
   if (t !== 'mirror' && MIR) mirClose();
   if (t !== 'offset' && OFF) offClose();
+  if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
   MEAS = null;
@@ -2656,6 +2702,8 @@ function toolMgrEnter(t){
   if (ftBox){ ftBox.hidden = t !== 'fillet'; refreshFilletTypes(); }
   var frBox = document.getElementById('filletRBox');
   if (frBox){ frBox.hidden = t !== 'fillet'; if (t === 'fillet') filletRShow(); }
+  var faBtn = document.getElementById('filletAllBtn');
+  if (faBtn) faBtn.hidden = t !== 'fillet';
   var pinEl = document.getElementById('promptIn');
   if (pinEl){ pinEl.value = ''; pinEl.blur(); }
   hidePrompt();
@@ -2665,6 +2713,7 @@ function toolMgrEnter(t){
   if (desc.prompt) stagePrompt(desc.prompt);
   if (t === 'mirror' && !MIR) mirOpen();            // the panel is the tool
   if (t === 'offset' && !OFF) offOpen();
+  if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){
     b.classList.toggle('active', b.dataset.tool === t);
@@ -2755,6 +2804,9 @@ function toolClick(w, snap){
         DRAW = null; stagePrompt('arc0'); persist();
       }
     }
+  }
+  else if (TOOL === 'filletall'){
+    if (FALL){ fallClick(w); return; }               // the panel owns the picking
   }
   else if (TOOL === 'offset'){
     if (OFF){ offClick(w); return; }                 // the panel owns the picking
@@ -5683,6 +5735,7 @@ var HELP_ICONS = [
   ['#woodTitle', 'cam-reference.html#preview-in-wood', 'The material as it will look after these toolpaths, cut with each bit\u2019s real shape, tabs in amber. Play shows it being cut, in order.'],
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
+  ['#fallPanel .modalHead > h3', 'design-tools.html#fillet-corners', 'Rounds every corner of the chosen shapes at once, or only those pointing out or in. Corners it can\u2019t do are ringed in red.'],
   ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],
   ['#impTitle', 'design-tools.html#import', 'Brings a file into the drawing: its shapes, and its layers and material where the file has them. Choose whether it joins this drawing or replaces it.']
 ];
@@ -5749,9 +5802,10 @@ function toolNumbering(){
   };
 }
 // G-code for every toolpath, in order: one file, or, for a job with more than one bit, one file per bit if asked
-function tpExport(checked){
-  if (checked !== true){ tpDepthGate('Save anyway', function () { tpExport(true); }); return; }   // past the material? ask first
-  var j = tpJob();
+// only: {ids, name} to save just those toolpaths (a group's), in a file named for them
+function tpExport(checked, only){
+  if (checked !== true){ tpDepthGate('Save anyway', function () { tpExport(true, only); }, only); return; }   // past the material? ask first
+  var j = tpJob(only);
   if (!j) return;
   var files = tpBitFiles(j);
   if (files.length < 2){ gcodeSave(j.gc, j.base + '.nc', j.said); return; }
@@ -5768,9 +5822,9 @@ function tpExport(checked){
 // Before anything leaves Design (Save G-code, Preview in 454 Control): any toolpath that goes past the bottom of
 // the material is listed, and nothing happens unless the person says so. If the material's thickness isn't set,
 // depths can't be checked, and it says that instead. go() runs once it's clear, or when they choose `anyway`.
-function tpDepthGate(anyway, go){
+function tpDepthGate(anyway, go, only){
   if (!camReady()){ go(); return; }
-  var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });
+  var chosen = tpList().filter(function (tp) { return tpForJob(tp, only); });
   var broken = chosen.filter(function (tp) { return tpExprProblem(tp); });
   if (broken.length){
     uiDialog({title: 'Parameters can’t be worked out', note: true,
@@ -5811,10 +5865,17 @@ function tpBitFiles(j){
 }
 // The job's G-code, exactly as Save G-code writes it, after the same checks; null if something needs
 // fixing first (the checks say what).
-function tpJob(){
+// Which toolpaths go in the G-code: the ticked ones on the sheet shown (one sheet per file), or, given `only`
+// ({ids}), just those of them.
+function tpForJob(tp, only){
+  if (tp.exclude || (multiSheet() && tpSheetOf(tp) !== DOC.activeSheet)) return false;
+  return !only || only.ids.indexOf(tp.id) >= 0;
+}
+function tpJob(only){
   if (!camReady() || !tpList().length) return null;
+  tpGroupsTidy();                                // (the order the panel shows)
   var toolNumber = toolNumbering();              // the same numbers the job sheet shows
-  var chosen = tpList().filter(function (tp) { return !tp.exclude && (!multiSheet() || tpSheetOf(tp) === DOC.activeSheet); });   // one sheet per file
+  var chosen = tpList().filter(function (tp) { return tpForJob(tp, only); });
   var noTool = chosen.filter(function (tp) { return !tpToolChosen(tp); });
   if (noTool.length){
     uiDialog({title: 'Choose a tool first',
@@ -5851,6 +5912,7 @@ function tpJob(){
   var safeZ = tpSurface() + 6, gc = Cam.toGcodeJob(parts, {safeZ: safeZ, notes: notes});
   var base = (DOC.name || UICFG.lastGcodeName || 'toolpaths').replace(/\.(nc|gcode|tap|ngc)$/i, '');
   if (multiSheet()) base += ' - ' + sheetTitle(DOC.activeSheet);       // one file per sheet, named for it
+  if (only && only.name) base += ' - ' + only.name;                     // a group's own file
   var tools = {}; parts.forEach(function (p) { tools[p.tool] = 1; });
   var nt = Object.keys(tools).length;
   var total = multiSheet() ? tpList().filter(function (tp) { return tpSheetOf(tp) === DOC.activeSheet; }).length : tpList().length;
@@ -7194,6 +7256,7 @@ function tpRename(tp, name){
 // sheet being shown that isn't hidden.
 function tpDrawn(tp){
   if (!tpOnSheet(tp)) return false;
+  if (TP_PICKED.length) return TP_PICKED.indexOf(tp.id) >= 0;   // several picked (Ctrl+click): just those
   if (CUTSEL) return tp.id === CUTSEL;
   return !tp.hidden;
 }
@@ -7222,12 +7285,21 @@ function tpFoldAll(){
 }
 function renderMyToolpaths(){
   var box = document.getElementById('tpList');
+  tpGroupsTidy();                                        // a group's toolpaths together, before anything is drawn
+  TP_PICKED = TP_PICKED.filter(function (id) { return tpList().some(function (t) { return t.id === id; }); });
   var all = tpList(), renameBox = null;
   all.forEach(function (tp, idx) {
     if (multiSheet() && tpSheetOf(tp) !== DOC.activeSheet) return;   // other sheets' toolpaths: shown with their sheet
+    var grp = tpGroupOf(tp);
+    if (grp){
+      var gm = tpGroupMembers(grp.id);
+      if (gm[0] === tp){ var gh = tpGroupHeader(grp, gm); box.appendChild(gh); if (gh._rename) renameBox = gh._rename; }
+      if (grp.folded) return;                            // folded: the header stands for them
+    }
     var stale = tpStale(tp);
     var card = document.createElement('div');
-    card.className = 'tpCard tpMine' + (stale || !tpToolChosen(tp) ? ' tpStale' : '') + (tp.exclude ? ' tpExcluded' : '') + (tp.folded ? ' tpFolded' : '');
+    card.className = 'tpCard tpMine' + (stale || !tpToolChosen(tp) ? ' tpStale' : '') + (tp.exclude ? ' tpExcluded' : '') + (tp.folded ? ' tpFolded' : '') +
+                     (grp ? ' tpInGroup' : '') + (TP_PICKED.indexOf(tp.id) >= 0 ? ' tpPicked' : '');
     card.dataset.idx = idx;
     var h = document.createElement('div'); h.className = 'tpName';
     // fold the card to its title, or open it
@@ -7335,9 +7407,9 @@ function renderMyToolpaths(){
       b.addEventListener('click', function (ev) { ev.stopPropagation(); fn(); });
       return b;
     }
-    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, tpNeighbour(idx, -1)); });
-    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, tpNeighbour(idx, 1)); });
-    up.disabled = tpNeighbour(idx, -1) < 0; dn.disabled = tpNeighbour(idx, 1) < 0;
+    var up = btn('up', 'Run earlier', 'Move ' + tp.name + ' earlier', function () { tpMoveTo(idx, tpStep(idx, -1)); });
+    var dn = btn('down', 'Run later', 'Move ' + tp.name + ' later', function () { tpMoveTo(idx, tpStep(idx, 1)); });
+    up.disabled = tpStep(idx, -1) < 0; dn.disabled = tpStep(idx, 1) < 0;
     bar.appendChild(up); bar.appendChild(dn);
     var gap = document.createElement('span'); gap.style.flex = '1'; bar.appendChild(gap);
     var rc = btn('regen', stale ? 'Out of date: recalculate this toolpath from its shapes and the material as they are now'
@@ -7351,10 +7423,27 @@ function renderMyToolpaths(){
     card.appendChild(bar);
     }
 
-    card.addEventListener('click', function () { CUTSEL = CUTSEL === tp.id ? null : tp.id; renderToolpathPanel(); draw(); });
+    card.addEventListener('click', function (ev) {
+      if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey)){   // pick several, to group them
+        if (!TP_PICKED.length && CUTSEL && CUTSEL !== tp.id) TP_PICKED.push(CUTSEL);
+        var at = TP_PICKED.indexOf(tp.id);
+        if (at >= 0) TP_PICKED.splice(at, 1); else TP_PICKED.push(tp.id);
+        CUTSEL = null;
+      } else { TP_PICKED = []; CUTSEL = CUTSEL === tp.id ? null : tp.id; }
+      renderToolpathPanel(); draw();
+    });
     card.addEventListener('contextmenu', function (e) {
       e.preventDefault();
-      ctxMenuOpen(e.clientX, e.clientY, [
+      // grouping: the toolpaths picked with Ctrl+click (this one among them), or this one
+      var picked = TP_PICKED.indexOf(tp.id) >= 0 && TP_PICKED.length > 1 ? TP_PICKED.slice() : null;
+      var groupItems = picked ? [{label: 'Group these ' + picked.length + ' toolpaths', fn: function () { tpGroupMake(picked); }}]
+                              : [{label: tp.group ? 'Take out of \u201c' + tpGroupOf(tp).name + '\u201d' : 'Make a group of this toolpath',
+                                  fn: function () { if (tp.group) tpGroupLeave(tp); else tpGroupMake([tp.id]); }}];
+      if (!picked) tpGroups().forEach(function (g) {
+        var gm = tpGroupMembers(g.id);
+        if (g.id !== tp.group && gm.length && tpSheetOf(gm[0]) === tpSheetOf(tp)) groupItems.push({label: 'Add to \u201c' + g.name + '\u201d', fn: function () { tpGroupJoin(tp, g.id); }});
+      });
+      ctxMenuOpen(e.clientX, e.clientY, groupItems.concat([null,
         {label: stale ? 'Recalculate (out of date)' : 'Recalculate', fn: function () { tpRecalc(tp); }},
         {label: 'Edit\u2026', fn: function () { setTool('select'); cutOpen(tp); }},
         {label: 'Rename\u2026', fn: function () { tpRenameStart(tp); }},
@@ -7363,21 +7452,23 @@ function renderMyToolpaths(){
         {label: tp.hidden ? 'Show on the drawing' : 'Hide on the drawing', fn: function () { tpShowHide(tp); }},
         {label: tp.exclude ? 'Include in the G-code' : 'Leave out of the G-code', fn: function () { tp.exclude = !tp.exclude; persist(); renderToolpathPanel(); }},
         null,
-        {label: 'Run earlier', disabled: tpNeighbour(idx, -1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, -1)); }},
-        {label: 'Run later', disabled: tpNeighbour(idx, 1) < 0, fn: function () { tpMoveTo(idx, tpNeighbour(idx, 1)); }},
+        {label: 'Run earlier', disabled: tpStep(idx, -1) < 0, fn: function () { tpMoveTo(idx, tpStep(idx, -1)); }},
+        {label: 'Run later', disabled: tpStep(idx, 1) < 0, fn: function () { tpMoveTo(idx, tpStep(idx, 1)); }},
         null,
         {label: 'Delete', danger: true, fn: function () { tpDelete(tp.id); }}
-      ]);
+      ]));
     });
     // drag a card onto another to move it there
     card.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; card.classList.add('tpDropOver'); });
     card.addEventListener('dragleave', function () { card.classList.remove('tpDropOver'); });
     card.addEventListener('drop', function (e) {
       e.preventDefault(); card.classList.remove('tpDropOver');
-      var from = parseInt(e.dataTransfer.getData('text/plain'), 10);
-      if (!isNaN(from)) tpMoveTo(from, idx);
+      var d = e.dataTransfer.getData('text/plain');
+      if (/^g:/.test(d)){ tpGroupDropAt(d.slice(2), idx); return; }   // a whole group, to start here
+      var from = parseInt(d, 10);
+      if (!isNaN(from)) tpDropOn(from, idx);              // and into this card's group, or out of one
     });
-    if (CUTSEL === tp.id) card.style.background = 'var(--accent-faint)';
+    if (CUTSEL === tp.id || TP_PICKED.indexOf(tp.id) >= 0) card.style.background = 'var(--accent-faint)';
     box.appendChild(card);
   });
   if (renameBox){ if (renameBox.focus) renameBox.focus(); if (renameBox.select) renameBox.select(); }
@@ -7403,6 +7494,306 @@ function renderMyToolpaths(){
   }
 }
 
+// ---- toolpath groups ----
+// A group bundles toolpaths under one name (an inlay's pocket half, say): it folds to one line, its toolpaths are
+// shown, hidden, ticked and recalculated together, it moves through the cutting order as one block, and it can be
+// saved as a G-code file of its own. DOC.tpGroups lists them ({id, name, folded}); each member has tp.group.
+// A group's toolpaths always sit together in the cutting order, where its first one is (tpGroupsTidy keeps it so),
+// and are all on one sheet: each sheet is its own piece of material.
+var TP_GROUP_RENAMING = null;                           // the id of the group whose header shows a name box
+var TP_PICKED = [];                                     // toolpath ids picked with Ctrl+click, to group them
+function tpGroups(){ return DOC.tpGroups || (DOC.tpGroups = []); }
+function tpGroupById(gid){ return tpGroups().filter(function (g) { return g.id === gid; })[0] || null; }
+function tpGroupOf(tp){ return tp && tp.group ? tpGroupById(tp.group) : null; }
+function tpGroupMembers(gid){ return tpList().filter(function (t) { return t.group === gid; }); }
+// Keep every group together, where its first toolpath is, on that toolpath's sheet; forget empty groups and
+// toolpaths' memberships of groups that are gone. Returns true if anything changed.
+function tpGroupsTidy(){
+  var list = tpList(), groups = tpGroups(), changed = false, sheetOf = {};
+  list.forEach(function (t) {
+    if (!t.group) return;
+    if (!tpGroupById(t.group)){ delete t.group; changed = true; return; }
+    if (!(t.group in sheetOf)) sheetOf[t.group] = tpSheetOf(t);
+    else if (tpSheetOf(t) !== sheetOf[t.group]){ delete t.group; changed = true; }   // another sheet: not with the others
+  });
+  var out = [], done = {};
+  list.forEach(function (t) {
+    if (!t.group){ out.push(t); return; }
+    if (done[t.group]) return;
+    done[t.group] = true;
+    list.forEach(function (m) { if (m.group === t.group) out.push(m); });
+  });
+  for (var i = 0; i < out.length; i++) if (out[i] !== list[i]){ changed = true; break; }
+  if (changed){ list.length = 0; out.forEach(function (t) { list.push(t); }); }
+  var kept = groups.filter(function (g) { return done[g.id]; });
+  if (kept.length !== groups.length){ DOC.tpGroups = kept; changed = true; }
+  return changed;
+}
+function tpGroupNewName(){
+  var names = tpGroups().map(function (g) { return g.name; }), n = tpGroups().length + 1;
+  while (names.indexOf('Group ' + n) >= 0) n++;
+  return 'Group ' + n;
+}
+// Make a group of these toolpaths (ids), named `name` or "Group n"; the name box opens, to name it there and then.
+function tpGroupMake(ids, name){
+  var list = tpList(), members = list.filter(function (t) { return ids.indexOf(t.id) >= 0; });
+  if (!members.length) return null;
+  var sheet = tpSheetOf(members[0]);
+  members = members.filter(function (t) { return tpSheetOf(t) === sheet; });
+  pushUndo();
+  var g = {id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name || tpGroupNewName(), folded: false};
+  tpGroups().push(g);
+  members.forEach(function (t) { t.group = g.id; });
+  tpGroupsTidy();
+  TP_PICKED = [];
+  if (!name) TP_GROUP_RENAMING = g.id;
+  persist(); renderToolpathPanel(); draw();
+  return g;
+}
+function tpGroupJoin(tp, gid){
+  var g = tpGroupById(gid);
+  if (!g || tp.group === gid) return;
+  var others = tpGroupMembers(gid);
+  if (others.length && tpSheetOf(others[0]) !== tpSheetOf(tp)){ toast('info', 'Not on that sheet', '\u201c' + g.name + '\u201d is on another sheet. A group\u2019s toolpaths are all cut from one piece of material.'); return; }
+  pushUndo(); tp.group = gid; tpGroupsTidy();
+  persist(); renderToolpathPanel(); draw();
+}
+// Out of its group: it goes just after the group's other toolpaths.
+function tpGroupLeave(tp){
+  if (!tp.group) return;
+  pushUndo();
+  var list = tpList(), gid = tp.group, rest = tpGroupMembers(gid).filter(function (t) { return t !== tp; });
+  delete tp.group;
+  if (rest.length){
+    list.splice(list.indexOf(tp), 1);
+    list.splice(list.indexOf(rest[rest.length - 1]) + 1, 0, tp);
+  }
+  tpGroupsTidy();
+  persist(); renderToolpathPanel(); draw();
+}
+function tpUngroup(gid){
+  var g = tpGroupById(gid); if (!g) return;
+  pushUndo();
+  tpGroupMembers(gid).forEach(function (t) { delete t.group; });
+  DOC.tpGroups = tpGroups().filter(function (x) { return x.id !== gid; });
+  persist(); renderToolpathPanel(); draw();
+  toast('ok', 'Ungrouped', '\u201c' + g.name + '\u201d is gone; its toolpaths are still there, in the same order.');
+}
+function tpGroupDelete(gid){
+  var g = tpGroupById(gid); if (!g) return;
+  var n = tpGroupMembers(gid).length;
+  uiDialog({title: 'Delete \u201c' + g.name + '\u201d?', body: 'The group and its ' + (n === 1 ? 'toolpath' : n + ' toolpaths') + ' are deleted. The drawing is untouched, and Undo brings them back.',
+            ok: 'Delete', danger: true}).then(function (ok) {
+    if (!ok) return;
+    pushUndo();
+    DOC.toolpaths = tpList().filter(function (t) { return t.group !== gid; });
+    DOC.tpGroups = tpGroups().filter(function (x) { return x.id !== gid; });
+    if (CUTSEL && !tpList().some(function (t) { return t.id === CUTSEL; })) CUTSEL = null;
+    persist(); renderToolpathPanel(); draw();
+  });
+}
+function tpGroupRename(g, name){
+  var nm = tpNameClean(name);
+  if (!nm || nm === g.name) return false;
+  pushUndo(); g.name = nm; persist(); renderToolpathPanel();
+  return true;
+}
+// Show or hide them all: if any is shown, hide them all; if all are hidden, show them all.
+function tpGroupShowHide(gid){
+  var m = tpGroupMembers(gid), hide = m.some(function (t) { return !t.hidden; });
+  m.forEach(function (t) { t.hidden = hide; });
+  CUTSEL = null; persist(); renderToolpathPanel(); draw();
+}
+// In or out of the G-code: if all are in, take them all out; otherwise put them all in.
+function tpGroupInclude(gid){
+  var m = tpGroupMembers(gid), allIn = m.every(function (t) { return !t.exclude; });
+  m.forEach(function (t) { t.exclude = allIn; });
+  persist(); renderToolpathPanel(); draw();
+}
+function tpGroupRecalc(gid){
+  var g = tpGroupById(gid), m = tpGroupMembers(gid), warned = [];
+  m.forEach(function (t) { tpGenerate(t); if (t.warning) warned.push(t.name); });
+  persist(); renderToolpathPanel(); draw();
+  if (warned.length) toast('warn', g.name + ' recalculated', 'Check ' + warned.join(', ') + ': ' + (warned.length === 1 ? 'it has' : 'they have') + ' a note.');
+  else toast('ok', g.name + ' recalculated', m.length + (m.length === 1 ? ' toolpath' : ' toolpaths') + ' rebuilt from their shapes and the material as they are now.');
+}
+// Where the group's block starts and ends in the list.
+function tpGroupSpan(gid){
+  var list = tpList(), a = -1, b = -1;
+  list.forEach(function (t, i) { if (t.group === gid){ if (a < 0) a = i; b = i; } });
+  return {a: a, b: b};
+}
+// The place a toolpath or a group's block moves to, one step earlier (-1) or later (1), on its own sheet: past one
+// toolpath, or past a whole group. A toolpath in a group moves only within it. -1 if it can't.
+function tpStep(idx, dir){
+  var list = tpList(), tp = list[idx];
+  if (!tp) return -1;
+  if (tp.group){
+    for (var i = idx + dir; i >= 0 && i < list.length; i += dir) if (list[i].group === tp.group) return i;
+    return -1;
+  }
+  var k = tpNeighbour(idx, dir);
+  if (k < 0) return -1;
+  if (list[k].group){ var s = tpGroupSpan(list[k].group); return dir < 0 ? s.a : s.b; }
+  return k;
+}
+function tpGroupStep(gid, dir){
+  var list = tpList(), s = tpGroupSpan(gid);
+  if (s.a < 0) return -1;
+  var k = tpNeighbour(dir < 0 ? s.a : s.b, dir);
+  if (k < 0) return -1;
+  return list[k].group ? (dir < 0 ? tpGroupSpan(list[k].group).a : tpGroupSpan(list[k].group).b) : k;
+}
+// Move the whole group so it starts at (dir -1) or ends at (dir 1) the place `to`.
+function tpGroupMove(gid, dir){
+  var to = tpGroupStep(gid, dir);
+  if (to < 0) return;
+  pushUndo();
+  var list = tpList(), s = tpGroupSpan(gid), block = list.splice(s.a, s.b - s.a + 1);
+  var at = dir < 0 ? to : to - block.length + 1;
+  Array.prototype.splice.apply(list, [at, 0].concat(block));
+  persist(); renderToolpathPanel(); draw();
+}
+// A card dropped on another card: it moves there, and joins that card's group (or leaves its own, onto a card
+// that isn't in one). Dropped on a group's header: to the start of that group.
+function tpDropOn(from, to, gid){
+  var list = tpList(), tp = list[from];
+  if (!tp) return;
+  if (gid !== undefined){
+    var s = tpGroupSpan(gid); if (s.a < 0) return;
+    if (tp.group !== gid && tpSheetOf(list[s.a]) !== tpSheetOf(tp)) return;
+    pushUndo();
+    list.splice(from, 1);
+    s = tpGroupSpan(gid);
+    list.splice(s.a < 0 ? list.length : s.a, 0, tp);
+    tp.group = gid;
+  } else {
+    var target = list[to];
+    if (!target || (from === to)) return;
+    pushUndo();
+    list.splice(from, 1); list.splice(to, 0, tp);
+    if (target.group) tp.group = target.group; else delete tp.group;
+  }
+  tpGroupsTidy();
+  persist(); renderToolpathPanel(); draw();
+}
+// Save the group's ticked toolpaths as a G-code file of their own.
+function tpGroupSave(gid){
+  var g = tpGroupById(gid), ids = tpGroupMembers(gid).filter(function (t) { return !t.exclude; }).map(function (t) { return t.id; });
+  if (!ids.length){ toast('info', 'Nothing to save', 'Every toolpath in \u201c' + g.name + '\u201d is unticked. Tick the ones to include.'); return; }
+  tpExport(false, {ids: ids, name: g.name});
+}
+// The header line of a group, before its first toolpath's card.
+function tpGroupHeader(g, members){
+  var head = document.createElement('div');
+  head.className = 'tpGroupHead' + (g.folded ? ' tpFolded' : '');
+  head.dataset.group = g.id;
+  var fold = document.createElement('button'); fold.className = 'tpFold';
+  fold.textContent = g.folded ? '\u25b8' : '\u25be';
+  fold.title = g.folded ? 'Show this group\u2019s toolpaths' : 'Fold the group to this line';
+  fold.setAttribute('aria-label', (g.folded ? 'Show the toolpaths in ' : 'Fold ') + g.name);
+  fold.setAttribute('aria-expanded', g.folded ? 'false' : 'true');
+  fold.addEventListener('click', function (ev) { ev.stopPropagation(); g.folded = !g.folded; persist(); renderToolpathPanel(); });
+  head.appendChild(fold);
+  var grip = document.createElement('span'); grip.className = 'tpGrip'; grip.draggable = true;
+  grip.textContent = '\u2807'; grip.title = 'Drag to move the whole group'; grip.setAttribute('aria-hidden', 'true');
+  grip.addEventListener('click', function (ev) { ev.stopPropagation(); });
+  grip.addEventListener('dragstart', function (e) { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'g:' + g.id); });
+  head.appendChild(grip);
+  var nIn = members.filter(function (t) { return !t.exclude; }).length;
+  var inc = document.createElement('input'); inc.type = 'checkbox'; inc.className = 'tpInc';
+  inc.checked = nIn === members.length; inc.indeterminate = nIn > 0 && nIn < members.length;
+  inc.title = nIn === members.length ? 'All included in the saved G-code \u2014 untick to leave them all out'
+            : nIn ? nIn + ' of ' + members.length + ' included \u2014 tick to include them all' : 'All left out of the saved G-code \u2014 tick to include them all';
+  inc.setAttribute('aria-label', 'Include the toolpaths in ' + g.name + ' when saving G-code');
+  inc.addEventListener('click', function (ev) { ev.stopPropagation(); });
+  inc.addEventListener('change', function () { tpGroupInclude(g.id); });
+  head.appendChild(inc);
+  if (TP_GROUP_RENAMING === g.id){
+    var ni = document.createElement('input'); ni.type = 'text'; ni.className = 'tpNmEdit'; ni.maxLength = 60; ni.value = g.name; ni.spellcheck = false;
+    ni.setAttribute('aria-label', 'Name of this group');
+    var done = false, end = function (save) { if (done) return; done = true; TP_GROUP_RENAMING = null; if (!save || !tpGroupRename(g, ni.value)) renderToolpathPanel(); };
+    ['click', 'dblclick', 'mousedown'].forEach(function (evName) { ni.addEventListener(evName, function (ev) { ev.stopPropagation(); }); });
+    ni.addEventListener('keydown', function (ev) {
+      ev.stopPropagation();
+      if (ev.key === 'Enter'){ ev.preventDefault(); end(true); } else if (ev.key === 'Escape'){ ev.preventDefault(); end(false); }
+    });
+    ni.addEventListener('blur', function () { end(true); });
+    head.appendChild(ni); head._rename = ni;
+  } else {
+    var nm = document.createElement('span'); nm.className = 'tpNm'; nm.textContent = g.name;
+    nm.title = g.name + ' \u2014 double-click to rename';
+    nm.addEventListener('dblclick', function (ev) { ev.stopPropagation(); TP_GROUP_RENAMING = g.id; renderToolpathPanel(); });
+    head.appendChild(nm);
+  }
+  var cnt = document.createElement('span'); cnt.className = 'tpGroupCount';
+  cnt.textContent = members.length + (members.length === 1 ? ' toolpath' : ' toolpaths');
+  head.appendChild(cnt);
+  // what a folded group must still say: any of its toolpaths' warnings
+  if (g.folded){
+    var warns = [];
+    members.forEach(function (t) {
+      var st = !tpToolChosen(t) ? 'no tool chosen' : tpStale(t) ? 'the drawing changed: recalculate it' : '';
+      tpCardWarnings(t, tpList().indexOf(t)).concat(st ? [st] : []).forEach(function (w) { warns.push(t.name + ': ' + w); });
+    });
+    if (warns.length){
+      var wb = document.createElement('span'); wb.className = 'tpWarnMark'; wb.textContent = '\u26a0';
+      wb.title = warns.join('\n'); wb.setAttribute('aria-label', 'Warning: ' + warns.join('. '));
+      head.appendChild(wb);
+    }
+  }
+  var allHidden = members.every(function (t) { return t.hidden; });
+  var eye = document.createElement('button'); eye.className = 'tpEye' + (allHidden ? ' off' : '');
+  eye.innerHTML = allHidden
+    ? '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8z"/><path d="M2.5 13.5l11-11"/></svg>'
+    : '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+  eye.title = allHidden ? 'All hidden on the drawing \u2014 click to show them' : 'Shown on the drawing \u2014 click to hide them all';
+  eye.setAttribute('aria-label', (allHidden ? 'Show ' : 'Hide ') + 'the toolpaths in ' + g.name);
+  eye.addEventListener('click', function (ev) { ev.stopPropagation(); tpGroupShowHide(g.id); });
+  head.appendChild(eye);
+  head.addEventListener('click', function () { g.folded = !g.folded; persist(); renderToolpathPanel(); });
+  head.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+    var anyShown = members.some(function (t) { return !t.hidden; }), allIn = members.every(function (t) { return !t.exclude; });
+    ctxMenuOpen(e.clientX, e.clientY, [
+      {label: 'Recalculate the group', fn: function () { tpGroupRecalc(g.id); }},
+      {label: 'Rename\u2026', fn: function () { TP_GROUP_RENAMING = g.id; renderToolpathPanel(); }},
+      {label: g.folded ? 'Show its toolpaths' : 'Fold to this line', fn: function () { g.folded = !g.folded; persist(); renderToolpathPanel(); }},
+      {label: 'Save G-code for this group\u2026', disabled: !camReady(), fn: function () { tpGroupSave(g.id); }},
+      null,
+      {label: anyShown ? 'Hide them on the drawing' : 'Show them on the drawing', fn: function () { tpGroupShowHide(g.id); }},
+      {label: allIn ? 'Leave them out of the G-code' : 'Include them all in the G-code', fn: function () { tpGroupInclude(g.id); }},
+      null,
+      {label: 'Run the group earlier', disabled: tpGroupStep(g.id, -1) < 0, fn: function () { tpGroupMove(g.id, -1); }},
+      {label: 'Run the group later', disabled: tpGroupStep(g.id, 1) < 0, fn: function () { tpGroupMove(g.id, 1); }},
+      null,
+      {label: 'Ungroup (keep the toolpaths)', fn: function () { tpUngroup(g.id); }},
+      {label: 'Delete the group and its toolpaths\u2026', danger: true, fn: function () { tpGroupDelete(g.id); }}
+    ]);
+  });
+  head.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; head.classList.add('tpDropOver'); });
+  head.addEventListener('dragleave', function () { head.classList.remove('tpDropOver'); });
+  head.addEventListener('drop', function (e) {
+    e.preventDefault(); head.classList.remove('tpDropOver');
+    var d = e.dataTransfer.getData('text/plain');
+    if (/^g:/.test(d)){ tpGroupDropOnGroup(d.slice(2), g.id); return; }
+    var from = parseInt(d, 10);
+    if (!isNaN(from)) tpDropOn(from, -1, g.id);
+  });
+  return head;
+}
+// A group's header dropped on a toolpath card or another group: the group moves to start there.
+function tpGroupDropAt(gid, to){
+  var list = tpList(), s = tpGroupSpan(gid), target = list[to];
+  if (s.a < 0 || !target || target.group === gid || tpSheetOf(target) !== tpSheetOf(list[s.a])) return;
+  if (target.group) to = tpGroupSpan(target.group).a;      // not into the middle of another group
+  pushUndo();
+  var block = list.splice(s.a, s.b - s.a + 1);
+  var at = to > s.b ? to - block.length : to;
+  Array.prototype.splice.apply(list, [at, 0].concat(block));
+  persist(); renderToolpathPanel(); draw();
+}
+function tpGroupDropOnGroup(gid, onto){ var s = tpGroupSpan(onto); if (s.a >= 0) tpGroupDropAt(gid, s.a); }
 // ---- Preview in 454 Control ----
 // Hands the job's G-code (exactly what Save G-code writes) to 454 Control, for its preview: the 3D view
 // and playback, the time estimate with the machine's acceleration, and the checks. Nothing is sent to the
@@ -8301,7 +8692,7 @@ function woodPlayWire(){
 var TPL_KIND = '454-toolpath-template';
 // What a template doesn't keep: which shapes, where the tabs sat on them, and everything worked out from them
 var TPL_DROP = ['id', 'ents', 'tabPts', 'startPts', 'past', 'moves', 'sheet', 'sig', 'warning', 'rasterLines', 'vcNote', 'vcFlat', 'vcDepth',
-                'rings', 'restRuns', 'vcFloor', 'islands', 'holes', 'foundBy', 'hidden', 'vcFrom', 'restFrom'];
+                'rings', 'restRuns', 'vcFloor', 'islands', 'holes', 'foundBy', 'hidden', 'vcFrom', 'restFrom', 'group'];
 
 // The template for the toolpaths on this sheet: each one's settings and the names of its shapes' layers
 function tplMake(){
@@ -8944,8 +9335,8 @@ function libCutText(c){
 // ---- the Tool library dialog ----
 var LIBUI = {sel:null, q:'', pick:null, edit:null, draft:null};           // pick: set when choosing a tool for a toolpath
 // Opened to manage tools, or (with onPick) to choose one for a toolpath, the way VCarve's
-// Tool Database is used both ways. The Machine and Material pickers at the top decide which
-// feeds and speeds the chosen tool brings with it.
+// Tool Database is used both ways. The Machine picker at the top, and the material clicked in a tool's
+// Feeds and speeds list, decide which feeds and speeds the chosen tool brings with it.
 function libOpen(selectId, onPick){
   if (selectId) LIBUI.sel = selectId;
   LIBUI.pick = onPick || null;
@@ -8988,14 +9379,11 @@ function libRender(){
     ? TOOLLIB.tools.length + ' tools \u00b7 from ' + TOOLLIB.source.file + ' \u00b7 ' + new Date(TOOLLIB.source.importedAt).toLocaleDateString()
     : '';
   if (!has) return;
-  var mSel = document.getElementById('libMachine'), matSel = document.getElementById('libMaterial');
+  var mSel = document.getElementById('libMachine');
   var mid = libDefaultMachine();
   mSel.innerHTML = '';
   TOOLLIB.machines.forEach(function(m){ var o = document.createElement('option'); o.value = m.id; o.textContent = m.name; mSel.appendChild(o); });
   mSel.value = mid;
-  matSel.innerHTML = '<option value="">All materials</option>';
-  TOOLLIB.materials.forEach(function(m){ var o = document.createElement('option'); o.value = m.id; o.textContent = m.name; matSel.appendChild(o); });
-  matSel.value = UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? UICFG.libMaterial : '';
   libRenderTree(mid);
   libRenderDetail(mid);
   libPickState();
@@ -9006,7 +9394,7 @@ function libPickState(){
   var t = LIBUI.sel ? libTool(LIBUI.sel) : null;
   go.disabled = !t;
   document.getElementById('libPickNote').textContent = t
-    ? t.name + (UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? ' \u00b7 feeds for ' + libMaterialName(UICFG.libMaterial) : ' \u00b7 choose a material for its feeds')
+    ? t.name + (libMatNow() ? ' \u00b7 feeds for ' + libMaterialName(libMatNow()) : ' \u00b7 click a material in its feeds and speeds')
     : 'Pick a tool, then Select \u2014 or double-click it.';
 }
 function libToolRow(t, mid){
@@ -9118,10 +9506,29 @@ function libAddMaterial(name){
   UICFG.libMaterial = id; uiCfgSave();
   libCommit('Added ' + name + ': choose a tool and Edit to give it feeds and speeds');
 }
+// The material chosen for feeds and speeds: picked by clicking it in a tool's Feeds and speeds list (or the row of
+// materials while editing a tool). It's remembered, and new toolpaths take that material's feeds. '' when none.
+function libMatNow(){ return UICFG.libMaterial && libMaterialName(UICFG.libMaterial) ? UICFG.libMaterial : ''; }
+function libPickMaterial(id){
+  if (LIBUI.edit) libReadDraft();                       // what's been typed for the material being left is kept
+  UICFG.libMaterial = id; uiCfgSave();
+  if (LIBUI.edit) libRender(); else { libRenderDetail(libDefaultMachine()); libPickState(); }
+}
+// The materials as a row of buttons, the chosen one pressed (for the tool editor).
+function libMaterialButtons(){
+  var row = document.createElement('div'); row.className = 'libMatRow'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', 'Material');
+  TOOLLIB.materials.forEach(function (m) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = m.name;
+    b.setAttribute('aria-pressed', m.id === libMatNow() ? 'true' : 'false');
+    b.addEventListener('click', function () { libPickMaterial(m.id); });
+    row.appendChild(b);
+  });
+  return row;
+}
 function libCutOf(t, mid, mat){ return t.cuts.filter(function (c) { return c.machine === mid && c.material === mat; })[0] || null; }
 function libRenderEditor(box, t, mid){
   if (!LIBUI.draft || LIBUI.draft.id !== t.id) LIBUI.draft = JSON.parse(JSON.stringify(t));
-  var d = LIBUI.draft, mat = document.getElementById('libMaterial').value || '';
+  var d = LIBUI.draft, mat = libMatNow();
   function el(tag, txt, cls){ var e = document.createElement(tag); if (txt !== undefined) e.textContent = txt; if (cls) e.className = cls; return e; }
   function field(form, label, input, unit){
     var l = el('label', label); l.htmlFor = input.id; form.appendChild(l);
@@ -9146,8 +9553,10 @@ function libRenderEditor(box, t, mid){
   box.appendChild(g);
   // feeds and speeds for the chosen material
   box.appendChild(el('h5', 'Feeds and speeds' + (mat ? ' for ' + libMaterialName(mat) : '') + ' on ' + libMachineName(mid)));
+  if (TOOLLIB.materials.length) box.appendChild(libMaterialButtons());
   if (!mat){
-    box.appendChild(el('p', 'Choose a material above to set this tool\u2019s feeds and speeds for it. Each material keeps its own.', 'libNote'));
+    box.appendChild(el('p', TOOLLIB.materials.length ? 'Pick a material to set this tool\u2019s feeds and speeds for it. Each material keeps its own.'
+                                                   : 'Add a material with + Material, to give this tool feeds and speeds for it.', 'libNote'));
   } else {
     var c = libCutOf(d, mid, mat);
     if (!c){
@@ -9207,7 +9616,7 @@ function libReadDraft(){
   if (v('ltNotes') !== undefined) d.notes = v('ltNotes');
   var mid = libDefaultMachine(), n = nv('ltNum');
   if (v('ltNum') !== undefined){ if (n === null) delete d.numbers[mid]; else d.numbers[mid] = Math.round(n); }
-  var mat = document.getElementById('libMaterial').value || '', c = mat ? libCutOf(d, mid, mat) : null;
+  var mat = libMatNow(), c = mat ? libCutOf(d, mid, mat) : null;
   if (c && v('lcFeed') !== undefined){
     c.feed = nv('lcFeed'); c.plunge = nv('lcPlunge'); c.rpm = nv('lcRpm'); c.stepdown = nv('lcDown'); c.stepover = nv('lcOver');
     c.rateUnits = +v('lcRate'); c.lengthUnits = d.units;
@@ -9257,17 +9666,38 @@ function libRenderDetail(mid){
   TOOLLIB.machines.forEach(function(m){ if (t.numbers[m.id] !== undefined){ any = true; nums.appendChild(el('dt', m.name)); nums.appendChild(el('dd', 'T' + t.numbers[m.id])); } });
   box.appendChild(any ? nums : el('p', 'No tool number on any machine.'));
   box.appendChild(el('h5', 'Feeds and speeds \u2014 ' + libMachineName(mid)));
+  // Every material in the library, one row each: click one to use its feeds and speeds (it stays highlighted). A
+  // material this tool has none for says so; choose it and Edit to add them. Feeds recorded for a material the
+  // library doesn't know are listed too, as Any, but can't be chosen.
   var cuts = t.cuts.filter(function(c){ return c.machine === mid; });
-  if (!cuts.length){ box.appendChild(el('p', 'No feeds and speeds for this machine yet: choose a material above, then Edit.')); return; }
+  if (!TOOLLIB.materials.length && !cuts.length){ box.appendChild(el('p', 'No materials yet: add one with + Material, then Edit to give this tool feeds and speeds for it.')); return; }
+  box.appendChild(el('p', 'Click a material to use its feeds and speeds.', 'libNote'));
   var tb = el('table'), hr = el('tr');
+  tb.className = 'libCuts';
   ['Material', 'Feed', 'Plunge', 'Spindle', 'Stepdown', 'Stepover'].forEach(function(h){ hr.appendChild(el('th', h)); });
   tb.appendChild(hr);
-  var matSel = document.getElementById('libMaterial').value;
-  cuts.forEach(function(c){
+  var matSel = libMatNow();
+  var rows = TOOLLIB.materials.map(function (m) { return {mat: m.id, cut: libCutOf(t, mid, m.id)}; })
+    .concat(cuts.filter(function (c) { return !libMaterialName(c.material); }).map(function (c) { return {mat: null, cut: c}; }));
+  rows.forEach(function(r){
+    var c = r.cut, tr = el('tr');
+    if (r.mat){
+      tr.className = 'pick' + (r.mat === matSel ? ' on' : '');
+      tr.tabIndex = 0;
+      tr.setAttribute('role', 'button');
+      tr.setAttribute('aria-pressed', r.mat === matSel ? 'true' : 'false');
+      tr.title = c ? 'Use the feeds and speeds for ' + libMaterialName(r.mat) : 'No feeds and speeds for ' + libMaterialName(r.mat) + ' yet: choose it, then Edit to add them';
+      tr.addEventListener('click', function () { libPickMaterial(r.mat); });
+      tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); libPickMaterial(r.mat); } });   // (not the panel's Enter, which picks the tool)
+    }
+    var name = r.mat ? libMaterialName(r.mat) : 'Any';
+    if (!c){
+      tr.appendChild(el('td', name));
+      var none = el('td', 'no feeds and speeds yet', 'libNone'); none.colSpan = 5; tr.appendChild(none);
+      tb.appendChild(tr); return;
+    }
     var ru = RATE_UNITS[c.rateUnits] || ('code ' + c.rateUnits), lu = c.lengthUnits === 'in' ? ' in' : ' mm';
-    var tr = el('tr');
-    if (matSel && c.material === matSel) tr.className = 'on';
-    [libMaterialName(c.material) || 'Any',
+    [name,
      c.feed !== null ? libTrim(c.feed, 2) + ' ' + ru : '\u2014',
      c.plunge !== null ? libTrim(c.plunge, 2) + ' ' + ru : '\u2014',
      c.rpm !== null ? c.rpm + ' rpm' : '\u2014',
@@ -11460,6 +11890,7 @@ function clearDrawing(){
   DOC.vcConverted = false; DOC.vcPreview = [];
   DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
   DOC.toolpaths = [];
+  DOC.tpGroups = [];
   CUTSEL = null;
   renderToolpathPanel();
   SEL.length = 0;
@@ -12207,6 +12638,21 @@ function draw(){
       if (CUTSEL) DOC.toolpaths.forEach(function (tp) { if (tp.id === CUTSEL) drawStarts(tp, false); });
     }
   })();
+
+  // ---- Fillet corners: the new corners in green, and a red ring on each it can't do (after OK, the rings
+  // stay until the next change) ----
+  var fallMiss = TOOL === 'filletall' && FALL && FALL.plan ? FALL.plan.missed : FALL_MARKS;
+  if (TOOL === 'filletall' && FALL && FALL.plan && FALL.plan.results.length){
+    ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
+    FALL.plan.results.forEach(function (r) { drawEntityOutline(r.ne); });
+    ctx.restore();
+  }
+  if (fallMiss && fallMiss.length){
+    ctx.save(); ctx.strokeStyle = '#e06c5a'; ctx.lineWidth = 2.5;   // the Fillet tool's own colour for a corner it can't do
+    ctx.setLineDash([]);
+    fallMiss.forEach(function (m) { var c = w2s(m.x, m.y); ctx.beginPath(); ctx.arc(c.x, c.y, 9, 0, Math.PI * 2); ctx.stroke(); });
+    ctx.restore();
+  }
 
   // ---- offset preview ----
   if (TOOL === 'offset' && OFF){
@@ -14000,6 +14446,161 @@ function doFillet(w, r){
   return true;
 }
 
+// ---- Fillet corners: every corner of the selected shapes at once ----
+// A panel like Offset's: the shapes (selected first, or clicked while it's open), the radius and the kind of
+// corner (shared with the Fillet tool), and which corners: all of them, only those pointing out, or only those
+// pointing in. The drawing shows what OK will do: the new corners in green, and a red ring on each corner
+// that can't be done (the radius is too big for the edges beside it, or a dog-bone beside a curve). After OK
+// the rings stay on the drawing, so they can be found and fixed, until the next change or Esc.
+//
+// Dog-bones and T-bones belong only where a cutter can't reach into the corner: a pocket's (or an inside cut's)
+// corners that point out of the shape, or a part's corners that point into it. So for them the panel asks which,
+// and doesn't offer "all".
+var FALL = null;            // the open panel: {objs: entity indices, plan}
+var FALL_MARKS = null;      // after OK: [{x, y}] the corners that couldn't be done, shown until the next change
+
+// A turn smaller than this isn't a corner: it's a curve drawn as short straight pieces (a traced or imported
+// outline), which would otherwise get a ring on every point.
+var FALL_MIN_TURN = 10 * Math.PI / 180;
+
+// The direction a span leaves its start (at 0) or arrives at its end (at 1).
+function fallTangent(p0, p1, at){
+  var c = spanCurve(p0, p1, p0[2] || 0);
+  if (!c) return null;
+  if (c.kind === 'line'){ var L = Math.hypot(c.bx - c.ax, c.by - c.ay); return L > 1e-12 ? {x: (c.bx - c.ax) / L, y: (c.by - c.ay) / L} : null; }
+  var P = at ? p1 : p0, rx = P[0] - c.cx, ry = P[1] - c.cy, R = Math.hypot(rx, ry) || 1;
+  return c.ccw ? {x: -ry / R, y: rx / R} : {x: ry / R, y: -rx / R};
+}
+// The corners of an outline: [{vi, x, y, out}] for every point where the direction turns by more than
+// FALL_MIN_TURN. out: it points out of the shape (true), into it (false), or the shape is open (null).
+function fallCorners(pe){
+  var n = pe.pts.length, out = [];
+  if (n < 3 && !(pe.closed && n >= 2)) return out;
+  var sign = 0;
+  if (pe.closed){
+    var poly = tessPath(pe, 0.05), a2 = 0;
+    for (var k = 0; k < poly.length; k++){ var p = poly[k], q = poly[(k + 1) % poly.length]; a2 += p[0] * q[1] - q[0] * p[1]; }
+    sign = a2 > 0 ? 1 : -1;
+  }
+  for (var vi = 0; vi < n; vi++){
+    if (!pe.closed && (vi === 0 || vi === n - 1)) continue;
+    var prev = pe.pts[(vi - 1 + n) % n], cur = pe.pts[vi], next = pe.pts[(vi + 1) % n];
+    var tin = fallTangent(prev, cur, 1), tout = fallTangent(cur, next, 0);
+    if (!tin || !tout) continue;
+    var turn = Math.atan2(tin.x * tout.y - tin.y * tout.x, tin.x * tout.x + tin.y * tout.y);
+    if (Math.abs(turn) <= FALL_MIN_TURN) continue;
+    out.push({vi: vi, x: cur[0], y: cur[1], out: pe.closed ? turn * sign > 0 : null});
+  }
+  return out;
+}
+// What OK would do, without changing the drawing: {results: [{i, ne}], done, missed: [{x, y, why}], corners,
+// shapes (with corners), openSkipped (open shapes left out because only some corners were asked for)}.
+// opts: {r, kind: 'round'|'dogbone'|'tbone', which: 'all'|'out'|'in'}
+function filletAllPlan(objs, opts){
+  var plan = {results: [], done: 0, missed: [], corners: 0, shapes: 0, openSkipped: 0};
+  var which = opts.kind !== 'round' && opts.which === 'all' ? 'out' : opts.which;
+  if (!(opts.r > 0) || !isFinite(opts.r)) return plan;
+  objs.forEach(function (i) {
+    var e = DOC.ents[i];
+    if (!e || !entOnSheet(e)) return;
+    var pe = e.t === 'rect' ? rectToPath(e) : e.t === 'poly' ? polyToPath(e) : e.t === 'path' ? e : null;
+    if (!pe) return;
+    pe = pathClean(pe);
+    var corners = fallCorners(pe);
+    if (!corners.length) return;
+    if (!pe.closed && which !== 'all'){ plan.openSkipped++; return; }
+    corners = corners.filter(function (c) { return which === 'all' || (which === 'out') === c.out; });
+    if (!corners.length) return;
+    plan.shapes++; plan.corners += corners.length;
+    // last first: a corner's change is local to it, so the corners before it keep their place in the outline
+    var cur = {t: 'path', pts: pe.pts.map(function (q) { return [q[0], q[1], q[2] || 0]; }), closed: !!pe.closed}, any = false;
+    corners.sort(function (a, b) { return b.vi - a.vi; }).forEach(function (c) {
+      dogboneVertex.why = null;
+      var res = opts.kind === 'round' ? filletPathVertex(cur, c.vi, opts.r) : dogboneVertex(cur, c.vi, opts.r, opts.kind, null);
+      if (res){ cur = {t: 'path', pts: res.pts, closed: res.closed}; any = true; plan.done++; }
+      else plan.missed.push({x: c.x, y: c.y, why: dogboneVertex.why === 'curved' ? 'curved' : 'fit'});
+    });
+    if (!any) return;
+    // everything about the shape but its outline stays: its layer, sheet, ID, construction or toolpath flag
+    var keep = {x: 1, y: 1, w: 1, h: 1, pts: 1, closed: 1, t: 1};
+    for (var key in e) if (!keep[key] && Object.prototype.hasOwnProperty.call(e, key)) cur[key] = e[key];
+    plan.results.push({i: i, ne: cur});
+  });
+  return plan;
+}
+function fallOpts(){
+  return {r: UICFG.filletR, kind: UICFG.filletType || 'round', which: UICFG.filletAllWhich || 'all'};
+}
+function fallOpen(){
+  FALL = {objs: SEL.filter(function (i) { return DOC.ents[i]; }), plan: null};
+  FALL_MARKS = null;
+  document.getElementById('fallPanel').hidden = false;
+  document.getElementById('fallR').value = fmtDisp(UICFG.filletR);
+  fallRender();
+}
+function fallClose(){ FALL = null; document.getElementById('fallPanel').hidden = true; draw(); }
+function fallRender(){
+  if (!FALL) return;
+  var o = fallOpts(), notRound = o.kind !== 'round';
+  if (notRound && o.which === 'all'){ UICFG.filletAllWhich = o.which = 'out'; }
+  FALL.plan = filletAllPlan(FALL.objs, o);
+  var P = FALL.plan;
+  document.getElementById('fallObjsVal').textContent = FALL.objs.length ? FALL.objs.length + (FALL.objs.length === 1 ? ' shape' : ' shapes') : 'none';
+  document.getElementById('fallObjs').setAttribute('aria-pressed', 'true');
+  document.getElementById('fallRU').textContent = unitTag();
+  document.getElementById('fallRLbl').textContent = o.kind === 'round' ? 'Radius' : 'Bit radius';
+  Array.prototype.forEach.call(document.querySelectorAll('#fallKind button'), function (b) { b.setAttribute('aria-pressed', b.dataset.k === o.kind ? 'true' : 'false'); });
+  Array.prototype.forEach.call(document.querySelectorAll('#fallWhich button'), function (b) {
+    b.setAttribute('aria-pressed', b.dataset.w === o.which ? 'true' : 'false');
+    b.disabled = notRound && b.dataset.w === 'all';
+  });
+  document.getElementById('fallOk').disabled = !P.done;
+  var plural = function (n, one, many){ return n + ' ' + (n === 1 ? one : many); };
+  var hint;
+  if (!FALL.objs.length) hint = 'Click shapes on the drawing, or select them before choosing Fillet corners.';
+  else if (!P.corners) hint = P.openSkipped ? 'Only closed shapes have corners that point out or in. Choose All corners for open shapes.'
+                                            : 'None of these shapes has ' + (o.which === 'all' ? 'a corner' : o.which === 'out' ? 'a corner pointing out' : 'a corner pointing in') + ' to change.';
+  else {
+    hint = plural(P.done, 'corner', 'corners') + ' in ' + plural(P.shapes, 'shape', 'shapes') + ' will change.';
+    if (P.missed.length){
+      var curved = P.missed.filter(function (m) { return m.why === 'curved'; }).length;
+      hint += ' ' + plural(P.missed.length, 'corner is', 'corners are') + ' ringed in red and will stay sharp: ' +
+              (curved === P.missed.length ? 'a ' + (o.kind === 'dogbone' ? 'dog-bone' : 'T-bone') + ' needs straight edges either side.'
+                                          : 'the ' + (o.kind === 'round' ? 'radius' : 'bit') + ' is too big for the edges beside ' + (P.missed.length === 1 ? 'it.' : 'them.'));
+    }
+    if (P.openSkipped) hint += ' ' + plural(P.openSkipped, 'open shape is', 'open shapes are') + ' left out: only closed shapes have corners that point out or in.';
+  }
+  if (notRound) hint += ' Pointing out: a pocket’s or an inside cut’s corners. Pointing in: a part’s, cut out round its outside.';
+  document.getElementById('fallHint').textContent = hint;
+  SEL = FALL.objs.slice();
+  draw();
+}
+function fallApply(){
+  if (!FALL) return;
+  var P = filletAllPlan(FALL.objs, fallOpts());
+  if (!P.done) return;
+  pushUndo();
+  P.results.forEach(function (r) { DOC.ents[r.i] = r.ne; });
+  SEL = P.results.map(function (r) { return r.i; });
+  FALL_MARKS = P.missed.length ? P.missed.map(function (m) { return {x: m.x, y: m.y}; }) : null;
+  uiCfgSave(); persist();
+  var o = fallOpts(), what = o.kind === 'round' ? 'Rounded' : o.kind === 'dogbone' ? 'Dog-boned' : 'T-boned';
+  toast(P.missed.length ? 'warn' : 'ok', 'Fillet corners',
+        what + ' ' + P.done + (P.done === 1 ? ' corner' : ' corners') + ' at ' + fmtDisp(o.r) + ' ' + unitTag() + '.' +
+        (P.missed.length ? ' ' + P.missed.length + (P.missed.length === 1 ? ' corner is' : ' corners are') + ' ringed in red: ' +
+                           (P.missed.length === 1 ? 'it' : 'they') + ' stayed sharp. Round ' + (P.missed.length === 1 ? 'it' : 'them') +
+                           ' with the Fillet tool and a smaller radius.' : ''));
+  FALL = null; document.getElementById('fallPanel').hidden = true;
+  setTool('select');
+  draw();
+}
+function fallClick(w){
+  var h = pickEntity(w);
+  if (h === null) return;
+  var at = FALL.objs.indexOf(h);
+  if (at >= 0) FALL.objs.splice(at, 1); else FALL.objs.push(h);
+  fallRender();
+}
 function entBBox(e){
   var xs = [], ys = [];
   if (e.t === 'group'){
@@ -15794,6 +16395,7 @@ var ICON = {
  mirror:'<svg viewBox="0 0 18 18"><line x1="9" y1="2.5" x2="9" y2="15.5" stroke-dasharray="2.6 2.2"/><path d="M6.5 5 L3 9 L6.5 13 Z"/><path d="M11.5 5 L15 9 L11.5 13 Z" fill="none"/></svg>',
  rotate:'<svg viewBox="0 0 18 18"><path d="M14.5 9 A 5.5 5.5 0 1 1 9 3.5"/><path d="M9 1 L12.2 3.5 L9 6"/><circle cx="9" cy="9" r="1"/></svg>',
  array:'<svg viewBox="0 0 18 18"><circle cx="4.5" cy="4.5" r="1.7"/><circle cx="11" cy="4.5" r="1.7"/><circle cx="4.5" cy="11" r="1.7"/><circle cx="11" cy="11" r="1.7" opacity=".45"/></svg>',
+ filletall:'<svg viewBox="0 0 18 18"><path d="M3 15 V7 A 4 4 0 0 1 7 3 H11 A 4 4 0 0 1 15 7 V15"/><path d="M3 15 H15" opacity=".45"/></svg>',
  offs:'<svg viewBox="0 0 18 18"><rect x="6" y="6" width="6" height="6"/><rect x="2.5" y="2.5" width="13" height="13" opacity=".5" stroke-dasharray="2.4 2"/></svg>',
  weld:'<svg viewBox="0 0 18 18"><path d="M9 4.97 A4.5 4.5 0 1 0 9 13.03 A4.5 4.5 0 1 0 9 4.97 Z"/><path d="M9 4.97 A4.5 4.5 0 0 1 9 13.03 M9 4.97 A4.5 4.5 0 0 0 9 13.03" opacity=".35" stroke-dasharray="1.6 1.6"/></svg>',
  subtract:'<svg viewBox="0 0 18 18"><path d="M9 4.97 A4.5 4.5 0 1 0 9 13.03 A4.5 4.5 0 0 1 9 4.97 Z"/><circle cx="11" cy="9" r="4.5" opacity=".35" stroke-dasharray="2 2"/></svg>',
@@ -15884,6 +16486,7 @@ var PANEL_BTNS = {
  rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 select first; click the rotation center, then type the angle in degrees (+ CCW)'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 select first; type N@dx,dy for a linear array, or click a center then type N<step\u00b0 for a circular one'},
  fillet:{tool:'fillet', icon:'fillet', title:'Fillet (F) \u2014 type a radius, then click a corner: a poly/rect corner, or where two lines meet'},
+ filletAllT:{tool:'filletall', icon:'filletall', title:'Fillet corners \u2014 select shapes first, or click them: rounds every corner at once (or only those pointing out or in), and rings any that won\u2019t fit'},
  trim:  {tool:'trim', icon:'trim', title:'Trim (T) \u2014 click the part of a shape to remove, up to where other shapes cross it'},
  extend:{tool:'extend', icon:'extend', title:'Extend (E) \u2014 click near the end of a line or arc to run it out to the next crossing'},
  guide: {tool:'guide', icon:'guide', title:'Offset guide (G) \u2014 click an edge, type the offset. Guides and their intersections snap.'},
@@ -15904,7 +16507,7 @@ var PANEL_BTNS = {
 var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
+ {id:'edit',   label:'Edit Vectors',   btns:['fillet','filletAllT','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
  {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
  /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
@@ -16344,6 +16947,25 @@ function wire(){
   })();
   document.getElementById('settingsBtn').addEventListener('click', openSettings);
   document.getElementById('offObjs').addEventListener('click', function(){ if (OFF) offRender(); });
+  // Fillet corners: the radius and kind are the Fillet tool's own, so the two always agree
+  document.getElementById('fallObjs').addEventListener('click', function(){ if (FALL) fallRender(); });
+  document.getElementById('fallR').addEventListener('input', function(e){
+    if (!FALL) return;
+    var v = lenIn(e.target.value);
+    if (!isNaN(v) && v > 0) UICFG.filletR = v;
+    fallRender();
+  });
+  document.getElementById('fallR').addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); fallApply(); } });
+  Array.prototype.forEach.call(document.querySelectorAll('#fallKind button'), function (b) {
+    b.addEventListener('click', function(){ if (!FALL) return; UICFG.filletType = b.dataset.k; uiCfgSave(); refreshFilletTypes(); fallRender(); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#fallWhich button'), function (b) {
+    b.addEventListener('click', function(){ if (!FALL || b.disabled) return; UICFG.filletAllWhich = b.dataset.w; uiCfgSave(); fallRender(); });
+  });
+  document.getElementById('fallOk').addEventListener('click', fallApply);
+  document.getElementById('fallCancel').addEventListener('click', function(){ fallClose(); setTool('select'); });
+  document.getElementById('fallX').addEventListener('click', function(){ fallClose(); setTool('select'); });
+  document.getElementById('filletAllBtn').addEventListener('click', function(){ setTool('filletall'); });
   document.getElementById('offFlip').addEventListener('click', function(){ if (OFF){ OFF.flip = !OFF.flip; offRender(); } });
   document.getElementById('offDist').addEventListener('input', function(e){
     if (!OFF) return;
@@ -16500,9 +17122,6 @@ function wire(){
   });
   document.getElementById('libMachine').addEventListener('change', function(e){
     UICFG.libMachine = e.target.value; uiCfgSave(); libRenderTree(e.target.value); libRenderDetail(e.target.value); renderToolpathPanel();
-  });
-  document.getElementById('libMaterial').addEventListener('change', function(e){
-    UICFG.libMaterial = e.target.value; uiCfgSave(); libRenderDetail(libDefaultMachine()); libPickState();
   });
   document.getElementById('libSearch').addEventListener('input', function(e){ LIBUI.q = e.target.value; libRenderTree(libDefaultMachine()); });
   document.getElementById('libPanel').addEventListener('keydown', function(e){
@@ -17064,6 +17683,8 @@ function wire(){
       else if (CUT){ cutClose(); }                             // cancel the toolpath editor
       else if (MIR){ mirClose(); setTool('select'); }          // cancel the mirror
       else if (OFF){ offClose(); setTool('select'); }          // cancel the offset
+      else if (FALL){ fallClose(); setTool('select'); }        // cancel Fillet corners
+      else if (FALL_MARKS){ FALL_MARKS = null; }               // clear the rings on corners Fillet corners couldn't do
       else if (MEAS){ MEAS = null; }                           // clear the last measurement
       else if (TOOL !== 'select'){ setTool('select'); }
       else if (HANDLES.active){ HANDLES.active = false; }

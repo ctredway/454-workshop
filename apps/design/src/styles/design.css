@@ -282,6 +282,16 @@
   #libDetail th{text-align:left;color:var(--muted);font-weight:500;padding:4px 8px;border-bottom:1px solid var(--line)}
   #libDetail td{padding:4px 8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px}
   #libDetail tr.on td{background:var(--accent-soft)}
+  /* a material is picked by clicking its row in a tool's feeds and speeds (or its button while editing a tool) */
+  #libDetail tr.pick{cursor:pointer}
+  #libDetail tr.pick:hover td{background:var(--accent-faint)}
+  #libDetail tr.pick.on:hover td{background:var(--accent-soft)}
+  #libDetail tr.pick:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+  #libDetail tr.on td:first-child{box-shadow:inset 3px 0 0 var(--amber);font-weight:600}
+  #libDetail td.libNone{color:var(--muted);font-style:italic}
+  .libMatRow{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 8px}
+  .libMatRow button{font-size:12px;padding:3px 9px;border-radius:12px}
+  .libMatRow button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--amber);color:var(--ink)}
   #libEmpty{padding:28px 32px;font-size:13.5px;line-height:1.6;color:var(--ink)}
   #libEmpty ol{margin:8px 0 0 18px;padding:0}
   .tpLib{display:block;width:100%;text-align:left;background:none;border:0;border-radius:4px;padding:3px 0 0;margin-top:3px;font-size:11.5px;line-height:1.4;cursor:pointer}
@@ -382,6 +392,17 @@
   #cutPanel #cutFinRow{flex-wrap:wrap;row-gap:4px}      /* too wide once the panel scrolls, which made it scroll sideways too */
   #cutPanel #cutName{flex:1 1 0;width:0;min-width:0;margin-left:10px;font-family:inherit}
   .tpDragging{opacity:.45}
+  /* toolpath groups: a header line, and its toolpaths indented under it with a rule down the side */
+  .tpGroupHead{display:flex;align-items:center;margin:10px 10px 0;padding:7px 10px;border:1px solid var(--line);border-radius:5px;
+    background:var(--accent-faint);font-weight:600;font-size:13px;color:var(--ink);cursor:pointer}
+  .tpGroupHead > *{flex:none}
+  .tpGroupHead .tpNm,.tpGroupHead .tpNmEdit{flex:1 1 auto}
+  .tpGroupHead .tpInc{margin:0 6px 0 0}
+  .tpGroupHead .tpEye{margin-left:6px}
+  .tpGroupCount{font-weight:400;font-size:11.5px;color:var(--muted);margin-left:8px}
+  .tpCard.tpInGroup{margin-left:24px;position:relative}
+  .tpCard.tpInGroup::before{content:'';position:absolute;left:-12px;top:-9px;bottom:-9px;border-left:1px solid var(--line)}
+  .tpCard.tpPicked{outline:2px solid var(--amber);outline-offset:-2px}         /* --amber is the accent colour, whichever the theme */
   .tpDropOver{outline:2px dashed var(--amber);outline-offset:-2px}
   .tpStale{border-left-color:var(--err)}
   #tpPanel .tpHead b{flex:1}
@@ -458,6 +479,18 @@
   #offPanel{position:absolute;top:12px;right:12px;z-index:9;width:214px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #offPanel[hidden]{display:none}
   #offPanel h3{font-size:14px}
+  /* Fillet corners: a panel like Offset's, a little wider for its two rows of choices */
+  #fallPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #fallPanel[hidden]{display:none}
+  #fallPanel h3{font-size:14px}
+  #fallR{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #fallKind,#fallWhich{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #fallKind button,#fallWhich button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
+  #fallKind button+button,#fallWhich button+button{border-left:1px solid var(--line)}
+  #fallKind button[aria-pressed=true],#fallWhich button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  #fallWhich button:disabled{opacity:.4;cursor:default}
+  #filletAllBtn{margin-left:6px;font-size:12px;padding:4px 9px}
+  #filletAllBtn[hidden]{display:none}
   #offDist{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #tracePanel{position:absolute;top:12px;right:12px;z-index:9;width:250px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
   #tracePanel[hidden]{display:none}

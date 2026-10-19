@@ -101,14 +101,17 @@ A multi-sheet VCarve project opens with its sheets, named as in VCarve.
 Your bits, their tool numbers, and their feeds and speeds for each material. Open it from the header. It's
 shared with 454 Control.
 
-<Shot src={library} alt="The tool library: five tools in My tools (two end mills, two V-bits and a ball nose), with the 6.35 mm end mill selected, showing its diameter, flutes, notes, tool number T201, and feeds, plunge, spindle speed, stepdown and stepover for hardwood, softwood, MDF and plywood." />
+<Shot src={library} alt="The tool library: five tools in My tools (two end mills, two V-bits and a ball nose), with the 6.35 mm end mill selected, showing its diameter, flutes, notes, tool number T201, and feeds, plunge, spindle speed, stepdown and stepover for hardwood, softwood, MDF and plywood, with hardwood highlighted as the chosen material." />
 
 - **Import VCarve library…** brings in a VCarve tool database (`.vtdb`), with its folders, tool numbers,
   and feeds and speeds for each machine and material. Or build your own: **+ Tool** adds a bit, and
   **+ Material** a material.
-- **Machine** and **Material**, at the top, choose which feeds and speeds a new toolpath takes from a tool.
 - **Select a tool** to see its geometry, its tool number on each machine, and its feeds and speeds for each
   material. **Edit**, **Duplicate** or **Delete** it there.
+- **Choose the material** by clicking its row in a tool's **Feeds and speeds** list: it's highlighted, and new
+  toolpaths take that material's feeds and speeds. Every material in the library is listed, so a material the tool
+  has none for yet says so; choose it and **Edit** to add them. While editing a tool, the materials are buttons
+  above its feeds and speeds. **Machine**, at the top, chooses which machine's feeds and speeds are shown.
 - **Search tools** finds a bit by name. Tools you've used lately gather in a **Recently used** folder at
   the top.
 
