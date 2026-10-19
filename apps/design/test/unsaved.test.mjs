@@ -104,8 +104,7 @@ test('Don’t save puts the drawing aside: the next session starts empty (same m
   assert.equal(ents(B)[0].x2, 77, 'the drawing is back');
   assert.equal(B.drawingUnsaved(), true, 'still unsaved: it never was saved');
   assert.equal(recoverBtn(B).disabled, true, 'nothing else to recover');
-  B.run('doUndo()');
-  assert.equal(ents(B).length, 0, 'and Recover can be undone');
+  assert.equal(B.run('UNDO.length + REDO.length'), 0, 'another drawing: a history of its own (the one that was open is put aside)');
 });
 test('Don’t save with a saved drawing changes nothing', async () => {
   const D = session(); drawLine(D); saveAs(D); await D.saveDrawing();

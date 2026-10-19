@@ -351,7 +351,7 @@ function c2dOpen(buf, name){
   syncStockUI(); persist(); forgetFile();
   lsSet(NAME_KEY, DOC.name + '.454.json');             // the name Save offers
   renderLayers(); renderToolpathPanel(); fit();
-  asideKeep(aside);
+  if (asideKeep(aside)) histStartAfresh();           // a new drawing, a new history
   r.built = c2dBuild(tps.made);                        // after this returns: the drawing is on screen first
   var st = DOC.stock, u = unitTag();
   var said = r.shapes + (r.shapes === 1 ? ' shape' : ' shapes') + ' on ' + fmtDisp(st.w) + ' × ' + fmtDisp(st.h) + ' ' + u + ' material' +

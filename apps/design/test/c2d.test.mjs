@@ -254,7 +254,7 @@ test('opening one: it becomes the drawing, in its units, unsaved, and Save won�
     assert.match(el('dlgBody').textContent, /^1 shape on 8\.000 × 8\.000 in material, 1\.000 in thick\.\s+• Not brought in: Cutout 2\. 454 can.t yet read which side of the line a contour cuts in this version of Carbide Create\. Make it again in the Toolpaths panel\./);
     D.dlgEnd(true);
     assert.ok(D.asideRead(), 'the drawing before is kept for Recover');
-    D.doUndo(); assert.equal(D.DOC.ents[0].t, 'rect', 'and Undo brings it back');
+    assert.equal(D.UNDO.length + D.REDO.length, 0, 'a history of its own: the drawing before is kept for Recover, not Undo');
     // a file that isn't one: nothing changes
     const cut = fixture('Circle.c2d').subarray(0, 6000);
     assert.throws(() => D.c2dOpen(cut, 'Cut.c2d'));

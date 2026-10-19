@@ -130,7 +130,7 @@ test('each step is named for what it did', () => {
   assert.deepEqual(names().slice(0, 4), ['Rectangle', 'Added 2 shapes', 'No change', 'Changed circle']);
 });
 
-test('a drawing saved to a file keeps its history, and opening it brings it back exactly, after a step back to the drawing open before', () => {
+test('a drawing saved to a file keeps its history, and opening it brings back that history, exactly, and only that', () => {
   setup();
   step(`DOC.ents.push({t: 'rect', x: 1, y: 1, w: 2, h: 2, layer: 'L1'})`);       // another drawing's work, before this one
   D.run(`pushUndo('New drawing', 'new'); DOC.ents = []; DOC.toolpaths = []; 1`);
@@ -154,12 +154,13 @@ test('a drawing saved to a file keeps its history, and opening it brings it back
   D.openDrawing(D.run(`(${JSON.stringify(file)})`), 'shelf.454.json');
   assert.equal(D.run('DOC.history'), undefined, 'the history isn’t left in the drawing');
   assert.equal(snap(), at[3]);
-  assert.deepEqual(names(), ['Opened shelf.454.json', 'Rectangle', 'Width 60', 'Circle', 'Material', 'Thicker']);
+  assert.deepEqual(names(), ['Rectangle', 'Width 60', 'Circle', 'Material', 'Thicker'], 'its own steps only');
   D.run('histGoTo(UNDO.length + 1); 1'); assert.equal(snap(), at[4], 'the steps left undone come back undone, in order');
   D.run('histGoTo(UNDO.length + 1); 1'); assert.equal(snap(), at[5]);
   D.run('histGoTo(UNDO.length - 1); 1');
   for (let k = 3; k >= 0; k--) { D.run('doUndo(); 1'); assert.equal(snap(), at[k], 'back to ' + k); }
-  D.run('doUndo(); 1'); assert.equal(snap(), other, 'and one more: the drawing open before');
+  D.run('doUndo(); 1'); assert.equal(snap(), at[0], 'and no further: the drawing open before is in its file, or put aside');
+  assert.notEqual(snap(), other);
   assert.equal(before, at[0]);
 });
 
@@ -174,7 +175,7 @@ test('a file changed by an older Design, which kept the history but didn’t add
   file.ents[0].w = 99;                                                       // changed elsewhere
   setup();
   D.openDrawing(D.run(`(${JSON.stringify(file)})`), 'old.454.json');
-  assert.deepEqual(names(), ['Opened old.454.json', 'Rectangle', 'Changed rectangle']);
+  assert.deepEqual(names(), ['Rectangle', 'Changed rectangle']);
   assert.equal(D.run('REDO.length'), 0, 'the undone circle is left out: it was undone from another drawing');
   D.run('doUndo(); 1'); assert.equal(snap(), at[1]);
   D.run('doUndo(); 1'); assert.equal(snap(), at[0]);
@@ -184,11 +185,11 @@ test('a file with a damaged history opens as a drawing, without it', () => {
   setup();
   const doc = {stock: {w: 100, h: 100}, ents: [{t: 'rect', x: 0, y: 0, w: 5, h: 5}], history: {v: 1, pieces: [], states: [[0]], steps: [], at: 0}};
   D.openDrawing(D.run(`(${JSON.stringify(doc)})`), 'odd.454.json');
-  assert.deepEqual(names(), ['Opened odd.454.json']);
+  assert.deepEqual(names(), []);
   assert.equal(D.run('DOC.ents.length'), 1);
   const doc2 = {stock: {w: 100, h: 100}, ents: [], history: {v: 2}};
   D.openDrawing(D.run(`(${JSON.stringify(doc2)})`), 'newer.454.json');
-  assert.deepEqual(names(), ['Opened odd.454.json', 'Opened newer.454.json']);
+  assert.deepEqual(names(), []);
 });
 
 test('the browser’s storage keeps the history: it comes back at startup, for that drawing only', () => {
@@ -235,4 +236,23 @@ test('the History bar: a Start and a button per step, the current one marked; cl
   assert.equal(D.run('UICFG.histBar'), false, 'remembered');
   D.document.getElementById('histFold').dispatchEvent(new D.window.Event('click'));
   assert.equal(bs().length, 3);
+});
+
+test('a new drawing starts a new history; the one before is put aside for Recover, so it\u2019s safe', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30, layer: 'L1'})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15, layer: 'L1'})`);
+  D.run('markUnsaved(); newDrawing(); 1');
+  assert.deepEqual(names(), []);
+  assert.equal(D.run('UNDO.length + REDO.length'), 0);
+  assert.ok(D.run('asideRead()'), 'put aside for Recover');
+});
+
+test('if the drawing before couldn\u2019t be put aside (storage full), its steps stay: Undo is the way back to it', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30, layer: 'L1'})`);
+  D.run(`markUnsaved(); var keep = asideKeep; asideKeep = function (t) { return !t; }; newDrawing(); asideKeep = keep; 1`);
+  assert.deepEqual(names(), ['Rectangle', 'New drawing']);
+  D.run('doUndo(); 1');
+  assert.equal(D.run('DOC.ents.length'), 1, 'back');
 });

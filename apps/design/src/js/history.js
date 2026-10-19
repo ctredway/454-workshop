@@ -136,6 +136,18 @@ function pushUndo(name, kind){
   histSweep();
   histChanged();
 }
+// Another drawing from here on (New, Open, Recover, Don't save on closing): the steps of the one before go, with any
+// changes to steps that could be taken back. Its steps up to the one that started this drawing, or (all) every step.
+// Only once the drawing before is safe, in its file or put aside for Recover: if it couldn't be put aside, Undo is
+// the way back to it, and its steps stay.
+function histStartAfresh(all){
+  var last = -1;
+  if (!all) for (var i = UNDO.length - 1; i >= 0; i--) if (UNDO[i].kind){ last = i; break; }
+  if (all){ UNDO = []; REDO = []; } else if (last >= 0) UNDO.splice(0, last + 1);   // (steps undone are this drawing's)
+  HIST_MADE = [];
+  if (typeof HIST_EDITS !== 'undefined'){ HIST_EDITS = []; HIST_EDITS_UNDONE = []; }
+  histChanged();
+}
 // The step just recorded changed nothing after all (or is folded into the one before): forget it.
 function undoDrop(){ UNDO.pop(); HIST_MADE = []; histChanged(); }
 // a step moving between done and undone: the drawing it keeps is the other side of it (the rest goes with it)

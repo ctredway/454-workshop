@@ -1279,7 +1279,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.141.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.142.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -2602,6 +2602,18 @@ function pushUndo(name, kind){
   if (UNDO.length > HIST_MAX) UNDO.shift();
   REDO = [];
   histSweep();
+  histChanged();
+}
+// Another drawing from here on (New, Open, Recover, Don't save on closing): the steps of the one before go, with any
+// changes to steps that could be taken back. Its steps up to the one that started this drawing, or (all) every step.
+// Only once the drawing before is safe, in its file or put aside for Recover: if it couldn't be put aside, Undo is
+// the way back to it, and its steps stay.
+function histStartAfresh(all){
+  var last = -1;
+  if (!all) for (var i = UNDO.length - 1; i >= 0; i--) if (UNDO[i].kind){ last = i; break; }
+  if (all){ UNDO = []; REDO = []; } else if (last >= 0) UNDO.splice(0, last + 1);   // (steps undone are this drawing's)
+  HIST_MADE = [];
+  if (typeof HIST_EDITS !== 'undefined'){ HIST_EDITS = []; HIST_EDITS_UNDONE = []; }
   histChanged();
 }
 // The step just recorded changed nothing after all (or is folded into the one before): forget it.
@@ -12296,7 +12308,7 @@ function c2dOpen(buf, name){
   syncStockUI(); persist(); forgetFile();
   lsSet(NAME_KEY, DOC.name + '.454.json');             // the name Save offers
   renderLayers(); renderToolpathPanel(); fit();
-  asideKeep(aside);
+  if (asideKeep(aside)) histStartAfresh();           // a new drawing, a new history
   r.built = c2dBuild(tps.made);                        // after this returns: the drawing is on screen first
   var st = DOC.stock, u = unitTag();
   var said = r.shapes + (r.shapes === 1 ? ' shape' : ' shapes') + ' on ' + fmtDisp(st.w) + ' × ' + fmtDisp(st.h) + ' ' + u + ' material' +
@@ -13318,7 +13330,8 @@ function newDrawing(){
   setTool('select');
   persist();
   markSaved(null); forgetFile();
-  if (!asideKeep(aside)) toast('warn', 'The last drawing couldn’t be kept for Recover', 'The browser’s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
+  if (!asideKeep(aside)) toast('warn', 'The last drawing couldn\u2019t be kept for Recover', 'The browser\u2019s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
+  else histStartAfresh();                             // a new drawing, a new history
   fit();
   jobOpen();                                          // a new drawing starts by saying what it's for
 }
@@ -13337,7 +13350,8 @@ function openDrawing(d, name){
   // wait for the Toolpaths panel's refresh button)
   SEL.length = 0; CUTSEL = null;
   tpRebuildAll(); renderToolpathPanel(); renderLayers();
-  if (!asideKeep(aside)) toast('warn', 'The last drawing couldn’t be kept for Recover', 'The browser’s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
+  if (!asideKeep(aside)) toast('warn', 'The last drawing couldn\u2019t be kept for Recover', 'The browser\u2019s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
+  else histStartAfresh();                             // its own history only (the one saved with it)
   fit();
 }
 function recoverDrawing(){
@@ -13347,6 +13361,7 @@ function recoverDrawing(){
   pushUndo('Recovered drawing', 'open');
   DOC = a.doc; SEL.length = 0; CUTSEL = null;
   if (swap) lsSet(ASIDE_KEY, swap); else lsDel(ASIDE_KEY);
+  histStartAfresh();                                  // the drawing that was open is put aside in its place
   if (a.name) lsSet(NAME_KEY, a.name); else lsDel(NAME_KEY);
   forgetFile();                                       // a different drawing: its file isn't the one open before
   syncStockUI(); tpRebuildAll(); renderToolpathPanel(); renderLayers();
@@ -13483,6 +13498,7 @@ function designCloseDiscard(){
   var aside = asideTake(), before = docForStorage();
   clearDrawing(); persist(); markSaved(null); forgetFile();
   if (!asideKeep(aside)){ DOC = JSON.parse(before); persist(); markUnsaved(); }
+  else histStartAfresh(true);
   return true;
 }
 function unsavedWire(){

@@ -175,7 +175,8 @@ test('saved to a file and opened: the recipes, what each step did, and the red s
 test('steps before a drawing was opened are that drawing’s: changing one leaves the drawing open as it is', () => {
   setup();
   D.run(`pushUndo(); DOC.ents.push({t: 'rect', x: 0, y: 0, w: 50, h: 40, layer: 'L1'}); persist(); 1`);
-  D.openDrawing(D.run(`({stock: {w: 100, h: 100}, ents: [{t: 'circle', cx: 5, cy: 5, r: 2, layer: 'L1'}], layers: [{id: 'L1', name: 'Layer 1', visible: true, locked: false}], activeLayer: 'L1'})`), 'other.454.json');
+  // (opened when the drawing before couldn't be put aside for Recover: its steps stay, the way back to it)
+  D.run(`pushUndo('Opened other.454.json', 'open'); DOC.ents = [{t: 'circle', cx: 5, cy: 5, r: 2, layer: 'L1'}]; persist(); 1`);
   const now = snap();
   assert.equal(D.run(`histEdit(0, {x: 0, y: 0, w: 70, h: 40})`), 0);
   assert.equal(snap(), now);
@@ -187,7 +188,8 @@ test('and when that’s done in parts with the Working panel up, too', async () 
   setup();
   D.run(`pushUndo(); DOC.ents.push({t: 'rect', x: 0, y: 0, w: 50, h: 40, layer: 'L1'}); persist();
     pushUndo(); DOC.stock.t = 15; persist(); 1`);
-  D.openDrawing(D.run(`({stock: {w: 100, h: 100}, ents: [{t: 'circle', cx: 5, cy: 5, r: 2, layer: 'L1'}], layers: [{id: 'L1', name: 'Layer 1', visible: true, locked: false}], activeLayer: 'L1'})`), 'other.454.json');
+  // (opened when the drawing before couldn't be put aside for Recover: its steps stay, the way back to it)
+  D.run(`pushUndo('Opened other.454.json', 'open'); DOC.ents = [{t: 'circle', cx: 5, cy: 5, r: 2, layer: 'L1'}]; persist(); 1`);
   D.run(`pushUndo(); DOC.stock.t = 9; persist(); 1`);
   const now = snap();
   D.run('HIST_BUSY_STEPS = 0; HIST_BUSY_PART = 1; 1');                   // a part per step

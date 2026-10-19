@@ -34,6 +34,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 - Includes Design 0.139.0 to 0.141.0: fillets (one corner and all), offsets, Mirror, Weld, Subtract, Intersect, Join,
   Explode, Trim, Extend, moves, resizes, rotations, the selection's handles and points moved follow a changed step;
   Undo takes back a change to a step.
+- Includes Design 0.142.0: a new or opened drawing starts its own history.
 
 ### 0.6.2-beta.49 — the Inlay wizard; a Working panel; undo without the wait
 - Includes Design 0.135.0: the Inlay wizard (both halves from the bits chosen first, the plug on a sheet of its
@@ -1131,6 +1132,17 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.142.0 — a new drawing, a new history
+Clint: "if the document is reset, the history should be cleared as well."
+- **New, Open, Recover, opening a Carbide Create project, and Don't save on closing start a new history.** The steps
+  of the drawing that was open go (with any changes to steps that could be taken back). It's safe without them: in
+  its file, or put aside for File > Recover last drawing. An opened drawing has the history saved with it, steps it
+  had undone included. (Before, its steps stayed, and Undo went back past New or Open into the drawing before.)
+- **Except when the drawing before couldn't be put aside** (the browser's storage full): then its steps stay, and
+  Undo is the way back to it, as the warning says. Importing a VCarve project, or replacing the drawing with a DXF or
+  SVG, doesn't put the drawing aside, so there its steps stay too.
+- Undo no longer undoes Recover: Recover again swaps the drawings back, as before.
 
 ### 0.141.0 — Trim and Extend follow a changed step
 - **Trim** is done again on the same shape, at the same place on it (where it was clicked, as a place on the shape's
