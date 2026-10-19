@@ -124,7 +124,7 @@ function textOnCurveClick(){
   }
   var c = textCurvePoints(DOC.ents[others[0]]);
   if (!c){ toast('warn', 'Text can’t follow that', 'Use a line, an arc, a circle, a rectangle or an outline. For a group, ungroup it and pick one piece.'); return false; }
-  pushUndo();
+  pushUndo('Text on curve');
   var e = DOC.ents[texts[0]];
   textFitCurve(e, c);
   SEL = [texts[0]];

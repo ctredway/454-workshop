@@ -50,7 +50,7 @@ function alignSelection(op){
   }
   var real = moves.filter(function(m){ return Math.abs(m[1]) > 1e-9 || Math.abs(m[2]) > 1e-9; });
   if (!real.length) return {moved:0};
-  pushUndo();
+  pushUndo(op === 'disth' || op === 'distv' ? 'Space evenly' : 'Align');
   real.forEach(function(m){ moveEntity(DOC.ents[m[0]], m[1], m[2]); });
   persist();
   return {moved:real.length};
@@ -82,7 +82,7 @@ function flipSelection(horizontal){
   if (!b) return false;
   var cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
   var before = SEL.map(function(i){ return snapJSON(DOC.ents[i]); }).join('|');
-  pushUndo();
+  pushUndo('Flip');
   SEL.forEach(function(i){ mirrorEnt(DOC.ents[i], cx, cy, horizontal ? 0 : 1, horizontal ? 1 : 0); });
   var after = SEL.map(function(i){ return snapJSON(DOC.ents[i]); }).join('|');
   if (after === before)                                  // a symmetric shape flips onto itself

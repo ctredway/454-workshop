@@ -88,7 +88,7 @@ function vcMakeEditable(){
   function previewMatches(){ if (!matchesMemo) matchesMemo = tooBig ? [] : vcPreviewMatches(shapes); return matchesMemo; }
   var list = DOC.vcToolpaths, clears = [];
   var made = [], unsure = [], skipped = [], guessed = [], noAngle = [];
-  pushUndo();
+  pushUndo('Make editable');
   list.forEach(function (T, ti) {
     // A setting, by its name without the group it's in. (`_mtpkpd` and `_mtpkptpd` are the pocket's groups in
     // newer VCarve: without them a pocket's depth wasn't found, and 3 mm was used in its place.)

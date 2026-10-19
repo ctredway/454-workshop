@@ -1,0 +1,227 @@
+// The history: every change a named step, kept with the drawing, shown in the History bar (history.js), on the real
+// sources (test/harness.mjs):  node --test 'apps/design/test/*.test.mjs'
+// What matters most: going to a step gives exactly the drawing as it was then, every time, however it got there
+// (undo, redo, a click on the bar, a saved file, the browser's storage).
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { loadDesign } from './harness.mjs';
+
+const plain = (v) => JSON.parse(JSON.stringify(v));
+const D = loadDesign();
+D.run = (code) => vm.runInContext(code, D);
+// docSnap as it was before the history (undo.js), word for word: what the pieces must join back into
+const OLD_SNAP = `JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock,
+  layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null})`;
+
+function setup() {
+  D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 200, h: 120, t: 12, zero: 'top'});
+    DOC.layers = [{id: 'L1', name: 'Layer 1', visible: true, locked: false}]; DOC.activeLayer = 'L1';
+    DOC.ents = []; DOC.toolpaths = []; DOC.dims = []; DOC.guides = []; DOC.params = []; DOC.tpGroups = []; DOC.images = []; delete DOC.sheets;
+    UNDO = []; REDO = []; SEL = []; 1`);
+}
+const snap = () => D.run('docSnap()');
+const names = () => plain(D.run('histSteps().map(function (s) { return s.name; })'));
+// a step: record it, make the change
+const step = (change, name) => D.run(`pushUndo(${name ? JSON.stringify(name) : ''}); ${change}; persist(); 1`);
+
+// a seeded random drawing, with every kind of thing a drawing holds, and awkward values
+function rnd(seed) { return () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }; }
+function randomDoc(r) {
+  const n = () => Math.round((r() - 0.5) * 1e6) / (r() < 0.5 ? 1000 : 7);
+  const str = () => ['Oak', 'a "quote"', 'back\\slash', 'line\nbreak', ' sep', 'été 🌲', ''][Math.floor(r() * 7)];
+  const ent = () => {
+    const k = Math.floor(r() * 7);
+    if (k === 0) return {t: 'rect', x: n(), y: n(), w: n(), h: n(), layer: 'L1', _id: 'e' + Math.floor(r() * 1e9)};
+    if (k === 1) return {t: 'circle', cx: n(), cy: n(), r: Math.abs(n()), skip: undefined};
+    if (k === 2) return {t: 'poly', pts: Array.from({length: 1 + Math.floor(r() * 9)}, () => [n(), n()]), closed: r() < 0.5};
+    if (k === 3) return {t: 'text', str: str(), font: 'roboto', h: 10, x: n(), y: n(), rot: -0, fy: r() < 0.5};
+    if (k === 4) return {t: 'arc', cx: n(), cy: n(), r: 5, a0: n(), a1: n(), ccw: null};
+    if (k === 5) return {t: 'path', segs: [{t: 'c', p: [n(), n(), n(), n()]}], closed: true};
+    return {t: 'group', kids: [{t: 'line', x1: n(), y1: n(), x2: n(), y2: n()}], nested: {a: [1, [2, {b: str()}]]}};
+  };
+  const doc = {stock: {w: 300, h: 200, t: 19.05, origin: 'corner'}, ents: Array.from({length: Math.floor(r() * 30)}, ent)};
+  if (r() < 0.7) doc.guides = [{t: 'gline', a: 1, b: 0, c: n()}];
+  if (r() < 0.7) doc.dims = [{kind: 'side', a: 'e1', at: {x: n(), y: n()}}];
+  if (r() < 0.5) doc.params = [{name: 'W', expr: '100 + 2', note: str()}];
+  if (r() < 0.7) doc.toolpaths = [{id: 'tp' + Math.floor(r() * 99), name: str(), ents: ['e1'], tabPts: {e1: [[n(), n()]]}, moves: [{x: 1}], holes: [1], depth: 3, preview: [1]}];
+  if (r() < 0.5) doc.tpGroups = [{id: 'g1', name: 'Inlay', folded: true}];
+  if (r() < 0.5) doc.vcConverted = true;
+  if (r() < 0.6){ doc.layers = [{id: 'L1', name: str(), visible: true, locked: false}]; doc.activeLayer = 'L1'; }
+  if (r() < 0.4) doc.images = [{id: 'i1', x: n(), y: n(), w: 10, h: 10}];
+  if (r() < 0.4) doc.sheets = [{id: 's1', name: 'Sheet 1'}, {id: 's2', name: str()}];
+  return doc;
+}
+
+test('a step keeps the drawing exactly as undo always did: docSnap is word for word the same, on 400 drawings', () => {
+  const r = rnd(454);
+  for (let i = 0; i < 400; i++) {
+    const doc = randomDoc(r);
+    D.run(`DOC = ${JSON.stringify(doc)}; ${i % 9 === 0 ? 'DOC.ents.push(undefined, function () {});' : ''} 1`);
+    assert.equal(snap(), D.run(OLD_SNAP), 'drawing ' + i);
+  }
+});
+
+test('undo, redo and a click on the bar give exactly the drawing as it was at each step', () => {
+  setup();
+  const at = [snap()];
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30, layer: 'L1'})`); at.push(snap());
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15, layer: 'L1'})`); at.push(snap());
+  step(`DOC.ents[0].w = 55`); at.push(snap());
+  step(`DOC.ents.splice(1, 1)`); at.push(snap());
+  step(`DOC.stock.t = 18`); at.push(snap());
+  for (let k = 4; k >= 0; k--) { D.run('doUndo(); 1'); assert.equal(snap(), at[k], 'undo to ' + k); }
+  D.run('doUndo(); 1'); assert.equal(snap(), at[0], 'nothing more to undo: stays');
+  for (let k = 1; k <= 5; k++) { D.run('doRedo(); 1'); assert.equal(snap(), at[k], 'redo to ' + k); }
+  for (const k of [2, 0, 5, 3, 4, 1, 5]) {                          // jumping about, as clicks on the bar do
+    D.run(`histGoTo(${k}); 1`);
+    assert.equal(snap(), at[k], 'go to ' + k);
+    assert.equal(D.run('UNDO.length'), k);
+    assert.equal(D.run('UNDO.length + REDO.length'), 5, 'no step lost or added');
+  }
+});
+
+test('a change made after going back drops the steps after it, as undo always has, and the bar says so first', async () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
+  step(`DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 9, y2: 9})`);
+  D.run('histGoTo(1); histRender(); 1');
+  assert.match(D.document.getElementById('histNote').textContent, /Back 2 steps: a change here drops the 2 after it/);
+  step(`DOC.ents[0].h = 99`);
+  assert.equal(D.run('REDO.length'), 0);
+  assert.deepEqual(names(), ['Rectangle', 'Changed rectangle']);
+  D.run('histRender(); 1');
+  assert.equal(D.document.getElementById('histNote').textContent, '');
+});
+
+test('each step is named for what it did', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15}, {t: 'line', x1: 0, y1: 0, x2: 9, y2: 9})`);
+  step(`entId(DOC.ents[1]); 1`);                                     // (an id given: not a change worth a name of its own)
+  step(`DOC.ents[1].r = 20`);
+  step(`DOC.ents.splice(2, 1)`);
+  step(`DOC.ents.push({t: 'text', str: 'Welcome to the cabin', x: 0, y: 0, h: 10})`);
+  step(`DOC.ents[0].x = 0`, 'Fillet 6 mm');
+  step(`DOC.toolpaths.push({id: 'tp1', name: 'Pocket 1', ents: []})`);
+  step(`DOC.toolpaths[0].depth = 4`);
+  step(`DOC.toolpaths = []`);
+  step(`DOC.stock.t = 18`);
+  step(`DOC.guides.push({t: 'gline', a: 1, b: 0, c: 5})`);
+  step(`DOC.ents.reverse()`);
+  step(`1`);
+  assert.deepEqual(names(), ['Rectangle', 'Added 2 shapes', 'Changed circle', 'Changed circle', 'Deleted line',
+    'Text “Welcome to the…”', 'Fillet 6 mm', 'Toolpath Pocket 1', 'Edited Pocket 1', 'Deleted Pocket 1', 'Material',
+    'Guide lines', 'Shape order', 'No change']);
+  // and the same names when undone (worked out the other way round)
+  D.run('histGoTo(0); 1');
+  assert.deepEqual(names().slice(0, 4), ['Rectangle', 'Added 2 shapes', 'Changed circle', 'Changed circle']);
+});
+
+test('a drawing saved to a file keeps its history, and opening it brings it back exactly, after a step back to the drawing open before', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 1, y: 1, w: 2, h: 2, layer: 'L1'})`);       // another drawing's work, before this one
+  D.run(`pushUndo('New drawing', 'new'); DOC.ents = []; DOC.toolpaths = []; 1`);
+  const before = snap();
+  const at = [snap()];
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30, layer: 'L1'})`); at.push(snap());
+  step(`DOC.ents[0].w = 60`, 'Width 60'); at.push(snap());
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15, layer: 'L1'})`); at.push(snap());
+  step(`DOC.stock.t = 18`); at.push(snap());
+  step(`DOC.stock.t = 25`, 'Thicker'); at.push(snap());
+  D.run('histGoTo(UNDO.length - 2); 1');                                   // left two steps back: those are kept too
+  const text = D.run('histAttach(docForStorage(true))');
+  const file = JSON.parse(text);
+  assert.equal(file.history.steps.length, 5, 'only this drawing’s steps: not the one before New');
+  assert.equal(file.history.at, 3);
+  assert.equal(file.history.steps[1].name, 'Width 60');
+  // open it over something else
+  setup();
+  D.run(`DOC.ents = [{t: 'line', x1: 0, y1: 0, x2: 5, y2: 5, layer: 'L1'}]; 1`);
+  const other = snap();
+  D.openDrawing(D.run(`(${JSON.stringify(file)})`), 'shelf.454.json');
+  assert.equal(D.run('DOC.history'), undefined, 'the history isn’t left in the drawing');
+  assert.equal(snap(), at[3]);
+  assert.deepEqual(names(), ['Opened shelf.454.json', 'Rectangle', 'Width 60', 'Circle', 'Material', 'Thicker']);
+  D.run('histGoTo(UNDO.length + 1); 1'); assert.equal(snap(), at[4], 'the steps left undone come back undone, in order');
+  D.run('histGoTo(UNDO.length + 1); 1'); assert.equal(snap(), at[5]);
+  D.run('histGoTo(UNDO.length - 1); 1');
+  for (let k = 3; k >= 0; k--) { D.run('doUndo(); 1'); assert.equal(snap(), at[k], 'back to ' + k); }
+  D.run('doUndo(); 1'); assert.equal(snap(), other, 'and one more: the drawing open before');
+  assert.equal(before, at[0]);
+});
+
+test('a file changed by an older Design, which kept the history but didn’t add to it: the change is a step of its own', () => {
+  setup();
+  D.run(`pushUndo('New drawing', 'new'); 1`);
+  const at = [snap()];
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30, layer: 'L1'})`); at.push(snap());
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15, layer: 'L1'})`); at.push(snap());
+  D.run('doUndo(); 1');
+  const file = JSON.parse(D.run('histAttach(docForStorage(true))'));
+  file.ents[0].w = 99;                                                       // changed elsewhere
+  setup();
+  D.openDrawing(D.run(`(${JSON.stringify(file)})`), 'old.454.json');
+  assert.deepEqual(names(), ['Opened old.454.json', 'Rectangle', 'Changed rectangle']);
+  assert.equal(D.run('REDO.length'), 0, 'the undone circle is left out: it was undone from another drawing');
+  D.run('doUndo(); 1'); assert.equal(snap(), at[1]);
+  D.run('doUndo(); 1'); assert.equal(snap(), at[0]);
+});
+
+test('a file with a damaged history opens as a drawing, without it', () => {
+  setup();
+  const doc = {stock: {w: 100, h: 100}, ents: [{t: 'rect', x: 0, y: 0, w: 5, h: 5}], history: {v: 1, pieces: [], states: [[0]], steps: [], at: 0}};
+  D.openDrawing(D.run(`(${JSON.stringify(doc)})`), 'odd.454.json');
+  assert.deepEqual(names(), ['Opened odd.454.json']);
+  assert.equal(D.run('DOC.ents.length'), 1);
+  const doc2 = {stock: {w: 100, h: 100}, ents: [], history: {v: 2}};
+  D.openDrawing(D.run(`(${JSON.stringify(doc2)})`), 'newer.454.json');
+  assert.deepEqual(names(), ['Opened odd.454.json', 'Opened newer.454.json']);
+});
+
+test('the browser’s storage keeps the history: it comes back at startup, for that drawing only', () => {
+  setup();
+  const at = [snap()];
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`); at.push(snap());
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`); at.push(snap());
+  D.run('histStore(); UNDO = []; REDO = []; histRestoreStored(); 1');
+  assert.deepEqual(names(), ['Rectangle', 'Circle']);
+  D.run('histGoTo(0); 1'); assert.equal(snap(), at[0]);
+  D.run('histGoTo(2); histStore(); UNDO = []; REDO = []; DOC.ents.pop(); histRestoreStored(); 1');
+  assert.deepEqual(names(), [], 'a different drawing open: not its history');
+});
+
+test('pieces are shared: 200 steps on a drawing of 300 shapes keep about 200 new pieces, not 200 copies', () => {
+  setup();
+  D.run(`for (var i = 0; i < 300; i++) DOC.ents.push({t: 'rect', x: i, y: i, w: 5, h: 5}); 1`);
+  const n0 = D.run('HIST_STR.length');
+  const at = [];
+  for (let i = 0; i < 200; i++) { step(`DOC.ents[${i}].w = ${6 + i}`); if (i % 50 === 0) at.push([i, snap()]); }
+  assert.ok(D.run('HIST_STR.length') - n0 < 300 + 200 + 20, 'pieces: ' + (D.run('HIST_STR.length') - n0));
+  // let go of unused pieces: every step still exact
+  D.run('HIST_SWEEP_AT = 0; histSweep(); 1');
+  for (const [i, s] of at) { D.run(`histGoTo(${i + 1}); 1`); assert.equal(snap(), s, 'step ' + i); }
+});
+
+test('the History bar: a Start and a button per step, the current one marked; clicking one goes there; it folds away', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
+  D.run('histRender(); 1');
+  const bs = () => Array.from(D.document.querySelectorAll('#histSteps .hStep'));
+  assert.deepEqual(bs().map((b) => b.textContent), ['Start', 'Rectangle', 'Circle']);
+  assert.ok(bs()[2].classList.contains('now'));
+  bs()[1].dispatchEvent(new D.window.Event('click'));
+  assert.equal(D.run('DOC.ents.length'), 1);
+  D.run('histRender(); 1');
+  assert.ok(bs()[1].classList.contains('now'));
+  assert.ok(bs()[2].classList.contains('undone'));
+  bs()[0].dispatchEvent(new D.window.Event('click'));
+  assert.equal(D.run('DOC.ents.length'), 0);
+  D.document.getElementById('histFold').dispatchEvent(new D.window.Event('click'));
+  assert.ok(D.document.getElementById('histBar').classList.contains('folded'));
+  assert.equal(D.run('UICFG.histBar'), false, 'remembered');
+  D.document.getElementById('histFold').dispatchEvent(new D.window.Event('click'));
+  assert.equal(bs().length, 3);
+});

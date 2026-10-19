@@ -72,8 +72,6 @@ function docForStorage(pretty){
   }
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
-function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock,
-  layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null}); }
 function docRestore(str){
   var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
   DOC.vcConverted = !!s.vcConverted;
@@ -91,7 +89,3 @@ function docRestore(str){
   tpRebuildAll();
   if (typeof renderToolpathPanel === 'function') renderToolpathPanel();
 }
-function pushUndo(){ if (typeof DRY !== 'undefined' && DRY) return; FALL_MARKS = null; UNDO.push(docSnap()); if (UNDO.length>200) UNDO.shift(); REDO = []; }
-function doUndo(){ if (!UNDO.length) return; REDO.push(docSnap()); docRestore(UNDO.pop()); SEL=[]; draw(); persist(); }
-function doRedo(){ if (!REDO.length) return; UNDO.push(docSnap()); docRestore(REDO.pop()); SEL=[]; draw(); persist(); }
-

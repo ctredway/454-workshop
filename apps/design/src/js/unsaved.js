@@ -103,7 +103,7 @@ function clearDrawing(){
 function newDrawing(){
   if (!docHasWork()) return;
   var aside = asideTake();
-  pushUndo();
+  pushUndo('New drawing', 'new');
   clearDrawing();
   setTool('select');
   persist();
@@ -114,7 +114,11 @@ function newDrawing(){
 }
 function openDrawing(d, name){
   var aside = asideTake();
-  pushUndo(); DOC = d; syncStockUI(); persist(); markSaved(name);
+  // a step to come back to the drawing that was open, then the opened drawing's own history, if it was saved with one
+  var h = d.history; delete d.history;
+  pushUndo('Opened ' + name, 'open');
+  DOC = d; histTake(h);
+  syncStockUI(); persist(); markSaved(name);
   SAVE_HANDLE = OPEN_HANDLE && OPEN_HANDLE.name === name ? OPEN_HANDLE : null;   // opened through Open: Save writes it back
   OPEN_HANDLE = null;
   if (OPEN_PATH && baseName(OPEN_PATH) === name) lsSet(PATH_KEY, OPEN_PATH); else lsDel(PATH_KEY);   // the desktop app: by path
@@ -130,7 +134,7 @@ function recoverDrawing(){
   var a = asideRead();
   if (!a) return;
   var swap = asideTake();                             // the open drawing takes its place, if it's unsaved
-  pushUndo();
+  pushUndo('Recovered drawing', 'open');
   DOC = a.doc; SEL.length = 0; CUTSEL = null;
   if (swap) lsSet(ASIDE_KEY, swap); else lsDel(ASIDE_KEY);
   if (a.name) lsSet(NAME_KEY, a.name); else lsDel(NAME_KEY);
@@ -145,7 +149,7 @@ function recoverDrawing(){
 // Save (Ctrl+S, the Save button): straight to the drawing's file if Design may write to it, else Save As.
 // asNew (Ctrl+Shift+S): always Save As. True once saved.
 function saveDrawing(asNew){
-  var text = docForStorage(true), name = drawingFileName();
+  var text = histAttach(docForStorage(true)), name = drawingFileName();
   var DF = desktopFiles();
   if (DF){                                            // the desktop app: by path
     var sp = lsGet(PATH_KEY);

@@ -1124,6 +1124,33 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.137.0 — the History bar: every change, named, kept with the drawing
+Clint asked for a timeline like Fusion's (and SolidCraft's), to back up in a design rather than only undo; Fusion's
+full timeline, where an earlier step can be edited and the steps after it are done again, is the aim, worked
+towards in steps. This is the first: the steps, seen, named and kept.
+- **The History bar,** along the bottom of the drawing: a button per step, oldest first, named for what it did
+  (Rectangle, Fillet corners 6 mm, Offset 3 mm, Join, Toolpath Pocket 1, Material). Click one to see the drawing as
+  it was just after it, and a later one to come forward again; Start is before the first. The steps after the one
+  you're on stay, faded. Undo and redo move along the same line. A change made while back drops the faded steps,
+  as undo always has, and the bar says so first ("Back 2 steps: a change here drops the 2 after it"). History folds
+  the bar away; it's remembered.
+- **Names:** the main tools name their steps (fillet, fillet corners, offset, mirror, weld, subtract, intersect,
+  join, align, flip, move, resize, rotate, nest, paste, duplicate, trace, text on curve, the Inlay wizard, Make
+  editable, templates, fixes, opening and starting drawings). Anything else is named from what changed:
+  "Circle" (one added), "Deleted line", "Changed rectangle", "Added 4 shapes", "Edited Pocket 1", "Guide lines".
+- **Kept with the drawing:** Save puts the history in the drawing's file, and Open brings it back, after a step
+  ("Opened shelf.454.json") that goes back to the drawing open before. The browser's storage keeps it too, so it's
+  there after closing Design (only if it's that drawing's). A file keeps its own steps only, not the drawings open
+  before it. A file with a history 454 can't read opens without it. Older versions of Design open these files and
+  ignore the history.
+- **Small:** a step keeps the drawing in pieces (one per shape, toolpath, dimension and the rest), each kept once
+  and shared, so a step that changes one shape adds one piece. Timed in the app on a 7.7 MB drawing (2,000 shapes):
+  recording a step 50 ms (undo's copy was 43 ms); 20 steps 7.9 MB in all, where undo held 20 copies (about 150 MB);
+  going back 20 steps 0.17 s. The last 500 steps are kept (undo kept 200).
+- **Proven:** a step's drawing joins back word for word into what undo kept (400 random drawings, with every kind
+  of shape and awkward text); undo, redo and jumps give exactly each step's drawing; a saved and opened file, and
+  the browser's storage, give them back exactly. Each check was broken on purpose and failed.
+
 ### 0.136.0 — nothing worked out while you type; undo without the wait; a Working panel wherever there's one
 Clint asked where else the Working panel was needed. Timed in the app on a VCarve tutorial's inlay (5 toolpaths):
 Make editable 10.5 s, redo 9.4 s, opening a saved drawing 10.6 s, changing a layer or sheet 10.3 s.

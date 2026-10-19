@@ -148,7 +148,7 @@ function filletChainAt(pe, k, w){
 // Remove a fillet filletAt found: the sharp corner comes back. Returns true when done.
 function unfillet(f){
   if (!f) return false;
-  pushUndo();
+  pushUndo('Fillet removed');
   if (f.kind === 'lines'){
     var LA = DOC.ents[f.la.i], LB = DOC.ents[f.lb.i];
     if (f.la.end === 1){ LA.x1 = f.X.x; LA.y1 = f.X.y; } else { LA.x2 = f.X.x; LA.y2 = f.X.y; }
@@ -186,7 +186,7 @@ function doFillet(w, r){
       if (pick.e.con) ne.con = true;
       if (pick.e._id) ne._id = pick.e._id;
       ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
-      pushUndo(); DOC.ents.splice(pick.i, 1, ne); return true;
+      pushUndo('Fillet ' + histLen(r)); DOC.ents.splice(pick.i, 1, ne); return true;
     }
     doFillet.lastMiss = dogboneVertex.why === 'curved' ? 'curved' : (dogboneVertex.why === 'flat' ? 'flat' : 'fit');
     return false;   // nearest corner couldn't take it: don't fall through to two-line
@@ -233,7 +233,7 @@ function doFillet(w, r){
     // keep the endpoint farther along the kept side; the other becomes T
     if (sd.p2*sd.s >= sd.p1*sd.s){ e4.x1 = T.x; e4.y1 = T.y; } else { e4.x2 = T.x; e4.y2 = T.y; }
   }
-  pushUndo();
+  pushUndo('Fillet ' + histLen(r));
   retrim(eA, v1, T1b); retrim(eB, v2, T2b);
   var aT1 = Math.atan2(T1b.y-O.y, T1b.x-O.x), aT2 = Math.atan2(T2b.y-O.y, T2b.x-O.x);
   var ccwF = angNorm(aT2-aT1) <= Math.PI; // minor direction

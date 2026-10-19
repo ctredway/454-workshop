@@ -1,6 +1,6 @@
 ---
 title: "454 Design: workspace"
-description: "Everything around the drawing tools in 454 Design: job setup, layers, the tool library, the Toolpaths panel and its editor, checking the drawing, Settings, and the status bar."
+description: "Everything around the drawing tools in 454 Design: job setup, layers, the tool library, the Toolpaths panel and its editor, checking the drawing, Settings, the history, and the status bar."
 ---
 
 import { Steps } from '@astrojs/starlight/components';
@@ -32,6 +32,7 @@ Toolpaths panel, checking the drawing, and Settings. For the drawing tools, see
   button to move around, and press <kbd>Home</kbd> to fit the material in the window.
 - **On the right:** the [Toolpaths panel](#the-toolpaths-panel). **»** collapses it to a narrow strip;
   click the strip to open it again. Fold both away for the most drawing room. Each stays as you left it.
+- **Along the bottom of the drawing:** the [History bar](#history), every change you've made, to go back to.
 - **Along the bottom:** the [status bar](#the-status-bar).
 
 ## Job setup
@@ -181,6 +182,33 @@ The gear in the header.
   whether to show the dimensions.
 - **Snap lines to 45° and 90°**, on unless you turn it off: lines and polylines snap to 0°, 45°, 90° and
   so on as you draw them.
+
+## History
+
+Every change you make is a step on the **History bar**, along the bottom of the drawing, oldest on the left:
+**Rectangle**, **Fillet corners 6 mm**, **Offset 3 mm**, **Toolpath Pocket 1**. It's the same list Undo goes back
+through, but you can see it and jump straight to any step.
+
+- **Click a step** to see the drawing as it was just after it, toolpaths and all. The steps after it stay on the
+  bar, faded, and the step you're on is underlined. Click a later step to come forward again; nothing is lost
+  by looking. **Start** is the drawing before the first step.
+- **Undo** (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) and **Redo** (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) move one step along the same line.
+- **Changing something while you're back at an earlier step** carries on from there, and drops the faded steps
+  after it, as Undo always has. The bar says so while you're back: "Back 2 steps: a change here drops the 2
+  after it".
+- **The history is saved with the drawing.** Save puts it in the drawing's file, and opening the file brings it
+  back, so you can go back to how a project was last week. It's kept between visits too, with the drawing.
+- **Opening a drawing, or starting a new one, is a step** (in bold), so you can go back to the drawing you had
+  open before. A file keeps only its own steps.
+- **Hover over a step** for when it was made. Scroll the mouse wheel over the bar to move along a long history,
+  and click **History** to fold the bar away, or open it again.
+
+The last 500 steps are kept.
+
+:::note[Coming next]
+Fusion-style editing of a step (change a fillet's radius back in the history, and everything after it is done
+again) comes in later versions, tool by tool. For now, a step can be gone back to, not changed.
+:::
 
 ## The status bar
 

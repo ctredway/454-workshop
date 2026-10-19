@@ -101,7 +101,7 @@ function inwCreate(){
 }
 // The shapes, sheet, toolpaths and groups, before any toolpath is worked out (one undo for it all).
 function inwLayOut(ents, base, keepSheet){
-  pushUndo(); layersInit();
+  pushUndo('Inlay wizard'); layersInit();
   var pocket = inlayHalf(Object.assign({plug: false, ents: ents.slice()}, base));
   var plugSheet = null;
   if (keepSheet){

@@ -420,7 +420,7 @@ function boolApply(kind){
     made = made.concat(out);
   }
 
-  pushUndo();
+  pushUndo(name);
   var goneIds = Object.keys(gone).map(function (i){ return entId(DOC.ents[+i]); });
   DOC.ents = DOC.ents.filter(function (_, i){ return !gone[i]; });
   var start = DOC.ents.length;

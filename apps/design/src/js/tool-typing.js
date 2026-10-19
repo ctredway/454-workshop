@@ -14,7 +14,7 @@ function toolCommitText(txt){
     if (relApply(ea, eb, vv, wantEdge, hA, hB)){
       if (_leaveDim && !dimsArr().some(function(x){ return sameDistance(x, ea, eb, hA, hB); }))
         addDim({kind:'pair', a:entId(ea), b:entId(eb), edge:!!wantEdge, aAt:hA, bAt:hB}); DRAW = null; hidePrompt(); persist(); draw(); updateReadout(); }
-    else { UNDO.pop(); if (relApply.why){ toast('warn', 'Couldn\u2019t set that distance', relApply.why); relApply.why = null; } }
+    else { undoDrop(); if (relApply.why){ toast('warn', 'Couldn\u2019t set that distance', relApply.why); relApply.why = null; } }
     return;
   }
   if (DRAW && DRAW.stage === 'dimEdit'){
@@ -204,7 +204,7 @@ function toolCommitText(txt){
       toast('ok', 'Dimension applied', 'Set to ' + fmtDisp(vD) + ' ' + unitTag() + (rd.expr ? ', from ' + rd.expr + '. It follows if that changes.' : '.'));
       paramsSayFailed(failedD);
     } else {
-      UNDO.pop();                                       // nothing changed: nothing to undo
+      undoDrop();                                       // nothing changed: nothing to undo
       dd.edge = wasEdge; if (wasExpr){ dd.expr = wasExpr; dd.exprUnit = wasUnit; } else { delete dd.expr; delete dd.exprUnit; }
       toast('warn', 'Could not apply that', relApply.why || dimApply.why || 'The dimension could not drive this geometry.');
       relApply.why = dimApply.why = null;

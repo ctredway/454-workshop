@@ -178,7 +178,7 @@ function vecChains(ids, polys){
 }
 // Apply a fix. Everything is one undoable step.
 function vecFix(issue){
-  pushUndo();
+  pushUndo('Fix shapes');
   if (issue.kind === 'dup'){
     var drop = {}; issue.ids.forEach(function (id) { drop[id] = 1; });
     DOC.ents = DOC.ents.filter(function (e) { return !drop[entId(e)]; });

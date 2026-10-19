@@ -53,7 +53,7 @@ function selBoxApply(field, txt){
   if (field === 'x' || field === 'y'){
     var dx = field === 'x' ? v - p.x : 0, dy = field === 'y' ? v - p.y : 0;
     if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) return true;
-    pushUndo();
+    pushUndo('Move');
     SEL.forEach(function (i){ moveEntity(DOC.ents[i], dx, dy); });
   } else if (field === 'w' || field === 'h'){
     if (!(v > 0)){ toast('warn', 'Bigger than nothing', 'A size has to be more than 0.'); return false; }
@@ -66,7 +66,7 @@ function selBoxApply(field, txt){
     var k = v / cur, sx = field === 'w' ? k : 1, sy = field === 'h' ? k : 1;
     if (selBoxLocked() && other > 1e-9){ sx = k; sy = k; }
     if (Math.abs(sx - 1) < 1e-12 && Math.abs(sy - 1) < 1e-12) return true;
-    pushUndo();
+    pushUndo('Resize');
     SCALE_NOTE = null;
     SEL.forEach(function (i){ scaleEnt(DOC.ents[i], p.x, p.y, sx, sy); });
     if (SCALE_NOTE === 'ellipse')
@@ -75,7 +75,7 @@ function selBoxApply(field, txt){
       toast('info', 'Angled text scaled evenly', 'Text at an angle can only be scaled evenly. Convert it to curves first to stretch it.');
   } else if (field === 'r'){
     if (Math.abs(v) < 1e-12) return true;
-    pushUndo();
+    pushUndo('Rotate');
     SEL.forEach(function (i){ rotateEnt(DOC.ents[i], p.x, p.y, v * Math.PI / 180); });
   } else return false;
   HANDLES.pivot = null;

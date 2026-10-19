@@ -509,6 +509,11 @@
       <label title="Turn the selection by this many degrees about the reference point: positive anticlockwise, negative clockwise">Rotate <input id="sbR" type="text" inputmode="decimal" autocomplete="off" placeholder="0">&deg;</label>
     </div>
     <div id="promptHint"></div>
+    <div id="histBar" role="toolbar" aria-label="History">
+      <button type="button" id="histFold" aria-expanded="true" aria-controls="histSteps">History</button>
+      <div id="histSteps" role="group" aria-label="Steps"></div>
+      <span id="histNote" aria-live="polite"></span>
+    </div>
 
     <div id="offPanel" hidden role="dialog" aria-label="Offset">
       <div class="modalHead"><h3>Offset</h3><button class="modalX" id="offX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
@@ -626,6 +631,7 @@
 @@include js/snapping.js
 @@include js/picking.js
 @@include js/undo.js
+@@include js/history.js
 @@include js/typed-input.js
 @@include js/tool-manager.js
 @@include js/tool-click.js

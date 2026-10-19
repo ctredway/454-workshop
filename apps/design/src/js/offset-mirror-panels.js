@@ -38,7 +38,7 @@ function offRender(){
 function offApply(){
   var res = offResults();
   if (!res.length) return;
-  pushUndo();
+  pushUndo('Offset ' + histLen(OFF.dist));
   var made = [];
   res.forEach(function(ne){ made.push(DOC.ents.length); DOC.ents.push(ne); });
   SEL = made;
@@ -97,7 +97,7 @@ function mirAxis(){
 function mirApply(){
   var ax = mirAxis();
   if (!MIR || !MIR.objs.length || !ax) return;
-  pushUndo();
+  pushUndo('Mirror');
   var made = [];
   MIR.objs.forEach(function(i){
     var c = cloneEnt(DOC.ents[i]);

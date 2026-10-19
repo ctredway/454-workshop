@@ -340,7 +340,7 @@ function c2dOpen(buf, name){
   var ex = c2dExtract(buf), r = c2dToDoc(ex, name);
   if (!r.shapes) throw new Error('There are no shapes in it that 454 can draw.');
   var aside = asideTake();
-  pushUndo();
+  pushUndo('Opened ' + name, 'open');
   DOC = r.doc;
   UICFG.stockUnits = r.inches ? 'in' : 'mm'; uiCfgSave();
   SEL = []; CUTSEL = null; setTool('select');

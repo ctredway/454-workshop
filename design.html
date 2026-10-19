@@ -583,6 +583,21 @@
   #sbLock[aria-pressed="true"] .open,#sbLock[aria-pressed="false"] .shut{display:none}
   #promptHint{position:absolute;left:50%;transform:translateX(-50%);bottom:60px;color:var(--muted);font-size:12px;z-index:5;background:var(--panel);padding:3px 10px;border-radius:4px;display:none}
   #promptHint.on{display:block}
+  /* the History bar: every change, along the bottom of the drawing (history.js) */
+  #histBar{position:absolute;left:10px;right:10px;bottom:10px;z-index:5;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 6px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:12px}
+  #histBar.folded{right:auto}
+  #histBar.folded #histSteps,#histBar.folded #histNote{display:none}
+  #histFold{flex:none;font-size:12px;padding:3px 8px}
+  #histSteps{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:1px 0}
+  #histSteps::-webkit-scrollbar{display:none}
+  .hStep{flex:none;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel-deep);color:var(--ink);font-size:12px;cursor:pointer}
+  .hStep:hover{border-color:var(--muted)}
+  .hStep.undone{opacity:.5;border-style:dashed}
+  .hStep.now{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+  .hStep.hDoc{font-weight:600}
+  .hStep.hStart{color:var(--muted)}
+  #histNote{flex:none;color:var(--muted);white-space:nowrap}
+  #histNote:empty{display:none}
 
   #impModal{position:fixed;inset:0;background:rgba(10,13,17,.65);display:flex;align-items:center;justify-content:center;z-index:70}
   #impModal[hidden]{display:none}
@@ -1134,6 +1149,11 @@
       <label title="Turn the selection by this many degrees about the reference point: positive anticlockwise, negative clockwise">Rotate <input id="sbR" type="text" inputmode="decimal" autocomplete="off" placeholder="0">&deg;</label>
     </div>
     <div id="promptHint"></div>
+    <div id="histBar" role="toolbar" aria-label="History">
+      <button type="button" id="histFold" aria-expanded="true" aria-controls="histSteps">History</button>
+      <div id="histSteps" role="group" aria-label="Steps"></div>
+      <span id="histNote" aria-live="polite"></span>
+    </div>
 
     <div id="offPanel" hidden role="dialog" aria-label="Offset">
       <div class="modalHead"><h3>Offset</h3><button class="modalX" id="offX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
@@ -1252,7 +1272,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.136.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.137.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1564,10 +1584,10 @@ function closeTextModal(commit){
   if (!commit){
     if (TXT.isNew){ if (i >= 0) DOC.ents.splice(i, 1); }
     else if (i >= 0) DOC.ents[i] = JSON.parse(TXT.before);
-    UNDO.pop();                                   // nothing changed, so drop the undo step
+    undoDrop();                                   // nothing changed, so drop the undo step
   } else if (!String(e.str).trim()){
     if (i >= 0) DOC.ents.splice(i, 1);
-    if (TXT.isNew) UNDO.pop();
+    if (TXT.isNew) undoDrop();
     else toast('info', 'Text removed', 'The text was empty, so it was deleted. Undo brings it back.');
   } else {
     UICFG.lastFont = e.font; UICFG.lastTextH = e.h; uiCfgSave();
@@ -1722,7 +1742,7 @@ function textOnCurveClick(){
   }
   var c = textCurvePoints(DOC.ents[others[0]]);
   if (!c){ toast('warn', 'Text can’t follow that', 'Use a line, an arc, a circle, a rectangle or an outline. For a group, ungroup it and pick one piece.'); return false; }
-  pushUndo();
+  pushUndo('Text on curve');
   var e = DOC.ents[texts[0]];
   textFitCurve(e, c);
   SEL = [texts[0]];
@@ -2417,8 +2437,6 @@ function docForStorage(pretty){
   }
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
-function docSnap(){ return JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dims || [], params:DOC.params || [], toolpaths:tpLean(DOC.toolpaths), tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock,
-  layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null}); }
 function docRestore(str){
   var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
   DOC.vcConverted = !!s.vcConverted;
@@ -2436,10 +2454,314 @@ function docRestore(str){
   tpRebuildAll();
   if (typeof renderToolpathPanel === 'function') renderToolpathPanel();
 }
-function pushUndo(){ if (typeof DRY !== 'undefined' && DRY) return; FALL_MARKS = null; UNDO.push(docSnap()); if (UNDO.length>200) UNDO.shift(); REDO = []; }
-function doUndo(){ if (!UNDO.length) return; REDO.push(docSnap()); docRestore(UNDO.pop()); SEL=[]; draw(); persist(); }
-function doRedo(){ if (!REDO.length) return; UNDO.push(docSnap()); docRestore(REDO.pop()); SEL=[]; draw(); persist(); }
+/* ---------------- history: the timeline ----------------
+   Every change is a step, as undo always kept them, but named, kept with the drawing, and shown along the bottom of
+   the drawing (the History bar): click a step to see the drawing as it was just after it, and click a later one to
+   come forward again. Undo and redo move one step along the same line.
 
+   UNDO holds the steps done, oldest first, each with the drawing as it was before it; REDO the steps undone, the
+   last one undone at the end, each with the drawing as it was after it. A step is {p, name, at, kind}:
+     p     the drawing, in pieces (histPack): one piece for each shape, toolpath, dimension, guide and parameter,
+           and one for each of the rest (the material, layers, sheets...). Pieces are kept once (HIST_STR) and shared,
+           so a step that changes one shape adds one piece, not another copy of the drawing.
+     name  what it did ("Fillet 6 mm"), or null: then it's worked out by comparing the drawing before and after it
+     at    when it was done (ms)
+     kind  'open' or 'new': the drawing before this step was another drawing (opened, started new, recovered)
+   Saving a drawing to a file saves its history with it (histAttach), from the step it was opened or started at;
+   opening it brings that history back. The browser's storage keeps it too, so it's there after closing Design. */
+var HIST_MAX = 500;
+// the parts of the drawing a step keeps, in this order (as docSnap always wrote them); lists get a piece per item
+var HIST_KEYS = ['ents', 'guides', 'dims', 'params', 'toolpaths', 'tpGroups', 'vcConverted', 'stock', 'layers', 'activeLayer', 'images', 'sheets'];
+var HIST_LIST = {ents: 1, guides: 1, dims: 1, params: 1, toolpaths: 1};
+var HIST_STR = [], HIST_ID = new Map();
+var HIST_STORE_KEY = 'd454DesignHist';
+
+function histPiece(s){
+  var i = HIST_ID.get(s);
+  if (i === undefined){ i = HIST_STR.length; HIST_STR.push(s); HIST_ID.set(s, i); }
+  return i;
+}
+function histValues(){
+  return {ents: DOC.ents, guides: DOC.guides, dims: DOC.dims || [], params: DOC.params || [], toolpaths: tpLean(DOC.toolpaths),
+          tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock, layers: DOC.layers,
+          activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null};
+}
+// The drawing now, in pieces: for each of HIST_KEYS, -1 (not there), a piece, or a list of pieces.
+function histPack(){
+  var v = histValues();
+  return HIST_KEYS.map(function (k) {
+    var x = v[k];
+    if (x === undefined) return -1;
+    if (HIST_LIST[k] && Array.isArray(x)) return x.map(function (it) { var s = JSON.stringify(it); return histPiece(s === undefined ? 'null' : s); });
+    return histPiece(JSON.stringify(x));
+  });
+}
+// Back to the text the pieces came from: exactly what JSON.stringify gives for the drawing's parts.
+function histJoin(p){
+  var parts = [];
+  HIST_KEYS.forEach(function (k, i) {
+    var x = p[i];
+    if (x === -1) return;
+    parts.push(JSON.stringify(k) + ':' + (Array.isArray(x) ? '[' + x.map(function (j) { return HIST_STR[j]; }).join(',') + ']' : HIST_STR[x]));
+  });
+  return '{' + parts.join(',') + '}';
+}
+function docSnap(){ return histJoin(histPack()); }
+
+// Pieces no step uses any more are let go now and then.
+var HIST_SWEEP_AT = 20000;
+function histSweep(){
+  if (HIST_STR.length < HIST_SWEEP_AT) return;
+  var map = new Map(), str = [], ids = new Map();
+  var keep = function (j) {
+    var n = map.get(j);
+    if (n === undefined){ n = str.length; str.push(HIST_STR[j]); ids.set(HIST_STR[j], n); map.set(j, n); }
+    return n;
+  };
+  UNDO.concat(REDO).forEach(function (e) {
+    e.p = e.p.map(function (x) { return x === -1 ? -1 : Array.isArray(x) ? x.map(keep) : keep(x); });
+  });
+  HIST_STR = str; HIST_ID = ids;
+  HIST_SWEEP_AT = Math.max(20000, str.length * 2);
+}
+
+function pushUndo(name, kind){
+  if (typeof DRY !== 'undefined' && DRY) return;
+  FALL_MARKS = null;
+  UNDO.push({p: histPack(), name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null});
+  if (UNDO.length > HIST_MAX) UNDO.shift();
+  REDO = [];
+  histSweep();
+  histChanged();
+}
+// The step just recorded changed nothing after all (or is folded into the one before): forget it.
+function undoDrop(){ UNDO.pop(); histChanged(); }
+// a step moving between done and undone: the drawing it keeps is the other side of it
+function histMoved(e, p){ return {p: p, name: e.name, at: e.at, kind: e.kind}; }
+// Go to the point where n steps are done (0: before the first one kept), in one move.
+function histGoTo(n){
+  n = Math.max(0, Math.min(n, UNDO.length + REDO.length));
+  if (n === UNDO.length) return;
+  var cur = histPack();
+  while (UNDO.length > n){ var e = UNDO.pop(); REDO.push(histMoved(e, cur)); cur = e.p; }
+  while (UNDO.length < n){ var r = REDO.pop(); UNDO.push(histMoved(r, cur)); cur = r.p; }
+  docRestore(histJoin(cur)); SEL = []; draw(); persist(); histChanged();
+}
+function doUndo(){ if (UNDO.length) histGoTo(UNDO.length - 1); }
+function doRedo(){ if (REDO.length) histGoTo(UNDO.length + 1); }
+
+/* ---- names: what a step did, from the drawing before and after it */
+function histShapeName(e){
+  if (!e) return 'Shape';
+  if (e.t === 'rect') return 'Rectangle';
+  if (e.t === 'circle') return 'Circle';
+  if (e.t === 'line') return 'Line';
+  if (e.t === 'arc') return 'Arc';
+  if (e.t === 'path') return 'Curve';
+  if (e.t === 'group') return 'Group';
+  if (e.t === 'poly') return e.closed ? 'Shape' : 'Polyline';
+  if (e.t === 'text') return 'Text' + (e.str ? ' “' + (e.str.length > 16 ? e.str.slice(0, 15).replace(/\s+$/, '') + '…' : e.str) + '”' : '');
+  return 'Shape';
+}
+// a length for a step's name, in the units shown: "6 mm", "0.25 in"
+function histLen(mm){ return parseFloat(fmtDisp(Math.abs(mm))) + (dispIn() ? ' in' : ' mm'); }
+function histLower(s){ return s.charAt(0).toLowerCase() + s.slice(1); }
+function histParse(j){ try { return JSON.parse(HIST_STR[j]); } catch (e) { return null; } }
+function histListDiff(a, b){
+  a = Array.isArray(a) ? a : []; b = Array.isArray(b) ? b : [];
+  var inA = new Set(a), inB = new Set(b);
+  return {added: b.filter(function (j) { return !inA.has(j); }), removed: a.filter(function (j) { return !inB.has(j); }),
+          moved: a.length === b.length && a.some(function (j, i) { return j !== b[i]; })};
+}
+// Things removed and added with the same id were changed. idOf: an item's id. (A shape is given its id only when
+// something needs it: one without was removed and added, and is named as changed below.)
+function histPair(d, idOf){
+  var gone = {}, out = {added: [], removed: [], changed: []};
+  d.removed.forEach(function (j) { var o = histParse(j), id = o && idOf(o); if (id) gone[id] = o; else out.removed.push(o); });
+  d.added.forEach(function (j) {
+    var o = histParse(j), id = o && idOf(o);
+    if (id && gone[id]){ out.changed.push(o); delete gone[id]; } else out.added.push(o);
+  });
+  for (var id in gone) out.removed.push(gone[id]);
+  return out;
+}
+function histAutoName(a, b){
+  var at = function (p, k) { return p[HIST_KEYS.indexOf(k)]; }, said = [];
+  var s = histPair(histListDiff(at(a, 'ents'), at(b, 'ents')), function (o) { return o._id; });
+  var one = function (list, verb) { return list.length === 1 ? verb + histLower(histShapeName(list[0])) : verb + list.length + ' shapes'; };
+  if (s.added.length && !s.removed.length && !s.changed.length) said.push(s.added.length === 1 ? histShapeName(s.added[0]) : 'Added ' + s.added.length + ' shapes');
+  else if (s.removed.length && !s.added.length && !s.changed.length) said.push(one(s.removed, 'Deleted '));
+  else if (s.changed.length && !s.added.length && !s.removed.length) said.push(one(s.changed, 'Changed '));
+  else if (s.added.length || s.removed.length || s.changed.length){
+    var many = Math.max(s.added.length + s.changed.length, s.removed.length + s.changed.length);
+    said.push(many === 1 ? 'Changed ' + histLower(histShapeName((s.changed.concat(s.added))[0])) : 'Changed ' + many + ' shapes');
+  }
+  else if (histListDiff(at(a, 'ents'), at(b, 'ents')).moved) said.push('Shape order');
+  var t = histPair(histListDiff(at(a, 'toolpaths'), at(b, 'toolpaths')), function (o) { return o.id; });
+  var tn = function (o) { return o && o.name ? o.name : 'toolpath'; };
+  if (t.added.length === 1 && !t.removed.length && !t.changed.length) said.push('Toolpath ' + tn(t.added[0]));
+  else if (t.removed.length === 1 && !t.added.length && !t.changed.length) said.push('Deleted ' + tn(t.removed[0]));
+  else if (t.changed.length === 1 && !t.added.length && !t.removed.length) said.push('Edited ' + tn(t.changed[0]));
+  else if (t.added.length || t.removed.length || t.changed.length) said.push('Toolpaths');
+  else if (histListDiff(at(a, 'toolpaths'), at(b, 'toolpaths')).moved) said.push('Toolpath order');
+  var other = [['dims', 'Dimensions'], ['guides', 'Guide lines'], ['params', 'Parameters'], ['stock', 'Material'], ['sheets', 'Sheets'],
+               ['layers', 'Layers'], ['activeLayer', 'Layers'], ['images', 'Pictures'], ['tpGroups', 'Toolpath groups'], ['vcConverted', 'Toolpaths']];
+  other.forEach(function (o) {
+    var x = at(a, o[0]), y = at(b, o[0]);
+    var same = Array.isArray(x) && Array.isArray(y) ? x.length === y.length && x.every(function (j, i) { return j === y[i]; }) : x === y;
+    if (!same && said.indexOf(o[1]) < 0) said.push(o[1]);
+  });
+  if (!said.length) return 'No change';
+  return said.length > 2 ? said.slice(0, 2).join(', ') + '…' : said.join(', ');
+}
+
+/* ---- the steps, in order, for the History bar: {name, at, kind, n}; clicking one goes to n steps done */
+function histSteps(){
+  var out = [], cur = null, now = function () { return cur || (cur = histPack()); };
+  UNDO.forEach(function (e, i) {
+    out.push({name: e.name || histAutoName(e.p, i + 1 < UNDO.length ? UNDO[i + 1].p : now()), at: e.at, kind: e.kind, n: i + 1, done: true});
+  });
+  for (var j = REDO.length - 1; j >= 0; j--){
+    var r = REDO[j];
+    out.push({name: r.name || histAutoName(j === REDO.length - 1 ? now() : REDO[j + 1].p, r.p), at: r.at, kind: r.kind, n: UNDO.length + (REDO.length - j), done: false});
+  }
+  return out;
+}
+
+/* ---- kept with the drawing: in its file, and in the browser's storage.
+   {v: 1, pieces: [...], states: [...], steps: [{name, at, kind}], at}: step i goes from states[i] to states[i + 1];
+   states[at] is the drawing as it is. Only this drawing's steps: from the last one that opened or started it. */
+function histForKeeping(){
+  var first = 0;
+  for (var i = UNDO.length - 1; i >= 0; i--) if (UNDO[i].kind){ first = i + 1; break; }
+  var states = [], steps = [];
+  UNDO.slice(first).forEach(function (e) { states.push(e.p); steps.push({name: e.name, at: e.at, kind: null}); });
+  states.push(histPack());
+  var at = states.length - 1;
+  for (var j = REDO.length - 1; j >= 0 && !REDO[j].kind; j--){ states.push(REDO[j].p); steps.push({name: REDO[j].name, at: REDO[j].at, kind: null}); }
+  if (!steps.length) return null;
+  var map = new Map(), pieces = [];
+  var put = function (x) { var n = map.get(x); if (n === undefined){ n = pieces.length; pieces.push(HIST_STR[x]); map.set(x, n); } return n; };
+  states = states.map(function (p) { return p.map(function (x) { return x === -1 ? -1 : Array.isArray(x) ? x.map(put) : put(x); }); });
+  return {v: 1, pieces: pieces.map(function (s) { return JSON.parse(s); }), states: states, steps: steps, at: at};
+}
+// The drawing's file, with its history added at the end.
+function histAttach(text){
+  var h = histForKeeping();
+  if (!h) return text;
+  var end = text.lastIndexOf('}');
+  return text.slice(0, end).replace(/\s*$/, '') + ',\n "history": ' + JSON.stringify(h) + '\n}';
+}
+// A kept history's steps, as steps here (after any already done), for the drawing open now. Wrong or damaged: none,
+// and false. If the drawing isn't as the history left it (saved by a version of Design that kept the history but
+// didn't add to it), the difference is a step of its own, and the steps that had been undone are left out.
+function histTake(h){
+  if (!h || h.v !== 1 || !Array.isArray(h.pieces) || !Array.isArray(h.states) || !Array.isArray(h.steps) ||
+      h.states.length !== h.steps.length + 1 || !(h.at >= 0 && h.at < h.states.length)) return false;
+  try {
+    var ids = h.pieces.map(function (o) { var s = JSON.stringify(o); return histPiece(s === undefined ? 'null' : s); });
+    var p = h.states.map(function (st) {
+      if (!Array.isArray(st) || st.length !== HIST_KEYS.length) throw new Error('state');
+      return st.map(function (x) {
+        if (x === -1) return -1;
+        if (Array.isArray(x)) return x.map(function (j) { if (ids[j] === undefined) throw new Error('piece'); return ids[j]; });
+        if (ids[x] === undefined) throw new Error('piece');
+        return ids[x];
+      });
+    });
+  } catch (e) { return false; }
+  var step = function (i) { var s = h.steps[i] || {}; return {name: typeof s.name === 'string' ? s.name : null, at: +s.at || 0, kind: null}; };
+  for (var i = 0; i < h.at; i++){ var e = step(i); e.p = p[i]; UNDO.push(e); }
+  if (histJoin(p[h.at]) !== docSnap()) UNDO.push({p: p[h.at], name: null, at: 0, kind: null});
+  else for (var j = h.states.length - 1; j > h.at; j--){ var r = step(j - 1); r.p = p[j]; REDO.push(r); }
+  while (UNDO.length > HIST_MAX) UNDO.shift();
+  histChanged();
+  return true;
+}
+// At startup: the history kept in the browser's storage, if it's this drawing's.
+function histRestoreStored(){
+  var h;
+  try { h = JSON.parse(localStorage.getItem(HIST_STORE_KEY) || 'null'); } catch (e) { return; }
+  // only if it's this drawing's history: the drawing as it was left is the drawing that's open
+  try { if (histJoin(histStateAt(h)) !== docSnap()) return; } catch (e) { return; }
+  histTake(h);
+}
+// a kept history's drawing as it was left
+function histStateAt(h){
+  var ids = h.pieces.map(function (o) { return histPiece(JSON.stringify(o)); });
+  return h.states[h.at].map(function (x) { return x === -1 ? -1 : Array.isArray(x) ? x.map(function (j) { return ids[j]; }) : ids[x]; });
+}
+var HIST_STORE_T = null, HIST_STORE_WARNED = false;
+function histStore(){
+  try {
+    var h = histForKeeping();
+    if (h) localStorage.setItem(HIST_STORE_KEY, JSON.stringify(h)); else localStorage.removeItem(HIST_STORE_KEY);
+  } catch (e) {
+    try { localStorage.removeItem(HIST_STORE_KEY); } catch (e2) {}
+    if (!HIST_STORE_WARNED){ HIST_STORE_WARNED = true;
+      toast('warn', 'The history is too long to keep in the browser', 'It’s here until you close 454 Design, and saving the drawing to a file keeps it in the file.'); }
+  }
+}
+
+/* ---- the History bar */
+var HIST_RENDER_T = null;
+function histChanged(){
+  if (typeof DRY !== 'undefined' && DRY) return;
+  if (!HIST_RENDER_T) HIST_RENDER_T = setTimeout(function () { HIST_RENDER_T = null; histRender(); }, 60);
+  clearTimeout(HIST_STORE_T);
+  HIST_STORE_T = setTimeout(histStore, 1500);
+}
+function histWhen(ms){
+  if (!ms) return '';
+  var d = new Date(ms), now = new Date(), two = function (n) { return (n < 10 ? '0' : '') + n; };
+  var t = two(d.getHours()) + ':' + two(d.getMinutes());
+  return d.toDateString() === now.toDateString() ? t : d.getDate() + ' ' + 'JanFebMarAprMayJunJulAugSepOctNovDec'.substr(d.getMonth() * 3, 3) + ' ' + t;
+}
+function histRender(){
+  var bar = document.getElementById('histBar');
+  if (!bar) return;
+  var open = UICFG.histBar !== false;
+  bar.classList.toggle('folded', !open);
+  var fold = document.getElementById('histFold');
+  fold.setAttribute('aria-expanded', open ? 'true' : 'false');
+  fold.title = open ? 'Hide the history' : 'Show the history: every change, to go back to';
+  var list = document.getElementById('histSteps'), note = document.getElementById('histNote');
+  list.textContent = '';
+  if (!open){ note.textContent = ''; return; }
+  var steps = histSteps(), done = UNDO.length;
+  var start = document.createElement('button');
+  start.type = 'button'; start.className = 'hStep hStart' + (done === 0 ? ' now' : '');
+  start.textContent = 'Start';
+  start.title = steps.length ? 'The drawing before the first step kept here' : 'Every change you make shows here, to go back to';
+  start.addEventListener('click', function () { histGoTo(0); });
+  list.appendChild(start);
+  steps.forEach(function (s) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'hStep' + (s.done ? '' : ' undone') + (s.n === done ? ' now' : '') + (s.kind ? ' hDoc' : '');
+    b.textContent = s.name;
+    b.title = s.name + (s.at ? ' · ' + histWhen(s.at) : '') +
+      (s.n === done ? '\nThe drawing is as it was just after this step.' : '\nClick to see the drawing as it was just after this step.');
+    b.addEventListener('click', function () { histGoTo(s.n); });
+    list.appendChild(b);
+  });
+  var ahead = REDO.length;
+  note.textContent = ahead ? 'Back ' + ahead + (ahead === 1 ? ' step: a change here drops the step after it' : ' steps: a change here drops the ' + ahead + ' after it') : '';
+  var now = list.querySelector('.now');
+  if (now && now.scrollIntoView) now.scrollIntoView({block: 'nearest', inline: 'center'});
+}
+function histWire(){
+  var fold = document.getElementById('histFold');
+  if (!fold || fold.wired) return;
+  fold.wired = true;
+  fold.addEventListener('click', function () { UICFG.histBar = UICFG.histBar === false; uiCfgSave(); histRender(); });
+  // the mouse wheel scrolls the steps along (there's no scroll bar, to keep the bar small)
+  var list = document.getElementById('histSteps');
+  list.addEventListener('wheel', function (e) {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)){ list.scrollLeft += e.deltaY; e.preventDefault(); }
+  }, {passive: false});
+  histRender();
+}
 /* ---------------- numeric entry parsing ---------------- */
 /* Accepted while a point is expected:
    "50,30"   absolute point
@@ -3135,7 +3457,7 @@ function toolCommitText(txt){
     if (relApply(ea, eb, vv, wantEdge, hA, hB)){
       if (_leaveDim && !dimsArr().some(function(x){ return sameDistance(x, ea, eb, hA, hB); }))
         addDim({kind:'pair', a:entId(ea), b:entId(eb), edge:!!wantEdge, aAt:hA, bAt:hB}); DRAW = null; hidePrompt(); persist(); draw(); updateReadout(); }
-    else { UNDO.pop(); if (relApply.why){ toast('warn', 'Couldn\u2019t set that distance', relApply.why); relApply.why = null; } }
+    else { undoDrop(); if (relApply.why){ toast('warn', 'Couldn\u2019t set that distance', relApply.why); relApply.why = null; } }
     return;
   }
   if (DRAW && DRAW.stage === 'dimEdit'){
@@ -3325,7 +3647,7 @@ function toolCommitText(txt){
       toast('ok', 'Dimension applied', 'Set to ' + fmtDisp(vD) + ' ' + unitTag() + (rd.expr ? ', from ' + rd.expr + '. It follows if that changes.' : '.'));
       paramsSayFailed(failedD);
     } else {
-      UNDO.pop();                                       // nothing changed: nothing to undo
+      undoDrop();                                       // nothing changed: nothing to undo
       dd.edge = wasEdge; if (wasExpr){ dd.expr = wasExpr; dd.exprUnit = wasUnit; } else { delete dd.expr; delete dd.exprUnit; }
       toast('warn', 'Could not apply that', relApply.why || dimApply.why || 'The dimension could not drive this geometry.');
       relApply.why = dimApply.why = null;
@@ -3631,7 +3953,7 @@ function selBoxApply(field, txt){
   if (field === 'x' || field === 'y'){
     var dx = field === 'x' ? v - p.x : 0, dy = field === 'y' ? v - p.y : 0;
     if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) return true;
-    pushUndo();
+    pushUndo('Move');
     SEL.forEach(function (i){ moveEntity(DOC.ents[i], dx, dy); });
   } else if (field === 'w' || field === 'h'){
     if (!(v > 0)){ toast('warn', 'Bigger than nothing', 'A size has to be more than 0.'); return false; }
@@ -3644,7 +3966,7 @@ function selBoxApply(field, txt){
     var k = v / cur, sx = field === 'w' ? k : 1, sy = field === 'h' ? k : 1;
     if (selBoxLocked() && other > 1e-9){ sx = k; sy = k; }
     if (Math.abs(sx - 1) < 1e-12 && Math.abs(sy - 1) < 1e-12) return true;
-    pushUndo();
+    pushUndo('Resize');
     SCALE_NOTE = null;
     SEL.forEach(function (i){ scaleEnt(DOC.ents[i], p.x, p.y, sx, sy); });
     if (SCALE_NOTE === 'ellipse')
@@ -3653,7 +3975,7 @@ function selBoxApply(field, txt){
       toast('info', 'Angled text scaled evenly', 'Text at an angle can only be scaled evenly. Convert it to curves first to stretch it.');
   } else if (field === 'r'){
     if (Math.abs(v) < 1e-12) return true;
-    pushUndo();
+    pushUndo('Rotate');
     SEL.forEach(function (i){ rotateEnt(DOC.ents[i], p.x, p.y, v * Math.PI / 180); });
   } else return false;
   HANDLES.pivot = null;
@@ -4184,7 +4506,7 @@ function vecChains(ids, polys){
 }
 // Apply a fix. Everything is one undoable step.
 function vecFix(issue){
-  pushUndo();
+  pushUndo('Fix shapes');
   if (issue.kind === 'dup'){
     var drop = {}; issue.ids.forEach(function (id) { drop[id] = 1; });
     DOC.ents = DOC.ents.filter(function (e) { return !drop[entId(e)]; });
@@ -5309,7 +5631,7 @@ function cutApply(){
     // a toolpath's shapes must all be on one sheet: its G-code is cut on that sheet's material
     var sheetsUsed = sheetsOfEnts(tp.ents);
     if (sheetsUsed.length > 1){
-      UNDO.pop();                                            // nothing changed: drop the undo step recorded above
+      undoDrop();                                            // nothing changed: drop the undo step recorded above
       toast('err', 'Those shapes are on different sheets', 'Each sheet is cut from its own material, so a toolpath\u2019s shapes must all be on one sheet (' +
             sheetsUsed.map(sheetTitle).join(', ') + '). Make one toolpath per sheet.');
       return;
@@ -6818,7 +7140,7 @@ function traceFit(pts, tol){
 }
 function traceApply(){
   if (!TRACE || !TRACE.loops.length) return;
-  pushUndo();
+  pushUndo('Trace image');
   var shapes = TRACE.curves
     ? TRACE.curves.map(function (l) { return {t: 'path', pts: l.map(function (q) { return [+q[0].toFixed(4), +q[1].toFixed(4), +q[2].toFixed(6)]; }), closed: true}; })
     : TRACE.loops.map(function (l) { return {t: 'poly', pts: l.map(function (q) { return [+q[0].toFixed(4), +q[1].toFixed(4)]; }), closed: true}; });
@@ -6954,7 +7276,7 @@ function vcMakeEditable(){
   function previewMatches(){ if (!matchesMemo) matchesMemo = tooBig ? [] : vcPreviewMatches(shapes); return matchesMemo; }
   var list = DOC.vcToolpaths, clears = [];
   var made = [], unsure = [], skipped = [], guessed = [], noAngle = [];
-  pushUndo();
+  pushUndo('Make editable');
   list.forEach(function (T, ti) {
     // A setting, by its name without the group it's in. (`_mtpkpd` and `_mtpkptpd` are the pocket's groups in
     // newer VCarve: without them a pocket's depth wasn't found, and 3 mm was used in its place.)
@@ -8066,7 +8388,7 @@ function inwCreate(){
 }
 // The shapes, sheet, toolpaths and groups, before any toolpath is worked out (one undo for it all).
 function inwLayOut(ents, base, keepSheet){
-  pushUndo(); layersInit();
+  pushUndo('Inlay wizard'); layersInit();
   var pocket = inlayHalf(Object.assign({plug: false, ents: ents.slice()}, base));
   var plugSheet = null;
   if (keepSheet){
@@ -9209,7 +9531,7 @@ function tplPlan(tpl){
 // Make the planned toolpaths, after the ones already there, in the template's order. Returns those made.
 function tplMakeToolpaths(plan){
   var made = [], ids = [];
-  pushUndo();
+  pushUndo('Template');
   plan.forEach(function (p, i) {
     if (p.skip){ ids.push(null); return; }
     var tp = JSON.parse(JSON.stringify(p.t));
@@ -11352,7 +11674,7 @@ function c2dOpen(buf, name){
   var ex = c2dExtract(buf), r = c2dToDoc(ex, name);
   if (!r.shapes) throw new Error('There are no shapes in it that 454 can draw.');
   var aside = asideTake();
-  pushUndo();
+  pushUndo('Opened ' + name, 'open');
   DOC = r.doc;
   UICFG.stockUnits = r.inches ? 'in' : 'mm'; uiCfgSave();
   SEL = []; CUTSEL = null; setTool('select');
@@ -12185,6 +12507,7 @@ function persist(){
     setTimeout(function(){ persist.layerQueued = false; renderLayers(); }, 0);
   }
   markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
+  histChanged();                                        // the History bar's last step, and the history kept
   try{ localStorage.setItem('d454Design', docForStorage()); }
   catch(e){                                             // say so: losing work quietly is the worst outcome
     if (!persist.warned){ persist.warned = true;
@@ -12265,6 +12588,7 @@ function restore(){ // startup ONLY: pulls the persisted doc. Never call after s
     var s = localStorage.getItem('d454Design') || localStorage.getItem('kerfDesign'); // fallback: pre-rename work
     if (s){ var d = JSON.parse(s); if (d && d.stock) DOC = d; }
   }catch(e){}
+  histRestoreStored();                                // its history, kept in the browser's storage (history.js)
   syncStockUI();
   tpRebuildAll();                                     // toolpaths come back as settings only
 }
@@ -12374,7 +12698,7 @@ function clearDrawing(){
 function newDrawing(){
   if (!docHasWork()) return;
   var aside = asideTake();
-  pushUndo();
+  pushUndo('New drawing', 'new');
   clearDrawing();
   setTool('select');
   persist();
@@ -12385,7 +12709,11 @@ function newDrawing(){
 }
 function openDrawing(d, name){
   var aside = asideTake();
-  pushUndo(); DOC = d; syncStockUI(); persist(); markSaved(name);
+  // a step to come back to the drawing that was open, then the opened drawing's own history, if it was saved with one
+  var h = d.history; delete d.history;
+  pushUndo('Opened ' + name, 'open');
+  DOC = d; histTake(h);
+  syncStockUI(); persist(); markSaved(name);
   SAVE_HANDLE = OPEN_HANDLE && OPEN_HANDLE.name === name ? OPEN_HANDLE : null;   // opened through Open: Save writes it back
   OPEN_HANDLE = null;
   if (OPEN_PATH && baseName(OPEN_PATH) === name) lsSet(PATH_KEY, OPEN_PATH); else lsDel(PATH_KEY);   // the desktop app: by path
@@ -12401,7 +12729,7 @@ function recoverDrawing(){
   var a = asideRead();
   if (!a) return;
   var swap = asideTake();                             // the open drawing takes its place, if it's unsaved
-  pushUndo();
+  pushUndo('Recovered drawing', 'open');
   DOC = a.doc; SEL.length = 0; CUTSEL = null;
   if (swap) lsSet(ASIDE_KEY, swap); else lsDel(ASIDE_KEY);
   if (a.name) lsSet(NAME_KEY, a.name); else lsDel(NAME_KEY);
@@ -12416,7 +12744,7 @@ function recoverDrawing(){
 // Save (Ctrl+S, the Save button): straight to the drawing's file if Design may write to it, else Save As.
 // asNew (Ctrl+Shift+S): always Save As. True once saved.
 function saveDrawing(asNew){
-  var text = docForStorage(true), name = drawingFileName();
+  var text = histAttach(docForStorage(true)), name = drawingFileName();
   var DF = desktopFiles();
   if (DF){                                            // the desktop app: by path
     var sp = lsGet(PATH_KEY);
@@ -12645,7 +12973,7 @@ function clipDuplicate(){
 }
 // Put a copy into the drawing, moved by dx, dy, with its dimensions measuring the new shapes; select it.
 function clipInsert(clip, dx, dy, said){
-  pushUndo();
+  pushUndo(said === 'Duplicated ' ? 'Duplicate' : 'Paste');
   layersInit();
   var newId = {}, sel = [];
   clip.ents.forEach(function (c){
@@ -13440,7 +13768,7 @@ function offRender(){
 function offApply(){
   var res = offResults();
   if (!res.length) return;
-  pushUndo();
+  pushUndo('Offset ' + histLen(OFF.dist));
   var made = [];
   res.forEach(function(ne){ made.push(DOC.ents.length); DOC.ents.push(ne); });
   SEL = made;
@@ -13499,7 +13827,7 @@ function mirAxis(){
 function mirApply(){
   var ax = mirAxis();
   if (!MIR || !MIR.objs.length || !ax) return;
-  pushUndo();
+  pushUndo('Mirror');
   var made = [];
   MIR.objs.forEach(function(i){
     var c = cloneEnt(DOC.ents[i]);
@@ -14426,7 +14754,7 @@ function runNest(parts, qty, opts){
 }
 // move the originals and add the copies
 function applyNest(res){
-  pushUndo();
+  pushUndo('Nest');
   var newSel = [], sr = stockRect(), parkX = sr.x1 + 10;
   // copies must come from each part AS IT WAS, before any original is moved
   var pristine = {};
@@ -14829,7 +15157,7 @@ function filletChainAt(pe, k, w){
 // Remove a fillet filletAt found: the sharp corner comes back. Returns true when done.
 function unfillet(f){
   if (!f) return false;
-  pushUndo();
+  pushUndo('Fillet removed');
   if (f.kind === 'lines'){
     var LA = DOC.ents[f.la.i], LB = DOC.ents[f.lb.i];
     if (f.la.end === 1){ LA.x1 = f.X.x; LA.y1 = f.X.y; } else { LA.x2 = f.X.x; LA.y2 = f.X.y; }
@@ -14867,7 +15195,7 @@ function doFillet(w, r){
       if (pick.e.con) ne.con = true;
       if (pick.e._id) ne._id = pick.e._id;
       ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
-      pushUndo(); DOC.ents.splice(pick.i, 1, ne); return true;
+      pushUndo('Fillet ' + histLen(r)); DOC.ents.splice(pick.i, 1, ne); return true;
     }
     doFillet.lastMiss = dogboneVertex.why === 'curved' ? 'curved' : (dogboneVertex.why === 'flat' ? 'flat' : 'fit');
     return false;   // nearest corner couldn't take it: don't fall through to two-line
@@ -14914,7 +15242,7 @@ function doFillet(w, r){
     // keep the endpoint farther along the kept side; the other becomes T
     if (sd.p2*sd.s >= sd.p1*sd.s){ e4.x1 = T.x; e4.y1 = T.y; } else { e4.x2 = T.x; e4.y2 = T.y; }
   }
-  pushUndo();
+  pushUndo('Fillet ' + histLen(r));
   retrim(eA, v1, T1b); retrim(eB, v2, T2b);
   var aT1 = Math.atan2(T1b.y-O.y, T1b.x-O.x), aT2 = Math.atan2(T2b.y-O.y, T2b.x-O.x);
   var ccwF = angNorm(aT2-aT1) <= Math.PI; // minor direction
@@ -15055,7 +15383,8 @@ function fallApply(){
   if (!FALL) return;
   var P = filletAllPlan(FALL.objs, fallOpts());
   if (!P.done) return;
-  pushUndo();
+  var o = fallOpts();
+  pushUndo((o.kind === 'dogbone' ? 'Dog-bone corners ' : o.kind === 'tbone' ? 'T-bone corners ' : 'Fillet corners ') + histLen(o.r));
   P.results.forEach(function (r) { DOC.ents[r.i] = r.ne; });
   SEL = P.results.map(function (r) { return r.i; });
   FALL_MARKS = P.missed.length ? P.missed.map(function (m) { return {x: m.x, y: m.y}; }) : null;
@@ -15334,7 +15663,7 @@ function alignSelection(op){
   }
   var real = moves.filter(function(m){ return Math.abs(m[1]) > 1e-9 || Math.abs(m[2]) > 1e-9; });
   if (!real.length) return {moved:0};
-  pushUndo();
+  pushUndo(op === 'disth' || op === 'distv' ? 'Space evenly' : 'Align');
   real.forEach(function(m){ moveEntity(DOC.ents[m[0]], m[1], m[2]); });
   persist();
   return {moved:real.length};
@@ -15366,7 +15695,7 @@ function flipSelection(horizontal){
   if (!b) return false;
   var cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
   var before = SEL.map(function(i){ return snapJSON(DOC.ents[i]); }).join('|');
-  pushUndo();
+  pushUndo('Flip');
   SEL.forEach(function(i){ mirrorEnt(DOC.ents[i], cx, cy, horizontal ? 0 : 1, horizontal ? 1 : 0); });
   var after = SEL.map(function(i){ return snapJSON(DOC.ents[i]); }).join('|');
   if (after === before)                                  // a symmetric shape flips onto itself
@@ -15617,7 +15946,7 @@ function doJoin(){
     // closed shapes in the selection: the user wants them merged with their bridges
     var merged = mergeWithBridges(SEL.slice());
     if (merged){
-      pushUndo();
+      pushUndo('Join');
       var keepEnts = DOC.ents.filter(function(_, i){ return SEL.indexOf(i) < 0; });
       keepEnts.push(merged);
       DOC.ents = keepEnts;
@@ -15698,7 +16027,7 @@ function doJoin(){
     chains.push({pts:ch, closed:closed});
   }
 
-  pushUndo();
+  pushUndo('Join');
   var keep = DOC.ents.filter(function(_, i){ return src.indexOf(i) < 0; });
   chains.forEach(function(c){
     var allStraight = c.pts.every(function(pt){ return Math.abs(pt[2] || 0) < 1e-12; });
@@ -16175,7 +16504,7 @@ function boolApply(kind){
     made = made.concat(out);
   }
 
-  pushUndo();
+  pushUndo(name);
   var goneIds = Object.keys(gone).map(function (i){ return entId(DOC.ents[+i]); });
   DOC.ents = DOC.ents.filter(function (_, i){ return !gone[i]; });
   var start = DOC.ents.length;
@@ -17023,6 +17352,7 @@ function uiCfgLoad(){
       if (c.nestRot) UICFG.nestRot = c.nestRot;
       if (c.stockUnits === 'in' || c.stockUnits === 'mm') UICFG.stockUnits = c.stockUnits;
       if (typeof c.tpPanel === 'boolean') UICFG.tpPanel = c.tpPanel;
+      if (typeof c.histBar === 'boolean') UICFG.histBar = c.histBar;
       if (typeof c.sidePanel === 'boolean') UICFG.sidePanel = c.sidePanel;
       if (c.sideTab === 'layers' || c.sideTab === 'tools') UICFG.sideTab = c.sideTab;   // was saved, never read back
       if (c.libMachine) UICFG.libMachine = c.libMachine;
@@ -17328,7 +17658,7 @@ function wire(){
   buildToolPanel();
   wirePanel();
   unsavedWire();
-  clipWire(); selBoxWire(); woodWire(); tplWire(); paramPanelWire();
+  clipWire(); selBoxWire(); woodWire(); tplWire(); paramPanelWire(); histWire();
   keysWire();
   fit();
 
@@ -17693,7 +18023,7 @@ function wire(){
     if (!textLocal(TXT.ent)){ toast('warn', 'Font still loading', 'Wait until the letters appear, then convert.'); return; }
     var ent = TXT.ent;
     closeTextModal(true);
-    UNDO.pop();                                   // fold the convert into the same undo step
+    undoDrop();                                   // fold the convert into the same undo step
     var n = convertTextsToCurves([DOC.ents.indexOf(ent)]);
     if (n) toast('ok', 'Placed as curves', 'The text is now ordinary shapes, grouped together. It can be trimmed, offset and cut, but not edited as text.');
   });
@@ -17815,7 +18145,7 @@ function wire(){
       var list = IMP.vec, replace = !document.getElementById('impIntoRow').hidden && document.getElementById('impReplace').checked;
       var place = document.getElementById('impPlace').value, inch = document.getElementById('impIN').checked;
       var wTarget = parseFloat(document.getElementById('impWidth').value);
-      pushUndo();
+      pushUndo(replace ? 'Opened ' + list.map(function (v) { return v.name; }).join(', ') : 'Import ' + list.map(function (v) { return v.name; }).join(', '), replace ? 'open' : null);
       if (replace) DOC = {stock: DOC.stock, ents: [], guides: [], layers: [{id: 'L1', name: 'Layer 1', visible: true, locked: false}], activeLayer: 'L1'};
       layersInit();
       var layersBefore = DOC.layers.length, ref = replace ? null : vecContentBBox(), added = null, sel = [];
@@ -17843,7 +18173,7 @@ function wire(){
     var useP = document.getElementById('impPreview').checked;
     if (!useD && !useP){ impClose(); return; }
     var scale = document.getElementById('impIN').checked ? 25.4 : 1;
-    pushUndo();
+    pushUndo('Opened ' + (IMP.name || 'VCarve project'), 'open');
     var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockT: ex.stockT, stockZero: ex.stockZero, stockAt: ex.stockAt, contours: useD ? ex.contours : [],
                          contourIds: useD ? ex.contourIds : [], contourSheets: useD ? ex.contourSheets : [], contourOpen: useD ? ex.contourOpen : [], contourGroups: useD ? ex.contourGroups : []}, scale);   // IDs, sheets, which are open, and groups
     var docP = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockAt: ex.stockAt, contours: useP ? ex.preview : []}, scale);
@@ -17895,7 +18225,7 @@ function wire(){
         try{
           var ex = crvExtract(buf);
           if (!ex || (!ex.contours.length && !ex.preview.length)){ toast('err', 'Nothing to import', 'No vectors found in this .crv, or it\u2019s a version 454 can\u2019t read yet.'); return; }
-          IMP.mode = 'crv'; IMP.ex = ex;
+          IMP.mode = 'crv'; IMP.ex = ex; IMP.name = f.name;
           helpHeading('impTitle', 'Import VCarve file');
           document.querySelectorAll('.impCrvRow').forEach(function(el){ el.hidden = false; });
           document.querySelectorAll('.impDxfRow').forEach(function(el){ el.hidden = true; });
@@ -18037,7 +18367,7 @@ function wire(){
       if (fin.h.kind !== 'pivot' && fin.h.kind !== 'rot') HANDLES.pivot = null;
       // released where it started? then nothing changed: drop the undo step
       if (fin.pushed && SEL.every(function(si, k){ return snapJSON(DOC.ents[si]) === fin.snaps[k]; })){
-        UNDO.pop(); fin.pushed = false;
+        undoDrop(); fin.pushed = false;
       }
       if (fin.pushed) persist();
       if (fin.note === 'ellipse')
@@ -18166,7 +18496,7 @@ function wire(){
     if (e.key === 'Escape'){
       if (DRAW && DRAW.stage === 'xform'){
         SEL.forEach(function(si, k){ restoreInto(DOC.ents[si], DRAW.snaps[k]); });
-        if (DRAW.pushed) UNDO.pop();
+        if (DRAW.pushed) undoDrop();
         DRAW = null;
       }
       else if (DRAW){ DRAW = null; if (TOOL !== 'select') stagePrompt(TOOL + '0'); else hidePrompt(); }
@@ -18235,7 +18565,7 @@ function wire(){
       var st = e.shiftKey ? 0.1 : 1;
       var dx = e.key==='ArrowLeft' ? -st : e.key==='ArrowRight' ? st : 0;
       var dy = e.key==='ArrowDown' ? -st : e.key==='ArrowUp' ? st : 0;
-      pushUndo();
+      pushUndo('Move');
       SEL.forEach(function(si){ moveEntity(DOC.ents[si], dx, dy); });
       persist(); draw(); return;
     }

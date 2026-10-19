@@ -239,7 +239,7 @@ function traceFit(pts, tol){
 }
 function traceApply(){
   if (!TRACE || !TRACE.loops.length) return;
-  pushUndo();
+  pushUndo('Trace image');
   var shapes = TRACE.curves
     ? TRACE.curves.map(function (l) { return {t: 'path', pts: l.map(function (q) { return [+q[0].toFixed(4), +q[1].toFixed(4), +q[2].toFixed(6)]; }), closed: true}; })
     : TRACE.loops.map(function (l) { return {t: 'poly', pts: l.map(function (q) { return [+q[0].toFixed(4), +q[1].toFixed(4)]; }), closed: true}; });

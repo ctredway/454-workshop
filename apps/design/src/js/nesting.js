@@ -240,7 +240,7 @@ function runNest(parts, qty, opts){
 }
 // move the originals and add the copies
 function applyNest(res){
-  pushUndo();
+  pushUndo('Nest');
   var newSel = [], sr = stockRect(), parkX = sr.x1 + 10;
   // copies must come from each part AS IT WAS, before any original is moved
   var pristine = {};

@@ -5,6 +5,7 @@ function persist(){
     setTimeout(function(){ persist.layerQueued = false; renderLayers(); }, 0);
   }
   markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
+  histChanged();                                        // the History bar's last step, and the history kept
   try{ localStorage.setItem('d454Design', docForStorage()); }
   catch(e){                                             // say so: losing work quietly is the worst outcome
     if (!persist.warned){ persist.warned = true;
@@ -85,6 +86,7 @@ function restore(){ // startup ONLY: pulls the persisted doc. Never call after s
     var s = localStorage.getItem('d454Design') || localStorage.getItem('kerfDesign'); // fallback: pre-rename work
     if (s){ var d = JSON.parse(s); if (d && d.stock) DOC = d; }
   }catch(e){}
+  histRestoreStored();                                // its history, kept in the browser's storage (history.js)
   syncStockUI();
   tpRebuildAll();                                     // toolpaths come back as settings only
 }

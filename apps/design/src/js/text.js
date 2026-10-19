@@ -181,10 +181,10 @@ function closeTextModal(commit){
   if (!commit){
     if (TXT.isNew){ if (i >= 0) DOC.ents.splice(i, 1); }
     else if (i >= 0) DOC.ents[i] = JSON.parse(TXT.before);
-    UNDO.pop();                                   // nothing changed, so drop the undo step
+    undoDrop();                                   // nothing changed, so drop the undo step
   } else if (!String(e.str).trim()){
     if (i >= 0) DOC.ents.splice(i, 1);
-    if (TXT.isNew) UNDO.pop();
+    if (TXT.isNew) undoDrop();
     else toast('info', 'Text removed', 'The text was empty, so it was deleted. Undo brings it back.');
   } else {
     UICFG.lastFont = e.font; UICFG.lastTextH = e.h; uiCfgSave();

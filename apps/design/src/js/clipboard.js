@@ -93,7 +93,7 @@ function clipDuplicate(){
 }
 // Put a copy into the drawing, moved by dx, dy, with its dimensions measuring the new shapes; select it.
 function clipInsert(clip, dx, dy, said){
-  pushUndo();
+  pushUndo(said === 'Duplicated ' ? 'Duplicate' : 'Paste');
   layersInit();
   var newId = {}, sel = [];
   clip.ents.forEach(function (c){

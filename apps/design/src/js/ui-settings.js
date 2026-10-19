@@ -33,6 +33,7 @@ function uiCfgLoad(){
       if (c.nestRot) UICFG.nestRot = c.nestRot;
       if (c.stockUnits === 'in' || c.stockUnits === 'mm') UICFG.stockUnits = c.stockUnits;
       if (typeof c.tpPanel === 'boolean') UICFG.tpPanel = c.tpPanel;
+      if (typeof c.histBar === 'boolean') UICFG.histBar = c.histBar;
       if (typeof c.sidePanel === 'boolean') UICFG.sidePanel = c.sidePanel;
       if (c.sideTab === 'layers' || c.sideTab === 'tools') UICFG.sideTab = c.sideTab;   // was saved, never read back
       if (c.libMachine) UICFG.libMachine = c.libMachine;

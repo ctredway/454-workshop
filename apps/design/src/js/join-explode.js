@@ -146,7 +146,7 @@ function doJoin(){
     // closed shapes in the selection: the user wants them merged with their bridges
     var merged = mergeWithBridges(SEL.slice());
     if (merged){
-      pushUndo();
+      pushUndo('Join');
       var keepEnts = DOC.ents.filter(function(_, i){ return SEL.indexOf(i) < 0; });
       keepEnts.push(merged);
       DOC.ents = keepEnts;
@@ -227,7 +227,7 @@ function doJoin(){
     chains.push({pts:ch, closed:closed});
   }
 
-  pushUndo();
+  pushUndo('Join');
   var keep = DOC.ents.filter(function(_, i){ return src.indexOf(i) < 0; });
   chains.forEach(function(c){
     var allStraight = c.pts.every(function(pt){ return Math.abs(pt[2] || 0) < 1e-12; });

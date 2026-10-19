@@ -6,7 +6,7 @@ function wire(){
   buildToolPanel();
   wirePanel();
   unsavedWire();
-  clipWire(); selBoxWire(); woodWire(); tplWire(); paramPanelWire();
+  clipWire(); selBoxWire(); woodWire(); tplWire(); paramPanelWire(); histWire();
   keysWire();
   fit();
 
@@ -371,7 +371,7 @@ function wire(){
     if (!textLocal(TXT.ent)){ toast('warn', 'Font still loading', 'Wait until the letters appear, then convert.'); return; }
     var ent = TXT.ent;
     closeTextModal(true);
-    UNDO.pop();                                   // fold the convert into the same undo step
+    undoDrop();                                   // fold the convert into the same undo step
     var n = convertTextsToCurves([DOC.ents.indexOf(ent)]);
     if (n) toast('ok', 'Placed as curves', 'The text is now ordinary shapes, grouped together. It can be trimmed, offset and cut, but not edited as text.');
   });
@@ -493,7 +493,7 @@ function wire(){
       var list = IMP.vec, replace = !document.getElementById('impIntoRow').hidden && document.getElementById('impReplace').checked;
       var place = document.getElementById('impPlace').value, inch = document.getElementById('impIN').checked;
       var wTarget = parseFloat(document.getElementById('impWidth').value);
-      pushUndo();
+      pushUndo(replace ? 'Opened ' + list.map(function (v) { return v.name; }).join(', ') : 'Import ' + list.map(function (v) { return v.name; }).join(', '), replace ? 'open' : null);
       if (replace) DOC = {stock: DOC.stock, ents: [], guides: [], layers: [{id: 'L1', name: 'Layer 1', visible: true, locked: false}], activeLayer: 'L1'};
       layersInit();
       var layersBefore = DOC.layers.length, ref = replace ? null : vecContentBBox(), added = null, sel = [];
@@ -521,7 +521,7 @@ function wire(){
     var useP = document.getElementById('impPreview').checked;
     if (!useD && !useP){ impClose(); return; }
     var scale = document.getElementById('impIN').checked ? 25.4 : 1;
-    pushUndo();
+    pushUndo('Opened ' + (IMP.name || 'VCarve project'), 'open');
     var docD = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockT: ex.stockT, stockZero: ex.stockZero, stockAt: ex.stockAt, contours: useD ? ex.contours : [],
                          contourIds: useD ? ex.contourIds : [], contourSheets: useD ? ex.contourSheets : [], contourOpen: useD ? ex.contourOpen : [], contourGroups: useD ? ex.contourGroups : []}, scale);   // IDs, sheets, which are open, and groups
     var docP = crvToDoc({stockW: ex.stockW, stockH: ex.stockH, stockAt: ex.stockAt, contours: useP ? ex.preview : []}, scale);
@@ -573,7 +573,7 @@ function wire(){
         try{
           var ex = crvExtract(buf);
           if (!ex || (!ex.contours.length && !ex.preview.length)){ toast('err', 'Nothing to import', 'No vectors found in this .crv, or it\u2019s a version 454 can\u2019t read yet.'); return; }
-          IMP.mode = 'crv'; IMP.ex = ex;
+          IMP.mode = 'crv'; IMP.ex = ex; IMP.name = f.name;
           helpHeading('impTitle', 'Import VCarve file');
           document.querySelectorAll('.impCrvRow').forEach(function(el){ el.hidden = false; });
           document.querySelectorAll('.impDxfRow').forEach(function(el){ el.hidden = true; });
@@ -715,7 +715,7 @@ function wire(){
       if (fin.h.kind !== 'pivot' && fin.h.kind !== 'rot') HANDLES.pivot = null;
       // released where it started? then nothing changed: drop the undo step
       if (fin.pushed && SEL.every(function(si, k){ return snapJSON(DOC.ents[si]) === fin.snaps[k]; })){
-        UNDO.pop(); fin.pushed = false;
+        undoDrop(); fin.pushed = false;
       }
       if (fin.pushed) persist();
       if (fin.note === 'ellipse')
@@ -844,7 +844,7 @@ function wire(){
     if (e.key === 'Escape'){
       if (DRAW && DRAW.stage === 'xform'){
         SEL.forEach(function(si, k){ restoreInto(DOC.ents[si], DRAW.snaps[k]); });
-        if (DRAW.pushed) UNDO.pop();
+        if (DRAW.pushed) undoDrop();
         DRAW = null;
       }
       else if (DRAW){ DRAW = null; if (TOOL !== 'select') stagePrompt(TOOL + '0'); else hidePrompt(); }
@@ -913,7 +913,7 @@ function wire(){
       var st = e.shiftKey ? 0.1 : 1;
       var dx = e.key==='ArrowLeft' ? -st : e.key==='ArrowRight' ? st : 0;
       var dy = e.key==='ArrowDown' ? -st : e.key==='ArrowUp' ? st : 0;
-      pushUndo();
+      pushUndo('Move');
       SEL.forEach(function(si){ moveEntity(DOC.ents[si], dx, dy); });
       persist(); draw(); return;
     }

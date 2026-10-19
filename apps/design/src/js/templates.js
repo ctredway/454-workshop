@@ -48,7 +48,7 @@ function tplPlan(tpl){
 // Make the planned toolpaths, after the ones already there, in the template's order. Returns those made.
 function tplMakeToolpaths(plan){
   var made = [], ids = [];
-  pushUndo();
+  pushUndo('Template');
   plan.forEach(function (p, i) {
     if (p.skip){ ids.push(null); return; }
     var tp = JSON.parse(JSON.stringify(p.t));
