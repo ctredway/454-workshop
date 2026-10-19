@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.51 — the History bar as icons
+- Includes Design 0.142.1: each step on the History bar is its tool's icon, with its name on hover.
+
 ### 0.6.2-beta.50 — the History bar: a design timeline, as in Fusion
 - Includes Design 0.137.0: the History bar, every change a named step, kept with the drawing in its file.
 - Includes Design 0.138.0: change a step by double-clicking it, and the steps after it are done again; a step that
