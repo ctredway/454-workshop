@@ -149,7 +149,8 @@ function xformApply(D, w, alt, shift){
   SEL.forEach(function(si, k){ restoreInto(DOC.ents[si], D.snaps[k]); });
   var h = D.h, b = D.b0;
   if (h.kind === 'pivot'){ HANDLES.pivot = {x:w.x, y:w.y}; return; }
-  function undoOnce(){ if (!D.pushed){ pushUndo(); D.pushed = true; } }
+  // the step, once something changes; done again by its recipe (history-replay.js), about the same point of the box
+  function undoOnce(){ if (!D.pushed){ pushUndo(); D.pushed = true; D.recipe = histRecipe({op: 'xform', ids: histIdsOf(SEL)}); } }
   if (h.kind === 'rot'){
     var pv = D.pivot;
     var a = Math.atan2(w.y - pv.y, w.x - pv.x) - Math.atan2(D.start.y - pv.y, D.start.x - pv.x);
@@ -157,6 +158,7 @@ function xformApply(D, w, alt, shift){
     D.ang = a;
     if (Math.abs(a) < 1e-12) return;
     undoOnce();
+    if (D.recipe){ D.recipe.kind = 'rot'; D.recipe.ang = a * 180 / Math.PI; D.recipe.at = histFrac(b, pv.x, pv.y); }
     SEL.forEach(function(si){ rotateEnt(DOC.ents[si], pv.x, pv.y, a); });
     return;
   }
@@ -175,6 +177,7 @@ function xformApply(D, w, alt, shift){
   D.sx = sx; D.sy = sy;
   if (Math.abs(sx - 1) < 1e-12 && Math.abs(sy - 1) < 1e-12) return;
   undoOnce();
+  if (D.recipe){ D.recipe.kind = 'scale'; D.recipe.sx = sx; D.recipe.sy = sy; D.recipe.at = histFrac(b, ox, oy); }
   SCALE_NOTE = null;
   SEL.forEach(function(si){ scaleEnt(DOC.ents[si], ox, oy, sx, sy); });
   if (SCALE_NOTE) D.note = SCALE_NOTE;

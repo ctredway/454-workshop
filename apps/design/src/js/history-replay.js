@@ -40,6 +40,13 @@ function histIndexes(ids){
 
 /* ---- the tools that do their steps again. fields: what can be changed (len: a length in the units shown; deg:
    degrees; text). run: does it to the drawing (DOC), on the shapes idx; true, or why not. */
+function histFilletName(kind, r){ return (kind === 'dogbone' ? 'Dog-bone ' : kind === 'tbone' ? 'T-bone ' : 'Fillet ') + histLen(r); }
+// a point as a fraction of a box's width and height (the middle of a box with none), and back
+function histFrac(b, x, y){
+  var w = b.x1 - b.x0, h = b.y1 - b.y0;
+  return {fx: w > 1e-9 ? (x - b.x0) / w : 0.5, fy: h > 1e-9 ? (y - b.y0) / h : 0.5};
+}
+function histFromFrac(b, f){ return {x: b.x0 + f.fx * (b.x1 - b.x0), y: b.y0 + f.fy * (b.y1 - b.y0)}; }
 var HIST_SELBOX_LABEL = {x: 'X', y: 'Y', w: 'Width', h: 'Height', r: 'Angle'};
 var HIST_OPS = {
   move: {
@@ -63,6 +70,64 @@ var HIST_OPS = {
       if (!res.length) return 'At this distance it makes no shape from the shapes as they are now.';
       res.forEach(function (ne, k) { if (r.out && r.out[k]) ne._id = r.out[k]; DOC.ents.push(ne); });
       return true;
+    }
+  },
+  fillet: {                     // one corner (fillets.js doFillet): by its place in the outline, which must still have as many
+    name: function (r) { return histFilletName(r.kind, r.r); },
+    fields: function () { return [{k: 'r', label: 'Radius', kind: 'len', min: 0}]; },
+    run: function (r, idx) {
+      var e = DOC.ents[idx[0]], pe = e.t === 'poly' ? polyToPath(e) : e.t === 'path' ? e : e.t === 'rect' ? rectToPath(e) : null;
+      if (!pe) return 'Its shape has no corners now.';
+      pe = pathClean(pe);
+      if (pe.pts.length !== r.n) return 'Its outline has a different number of corners now, so it can\u2019t tell which one to round.';
+      var at = pe.pts[r.vi], keep = UICFG.filletType;
+      UICFG.filletType = r.kind;
+      var ne = cornerResult({e: e, i: idx[0], vi: r.vi, pe: pe}, r.r, {x: at[0] + r.wx, y: at[1] + r.wy});
+      UICFG.filletType = keep;
+      if (!ne) return 'That corner can\u2019t be rounded at that radius now.';
+      cornerKeep(e, ne);
+      DOC.ents.splice(idx[0], 1, ne);
+      return true;
+    }
+  },
+  xform: {                      // dragging the selection's handles (tool-manager.js xformApply)
+    name: function (r) {
+      if (r.kind === 'rot') return 'Rotate ' + parseFloat((+r.ang).toFixed(2)) + '\u00b0';
+      return Math.abs(r.sx - r.sy) < 1e-9 ? 'Scale ' + parseFloat((r.sx * 100).toFixed(1)) + '%' : 'Stretch';
+    },
+    fields: function (r) {
+      return r.kind === 'rot' ? [{k: 'ang', label: 'Angle', kind: 'deg'}]
+                              : [{k: 'sx', label: 'Across', kind: 'pct', min: 0}, {k: 'sy', label: 'Up', kind: 'pct', min: 0}];
+    },
+    run: function (r, idx) {
+      SEL = idx;
+      var b = selBBox();
+      if (!b || !r.at) return HIST_WHY.cant;
+      var o = histFromFrac(b, r.at);
+      if (r.kind === 'rot') idx.forEach(function (i) { rotateEnt(DOC.ents[i], o.x, o.y, r.ang * Math.PI / 180); });
+      else { SCALE_NOTE = null; idx.forEach(function (i) { scaleEnt(DOC.ents[i], o.x, o.y, r.sx, r.sy); }); }
+      return true;
+    }
+  },
+  mirror: {
+    name: function () { return 'Mirror'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      var li = histIndexes([r.line]), e = li && DOC.ents[li[0]];
+      if (!e || e.t !== 'line') return 'The line it mirrors about is gone.';
+      var vx = e.x2 - e.x1, vy = e.y2 - e.y1, L = Math.hypot(vx, vy);
+      if (L < 1e-9) return 'The line it mirrors about has no length now.';
+      idx.forEach(function (i) { var c = cloneEnt(DOC.ents[i]); mirrorEnt(c, e.x1, e.y1, vx / L, vy / L); DOC.ents.push(c); });
+      return true;
+    }
+  },
+  bool: {                       // Weld, Subtract, Intersect (booleans.js)
+    name: function (r) { return {weld: 'Weld', subtract: 'Subtract', intersect: 'Intersect'}[r.kind] || 'Combine'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      SEL = idx;
+      var res = boolApply(r.kind);
+      return res.ok ? true : res.title + '.';
     }
   },
   filletAll: {
@@ -153,7 +218,12 @@ function histRun(st, p){
   histLoad(p);
   var idx = histIndexes(st.recipe.ids || []);
   if (!idx) return {why: HIST_WHY.gone};
-  var ok = HIST_OPS[st.recipe.op].run(st.recipe, idx);
+  // the new shapes get the ids they had the first time, in the same order
+  HIST_IDS_NEXT = (st.made || st.recipe.out || []).slice();
+  try {
+    var ok = HIST_OPS[st.recipe.op].run(st.recipe, idx);
+    if (ok === true) histGiveIds();
+  } finally { HIST_IDS_NEXT = null; }
   if (ok !== true) return {why: typeof ok === 'string' ? ok : HIST_WHY.cant};
   // shapes it made go on the layer and sheet they went on the first time (not the ones being drawn on now)
   var first = {}, E = HIST_KEYS.indexOf('ents');
@@ -197,6 +267,7 @@ function histEditInfo(L, i){
   if (!st || st.kind) return null;
   if (st.recipe && HIST_OPS[st.recipe.op]){
     var op = HIST_OPS[st.recipe.op];
+    if (!op.fields(st.recipe).length) return null;
     return {title: st.name || op.name(st.recipe),
             fields: op.fields(st.recipe).map(function (f) { return Object.assign({value: st.recipe[f.k]}, f); }),
             change: function (s, v) {
@@ -245,9 +316,12 @@ function histEdit(i, values){
 /* ---- the panel for it: double-click a step */
 var HIST_EDITING = null;
 function histEditOpen(i, chip){
-  var L = histLine(), info = histEditInfo(L, i);
+  var L = histLine(), info = histEditInfo(L, i), st = L.steps[i];
   if (!info){
-    toast('info', 'This step can’t be changed', 'Steps that drew a rectangle, circle, line or text, and moves, resizes, rotations, offsets and fillet corners, can be changed. Others can be gone back to, not changed (yet).');
+    if (st && st.recipe && HIST_OPS[st.recipe.op])
+      toast('info', 'Nothing to change in this step', 'It has no numbers of its own. When you change a step before it, it\u2019s done again on its shapes as they are then.');
+    else
+      toast('info', 'This step can\u2019t be changed', 'Steps that drew a rectangle, circle, line or text, and fillets, offsets, moves, resizes, rotations and stretches, can be changed. Others can be gone back to, not changed (yet).');
     return;
   }
   histEditClose();
@@ -263,9 +337,10 @@ function histEditOpen(i, chip){
     var t = document.createElement('span'); t.textContent = f.label; row.appendChild(t);
     var inp = document.createElement('input'); inp.type = 'text'; inp.autocomplete = 'off';
     if (f.kind !== 'text') inp.inputMode = 'decimal';
-    inp.value = f.kind === 'len' ? fmtDisp(f.value) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) : String(f.value == null ? '' : f.value);
+    inp.value = f.kind === 'len' ? fmtDisp(f.value) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) :
+                f.kind === 'pct' ? String(parseFloat((f.value * 100).toFixed(2))) : String(f.value == null ? '' : f.value);
     row.appendChild(inp);
-    var u = document.createElement('span'); u.className = 'heUnit'; u.textContent = f.kind === 'len' ? unitTag() : f.kind === 'deg' ? '°' : '';
+    var u = document.createElement('span'); u.className = 'heUnit'; u.textContent = f.kind === 'len' ? unitTag() : f.kind === 'deg' ? '\u00b0' : f.kind === 'pct' ? '%' : '';
     row.appendChild(u);
     box.appendChild(row);
     inputs.push({f: f, inp: inp});
@@ -281,7 +356,7 @@ function histEditOpen(i, chip){
     var v = {}, bad = null;
     inputs.forEach(function (x) {
       if (x.f.kind === 'text'){ v[x.f.k] = x.inp.value; return; }
-      var n = x.f.kind === 'len' ? lenIn(x.inp.value) : parseFloat(x.inp.value);
+      var n = x.f.kind === 'len' ? lenIn(x.inp.value) : x.f.kind === 'pct' ? parseFloat(x.inp.value) / 100 : parseFloat(x.inp.value);
       if (!isFinite(n) || (x.f.min !== null && x.f.min !== undefined && !(n > x.f.min))){ if (!bad) bad = x; return; }
       v[x.f.k] = n;
     });

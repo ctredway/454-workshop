@@ -1279,7 +1279,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.138.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.139.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1295,8 +1295,13 @@ var DOC = {stock:{w:200,h:120,origin:'corner'}, ents:[], guides:[], dims:[]};
 var ENT_SEQ = 1;
 function entId(e){                       // lazily assign a stable, globally unique id
   if (!e) return null;
-  // random prefix + counter: never collides with ids saved in an earlier session
-  if (!e._id) e._id = 'e' + Math.random().toString(36).slice(2, 9) + (ENT_SEQ++).toString(36);
+  // random prefix + counter: never collides with ids saved in an earlier session. The history keeps the ids each
+  // step gave out, and a step done again gives out the same ones, in the same order (history.js, HIST_MADE)
+  if (!e._id){
+    var again = typeof HIST_IDS_NEXT !== 'undefined' && HIST_IDS_NEXT && HIST_IDS_NEXT.length ? HIST_IDS_NEXT.shift() : null;
+    e._id = again || ('e' + Math.random().toString(36).slice(2, 9) + (ENT_SEQ++).toString(36));
+    if (typeof HIST_MADE !== 'undefined' && !HIST_REPLAYING) HIST_MADE.push(e._id);
+  }
   return e._id;
 }
 function entById(id){
@@ -2569,17 +2574,36 @@ function histSweep(){
   HIST_SWEEP_AT = Math.max(20000, str.length * 2);
 }
 
+// The ids given to new shapes since the last step was recorded: that step's (step.made), so that done again it gives
+// the same ones, and the steps after it still find its shapes. (Ids given while it was being done are its too.)
+var HIST_MADE = [], HIST_IDS_NEXT = null;
+function histMadeFlush(){
+  if (HIST_MADE.length && UNDO.length){ var top = UNDO[UNDO.length - 1]; top.made = (top.made || []).concat(HIST_MADE); }
+  HIST_MADE = [];
+}
+// A tool that makes shapes gives them their ids as it finishes, in the drawing's order, so done again it gives them
+// the same ones in the same order, whatever else asks for an id in between.
+function histGiveIds(){ (DOC.ents || []).forEach(function (e) { if (e && typeof e === 'object') entId(e); }); }
 function pushUndo(name, kind){
   if (typeof DRY !== 'undefined' && DRY) return;
   FALL_MARKS = null;
-  UNDO.push({p: histPack(), name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null});
+  var p = histPack();
+  // ids given to shapes in the drawing are the last step's; any others were given by the tool starting this one, to
+  // shapes it hasn't put in yet (Weld's), and are this step's
+  var inDoc = {};
+  (DOC.ents || []).forEach(function (e) { if (e && e._id) inDoc[e._id] = true; });
+  var later = HIST_MADE.filter(function (id) { return !inDoc[id]; });
+  HIST_MADE = HIST_MADE.filter(function (id) { return inDoc[id]; });
+  histMadeFlush();
+  HIST_MADE = later;
+  UNDO.push({p: p, name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null});
   if (UNDO.length > HIST_MAX) UNDO.shift();
   REDO = [];
   histSweep();
   histChanged();
 }
 // The step just recorded changed nothing after all (or is folded into the one before): forget it.
-function undoDrop(){ UNDO.pop(); histChanged(); }
+function undoDrop(){ UNDO.pop(); HIST_MADE = []; histChanged(); }
 // a step moving between done and undone: the drawing it keeps is the other side of it (the rest goes with it)
 function histMoved(e, p){ var o = {}; for (var k in e) o[k] = e[k]; o.p = p; return o; }
 // Go to the point where n steps are done (0: before the first one kept), in one move.
@@ -2587,6 +2611,7 @@ function histGoTo(n){
   n = Math.max(0, Math.min(n, UNDO.length + REDO.length));
   if (n === UNDO.length) return;
   var cur = histPack();
+  histMadeFlush();
   while (UNDO.length > n){ var e = UNDO.pop(); REDO.push(histMoved(e, cur)); cur = e.p; }
   while (UNDO.length < n){ var r = REDO.pop(); UNDO.push(histMoved(r, cur)); cur = r.p; }
   docRestore(histJoin(cur)); SEL = []; draw(); persist(); histChanged();
@@ -2665,6 +2690,7 @@ function histLine(){
   var s = [], steps = [];
   UNDO.forEach(function (e) { s.push(e.p); steps.push(e); });
   s.push(histPack());
+  histMadeFlush();
   for (var j = REDO.length - 1; j >= 0; j--){ s.push(REDO[j].p); steps.push(REDO[j]); }
   return {s: s, steps: steps, n: UNDO.length};
 }
@@ -2682,7 +2708,10 @@ function histSteps(){
   var L = histLine();
   return L.steps.map(function (e, i) {
     var o = e.failed && e.orig ? e.orig : {b: L.s[i], a: L.s[i + 1]};       // a red step: named for what it did
-    return {name: e.name || histAutoName(o.b, o.a), at: e.at, kind: e.kind, n: i + 1, done: i < L.n,
+    // unnamed: named by its recipe (a handle drag's, once it's moved), or for what it changed
+    var op = e.recipe && typeof HIST_OPS !== 'undefined' && HIST_OPS[e.recipe.op];
+    var named = e.name || (op && (e.recipe.op !== 'xform' || e.recipe.kind) ? op.name(e.recipe) : null);
+    return {name: named || histAutoName(o.b, o.a), at: e.at, kind: e.kind, n: i + 1, done: i < L.n,
             failed: e.failed || null, i: i};
   });
 }
@@ -2704,6 +2733,7 @@ function histForKeeping(){
     var o = {name: e.name, at: e.at, kind: null};
     if (e.recipe) o.recipe = e.recipe;
     if (e.failed) o.failed = e.failed;
+    if (e.made && e.made.length) o.made = e.made;
     if (e.orig){ o.orig = [extra.length, extra.length + 1]; extra.push(pack(e.orig.b), pack(e.orig.a)); }
     return o;
   });
@@ -2740,6 +2770,7 @@ function histTake(h){
     var s = h.steps[i] || {}, o = {name: typeof s.name === 'string' ? s.name : null, at: +s.at || 0, kind: null};
     if (s.recipe && typeof s.recipe === 'object' && HIST_OPS[s.recipe.op]) o.recipe = s.recipe;
     if (typeof s.failed === 'string') o.failed = s.failed;
+    if (Array.isArray(s.made) && s.made.every(function (id) { return typeof id === 'string'; })) o.made = s.made;
     if (Array.isArray(s.orig) && extra[s.orig[0]] && extra[s.orig[1]]) o.orig = {b: extra[s.orig[0]], a: extra[s.orig[1]]};
     return o;
   };
@@ -2885,6 +2916,13 @@ function histIndexes(ids){
 
 /* ---- the tools that do their steps again. fields: what can be changed (len: a length in the units shown; deg:
    degrees; text). run: does it to the drawing (DOC), on the shapes idx; true, or why not. */
+function histFilletName(kind, r){ return (kind === 'dogbone' ? 'Dog-bone ' : kind === 'tbone' ? 'T-bone ' : 'Fillet ') + histLen(r); }
+// a point as a fraction of a box's width and height (the middle of a box with none), and back
+function histFrac(b, x, y){
+  var w = b.x1 - b.x0, h = b.y1 - b.y0;
+  return {fx: w > 1e-9 ? (x - b.x0) / w : 0.5, fy: h > 1e-9 ? (y - b.y0) / h : 0.5};
+}
+function histFromFrac(b, f){ return {x: b.x0 + f.fx * (b.x1 - b.x0), y: b.y0 + f.fy * (b.y1 - b.y0)}; }
 var HIST_SELBOX_LABEL = {x: 'X', y: 'Y', w: 'Width', h: 'Height', r: 'Angle'};
 var HIST_OPS = {
   move: {
@@ -2908,6 +2946,64 @@ var HIST_OPS = {
       if (!res.length) return 'At this distance it makes no shape from the shapes as they are now.';
       res.forEach(function (ne, k) { if (r.out && r.out[k]) ne._id = r.out[k]; DOC.ents.push(ne); });
       return true;
+    }
+  },
+  fillet: {                     // one corner (fillets.js doFillet): by its place in the outline, which must still have as many
+    name: function (r) { return histFilletName(r.kind, r.r); },
+    fields: function () { return [{k: 'r', label: 'Radius', kind: 'len', min: 0}]; },
+    run: function (r, idx) {
+      var e = DOC.ents[idx[0]], pe = e.t === 'poly' ? polyToPath(e) : e.t === 'path' ? e : e.t === 'rect' ? rectToPath(e) : null;
+      if (!pe) return 'Its shape has no corners now.';
+      pe = pathClean(pe);
+      if (pe.pts.length !== r.n) return 'Its outline has a different number of corners now, so it can\u2019t tell which one to round.';
+      var at = pe.pts[r.vi], keep = UICFG.filletType;
+      UICFG.filletType = r.kind;
+      var ne = cornerResult({e: e, i: idx[0], vi: r.vi, pe: pe}, r.r, {x: at[0] + r.wx, y: at[1] + r.wy});
+      UICFG.filletType = keep;
+      if (!ne) return 'That corner can\u2019t be rounded at that radius now.';
+      cornerKeep(e, ne);
+      DOC.ents.splice(idx[0], 1, ne);
+      return true;
+    }
+  },
+  xform: {                      // dragging the selection's handles (tool-manager.js xformApply)
+    name: function (r) {
+      if (r.kind === 'rot') return 'Rotate ' + parseFloat((+r.ang).toFixed(2)) + '\u00b0';
+      return Math.abs(r.sx - r.sy) < 1e-9 ? 'Scale ' + parseFloat((r.sx * 100).toFixed(1)) + '%' : 'Stretch';
+    },
+    fields: function (r) {
+      return r.kind === 'rot' ? [{k: 'ang', label: 'Angle', kind: 'deg'}]
+                              : [{k: 'sx', label: 'Across', kind: 'pct', min: 0}, {k: 'sy', label: 'Up', kind: 'pct', min: 0}];
+    },
+    run: function (r, idx) {
+      SEL = idx;
+      var b = selBBox();
+      if (!b || !r.at) return HIST_WHY.cant;
+      var o = histFromFrac(b, r.at);
+      if (r.kind === 'rot') idx.forEach(function (i) { rotateEnt(DOC.ents[i], o.x, o.y, r.ang * Math.PI / 180); });
+      else { SCALE_NOTE = null; idx.forEach(function (i) { scaleEnt(DOC.ents[i], o.x, o.y, r.sx, r.sy); }); }
+      return true;
+    }
+  },
+  mirror: {
+    name: function () { return 'Mirror'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      var li = histIndexes([r.line]), e = li && DOC.ents[li[0]];
+      if (!e || e.t !== 'line') return 'The line it mirrors about is gone.';
+      var vx = e.x2 - e.x1, vy = e.y2 - e.y1, L = Math.hypot(vx, vy);
+      if (L < 1e-9) return 'The line it mirrors about has no length now.';
+      idx.forEach(function (i) { var c = cloneEnt(DOC.ents[i]); mirrorEnt(c, e.x1, e.y1, vx / L, vy / L); DOC.ents.push(c); });
+      return true;
+    }
+  },
+  bool: {                       // Weld, Subtract, Intersect (booleans.js)
+    name: function (r) { return {weld: 'Weld', subtract: 'Subtract', intersect: 'Intersect'}[r.kind] || 'Combine'; },
+    fields: function () { return []; },
+    run: function (r, idx) {
+      SEL = idx;
+      var res = boolApply(r.kind);
+      return res.ok ? true : res.title + '.';
     }
   },
   filletAll: {
@@ -2998,7 +3094,12 @@ function histRun(st, p){
   histLoad(p);
   var idx = histIndexes(st.recipe.ids || []);
   if (!idx) return {why: HIST_WHY.gone};
-  var ok = HIST_OPS[st.recipe.op].run(st.recipe, idx);
+  // the new shapes get the ids they had the first time, in the same order
+  HIST_IDS_NEXT = (st.made || st.recipe.out || []).slice();
+  try {
+    var ok = HIST_OPS[st.recipe.op].run(st.recipe, idx);
+    if (ok === true) histGiveIds();
+  } finally { HIST_IDS_NEXT = null; }
   if (ok !== true) return {why: typeof ok === 'string' ? ok : HIST_WHY.cant};
   // shapes it made go on the layer and sheet they went on the first time (not the ones being drawn on now)
   var first = {}, E = HIST_KEYS.indexOf('ents');
@@ -3042,6 +3143,7 @@ function histEditInfo(L, i){
   if (!st || st.kind) return null;
   if (st.recipe && HIST_OPS[st.recipe.op]){
     var op = HIST_OPS[st.recipe.op];
+    if (!op.fields(st.recipe).length) return null;
     return {title: st.name || op.name(st.recipe),
             fields: op.fields(st.recipe).map(function (f) { return Object.assign({value: st.recipe[f.k]}, f); }),
             change: function (s, v) {
@@ -3090,9 +3192,12 @@ function histEdit(i, values){
 /* ---- the panel for it: double-click a step */
 var HIST_EDITING = null;
 function histEditOpen(i, chip){
-  var L = histLine(), info = histEditInfo(L, i);
+  var L = histLine(), info = histEditInfo(L, i), st = L.steps[i];
   if (!info){
-    toast('info', 'This step can’t be changed', 'Steps that drew a rectangle, circle, line or text, and moves, resizes, rotations, offsets and fillet corners, can be changed. Others can be gone back to, not changed (yet).');
+    if (st && st.recipe && HIST_OPS[st.recipe.op])
+      toast('info', 'Nothing to change in this step', 'It has no numbers of its own. When you change a step before it, it\u2019s done again on its shapes as they are then.');
+    else
+      toast('info', 'This step can\u2019t be changed', 'Steps that drew a rectangle, circle, line or text, and fillets, offsets, moves, resizes, rotations and stretches, can be changed. Others can be gone back to, not changed (yet).');
     return;
   }
   histEditClose();
@@ -3108,9 +3213,10 @@ function histEditOpen(i, chip){
     var t = document.createElement('span'); t.textContent = f.label; row.appendChild(t);
     var inp = document.createElement('input'); inp.type = 'text'; inp.autocomplete = 'off';
     if (f.kind !== 'text') inp.inputMode = 'decimal';
-    inp.value = f.kind === 'len' ? fmtDisp(f.value) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) : String(f.value == null ? '' : f.value);
+    inp.value = f.kind === 'len' ? fmtDisp(f.value) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) :
+                f.kind === 'pct' ? String(parseFloat((f.value * 100).toFixed(2))) : String(f.value == null ? '' : f.value);
     row.appendChild(inp);
-    var u = document.createElement('span'); u.className = 'heUnit'; u.textContent = f.kind === 'len' ? unitTag() : f.kind === 'deg' ? '°' : '';
+    var u = document.createElement('span'); u.className = 'heUnit'; u.textContent = f.kind === 'len' ? unitTag() : f.kind === 'deg' ? '\u00b0' : f.kind === 'pct' ? '%' : '';
     row.appendChild(u);
     box.appendChild(row);
     inputs.push({f: f, inp: inp});
@@ -3126,7 +3232,7 @@ function histEditOpen(i, chip){
     var v = {}, bad = null;
     inputs.forEach(function (x) {
       if (x.f.kind === 'text'){ v[x.f.k] = x.inp.value; return; }
-      var n = x.f.kind === 'len' ? lenIn(x.inp.value) : parseFloat(x.inp.value);
+      var n = x.f.kind === 'len' ? lenIn(x.inp.value) : x.f.kind === 'pct' ? parseFloat(x.inp.value) / 100 : parseFloat(x.inp.value);
       if (!isFinite(n) || (x.f.min !== null && x.f.min !== undefined && !(n > x.f.min))){ if (!bad) bad = x; return; }
       v[x.f.k] = n;
     });
@@ -3399,7 +3505,8 @@ function xformApply(D, w, alt, shift){
   SEL.forEach(function(si, k){ restoreInto(DOC.ents[si], D.snaps[k]); });
   var h = D.h, b = D.b0;
   if (h.kind === 'pivot'){ HANDLES.pivot = {x:w.x, y:w.y}; return; }
-  function undoOnce(){ if (!D.pushed){ pushUndo(); D.pushed = true; } }
+  // the step, once something changes; done again by its recipe (history-replay.js), about the same point of the box
+  function undoOnce(){ if (!D.pushed){ pushUndo(); D.pushed = true; D.recipe = histRecipe({op: 'xform', ids: histIdsOf(SEL)}); } }
   if (h.kind === 'rot'){
     var pv = D.pivot;
     var a = Math.atan2(w.y - pv.y, w.x - pv.x) - Math.atan2(D.start.y - pv.y, D.start.x - pv.x);
@@ -3407,6 +3514,7 @@ function xformApply(D, w, alt, shift){
     D.ang = a;
     if (Math.abs(a) < 1e-12) return;
     undoOnce();
+    if (D.recipe){ D.recipe.kind = 'rot'; D.recipe.ang = a * 180 / Math.PI; D.recipe.at = histFrac(b, pv.x, pv.y); }
     SEL.forEach(function(si){ rotateEnt(DOC.ents[si], pv.x, pv.y, a); });
     return;
   }
@@ -3425,6 +3533,7 @@ function xformApply(D, w, alt, shift){
   D.sx = sx; D.sy = sy;
   if (Math.abs(sx - 1) < 1e-12 && Math.abs(sy - 1) < 1e-12) return;
   undoOnce();
+  if (D.recipe){ D.recipe.kind = 'scale'; D.recipe.sx = sx; D.recipe.sy = sy; D.recipe.at = histFrac(b, ox, oy); }
   SCALE_NOTE = null;
   SEL.forEach(function(si){ scaleEnt(DOC.ents[si], ox, oy, sx, sy); });
   if (SCALE_NOTE) D.note = SCALE_NOTE;
@@ -14231,6 +14340,7 @@ function mirApply(){
   var ax = mirAxis();
   if (!MIR || !MIR.objs.length || !ax) return;
   pushUndo('Mirror');
+  histRecipe({op: 'mirror', ids: histIdsOf(MIR.objs), line: entId(DOC.ents[MIR.line])});
   var made = [];
   MIR.objs.forEach(function(i){
     var c = cloneEnt(DOC.ents[i]);
@@ -14238,6 +14348,7 @@ function mirApply(){
     made.push(DOC.ents.length);
     DOC.ents.push(c);
   });
+  histGiveIds();
   SEL = made;
   persist();
   toast('ok', 'Mirrored', made.length + (made.length === 1 ? ' copy' : ' copies') + ' made. The originals and the mirror line are untouched.');
@@ -15557,6 +15668,15 @@ function filletChainAt(pe, k, w){
   }
   return {d: d, kind: 'path', A: [A[0], A[1]], B: [B[0], B[1]], X: X, newPts: pts, closed: closed};
 }
+// The shape with a corner rounded keeps the rest of what it was: its id, layer and sheet, and whether it's a
+// construction or toolpath shape.
+function cornerKeep(e, ne){
+  delete ne.relief;
+  if (e.tp) ne.tp = true;
+  if (e.con) ne.con = true;
+  ne._id = entId(e);
+  ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (e[k2] !== undefined) ne[k2] = e[k2]; });   // stays on its layer and sheet
+}
 // Remove a fillet filletAt found: the sharp corner comes back. Returns true when done.
 function unfillet(f){
   if (!f) return false;
@@ -15593,12 +15713,12 @@ function doFillet(w, r){
   if (pick){
     var ne = cornerResult(pick, r, w);
     if (ne){
-      delete ne.relief;
-      if (pick.e.tp) ne.tp = true;
-      if (pick.e.con) ne.con = true;
-      if (pick.e._id) ne._id = pick.e._id;
-      ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
-      pushUndo('Fillet ' + histLen(r)); DOC.ents.splice(pick.i, 1, ne); return true;
+      var kind = UICFG.filletType || 'round', at = pick.pe.pts[pick.vi];
+      pushUndo(histFilletName(kind, r));
+      cornerKeep(pick.e, ne);
+      // done again (history-replay.js): the same corner of the same outline, by its place in it
+      histRecipe({op: 'fillet', ids: [pick.e._id], vi: pick.vi, n: pick.pe.pts.length, r: r, kind: kind, wx: w.x - at[0], wy: w.y - at[1]});
+      DOC.ents.splice(pick.i, 1, ne); return true;
     }
     doFillet.lastMiss = dogboneVertex.why === 'curved' ? 'curved' : (dogboneVertex.why === 'flat' ? 'flat' : 'fit');
     return false;   // nearest corner couldn't take it: don't fall through to two-line
@@ -16909,6 +17029,7 @@ function boolApply(kind){
   }
 
   pushUndo(name);
+  histRecipe({op: 'bool', kind: kind, ids: histIdsOf(SEL), out: made.map(function (e){ return e._id; })});
   var goneIds = Object.keys(gone).map(function (i){ return entId(DOC.ents[+i]); });
   DOC.ents = DOC.ents.filter(function (_, i){ return !gone[i]; });
   var start = DOC.ents.length;

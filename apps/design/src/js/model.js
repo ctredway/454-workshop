@@ -13,8 +13,13 @@ var DOC = {stock:{w:200,h:120,origin:'corner'}, ents:[], guides:[], dims:[]};
 var ENT_SEQ = 1;
 function entId(e){                       // lazily assign a stable, globally unique id
   if (!e) return null;
-  // random prefix + counter: never collides with ids saved in an earlier session
-  if (!e._id) e._id = 'e' + Math.random().toString(36).slice(2, 9) + (ENT_SEQ++).toString(36);
+  // random prefix + counter: never collides with ids saved in an earlier session. The history keeps the ids each
+  // step gave out, and a step done again gives out the same ones, in the same order (history.js, HIST_MADE)
+  if (!e._id){
+    var again = typeof HIST_IDS_NEXT !== 'undefined' && HIST_IDS_NEXT && HIST_IDS_NEXT.length ? HIST_IDS_NEXT.shift() : null;
+    e._id = again || ('e' + Math.random().toString(36).slice(2, 9) + (ENT_SEQ++).toString(36));
+    if (typeof HIST_MADE !== 'undefined' && !HIST_REPLAYING) HIST_MADE.push(e._id);
+  }
   return e._id;
 }
 function entById(id){

@@ -99,6 +99,7 @@ function mirApply(){
   var ax = mirAxis();
   if (!MIR || !MIR.objs.length || !ax) return;
   pushUndo('Mirror');
+  histRecipe({op: 'mirror', ids: histIdsOf(MIR.objs), line: entId(DOC.ents[MIR.line])});
   var made = [];
   MIR.objs.forEach(function(i){
     var c = cloneEnt(DOC.ents[i]);
@@ -106,6 +107,7 @@ function mirApply(){
     made.push(DOC.ents.length);
     DOC.ents.push(c);
   });
+  histGiveIds();
   SEL = made;
   persist();
   toast('ok', 'Mirrored', made.length + (made.length === 1 ? ' copy' : ' copies') + ' made. The originals and the mirror line are untouched.');

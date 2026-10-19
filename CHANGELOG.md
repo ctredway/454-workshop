@@ -1124,6 +1124,29 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.139.0 — more tools follow a changed step: one-corner fillets, Mirror, Weld, Subtract, Intersect, the handles
+More of the History bar's steps are done again by their tool, on their shapes as they are, instead of from what they
+first changed (which turns red as soon as the shape is different).
+- **Fillet (one corner),** with its radius to change: the same corner, by its place round the outline, and for a
+  dog-bone or T-bone the same side as clicked. If the outline has a different number of corners by then (an
+  earlier fillet that's now red, say), it's red too: it never rounds a corner it has to guess at.
+- **Mirror** (about the same line) and **Weld, Subtract, Intersect** (the same shapes): nothing to change in them,
+  but they follow the steps before them. A weld of a rectangle made wider is welded again; a mirror copy of a circle
+  made bigger is bigger.
+- **Dragging the selection's handles:** Scale, Stretch (how much, across and up, as percentages) and Rotate (the
+  angle), about the same point of the selection's box (a corner, the middle, or where the pivot was put), so it
+  follows a change in size. Named for what they did: "Scale 120%", "Rotate 90°".
+- **The shapes a step makes keep their ids when it's done again,** for every tool: each step keeps the ids it gave
+  out, and gives the same ones in the same order. A move, a toolpath or a weld after a mirror or a weld still finds
+  the shape it worked on. (Ids a tool gives before its step is recorded, as Weld does, are counted as its own.)
+- **Proven:** done again with nothing changed, a session with all of these gives exactly what it gave, from every
+  step; a rectangle made bigger (its fillet is the same corner), a fillet's radius changed, a T-bone changed (same
+  edge as clicked), a circle made bigger (its mirror copy follows, same id), a welded rectangle made wider (welded
+  again, same id; the move, the drag-rotate and the toolpath after it follow), a fillet whose outline has other
+  corners (red), a weld with nothing left to weld and a mirror line with no length (red, and why), the drags'
+  scale and angle changed, and a weld done again after saving and opening. Each check was broken on purpose and
+  failed.
+
 ### 0.138.0 — change a step on the History bar, and the steps after it are done again
 The second step towards Fusion's timeline (Clint's aim): go back, change a step, and everything after it follows; a
 step that can't follow turns red and is skipped, as Fusion does.

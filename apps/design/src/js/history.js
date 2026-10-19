@@ -106,17 +106,36 @@ function histSweep(){
   HIST_SWEEP_AT = Math.max(20000, str.length * 2);
 }
 
+// The ids given to new shapes since the last step was recorded: that step's (step.made), so that done again it gives
+// the same ones, and the steps after it still find its shapes. (Ids given while it was being done are its too.)
+var HIST_MADE = [], HIST_IDS_NEXT = null;
+function histMadeFlush(){
+  if (HIST_MADE.length && UNDO.length){ var top = UNDO[UNDO.length - 1]; top.made = (top.made || []).concat(HIST_MADE); }
+  HIST_MADE = [];
+}
+// A tool that makes shapes gives them their ids as it finishes, in the drawing's order, so done again it gives them
+// the same ones in the same order, whatever else asks for an id in between.
+function histGiveIds(){ (DOC.ents || []).forEach(function (e) { if (e && typeof e === 'object') entId(e); }); }
 function pushUndo(name, kind){
   if (typeof DRY !== 'undefined' && DRY) return;
   FALL_MARKS = null;
-  UNDO.push({p: histPack(), name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null});
+  var p = histPack();
+  // ids given to shapes in the drawing are the last step's; any others were given by the tool starting this one, to
+  // shapes it hasn't put in yet (Weld's), and are this step's
+  var inDoc = {};
+  (DOC.ents || []).forEach(function (e) { if (e && e._id) inDoc[e._id] = true; });
+  var later = HIST_MADE.filter(function (id) { return !inDoc[id]; });
+  HIST_MADE = HIST_MADE.filter(function (id) { return inDoc[id]; });
+  histMadeFlush();
+  HIST_MADE = later;
+  UNDO.push({p: p, name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null});
   if (UNDO.length > HIST_MAX) UNDO.shift();
   REDO = [];
   histSweep();
   histChanged();
 }
 // The step just recorded changed nothing after all (or is folded into the one before): forget it.
-function undoDrop(){ UNDO.pop(); histChanged(); }
+function undoDrop(){ UNDO.pop(); HIST_MADE = []; histChanged(); }
 // a step moving between done and undone: the drawing it keeps is the other side of it (the rest goes with it)
 function histMoved(e, p){ var o = {}; for (var k in e) o[k] = e[k]; o.p = p; return o; }
 // Go to the point where n steps are done (0: before the first one kept), in one move.
@@ -124,6 +143,7 @@ function histGoTo(n){
   n = Math.max(0, Math.min(n, UNDO.length + REDO.length));
   if (n === UNDO.length) return;
   var cur = histPack();
+  histMadeFlush();
   while (UNDO.length > n){ var e = UNDO.pop(); REDO.push(histMoved(e, cur)); cur = e.p; }
   while (UNDO.length < n){ var r = REDO.pop(); UNDO.push(histMoved(r, cur)); cur = r.p; }
   docRestore(histJoin(cur)); SEL = []; draw(); persist(); histChanged();
@@ -202,6 +222,7 @@ function histLine(){
   var s = [], steps = [];
   UNDO.forEach(function (e) { s.push(e.p); steps.push(e); });
   s.push(histPack());
+  histMadeFlush();
   for (var j = REDO.length - 1; j >= 0; j--){ s.push(REDO[j].p); steps.push(REDO[j]); }
   return {s: s, steps: steps, n: UNDO.length};
 }
@@ -219,7 +240,10 @@ function histSteps(){
   var L = histLine();
   return L.steps.map(function (e, i) {
     var o = e.failed && e.orig ? e.orig : {b: L.s[i], a: L.s[i + 1]};       // a red step: named for what it did
-    return {name: e.name || histAutoName(o.b, o.a), at: e.at, kind: e.kind, n: i + 1, done: i < L.n,
+    // unnamed: named by its recipe (a handle drag's, once it's moved), or for what it changed
+    var op = e.recipe && typeof HIST_OPS !== 'undefined' && HIST_OPS[e.recipe.op];
+    var named = e.name || (op && (e.recipe.op !== 'xform' || e.recipe.kind) ? op.name(e.recipe) : null);
+    return {name: named || histAutoName(o.b, o.a), at: e.at, kind: e.kind, n: i + 1, done: i < L.n,
             failed: e.failed || null, i: i};
   });
 }
@@ -241,6 +265,7 @@ function histForKeeping(){
     var o = {name: e.name, at: e.at, kind: null};
     if (e.recipe) o.recipe = e.recipe;
     if (e.failed) o.failed = e.failed;
+    if (e.made && e.made.length) o.made = e.made;
     if (e.orig){ o.orig = [extra.length, extra.length + 1]; extra.push(pack(e.orig.b), pack(e.orig.a)); }
     return o;
   });
@@ -277,6 +302,7 @@ function histTake(h){
     var s = h.steps[i] || {}, o = {name: typeof s.name === 'string' ? s.name : null, at: +s.at || 0, kind: null};
     if (s.recipe && typeof s.recipe === 'object' && HIST_OPS[s.recipe.op]) o.recipe = s.recipe;
     if (typeof s.failed === 'string') o.failed = s.failed;
+    if (Array.isArray(s.made) && s.made.every(function (id) { return typeof id === 'string'; })) o.made = s.made;
     if (Array.isArray(s.orig) && extra[s.orig[0]] && extra[s.orig[1]]) o.orig = {b: extra[s.orig[0]], a: extra[s.orig[1]]};
     return o;
   };

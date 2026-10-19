@@ -145,6 +145,15 @@ function filletChainAt(pe, k, w){
   }
   return {d: d, kind: 'path', A: [A[0], A[1]], B: [B[0], B[1]], X: X, newPts: pts, closed: closed};
 }
+// The shape with a corner rounded keeps the rest of what it was: its id, layer and sheet, and whether it's a
+// construction or toolpath shape.
+function cornerKeep(e, ne){
+  delete ne.relief;
+  if (e.tp) ne.tp = true;
+  if (e.con) ne.con = true;
+  ne._id = entId(e);
+  ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (e[k2] !== undefined) ne[k2] = e[k2]; });   // stays on its layer and sheet
+}
 // Remove a fillet filletAt found: the sharp corner comes back. Returns true when done.
 function unfillet(f){
   if (!f) return false;
@@ -181,12 +190,12 @@ function doFillet(w, r){
   if (pick){
     var ne = cornerResult(pick, r, w);
     if (ne){
-      delete ne.relief;
-      if (pick.e.tp) ne.tp = true;
-      if (pick.e.con) ne.con = true;
-      if (pick.e._id) ne._id = pick.e._id;
-      ['layer', 'sheet', 'vcId', 'vcSheet'].forEach(function (k2) { if (pick.e[k2] !== undefined) ne[k2] = pick.e[k2]; });   // stays on its layer and sheet
-      pushUndo('Fillet ' + histLen(r)); DOC.ents.splice(pick.i, 1, ne); return true;
+      var kind = UICFG.filletType || 'round', at = pick.pe.pts[pick.vi];
+      pushUndo(histFilletName(kind, r));
+      cornerKeep(pick.e, ne);
+      // done again (history-replay.js): the same corner of the same outline, by its place in it
+      histRecipe({op: 'fillet', ids: [pick.e._id], vi: pick.vi, n: pick.pe.pts.length, r: r, kind: kind, wx: w.x - at[0], wy: w.y - at[1]});
+      DOC.ents.splice(pick.i, 1, ne); return true;
     }
     doFillet.lastMiss = dogboneVertex.why === 'curved' ? 'curved' : (dogboneVertex.why === 'flat' ? 'flat' : 'fit');
     return false;   // nearest corner couldn't take it: don't fall through to two-line
