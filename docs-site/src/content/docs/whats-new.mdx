@@ -12,6 +12,18 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.50
+
+Not released yet
+
+- **The History bar,** along the bottom of the drawing: every change you make is a step, named for what it did
+  (Rectangle, Fillet 6 mm, Offset 3 mm, Weld). Click a step to see the drawing as it was just after it, and a later
+  one to come forward again. The history is saved in the drawing's file. See [History](design-workspace.html#history).
+- **Change a step, as in Fusion:** double-click it, change its numbers (a rectangle's size, a fillet's radius, an
+  offset's distance, how far a move went), and every step after it is done again. Fillets, offsets, mirrors, welds,
+  joins, trims and moves follow the change; toolpaths cut the shapes as they now are. A step that can't be done again
+  turns red and is skipped, never guessed at. Undo takes a change back.
+
 ## 0.6.2-beta.49
 
 19 October 2026

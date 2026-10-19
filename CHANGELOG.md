@@ -27,6 +27,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.50 — the History bar: a design timeline, as in Fusion
+- Includes Design 0.137.0: the History bar, every change a named step, kept with the drawing in its file.
+- Includes Design 0.138.0: change a step by double-clicking it, and the steps after it are done again; a step that
+  can't be turns red and is skipped.
+- Includes Design 0.139.0 to 0.141.0: fillets (one corner and all), offsets, Mirror, Weld, Subtract, Intersect, Join,
+  Explode, Trim, Extend, moves, resizes, rotations, the selection's handles and points moved follow a changed step;
+  Undo takes back a change to a step.
+
 ### 0.6.2-beta.49 — the Inlay wizard; a Working panel; undo without the wait
 - Includes Design 0.135.0: the Inlay wizard (both halves from the bits chosen first, the plug on a sheet of its
   own, in groups), the + key for a new toolpath, and the Working panel for slow work.
