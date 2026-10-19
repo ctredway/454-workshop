@@ -1,5 +1,6 @@
 /* ---------------- persistence ---------------- */
 function persist(){
+  if (typeof DRY !== 'undefined' && DRY) return;        // a preview, or the history doing steps again: not a change to keep
   if (typeof renderLayers === 'function' && !persist.layerQueued){
     persist.layerQueued = true;
     setTimeout(function(){ persist.layerQueued = false; renderLayers(); }, 0);

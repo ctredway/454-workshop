@@ -133,6 +133,7 @@ function fallApply(){
   if (!P.done) return;
   var o = fallOpts();
   pushUndo((o.kind === 'dogbone' ? 'Dog-bone corners ' : o.kind === 'tbone' ? 'T-bone corners ' : 'Fillet corners ') + histLen(o.r));
+  histRecipe({op: 'filletAll', ids: histIdsOf(FALL.objs), r: o.r, kind: o.kind, which: o.which});
   P.results.forEach(function (r) { DOC.ents[r.i] = r.ne; });
   SEL = P.results.map(function (r) { return r.i; });
   FALL_MARKS = P.missed.length ? P.missed.map(function (m) { return {x: m.x, y: m.y}; }) : null;

@@ -697,7 +697,8 @@ function wire(){
     if (TOOL==='select' && DRAW && DRAW.stage==='drag' && SEL.length && (e.buttons & 1)){
       var dx = MOUSE.snap.x - DRAW.lx, dy = MOUSE.snap.y - DRAW.ly;
       if (dx || dy){
-        if (!DRAW.pushed){ pushUndo(); DRAW.pushed = true; }
+        if (!DRAW.pushed){ pushUndo('Move'); DRAW.pushed = true; DRAW.recipe = histRecipe({op: 'move', ids: histIdsOf(SEL), dx: 0, dy: 0}); }
+        if (DRAW.recipe){ DRAW.recipe.dx += dx; DRAW.recipe.dy += dy; }
         SEL.forEach(function(si){ moveEntity(DOC.ents[si], dx, dy); });
         DRAW.lx = MOUSE.snap.x; DRAW.ly = MOUSE.snap.y;
         DRAW.moved = true; persist();
@@ -913,7 +914,7 @@ function wire(){
       var st = e.shiftKey ? 0.1 : 1;
       var dx = e.key==='ArrowLeft' ? -st : e.key==='ArrowRight' ? st : 0;
       var dy = e.key==='ArrowDown' ? -st : e.key==='ArrowUp' ? st : 0;
-      pushUndo('Move');
+      pushUndo('Move'); histRecipe({op: 'move', ids: histIdsOf(SEL), dx: dx, dy: dy});
       SEL.forEach(function(si){ moveEntity(DOC.ents[si], dx, dy); });
       persist(); draw(); return;
     }

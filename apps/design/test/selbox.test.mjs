@@ -6,6 +6,8 @@ import vm from 'node:vm';
 import { loadDesign } from './harness.mjs';
 
 const plain = (v) => JSON.parse(JSON.stringify(v));
+// a shape without the id and layer every shape is given when a step is recorded (the history)
+const bare = (e) => { const o = plain(e); delete o._id; delete o.layer; return o; };
 function fresh(ents) {
   const D = loadDesign({ start: false });
   D.winKeys = [];                                   // the page's own key handlers, which a key in a box bubbles up to
@@ -70,14 +72,14 @@ test('W with the padlock closed resizes both ways about the reference point; ope
   anchor(D, 'bl');
   assert.equal(field(D, 'sbLock').getAttribute('aria-pressed'), 'true', 'closed to begin with');
   enter(D, 'sbW', 80);
-  assert.deepEqual(plain(D.run('DOC.ents[0]')), { t: 'rect', x: 10, y: 20, w: 80, h: 60 });
+  assert.deepEqual(bare(D.run('DOC.ents[0]')), { t: 'rect', x: 10, y: 20, w: 80, h: 60 });
   field(D, 'sbLock').click();
   assert.equal(JSON.parse(D.localStorage.getItem('d454DesignUI')).selLock, false, 'remembered');
   enter(D, 'sbH', 10);
-  assert.deepEqual(plain(D.run('DOC.ents[0]')), { t: 'rect', x: 10, y: 20, w: 80, h: 10 });
+  assert.deepEqual(bare(D.run('DOC.ents[0]')), { t: 'rect', x: 10, y: 20, w: 80, h: 10 });
   anchor(D, 'c');
   enter(D, 'sbW', 40);
-  assert.deepEqual(plain(D.run('DOC.ents[0]')), { t: 'rect', x: 30, y: 20, w: 40, h: 10 }, 'about the centre');
+  assert.deepEqual(bare(D.run('DOC.ents[0]')), { t: 'rect', x: 30, y: 20, w: 40, h: 10 }, 'about the centre');
 });
 test('stretching a circle makes a true ellipse, and says so', () => {
   const D = fresh([{t:'circle', cx:0, cy:0, r:10}]);

@@ -205,10 +205,41 @@ through, but you can see it and jump straight to any step.
 
 The last 500 steps are kept.
 
-:::note[Coming next]
-Fusion-style editing of a step (change a fillet's radius back in the history, and everything after it is done
-again) comes in later versions, tool by tool. For now, a step can be gone back to, not changed.
-:::
+### Changing a step
+
+As in Fusion, you can go back and change a step, and everything after it is done again.
+
+1. **Double-click the step** on the History bar. A small panel shows its numbers.
+2. Change them, and click **Change** (or press <kbd>Enter</kbd>).
+3. Every step after it is done again, on the drawing as it now is. With a long way to go, the **Working** panel
+   shows how far it's got.
+
+What can be changed:
+
+| Step | Its numbers |
+| --- | --- |
+| Rectangle | X, Y, width, height |
+| Circle | centre X and Y, diameter |
+| Line | start and end |
+| Text | the text, its height |
+| Fillet corners | the radius |
+| Offset | the distance |
+| Move | how far across and up |
+| Resize, Rotate, and moves typed into the selection box | the size, angle or position typed |
+
+How the steps after it are done again:
+
+- **Fillet corners, offsets, moves, resizes and rotations are done again by the tool,** on the shapes they worked
+  on, as those shapes are now. Make a rectangle wider and its fillet corners are rounded again at the new size; an
+  offset of it follows it; a move still moves it by the same amount. Toolpaths cut the shapes as they now are.
+- **Anything else is done again as it was:** a shape drawn is drawn again, a shape deleted is deleted again, and a
+  change to a shape is made again, but only if that shape is still exactly as the step found it.
+- **A step that can't be done again turns red** and is skipped: the shape it works on is gone (an offset too big
+  to leave a shape, say), or it changed a shape that's now different, such as a point dragged by hand on an outline
+  that's now a different size. 454 never guesses what you meant. Hover over a red step to see why. A later change
+  that makes it possible again brings it back.
+
+Changing a step isn't a step of its own: to put it back, change it again.
 
 ## The status bar
 

@@ -54,7 +54,8 @@ test('two rectangles that overlap: a side of one is trimmed back to the other', 
   assert.deepEqual([String(p[0]), String(p[p.length - 1])].sort(), ['40,40', '60,20'], 'it ends at the two crossings');
   assert.ok(!p.some((q) => q[0] === 60 && q[1] === 40), 'the corner inside the second has gone');
   assert.ok(p.some((q) => q[0] === 0 && q[1] === 0) && p.some((q) => q[0] === 60 && q[1] === 0) && p.some((q) => q[0] === 0 && q[1] === 40), 'the other three corners stay');
-  assert.deepEqual(ents()[1], { t: 'rect', x: 40, y: 20, w: 60, h: 40 }, 'the second is untouched');
+  const second = ents()[1]; delete second._id; delete second.layer;       // (given to every shape when a step is recorded)
+  assert.deepEqual(second, { t: 'rect', x: 40, y: 20, w: 60, h: 40 }, 'the second is untouched');
 });
 test('a closed outline trimmed across its start: the piece clicked goes, not the rest', () => {
   // a closed square outline starting at (0,0), and a line through it at x = 30; the left side runs past the start

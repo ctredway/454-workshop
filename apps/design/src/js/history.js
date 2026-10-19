@@ -25,18 +25,53 @@ function histPiece(s){
   if (i === undefined){ i = HIST_STR.length; HIST_STR.push(s); HIST_ID.set(s, i); }
   return i;
 }
+// A toolpath as a step keeps it: its settings, not what's worked out from them (TP_NOT_SETTINGS, undo.js), which
+// follows from the settings and the shapes and is worked out again when it's needed.
+var HIST_TP_RESULTS = {past: 1, sig: 1, warning: 1, vcNote: 1, vcFloor: 1, vcDepth: 1, vcFlat: 1, rings: 1, restRuns: 1, islands: 1, rasterLines: 1, floorLeft: 1};
+function histTpSettings(list){
+  return tpLean(list).map(function (tp) {
+    var c = {};
+    for (var k in tp) if (!HIST_TP_RESULTS[k]) c[k] = tp[k];
+    return c;
+  });
+}
+// a shape as a step keeps it: without the outline worked out for drawing and picking (_tess), kept on paths
+function histEntText(e){
+  if (e && (e._tess !== undefined || e._tess2 !== undefined || e.t === 'group')) return snapJSON(e);
+  return JSON.stringify(e);
+}
 function histValues(){
-  return {ents: DOC.ents, guides: DOC.guides, dims: DOC.dims || [], params: DOC.params || [], toolpaths: tpLean(DOC.toolpaths),
+  return {ents: DOC.ents, guides: DOC.guides, dims: DOC.dims || [], params: DOC.params || [], toolpaths: histTpSettings(DOC.toolpaths),
           tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock, layers: DOC.layers,
           activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null};
 }
+// A shape just made is put on the layer, and the sheet, being drawn on, as the Layers panel does when it's next shown
+// (layersInit): so a step keeps it there, and a step done again (history-replay.js) can be compared with it.
+function histTidy(){
+  if (!DOC.ents || !DOC.layers || !DOC.layers.length || typeof layerById !== 'function') return;
+  var sheets = typeof multiSheet === 'function' && multiSheet();
+  DOC.ents.forEach(function (e) {
+    if (!e || typeof e !== 'object') return;
+    if (!layerById(e.layer)) e.layer = DOC.activeLayer;
+    if (sheets && !sheetById(e.sheet)) e.sheet = DOC.activeSheet;
+  });
+}
 // The drawing now, in pieces: for each of HIST_KEYS, -1 (not there), a piece, or a list of pieces.
+// Every shape is given its id first (and a copy that shares one, its own): a step's changes are kept by shape,
+// so that they can be done again on a drawing that's different before them (histPatch).
 function histPack(){
+  histTidy();
+  var seen = {};
+  (DOC.ents || []).forEach(function (e) {
+    if (!e || typeof e !== 'object') return;
+    if (e._id && seen[e._id]) delete e._id;
+    seen[entId(e)] = true;
+  });
   var v = histValues();
   return HIST_KEYS.map(function (k) {
     var x = v[k];
     if (x === undefined) return -1;
-    if (HIST_LIST[k] && Array.isArray(x)) return x.map(function (it) { var s = JSON.stringify(it); return histPiece(s === undefined ? 'null' : s); });
+    if (HIST_LIST[k] && Array.isArray(x)) return x.map(function (it) { var s = k === 'ents' ? histEntText(it) : JSON.stringify(it); return histPiece(s === undefined ? 'null' : s); });
     return histPiece(JSON.stringify(x));
   });
 }
@@ -62,10 +97,12 @@ function histSweep(){
     if (n === undefined){ n = str.length; str.push(HIST_STR[j]); ids.set(HIST_STR[j], n); map.set(j, n); }
     return n;
   };
+  var re = function (p) { return p.map(function (x) { return x === -1 ? -1 : Array.isArray(x) ? x.map(keep) : keep(x); }); };
   UNDO.concat(REDO).forEach(function (e) {
-    e.p = e.p.map(function (x) { return x === -1 ? -1 : Array.isArray(x) ? x.map(keep) : keep(x); });
+    e.p = re(e.p);
+    if (e.orig) e.orig = {b: re(e.orig.b), a: re(e.orig.a)};
   });
-  HIST_STR = str; HIST_ID = ids;
+  HIST_STR = str; HIST_ID = ids; HIST_KEYOF = {ents: new Map(), toolpaths: new Map()};
   HIST_SWEEP_AT = Math.max(20000, str.length * 2);
 }
 
@@ -80,8 +117,8 @@ function pushUndo(name, kind){
 }
 // The step just recorded changed nothing after all (or is folded into the one before): forget it.
 function undoDrop(){ UNDO.pop(); histChanged(); }
-// a step moving between done and undone: the drawing it keeps is the other side of it
-function histMoved(e, p){ return {p: p, name: e.name, at: e.at, kind: e.kind}; }
+// a step moving between done and undone: the drawing it keeps is the other side of it (the rest goes with it)
+function histMoved(e, p){ var o = {}; for (var k in e) o[k] = e[k]; o.p = p; return o; }
 // Go to the point where n steps are done (0: before the first one kept), in one move.
 function histGoTo(n){
   n = Math.max(0, Math.min(n, UNDO.length + REDO.length));
@@ -159,35 +196,56 @@ function histAutoName(a, b){
   return said.length > 2 ? said.slice(0, 2).join(', ') + '…' : said.join(', ');
 }
 
-/* ---- the steps, in order, for the History bar: {name, at, kind, n}; clicking one goes to n steps done */
+/* ---- the whole line of steps: s, the drawings (s[i] before step i, s[i + 1] after it); steps, each step's record
+   ({name, at, kind, recipe, orig, failed}); n, how many are done (s[n] is the drawing as it is) */
+function histLine(){
+  var s = [], steps = [];
+  UNDO.forEach(function (e) { s.push(e.p); steps.push(e); });
+  s.push(histPack());
+  for (var j = REDO.length - 1; j >= 0; j--){ s.push(REDO[j].p); steps.push(REDO[j]); }
+  return {s: s, steps: steps, n: UNDO.length};
+}
+// The line back as undo's lists, and the drawing as the line has it now.
+function histSetLine(L){
+  UNDO = []; REDO = [];
+  for (var i = 0; i < L.n; i++) UNDO.push(histMoved(L.steps[i], L.s[i]));
+  for (var j = L.steps.length - 1; j >= L.n; j--) REDO.push(histMoved(L.steps[j], L.s[j + 1]));
+  docRestore(histJoin(L.s[L.n]));
+}
+
+/* ---- the steps, in order, for the History bar: {name, at, kind, n, done, failed, i}; clicking one goes to n
+   steps done */
 function histSteps(){
-  var out = [], cur = null, now = function () { return cur || (cur = histPack()); };
-  UNDO.forEach(function (e, i) {
-    out.push({name: e.name || histAutoName(e.p, i + 1 < UNDO.length ? UNDO[i + 1].p : now()), at: e.at, kind: e.kind, n: i + 1, done: true});
+  var L = histLine();
+  return L.steps.map(function (e, i) {
+    var o = e.failed && e.orig ? e.orig : {b: L.s[i], a: L.s[i + 1]};       // a red step: named for what it did
+    return {name: e.name || histAutoName(o.b, o.a), at: e.at, kind: e.kind, n: i + 1, done: i < L.n,
+            failed: e.failed || null, i: i};
   });
-  for (var j = REDO.length - 1; j >= 0; j--){
-    var r = REDO[j];
-    out.push({name: r.name || histAutoName(j === REDO.length - 1 ? now() : REDO[j + 1].p, r.p), at: r.at, kind: r.kind, n: UNDO.length + (REDO.length - j), done: false});
-  }
-  return out;
 }
 
 /* ---- kept with the drawing: in its file, and in the browser's storage.
-   {v: 1, pieces: [...], states: [...], steps: [{name, at, kind}], at}: step i goes from states[i] to states[i + 1];
-   states[at] is the drawing as it is. Only this drawing's steps: from the last one that opened or started it. */
+   {v: 1, pieces: [...], states: [...], extra: [...], steps: [{name, at, recipe, failed, orig}], at}: step i goes from
+   states[i] to states[i + 1]; states[at] is the drawing as it is; a step's orig is two of extra (histReplay). Only
+   this drawing's steps: from the last one that opened or started it. */
 function histForKeeping(){
-  var first = 0;
-  for (var i = UNDO.length - 1; i >= 0; i--) if (UNDO[i].kind){ first = i + 1; break; }
-  var states = [], steps = [];
-  UNDO.slice(first).forEach(function (e) { states.push(e.p); steps.push({name: e.name, at: e.at, kind: null}); });
-  states.push(histPack());
-  var at = states.length - 1;
-  for (var j = REDO.length - 1; j >= 0 && !REDO[j].kind; j--){ states.push(REDO[j].p); steps.push({name: REDO[j].name, at: REDO[j].at, kind: null}); }
-  if (!steps.length) return null;
-  var map = new Map(), pieces = [];
+  var L = histLine(), first = 0;
+  for (var i = L.n - 1; i >= 0; i--) if (L.steps[i].kind){ first = i + 1; break; }
+  var last = L.steps.length;
+  for (var j = L.n; j < L.steps.length; j++) if (L.steps[j].kind){ last = j; break; }
+  if (last <= first) return null;
+  var map = new Map(), pieces = [], extra = [];
   var put = function (x) { var n = map.get(x); if (n === undefined){ n = pieces.length; pieces.push(HIST_STR[x]); map.set(x, n); } return n; };
-  states = states.map(function (p) { return p.map(function (x) { return x === -1 ? -1 : Array.isArray(x) ? x.map(put) : put(x); }); });
-  return {v: 1, pieces: pieces.map(function (s) { return JSON.parse(s); }), states: states, steps: steps, at: at};
+  var pack = function (p) { return p.map(function (x) { return x === -1 ? -1 : Array.isArray(x) ? x.map(put) : put(x); }); };
+  var steps = L.steps.slice(first, last).map(function (e) {
+    var o = {name: e.name, at: e.at, kind: null};
+    if (e.recipe) o.recipe = e.recipe;
+    if (e.failed) o.failed = e.failed;
+    if (e.orig){ o.orig = [extra.length, extra.length + 1]; extra.push(pack(e.orig.b), pack(e.orig.a)); }
+    return o;
+  });
+  var states = L.s.slice(first, last + 1).map(pack);           // (before the pieces are listed: it adds to them)
+  return {v: 1, pieces: pieces.map(function (s) { return JSON.parse(s); }), states: states, extra: extra, steps: steps, at: L.n - first};
 }
 // The drawing's file, with its history added at the end.
 function histAttach(text){
@@ -204,7 +262,7 @@ function histTake(h){
       h.states.length !== h.steps.length + 1 || !(h.at >= 0 && h.at < h.states.length)) return false;
   try {
     var ids = h.pieces.map(function (o) { var s = JSON.stringify(o); return histPiece(s === undefined ? 'null' : s); });
-    var p = h.states.map(function (st) {
+    var unpack = function (st) {
       if (!Array.isArray(st) || st.length !== HIST_KEYS.length) throw new Error('state');
       return st.map(function (x) {
         if (x === -1) return -1;
@@ -212,9 +270,16 @@ function histTake(h){
         if (ids[x] === undefined) throw new Error('piece');
         return ids[x];
       });
-    });
+    };
+    var p = h.states.map(unpack), extra = (Array.isArray(h.extra) ? h.extra : []).map(unpack);
   } catch (e) { return false; }
-  var step = function (i) { var s = h.steps[i] || {}; return {name: typeof s.name === 'string' ? s.name : null, at: +s.at || 0, kind: null}; };
+  var step = function (i) {
+    var s = h.steps[i] || {}, o = {name: typeof s.name === 'string' ? s.name : null, at: +s.at || 0, kind: null};
+    if (s.recipe && typeof s.recipe === 'object' && HIST_OPS[s.recipe.op]) o.recipe = s.recipe;
+    if (typeof s.failed === 'string') o.failed = s.failed;
+    if (Array.isArray(s.orig) && extra[s.orig[0]] && extra[s.orig[1]]) o.orig = {b: extra[s.orig[0]], a: extra[s.orig[1]]};
+    return o;
+  };
   for (var i = 0; i < h.at; i++){ var e = step(i); e.p = p[i]; UNDO.push(e); }
   if (histJoin(p[h.at]) !== docSnap()) UNDO.push({p: p[h.at], name: null, at: 0, kind: null});
   else for (var j = h.states.length - 1; j > h.at; j--){ var r = step(j - 1); r.p = p[j]; REDO.push(r); }
@@ -248,7 +313,7 @@ function histStore(){
 }
 
 /* ---- the History bar */
-var HIST_RENDER_T = null;
+var HIST_RENDER_T = null, HIST_CLICK = {i: -1, t: 0};
 function histChanged(){
   if (typeof DRY !== 'undefined' && DRY) return;
   if (!HIST_RENDER_T) HIST_RENDER_T = setTimeout(function () { HIST_RENDER_T = null; histRender(); }, 60);
@@ -282,11 +347,20 @@ function histRender(){
   steps.forEach(function (s) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'hStep' + (s.done ? '' : ' undone') + (s.n === done ? ' now' : '') + (s.kind ? ' hDoc' : '');
+    b.className = 'hStep' + (s.done ? '' : ' undone') + (s.n === done ? ' now' : '') + (s.kind ? ' hDoc' : '') + (s.failed ? ' failed' : '');
     b.textContent = s.name;
     b.title = s.name + (s.at ? ' · ' + histWhen(s.at) : '') +
-      (s.n === done ? '\nThe drawing is as it was just after this step.' : '\nClick to see the drawing as it was just after this step.');
-    b.addEventListener('click', function () { histGoTo(s.n); });
+      (s.failed ? '\nSkipped: ' + s.failed : '') +
+      (s.n === done ? '\nThe drawing is as it was just after this step.' : '\nClick to see the drawing as it was just after this step.') +
+      (s.kind ? '' : '\nDouble-click to change it.');
+    // A click goes there; a double-click (a second click on the same step soon after) changes it. Counted here, not
+    // left to the browser: the first click redraws the bar, so the second lands on a new button.
+    b.addEventListener('click', function () {
+      var t = Date.now(), again = HIST_CLICK.i === s.i && t - HIST_CLICK.t < 500;
+      HIST_CLICK = again ? {i: -1, t: 0} : {i: s.i, t: t};
+      if (again){ histRender(); histEditOpen(s.i, document.getElementById('histSteps').children[s.i + 1] || null); }
+      else histGoTo(s.n);
+    });
     list.appendChild(b);
   });
   var ahead = REDO.length;

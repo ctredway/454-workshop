@@ -1124,6 +1124,37 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.138.0 — change a step on the History bar, and the steps after it are done again
+The second step towards Fusion's timeline (Clint's aim): go back, change a step, and everything after it follows; a
+step that can't follow turns red and is skipped, as Fusion does.
+- **Double-click a step** for its numbers: a rectangle's position and size, a circle's centre and diameter, a line's
+  ends, text and its height, fillet corners' radius, an offset's distance, how far a move went, a size or angle
+  typed into the selection box. **Change** does every step after it again, on the drawing as it now is.
+- **Recipes:** fillet corners, offset, move (dragging, the arrow keys) and the selection box's X, Y, width, height
+  and angle keep how they were done (the shapes by id, and the numbers), and are done again by the tool itself, on
+  those shapes as they are now. An offset's new shapes keep their ids, so a later step that moved one still finds
+  it. Every other step is done again from what it changed, shape by shape: what it added is added, what it removed
+  is removed, and a shape it changed is given its new form only if it's still exactly as the step found it.
+- **Red steps:** a step whose shapes are gone, or that changed a shape now different, is skipped and shown red,
+  crossed out, with the reason on hover ("A shape it works on is gone."). It comes back if a later change makes it
+  possible. It never guesses: a point dragged by hand isn't dragged on a rectangle that has since changed size.
+- **What's kept for this:** each step keeps what it first did (the drawing before and after, as shared pieces), its
+  recipe, and whether it's red, in the drawing's file and the browser's storage. Every shape now has its id from
+  the moment it's drawn, and a new shape is put on its layer and sheet when the step is recorded (as the Layers
+  panel did later), so steps can be compared. Steps keep a toolpath's settings, not what's worked out from them
+  (worked out again when needed), and paths without their cached outlines: steps are smaller for it.
+- Steps before a drawing was opened, or a new one started, are that drawing's: changing one leaves the drawing
+  that's open as it is.
+- **Speed:** timed in the app on a 7.7 MB drawing (2,000 shapes), changing the first of 21 steps took 0.2 s. More than
+  40 steps to do again are done 25 at a time with the Working panel up ("Steps 26 to 50 of 300").
+- **Proven:** done again with nothing changed, every step of a session with every kind of step (drawn shapes,
+  fillet corners, an offset, moves, a resize, a rotation, a toolpath, a deleted line, the material) gives exactly
+  the drawing it gave first, from every starting step. Then: a rectangle made wider (its fillets, its resize and its
+  toolpath follow); an offset made bigger (the move of what it made follows); an offset too big (it and the move
+  after it turn red, and come back when it's put right); a hand change after its shape changed (red, and the
+  drawing left as the step before made it); a shape made again on its first sheet while another is shown; saved and
+  opened with red steps, and changed again; the panel. Each check was broken on purpose and failed.
+
 ### 0.137.0 — the History bar: every change, named, kept with the drawing
 Clint asked for a timeline like Fusion's (and SolidCraft's), to back up in a design rather than only undo; Fusion's
 full timeline, where an earlier step can be edited and the steps after it are done again, is the aim, worked

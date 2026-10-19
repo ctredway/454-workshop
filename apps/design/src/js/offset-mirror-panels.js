@@ -39,8 +39,9 @@ function offApply(){
   var res = offResults();
   if (!res.length) return;
   pushUndo('Offset ' + histLen(OFF.dist));
-  var made = [];
+  var made = [], from = histIdsOf(OFF.objs);
   res.forEach(function(ne){ made.push(DOC.ents.length); DOC.ents.push(ne); });
+  histRecipe({op: 'offset', ids: from, dist: OFF.dist, flip: OFF.flip, out: histIdsOf(made)});
   SEL = made;
   UICFG.lastOffset = OFF.dist; uiCfgSave();
   persist();

@@ -1,5 +1,6 @@
 /* ---------------- rendering ---------------- */
 function draw(){
+  if (HIST_REPLAYING) return;                          // the history doing steps again (history-replay.js): drawn after
   selBoxRefresh();
   var w = cv.width = cv.clientWidth * (window.devicePixelRatio||1);
   var h = cv.height = cv.clientHeight * (window.devicePixelRatio||1);

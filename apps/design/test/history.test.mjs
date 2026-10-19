@@ -62,6 +62,17 @@ test('a step keeps the drawing exactly as undo always did: docSnap is word for w
   }
 });
 
+test('a step leaves out what’s worked out: a path’s cached outline, a toolpath’s results; and gives every shape its id and layer', () => {
+  setup();
+  D.run(`DOC.ents = [{t: 'path', pts: [[0, 0], [10, 0], [10, 10]], closed: true, _tess: [[1, 2]], _tess2: [[3, 4]]}, {t: 'group', ents: [{t: 'path', pts: [[0, 0]], _tess: [1]}]}];
+    DOC.toolpaths = [{id: 'tp1', name: 'Pocket', depth: 3, sig: 'abc', warning: 'w', past: 1, vcDepth: 2, moves: [1], holes: [1]}]; 1`);
+  const s = JSON.parse(snap());
+  assert.equal(JSON.stringify(s).includes('_tess'), false);
+  assert.deepEqual(s.toolpaths, [{id: 'tp1', name: 'Pocket', depth: 3}]);
+  assert.ok(s.ents.every((e) => e._id && e.layer === 'L1'));
+  assert.equal(D.run('DOC.ents[0]._tess.length'), 1, 'the drawing keeps its cache');
+});
+
 test('undo, redo and a click on the bar give exactly the drawing as it was at each step', () => {
   setup();
   const at = [snap()];
@@ -99,7 +110,7 @@ test('each step is named for what it did', () => {
   setup();
   step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
   step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15}, {t: 'line', x1: 0, y1: 0, x2: 9, y2: 9})`);
-  step(`entId(DOC.ents[1]); 1`);                                     // (an id given: not a change worth a name of its own)
+  step(`entId(DOC.ents[1]); 1`);                                     // (an id given: every shape has one already)
   step(`DOC.ents[1].r = 20`);
   step(`DOC.ents.splice(2, 1)`);
   step(`DOC.ents.push({t: 'text', str: 'Welcome to the cabin', x: 0, y: 0, h: 10})`);
@@ -111,12 +122,12 @@ test('each step is named for what it did', () => {
   step(`DOC.guides.push({t: 'gline', a: 1, b: 0, c: 5})`);
   step(`DOC.ents.reverse()`);
   step(`1`);
-  assert.deepEqual(names(), ['Rectangle', 'Added 2 shapes', 'Changed circle', 'Changed circle', 'Deleted line',
+  assert.deepEqual(names(), ['Rectangle', 'Added 2 shapes', 'No change', 'Changed circle', 'Deleted line',
     'Text “Welcome to the…”', 'Fillet 6 mm', 'Toolpath Pocket 1', 'Edited Pocket 1', 'Deleted Pocket 1', 'Material',
     'Guide lines', 'Shape order', 'No change']);
   // and the same names when undone (worked out the other way round)
   D.run('histGoTo(0); 1');
-  assert.deepEqual(names().slice(0, 4), ['Rectangle', 'Added 2 shapes', 'Changed circle', 'Changed circle']);
+  assert.deepEqual(names().slice(0, 4), ['Rectangle', 'Added 2 shapes', 'No change', 'Changed circle']);
 });
 
 test('a drawing saved to a file keeps its history, and opening it brings it back exactly, after a step back to the drawing open before', () => {
