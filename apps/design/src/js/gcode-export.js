@@ -97,7 +97,7 @@ function tpJob(only){
     return null;
   }
   var parts = chosen.map(function (tp) {
-    if (tpStale(tp)) tpGenerate(tp);
+    if (tpStale(tp) || !tp.moves) tpGenerate(tp);
     var t = tp.toolId ? libTool(tp.toolId) : null;
     return {moves: tp.moves, name: tp.name, tool: toolNumber(tp), rpm: tp.rpm || 18000,
             toolName: t ? t.name : fmtDisp(tp.dia) + ' ' + unitTag() + (tp.side === 'drill' ? ' drill' : ' cutter')};

@@ -291,3 +291,11 @@
   button.estop{background:#b03024;border-color:#d84b3c;color:#fff;font-weight:700;letter-spacing:.4px;padding:6px 16px}
   button.estop:hover{background:#d0392a;border-color:#f0604e}
   #serialNote{color:var(--faint);font-size:12px;line-height:1.5;margin:2px 0 14px}
+
+/* loading a big file: a panel over everything, its spinner turning by transform alone (the browser animates it
+   apart from the page, so it keeps turning while the file is read and drawn) */
+#loadBusy{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:400;cursor:progress}
+#loadBusy[hidden]{display:none}
+#loadBusyCard{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.5);font-size:14px;color:var(--ink)}
+#loadBusySpin{width:24px;height:24px;flex:none;border:3px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:loadBusySpin .8s linear infinite;will-change:transform}
+@keyframes loadBusySpin{to{transform:rotate(360deg)}}

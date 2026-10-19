@@ -12,6 +12,22 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.49
+
+Not released yet
+
+- **The Inlay wizard.** Select the shapes, press **+** and choose **Inlay**: choose the carving bit (a V-bit or a
+  tapered ball nose) and the end mill, set the depths, and Create makes both halves, the pocket and the plug,
+  each in a group, with the plug on a sheet of its own. See [Inlay](cam-reference.html#inlay).
+- **The + key** makes a new toolpath for the shapes selected, as the + at the top of the Toolpaths panel does.
+- **A Working panel** while toolpaths are worked out, so the app never looks frozen: it says which toolpath it's
+  on, with a bar. Control shows "Loading…" while a big G-code file loads.
+- **The toolpath editor works nothing out until you press Create or Update,** as in VCarve, so typing never lags.
+  Create says so if nothing is selected, or if the shapes can't be cut (open lines for a pocket), and which were
+  left out.
+- **Undo and redo are quick again** on big projects: toolpaths already worked out are used again, not worked out
+  from scratch. Opening a drawing, and layer and sheet changes, are quicker for the same reason.
+
 ## 0.6.2-beta.48
 
 19 October 2026

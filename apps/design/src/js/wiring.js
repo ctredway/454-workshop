@@ -101,6 +101,17 @@ function wire(){
   })();
   document.getElementById('settingsBtn').addEventListener('click', openSettings);
   document.getElementById('offObjs').addEventListener('click', function(){ if (OFF) offRender(); });
+  // the Inlay wizard
+  ['inwD', 'inwS', 'inwM'].forEach(function (id) { document.getElementById(id).addEventListener('input', inwRender); });
+  document.getElementById('inwSheet').addEventListener('change', inwRender);
+  document.getElementById('inwBitBtn').addEventListener('click', function(){ inwChoose('vbit'); });
+  document.getElementById('inwMillBtn').addEventListener('click', function(){ inwChoose('mill'); });
+  document.getElementById('inwCreate').addEventListener('click', function () {
+    inwCreate().catch(function (e) { toast('err', 'The inlay wasn’t finished', String((e && e.message) || e) + '. Undo takes back what was made.'); });
+  });
+  document.getElementById('inwCancel').addEventListener('click', inwClose);
+  document.getElementById('inwX').addEventListener('click', inwClose);
+  document.getElementById('inwModal').addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.getElementById('libModal').hidden){ e.stopPropagation(); inwClose(); } });
   // Fillet corners: the radius and kind are the Fillet tool's own, so the two always agree
   document.getElementById('fallObjs').addEventListener('click', function(){ if (FALL) fallRender(); });
   document.getElementById('fallR').addEventListener('input', function(e){
@@ -135,9 +146,9 @@ function wire(){
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
-  document.getElementById('tpVcConvert').addEventListener('click', vcMakeEditable);
+  busyButton('tpVcConvert', 'Making the VCarve toolpaths editable…', vcMakeEditable);   // seconds, on a big project
   sheetWire();
-  document.getElementById('tpRecalcAll').addEventListener('click', tpRecalcAll);
+  document.getElementById('tpRecalcAll').addEventListener('click', function () { tpRecalcAll(); });
   document.getElementById('jsClose').addEventListener('click', jobSheetClose);
   document.getElementById('jsPrint').addEventListener('click', function(){ window.print(); });
   document.getElementById('jsModal').addEventListener('keydown', function(e){ if (e.key === 'Escape' && !e.target.isContentEditable){ e.stopPropagation(); jobSheetClose(); } });
@@ -154,7 +165,7 @@ function wire(){
   document.getElementById('tpCheck').addEventListener('click', function(){ if (camReady()) vecCheckAll(); });
   document.getElementById('cutX').addEventListener('click', cutClose);
   document.getElementById('cutCancel').addEventListener('click', cutClose);
-  document.getElementById('cutOk').addEventListener('click', cutApply);
+  busyButton('cutOk', 'Working out the toolpath\u2026', cutApply);   // a big drawing's toolpath can take a while
   document.getElementById('cutTool').addEventListener('click', function(){
     if (!CUT) return;
     if (!TOOLLIB){ toast('info', 'No tool library yet', 'Import your VCarve library from the tool library window, or type the cutter diameter and feeds in yourself.'); libOpen(); return; }
@@ -163,6 +174,8 @@ function wire(){
   document.getElementById('cutType').addEventListener('change', function(){
     if (!CUT) return;
     CUT.side = document.getElementById('cutType').value;
+    // an inlay is made by the Inlay wizard: both halves, their bits first
+    if (CUT.side === 'inlay'){ var inwEnts = CUT.ents.slice(); cutClose(); inwOpen(inwEnts); return; }
     if (CUT.side === 'drill' && !(CUT.plunge > 0)) CUT.plunge = 300;
     cutToForm(); cutRender();                            // boxes now show what this type uses
   });
@@ -814,6 +827,8 @@ function wire(){
     if (!document.getElementById('toolModal').hidden) return;   // and tool details
     if (!document.getElementById('dlgModal').hidden) return;    // and an in-app dialog
     if (!document.getElementById('woodModal').hidden) return;   // and Preview in wood
+    if (!document.getElementById('inwModal').hidden) return;    // and the Inlay wizard
+    if (busyNow()) return;                                      // nothing while the app is busy
     if (e.key === 'Escape' && !document.getElementById('msgPanel').hidden){ setMsgPanel(false); return; }
     var inField = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA';
     // Ctrl-combos are global: they work from anywhere, including while an input has focus,
@@ -865,6 +880,10 @@ function wire(){
         : 'Distance between the two \u2014 type the new value; the second-selected item moves',
         _pr && _pr.cur ? _pr.cur.toFixed(2) : '', true);
       return;
+    }
+    // + (either key): a new toolpath for the shapes selected, as the + at the top of the Toolpaths panel does
+    if (e.key === '+' && TOOL === 'select' && !e.ctrlKey && !e.metaKey && !e.altKey && !CUT && DRAW === null && camReady()){
+      e.preventDefault(); cutOpen(null); return;
     }
     if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 1 && !e.ctrlKey){
       var de = DOC.ents[SEL[0]];

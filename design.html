@@ -91,6 +91,32 @@
   .toast .tx{background:none;border:0;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
   .toast .tx:hover{color:var(--ink)}
   @keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* "Working…": over everything while the app is busy; its spinner turns by transform alone, which the browser
+     animates apart from the page, so it keeps turning while the work runs */
+  #busy{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:400;cursor:progress}
+  #busy[hidden]{display:none}
+  #busyCard{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 20px;min-width:260px;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+  #busyTitle{font-size:14px;color:var(--ink)}
+  #busyStep{font-size:12px;color:var(--muted);margin-top:3px;min-height:1em}
+  #busySpin{width:26px;height:26px;flex:none;border:3px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:busySpin .8s linear infinite;will-change:transform}
+  @keyframes busySpin{to{transform:rotate(360deg)}}
+  #busyBarWrap{margin-top:8px;height:5px;width:220px;background:var(--line);border-radius:3px;overflow:hidden}
+  #busyBarWrap[hidden]{display:none}
+  #busyBar{height:100%;width:0;background:var(--amber);transition:width .15s}
+  /* the Inlay wizard: a window like Job setup's */
+  #inwModal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
+  #inwModal[hidden]{display:none}
+  #inwPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px 24px;width:min(480px,92vw);box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+  #inwPanel h3{margin:0 0 10px;font-size:16px}
+  #inwPanel h4{margin:14px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted)}
+  #inwPanel .srow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  #inwPanel .srow > label{font-size:13px;color:var(--muted);min-width:118px}
+  #inwPanel .srow input[type=text]{width:72px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:3px 6px}
+  #inwPanel .unit{font-size:12px;color:var(--muted)}
+  #inwPanel .inwVal{flex:1;font-size:12.5px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #inwPanel .srow input[type=checkbox] + label{min-width:0;color:var(--ink)}
+  #inwPanel .snote{font-size:12px;font-weight:400;color:var(--muted);margin:6px 0 10px;line-height:1.45}
+  #inwPanel .inwBad{color:var(--amber);min-height:1em}
   #jobModal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
   #jobModal[hidden]{display:none}
   #jobMachCustom[hidden],#jobMOffRow[hidden]{display:none}
@@ -734,6 +760,28 @@
   </div>
 
 
+  <div id="busy" hidden role="alertdialog" aria-live="polite" aria-labelledby="busyTitle">
+    <div id="busyCard"><span id="busySpin" aria-hidden="true"></span>
+      <div><b id="busyTitle">Working…</b><div id="busyStep"></div><div id="busyBarWrap" hidden><div id="busyBar"></div></div></div></div>
+  </div>
+  <div id="inwModal" hidden>
+    <div id="inwPanel" role="dialog" aria-labelledby="inwTitle">
+      <div class="modalHead"><h3 id="inwTitle">Inlay</h3><button class="modalX" id="inwX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <p class="snote" style="margin-top:0">Both halves of a V-carve inlay from the shapes selected: the pocket in the base, and the plug, mirrored, in the inlay piece. Cut both with the same bit.</p>
+      <div class="srow"><label>Shapes</label><span id="inwShapes" class="inwVal"></span></div>
+      <h4>Bits</h4>
+      <div class="srow"><label>Carving bit</label><span id="inwBit" class="inwVal"></span><button id="inwBitBtn" title="A V-bit or a tapered ball nose, from the tool library">Choose…</button></div>
+      <div class="srow"><label>Clearing end mill</label><span id="inwMill" class="inwVal"></span><button id="inwMillBtn" title="The end mill that clears the flat floor, from the tool library">Choose…</button></div>
+      <h4>Depths</h4>
+      <div class="srow"><label for="inwD">Pocket depth</label><input id="inwD" type="text" inputmode="decimal" autocomplete="off" title="How deep the pocket's flat floor is, in the base"><span class="unit" id="inwDU"></span></div>
+      <div class="srow"><label for="inwS">Plug start depth</label><input id="inwS" type="text" inputmode="decimal" autocomplete="off" title="How deep the plug's walls begin: it seats this deep in the pocket"><span class="unit" id="inwSU"></span></div>
+      <div class="srow"><label for="inwM">Plug depth</label><input id="inwM" type="text" inputmode="decimal" autocomplete="off" title="How deep the plug is carved: more than the start depth, so it stands proud"><span class="unit" id="inwMU"></span></div>
+      <p class="snote" id="inwFit"></p>
+      <div class="srow"><input type="checkbox" id="inwSheet"><label for="inwSheet">The plug on a sheet of its own (its own piece of material and G-code file)</label></div>
+      <p class="snote inwBad" id="inwProblem"></p>
+      <div class="mirBtns"><button id="inwCancel">Cancel</button><button id="inwCreate" class="primary">Create</button></div>
+    </div>
+  </div>
   <div id="jobModal" hidden>
     <div id="jobPanel" role="dialog" aria-labelledby="jobTitle">
       <div class="modalHead"><h3 id="jobTitle">Job setup</h3><button class="modalX" id="jobX" title="Close (Esc)" aria-label="Close">✕</button></div>
@@ -910,7 +958,7 @@
     <div id="tpCount" class="tpCountLine"></div>
     <p id="tpBeta" hidden><b>Beta.</b> Toolpaths are new and still being tested. Check every job in 454 Control&rsquo;s
       preview and run it in the air before cutting material. <a href="docs/cam-reference.html" target="_blank" rel="noopener">What to check</a></p>
-    <p class="tpNote" id="tpEmpty">No toolpaths yet. Select shapes on the drawing and press <b>+</b> to make one. A VCarve project (.crv) that has toolpaths lists them here.</p>
+    <p class="tpNote" id="tpEmpty">No toolpaths yet. Select shapes on the drawing and press <b>+</b> (at the top of this panel, or the + key) to make one. A VCarve project (.crv) that has toolpaths lists them here.</p>
     <p class="tpNote" id="tpSrcNote">Read from the VCarve project, in the order VCarve lists them. They show how the job was set up; 454 Design can&rsquo;t cut them yet, and editing the drawing doesn&rsquo;t update them.</p>
     <p class="tpNote" id="tpCamMissing" hidden style="color:var(--amber)">The toolpath tools didn’t load: <code>geom.js</code> and <code>cam.js</code> need to be in the same folder as this <code>design.html</code>.</p>
     <p class="tpNote" id="tpLibNote"></p>
@@ -941,7 +989,7 @@
           <option value="drill">Drill at centres</option>
           <option value="chamfer">Chamfer edges (V-bit)</option>
           <option value="vcarve">V-carve (V-bit)</option>
-          <option value="inlay">Inlay (V-bit pocket or plug)</option>
+          <option value="inlay">Inlay (both halves, in the Inlay wizard)</option>
         </select></div>
       <section class="cutGroup" data-grp="tool"><h4>Tool</h4>
       <button class="mirSlot" data-help="tool" id="cutTool" title="Choose from your tool library"><span class="mirLbl">Tool</span>
@@ -1204,7 +1252,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.134.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.136.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -2306,9 +2354,58 @@ function tpLean(list){
     return c;
   });
 }
+// Worked-out toolpaths, kept to be used again. Undo stores toolpaths without their moves, so it used to work every
+// toolpath out again: 10 seconds a step on a VCarve tutorial's inlay. A toolpath's moves follow from its settings,
+// its shapes and the material (tpSignature and tpStockSig, which also cover a clean-up's larger pocket and a
+// V-carve's clearing pocket), so moves worked out for exactly those can be used again. The key is all of it: every
+// setting but those that don't change the moves (its name, group, whether it's shown, ticked or folded) and those
+// worked out from the rest. Anything else that differs, a setting added later included, means working it out again.
+var TP_DONE = {}, TP_DONE_KEYS = [], TP_DONE_MAX = 200;
+var TP_NOT_SETTINGS = {moves: 1, holes: 1, preview: 1, previewHoles: 1, past: 1, sig: 1, warning: 1, vcNote: 1, vcFloor: 1, vcDepth: 1, vcFlat: 1,
+                       rings: 1, restRuns: 1, islands: 1, rasterLines: 1, floorLeft: 1, name: 1, group: 1, hidden: 1, exclude: 1, folded: 1,
+                       // set after it's worked out (Make editable records them then), and not part of its own moves: its sheet
+                       // follows its shapes; a clearing pocket's V-carve is in that V-carve's own signature
+                       sheet: 1, clearFor: 1};
+function tpDoneKey(tp, sig){
+  var keys = Object.keys(tp).filter(function (k) { return !TP_NOT_SETTINGS[k]; }).sort(), o = {};
+  keys.forEach(function (k) { o[k] = tp[k]; });
+  return sig + ' # ' + JSON.stringify(o);
+}
+// after a toolpath is worked out: keep it (the last TP_DONE_MAX)
+function tpDoneKeep(tp){
+  if (!tp || !tp.moves || !tp.sig || (typeof DRY !== 'undefined' && DRY)) return;
+  var k = tpDoneKey(tp, tp.sig);
+  if (!TP_DONE[k]) TP_DONE_KEYS.push(k);
+  TP_DONE[k] = {moves: tp.moves, holes: tp.holes, warning: tp.warning, vcNote: tp.vcNote, vcFloor: tp.vcFloor, vcDepth: tp.vcDepth, vcFlat: tp.vcFlat,
+                rings: tp.rings, restRuns: tp.restRuns, islands: tp.islands, rasterLines: tp.rasterLines};
+  while (TP_DONE_KEYS.length > TP_DONE_MAX) delete TP_DONE[TP_DONE_KEYS.shift()];
+}
+// the same toolpath, worked out before for exactly these settings, shapes and material: its moves and what came
+// with them, put back. True if it was there.
+function tpDoneReuse(tp){
+  var sig = tpSignature(tp.ents) + tpStockSig(tp), d = TP_DONE[tpDoneKey(tp, sig)];
+  if (!d) return false;
+  for (var f in d) tp[f] = d[f];
+  tp.sig = sig;
+  tp.past = camReady() ? tpPastMaterial(tp) : null;      // (from the material's thickness as it is now)
+  return true;
+}
+// Every toolpath's moves, after undo, opening a drawing, or a change that can move shapes between sheets or layers.
+// Those worked out before for the same settings, shapes and material come straight back. The rest are worked out
+// with the Working panel, one at a time ("2 of 5: Pocket"), and the panel and drawing are refreshed after. Returns
+// a promise, resolved at once if nothing needed working out.
 function tpRebuildAll(){
-  if (!DOC.toolpaths || !DOC.toolpaths.length) return;
-  if (typeof camReady === 'function' && camReady()) DOC.toolpaths.forEach(function (tp) { tpGenerate(tp); });
+  if (!DOC.toolpaths || !DOC.toolpaths.length || !(typeof camReady === 'function' && camReady())) return Promise.resolve();
+  var need = DOC.toolpaths.filter(function (tp) { return !tpDoneReuse(tp); });
+  if (!need.length) return Promise.resolve();
+  if (typeof busyRun !== 'function'){ need.forEach(function (tp) { tpGenerate(tp); }); return Promise.resolve(); }
+  // meanwhile: no moves, so nothing is drawn for it and the cards don't work it out on their own (they skip a
+  // toolpath without moves), and out of date: what needs its moves (Save G-code, the job sheet, Preview in wood)
+  // works it out first
+  need.forEach(function (tp) { tp.moves = null; tp.holes = null; tp.sig = ''; });
+  return busyRun('Working out the toolpaths…', need.map(function (tp) {
+    return {label: tp.name, fn: function () { if (DOC.toolpaths.indexOf(tp) >= 0) tpGenerate(tp); }};
+  })).then(function () { if (typeof renderToolpathPanel === 'function') renderToolpathPanel(); draw(); });
 }
 function docForStorage(pretty){
   var copy = {};
@@ -4248,6 +4345,7 @@ function tpRamp(tp){ return tp.rampOff ? 0 : (tp.rampLen > 0 ? tp.rampLen : tpRa
 function tpGenerate(tp){
   tpGenerateMoves(tp);
   tp.past = camReady() ? tpPastMaterial(tp) : null;
+  if (typeof tpDoneKeep === 'function') tpDoneKeep(tp);   // kept, so undo can have it back without working it out
   tpGenerate.last = tp;                                   // the editor reads its preview's depth from this
   return tp;
 }
@@ -4694,12 +4792,16 @@ function cutRender(){
 }
 function cutRenderMain(){
   document.getElementById('cutName').placeholder = tpAutoName(CUT);
-  tpGenerate.last = null;
   cutRenderInner(); cutRenderHintExtra();
-  // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
-  var pv = tpGenerate.last, h = document.getElementById('cutHint');
+  // going past the material comes first in the hint, whatever else it says: known from the depth set, without
+  // working the toolpath out (a V-carve's depth isn't known until then: its card says, after Create)
+  var h = document.getElementById('cutHint');
   if (h && cutExprProblem()){ h.textContent = '⚠ ' + cutExprProblem() + '.'; CUT.previewPast = null; return; }
-  CUT.previewPast = pv && pv.ents === CUT.ents ? pv.past : null;
+  CUT.previewPast = null;
+  if (CUT.side !== 'vcarve' && CUT.side !== 'inlay' && DOC.stock && DOC.stock.t > 0 && CUT.ents.length){
+    var dset = tpDepth(CUT), pastBy = dset - DOC.stock.t;
+    if (pastBy > 1e-3 && !(CUT.through && pastBy <= (CUT.over === undefined ? 0.2 : CUT.over) + 1e-3)) CUT.previewPast = {depth: dset, past: pastBy, t: DOC.stock.t};
+  }
   if (h && CUT.previewPast) h.textContent = '⚠ This ' + tpPastSay(Object.assign({}, CUT, {past: CUT.previewPast})) + '. ' + h.textContent.replace(/^⚠ /, '');
 }   // every hint also says how the walls are finished
 function cutRenderInner(){
@@ -4816,7 +4918,7 @@ function cutRenderInner(){
          (CUT.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) : fmtDisp(CUT.depth) + ' ' + unitTag() + ' deep') +
          (CUT.peck > 0 ? ', pecking every ' + fmtDisp(CUT.peck) : ', one plunge each') + '.' +
          (off ? ' \u26a0 ' + off + (off === 1 ? ' hole doesn\u2019t' : ' holes don\u2019t') + ' match the ' + fmtDisp(CUT.dia) + ' ' + unitTag() + ' drill.' : ''));
-    CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
+    CUT.preview = ok ? cutLastMoves() : [];
     CUT.previewHoles = ok ? loops.map(function (h) { return h.p; }) : [];
     SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
     cutIssuesRender();
@@ -4830,13 +4932,10 @@ function cutRenderInner(){
     var cdp = tpChamferDepth(CUT);
     dEl.disabled = true; dEl.value = fmtDisp(cdp);
     if (ok){
-      var pvc = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
-      CUT.preview = pvc.moves;
+      CUT.preview = cutLastMoves();
       CUT.chamBand = tpOutlines(CUT.ents);
       var np = Math.ceil(cdp / CUT.step);
-      document.getElementById('cutHint').textContent = pvc.warning
-        ? '\u26a0 ' + pvc.warning.charAt(0).toUpperCase() + pvc.warning.slice(1) + '.'
-        : (CUT.chamMode === 'in' || CUT.chamMode === 'out')
+      document.getElementById('cutHint').textContent = (CUT.chamMode === 'in' || CUT.chamMode === 'out')
           ? 'A ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' bevel with its top edge on the line, going ' + (CUT.chamMode === 'in' ? 'inside' : 'outside') +
             ': the tip runs ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' ' + (CUT.chamMode === 'in' ? 'in' : 'out') + ' from it, ' + fmtDisp(cdp) + ' ' + unitTag() + ' deep, in ' + np + (np === 1 ? ' pass.' : ' passes.')
           : 'A ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' bevel: the ' + (CUT.vAngle || 90) + '\u00b0 bit\u2019s tip runs along the edge ' +
@@ -4874,17 +4973,16 @@ function cutRenderInner(){
     document.getElementById('cutTabSize').hidden = true; document.getElementById('cutTabTools').hidden = true;
     var dEv = document.getElementById('cutDepth'); dEv.disabled = true;
     if (ok){
-      var pvv = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
-      CUT.preview = pvv.moves; dEv.value = fmtDisp(pvv.vcDepth || 0);
-      var nt = pvv.vcNote, lib = CUT.toolId ? libTool(CUT.toolId) : null;
+      // how deep it goes depends on the shapes: worked out on Create or Update (the last time's, if editing)
+      var lastV = cutLast(), lib = CUT.toolId ? libTool(CUT.toolId) : null;
       var notV = lib && !(lib.angle > 0);
+      CUT.preview = cutLastMoves();
+      dEv.value = lastV && lastV.vcDepth > 0 ? fmtDisp(lastV.vcDepth) : ''; dEv.placeholder = 'on Create';
       document.getElementById('cutHint').textContent =
         notV ? '\u26a0 V-carving needs a V-bit: this tool has no angle.'
-        : pvv.warning ? '\u26a0 ' + pvv.warning.charAt(0).toUpperCase() + pvv.warning.slice(1) + '.'
-        : nt ? 'V-carve with a ' + (CUT.vAngle || 60) + '\u00b0 bit: ' + fmtDisp(nt.depth) + ' ' + unitTag() + ' deep at the widest part (' + fmtDisp(nt.widest) + ' ' + unitTag() + ' across)' +
-               (nt.passes > 1 ? ', in ' + nt.passes + ' passes' : '') + '.' +
-               (nt.flat ? ' Wider parts get a flat floor at the max depth; a clearing pocket for their middles is added with it.' : '')
-        : 'Nothing to carve: pick closed shapes, text or a traced logo.';
+        : 'V-carve with a ' + (CUT.vAngle || 60) + '\u00b0 ' + (CUT.vBall ? 'tapered ball nose' : 'bit') + '. ' +
+          (CUT.vcMax > 0 ? 'Deeper than ' + fmtDisp(CUT.vcMax) + ' ' + unitTag() + ', the carving gets a flat floor, and a clearing pocket for its middles is added with it. ' : '') +
+          'How deep it goes is worked out when you press ' + (CUT.editing ? 'Update' : 'Create') + (lastV && lastV.vcDepth > 0 ? ' (last time: ' + fmtDisp(lastV.vcDepth) + ' ' + unitTag() + ' at the deepest).' : '.');
     } else { CUT.preview = []; dEv.value = ''; document.getElementById('cutHint').textContent = 'Click the shapes to carve: text, a traced logo, or closed outlines.'; }
     SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
     draw();
@@ -4892,15 +4990,11 @@ function cutRenderInner(){
   }
   if (pocketing && ok){
     var grp = tpPocketGroups(CUT.ents), isl = grp.reduce(function (s3, g) { return s3 + g.islands.length; }, 0);
-    var pv = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
-    CUT.preview = pv.moves;
+    CUT.preview = cutLastMoves();
     var so = CUT.dia * (CUT.stepoverPct || 40) / 100;
-    document.getElementById('cutHint').textContent = pv.warning
-      ? '\u26a0 ' + pv.warning.charAt(0).toUpperCase() + pv.warning.slice(1) + '.'
-      : restSrc
+    document.getElementById('cutHint').textContent = restSrc
       ? 'Cleans up after \u201c' + restSrc.name + '\u201d (' + fmtDisp(restSrc.dia) + ' ' + unitTag() + ' bit): only its corners and the parts too narrow for it, ' +
-        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + tpPassCount(tpDepth(restSrc), CUT.step) + (tpPassCount(tpDepth(restSrc), CUT.step) === 1 ? ' pass' : ' passes') +
-        (pv.restRuns ? ' (' + pv.restRuns + (pv.restRuns === 1 ? ' stretch' : ' stretches') + ').' : ': the larger bit reaches everywhere, so there\u2019s nothing left for this one.') +
+        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + tpPassCount(tpDepth(restSrc), CUT.step) + (tpPassCount(tpDepth(restSrc), CUT.step) === 1 ? ' pass.' : ' passes.') +
         (CUT.pocketClear === 'raster' ? ' It follows the walls rather than raster lines.' : '')
       : grp.length + (grp.length === 1 ? ' pocket' : ' pockets') + (isl ? ' with ' + isl + (isl === 1 ? ' island' : ' islands') + ' left standing' : '') + '. ' +
         (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(CUT.over) : fmtDisp(tpDepth(CUT)) + ' ' + unitTag() + ' deep') +
@@ -4926,8 +5020,38 @@ function cutRenderInner(){
              'Passes: ' + tpPassCount(tpDepth(CUT), CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
              (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
   SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
-  CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
+  CUT.preview = ok ? cutLastMoves() : [];
   draw();
+}
+// The editor works nothing out while settings change (as VCarve's doesn't): on a big job that made typing in a box
+// lag. Create or Update works the toolpath out, once, with the Working panel up. Meanwhile the drawing shows the
+// toolpath as it was last worked out (editing one), or nothing but its shapes (a new one), and the hint says only
+// what's known without working it out.
+function cutLastMoves(){
+  var was = CUT && CUT.editing ? tpList().filter(function (t) { return t.id === CUT.editing; })[0] : null;
+  return was && was.moves ? was.moves : [];
+}
+function cutLast(){ return CUT && CUT.editing ? tpList().filter(function (t) { return t.id === CUT.editing; })[0] || null : null; }
+// Which of the picked shapes this kind of cut can use: closed outlines (a rectangle, a circle, a closed polyline,
+// text, a traced logo), or for drilling, circles and closed shapes. {good: [ids], bad: [{id, why}]}, why 'open'
+// (a line, an arc, an open polyline) or 'empty' (nothing closed in it).
+function cutShapesUsable(){
+  var good = [], bad = [];
+  CUT.ents.forEach(function (id) {
+    var ok = CUT.side === 'drill' ? tpDrillPoints([id]).length > 0 : tpOutlinesById([id]).length > 0;
+    if (ok){ good.push(id); return; }
+    var e = entById(id), open = e && (e.t === 'line' || e.t === 'arc' || ((e.t === 'poly' || e.t === 'path') && !e.closed));
+    bad.push({id: id, why: open ? 'open' : 'empty'});
+  });
+  return {good: good, bad: bad};
+}
+// Why some shapes can't be used, in words: "2 of 5 shapes are open: a pocket needs closed ones."
+function cutShapesSay(bad, total){
+  var kind = CUT.side === 'drill' ? 'drilling' : CUT.side === 'pocket' ? 'a pocket' : CUT.side === 'vcarve' ? 'a V-carve' : CUT.side === 'chamfer' ? 'a chamfer' : 'a profile';
+  var open = bad.filter(function (b) { return b.why === 'open'; }).length, other = bad.length - open, out = [];
+  if (open) out.push((total > bad.length ? open + ' of the ' + total + ' shapes ' + (open === 1 ? 'is' : 'are') : open === 1 ? 'It’s' : 'They’re') + ' open (a line, an arc or an open outline): ' + kind + ' needs closed shapes. Close ' + (open === 1 ? 'it' : 'them') + ' with Join or the Fix button under the hint, or pick closed ones.');
+  if (other) out.push((total > bad.length || open ? other + ' ' + (other === 1 ? 'has' : 'have') : (other === 1 ? 'It has' : 'They have')) + ' no closed outline in ' + (other === 1 ? 'it' : 'them') + ' to cut.');
+  return out.join(' ');
 }
 // Problems with the picked shapes, shown under the hint with a fix where one is safe.
 // Recomputed only when the set of shapes changes, not on every keystroke.
@@ -5147,7 +5271,10 @@ function cutApply(){
   cutFromForm();
   if (cutExprProblem()){ toast('warn', 'Check the values', cutExprProblem() + '.'); return; }
   if (restSrc){ CUT.through = false; CUT.depth = tpDepth(restSrc); }
-  if (!CUT.ents.length) return;
+  // As VCarve does on saving a toolpath: nothing selected, or nothing selected it can cut, says so and makes nothing
+  if (!CUT.ents.length){ toast('warn', 'Select the shapes to cut first', 'Click them on the drawing, then press ' + (CUT.editing ? 'Update' : 'Create') + ' again.'); return; }
+  var usable = cutShapesUsable();
+  if (!usable.good.length){ toast('warn', usable.bad.length === 1 ? 'That shape can’t be used' : 'None of the ' + usable.bad.length + ' shapes can be used', cutShapesSay(usable.bad, usable.bad.length) + ' Nothing was ' + (CUT.editing ? 'changed' : 'made') + '.'); return; }
   pushUndo();
   var tp = {
     id: CUT.editing || tpNewId(),
@@ -5210,6 +5337,7 @@ function cutApply(){
           ? tp.name + ': ' + (tp.holes ? tp.holes.length : 0) + ' holes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' drill.'
           : tp.name + ': ' + tpPassCount(tpDepth(tp), tp.step) + (tpPassCount(tpDepth(tp), tp.step) === 1 ? ' pass' : ' passes') + ' with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter' + (tp.side === 'pocket' && tp.islands ? ', leaving ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : '') + '.');
   if (clearMsg) toast('info', 'Clearing for the flat areas', clearMsg);
+  if (usable.bad.length) toast('warn', usable.bad.length + ' of ' + CUT.ents.length + ' shapes left out', cutShapesSay(usable.bad, CUT.ents.length));
   cutClose();
   renderToolpathPanel();
 }
@@ -5762,6 +5890,7 @@ var HELP_ICONS = [
   ['#textTitle', 'design-tools.html#text', 'Adds lettering to the drawing. It stays editable as text, and a toolpath can cut it like any other shape.'],
   ['#woodTitle', 'cam-reference.html#preview-in-wood', 'The material as it will look after these toolpaths, cut with each bit\u2019s real shape, tabs in amber. Play shows it being cut, in order.'],
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
+  ['#inwTitle', 'cam-reference.html#inlay', 'Makes both halves of a V-carve inlay at once: choose the bit and the end mill, then the depths.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
   ['#fallPanel .modalHead > h3', 'design-tools.html#fillet-corners', 'Rounds every corner of the chosen shapes at once, or only those pointing out or in. Corners it can\u2019t do are ringed in red.'],
   ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],
@@ -5928,7 +6057,7 @@ function tpJob(only){
     return null;
   }
   var parts = chosen.map(function (tp) {
-    if (tpStale(tp)) tpGenerate(tp);
+    if (tpStale(tp) || !tp.moves) tpGenerate(tp);
     var t = tp.toolId ? libTool(tp.toolId) : null;
     return {moves: tp.moves, name: tp.name, tool: toolNumber(tp), rpm: tp.rpm || 18000,
             toolName: t ? t.name : fmtDisp(tp.dia) + ' ' + unitTag() + (tp.side === 'drill' ? ' drill' : ' cutter')};
@@ -7057,7 +7186,7 @@ function jobSheetOpen(){
   var left = list.filter(function (tp) { return tp.exclude; });
   if (!chosen.length){ toast('info', 'No toolpaths to describe', 'Every toolpath is left out of the G-code; include one to make a job sheet.'); return; }
   var recalculated = 0;
-  chosen.forEach(function (tp) { if (tpStale(tp)){ tpGenerate(tp); recalculated++; } });   // as Save G-code does
+  chosen.forEach(function (tp) { if (tpStale(tp) || !tp.moves){ tpGenerate(tp); recalculated++; } });   // as Save G-code does
   if (recalculated){ persist(); renderToolpathPanel(); draw(); }
   var numberOf = toolNumbering(), u = unitTag();
   // the tools, in the order they're first used
@@ -7195,11 +7324,17 @@ function tpRecalc(tp, quiet){
     else toast('ok', tp.name + ' recalculated', 'Rebuilt from its shapes as they are now.');
   }
 }
+// Every toolpath on the sheet shown, one at a time, with the Working panel saying which ("3 of 12: Pocket").
+// Returns a promise.
 function tpRecalcAll(){
   var list = tpList().filter(function (tp) { return !multiSheet() || tpSheetOf(tp) === DOC.activeSheet; });
-  if (!list.length) return;
+  if (!list.length) return Promise.resolve();
   var warned = [];
-  list.forEach(function (tp) { tpGenerate(tp); if (tp.warning) warned.push(tp.name); });
+  return busyRun('Recalculating the toolpaths\u2026', list.map(function (tp) {
+    return {label: tp.name, fn: function () { tpGenerate(tp); if (tp.warning) warned.push(tp.name); }};
+  })).then(function () { tpRecalcAllSaid(list, warned); });
+}
+function tpRecalcAllSaid(list, warned){
   persist(); renderToolpathPanel(); draw();
   var what = list.length === 1 ? '1 toolpath' : list.length + ' toolpaths';
   if (warned.length) toast('warn', what + ' recalculated', 'Check ' + warned.join(', ') + ': ' + (warned.length === 1 ? 'it has' : 'they have') + ' a note.');
@@ -7508,7 +7643,7 @@ function renderMyToolpaths(){
     var none = document.createElement('div');
     none.className = 'tpEmptySheet';
     none.style.cssText = 'padding:10px 14px;font-size:12.5px;color:var(--muted);line-height:1.5';
-    none.textContent = 'No toolpaths on ' + sheetName + ' yet. Select its shapes and press + to make one.';
+    none.textContent = 'No toolpaths on ' + sheetName + ' yet. Select its shapes and press + (at the top of this panel, or the + key) to make one.';
     box.appendChild(none);
   }
   if (camReady() && onSheet.length){
@@ -7642,7 +7777,11 @@ function tpGroupInclude(gid){
 }
 function tpGroupRecalc(gid){
   var g = tpGroupById(gid), m = tpGroupMembers(gid), warned = [];
-  m.forEach(function (t) { tpGenerate(t); if (t.warning) warned.push(t.name); });
+  return busyRun('Recalculating \u201c' + g.name + '\u201d\u2026', m.map(function (t) {
+    return {label: t.name, fn: function () { tpGenerate(t); if (t.warning) warned.push(t.name); }};
+  })).then(function () { tpGroupRecalcSaid(g, m, warned); });
+}
+function tpGroupRecalcSaid(g, m, warned){
   persist(); renderToolpathPanel(); draw();
   if (warned.length) toast('warn', g.name + ' recalculated', 'Check ' + warned.join(', ') + ': ' + (warned.length === 1 ? 'it has' : 'they have') + ' a note.');
   else toast('ok', g.name + ' recalculated', m.length + (m.length === 1 ? ' toolpath' : ' toolpaths') + ' rebuilt from their shapes and the material as they are now.');
@@ -7824,6 +7963,245 @@ function tpGroupDropAt(gid, to){
   persist(); renderToolpathPanel(); draw();
 }
 function tpGroupDropOnGroup(gid, onto){ var s = tpGroupSpan(onto); if (s.a >= 0) tpGroupDropAt(gid, s.a); }
+// ---- the Inlay wizard ----
+// Both halves of a V-carve inlay from the shapes chosen, in one go: the bit that carves it (a V-bit or a tapered
+// ball nose) and the end mill that clears its floor are chosen first, then the depths, and Create makes:
+//   the pocket, in the base: a clearing pocket and a V-carve on the shapes, grouped as "Inlay pocket";
+//   the plug, in the inlay piece: a mirrored copy of the shapes inside a boundary, with its own clearing pocket and
+//   V-carve from the start depth down, grouped as "Inlay plug", on a sheet of its own (each sheet is its own piece
+//   of material and G-code file) unless that's unticked.
+// All of it is one step to undo.
+var INW = null;            // the open wizard: {ents, vbit, mill: the chosen tools' settings}
+// What a library tool gives a toolpath (as the toolpath editor's cutUseTool does): its size, its shape for a
+// V-bit or tapered ball nose, and its feeds and speeds for the material chosen.
+function inwToolSettings(id){
+  var t = id ? libTool(id) : null;
+  if (!t) return null;
+  var mm = t.units === 'in' ? 25.4 : 1, o = {toolId: id, name: t.name, dia: t.diameter ? +(t.diameter * mm).toFixed(3) : 0};
+  if (t.angle > 0 && t.angle < 180) o.vAngle = t.angle;
+  o.vBall = +t.type === 5 && t.tipRadius > 0;
+  o.vTipR = o.vBall ? +(t.tipRadius * mm).toFixed(4) : 0;
+  o.vTip = !o.vBall && t.flat > 0 ? +(t.flat * mm).toFixed(4) : 0;
+  var cut = libCutFor(t, libDefaultMachine(), UICFG.libMaterial || null) || t.cuts.filter(function (c) { return c.machine === libDefaultMachine(); })[0] || t.cuts[0];
+  if (cut){
+    var rate = cut.rateUnits === 4 ? 25.4 : 1, len = cut.lengthUnits === 'in' ? 25.4 : 1;
+    if (cut.feed) o.feed = Math.round(cut.feed * rate);
+    if (cut.plunge) o.plunge = Math.round(cut.plunge * rate);
+    if (cut.stepdown) o.step = +(cut.stepdown * len).toFixed(3);
+    if (cut.stepover && o.dia > 0) o.stepoverPct = Math.max(5, Math.min(95, Math.round(cut.stepover * len / o.dia * 100)));
+    if (cut.rpm) o.rpm = cut.rpm;
+  }
+  return o;
+}
+function inwOpen(ents){
+  INW = {ents: (ents || []).slice(), vbit: INW ? INW.vbit : null, mill: INW ? INW.mill : null};
+  // starting depths: 5, 2.5 and 5 mm, or in a drawing in inches, 0.2, 0.1 and 0.2 in (not 0.197 and 0.098)
+  var last = UICFG.inlayWiz || {}, inch = dispIn(), dD = inch ? 5.08 : 5, dS = inch ? 2.54 : 2.5;
+  if (!INW.vbit && last.vbit && libTool(last.vbit)) INW.vbit = inwToolSettings(last.vbit);
+  if (!INW.mill && last.mill && libTool(last.mill)) INW.mill = inwToolSettings(last.mill);
+  document.getElementById('inwD').value = fmtDisp(last.D > 0 ? last.D : dD);
+  document.getElementById('inwS').value = fmtDisp(last.S > 0 ? last.S : dS);
+  document.getElementById('inwM').value = fmtDisp(last.M > 0 ? last.M : dD);
+  document.getElementById('inwSheet').checked = last.sheet !== false;
+  document.getElementById('inwModal').hidden = false;
+  inwRender();
+}
+function inwClose(){ INW = null; document.getElementById('inwModal').hidden = true; }
+function inwDepths(){
+  return {D: lenIn(document.getElementById('inwD').value), S: lenIn(document.getElementById('inwS').value), M: lenIn(document.getElementById('inwM').value)};
+}
+// What stops Create, in words, or ''.
+function inwProblem(){
+  var d = inwDepths();
+  if (!INW.ents.length) return 'Select the shapes to inlay first: close this, select them, and choose Inlay again.';
+  if (!INW.vbit || !(INW.vbit.vAngle > 0)) return 'Choose the bit that carves the inlay: a V-bit or a tapered ball nose.';
+  if (!INW.mill || !(INW.mill.dia > 0)) return 'Choose the end mill that clears the floor.';
+  if (!(d.D > 0) || !(d.S > 0) || !(d.M > 0)) return 'Fill in all three depths.';
+  if (!(d.M > d.S)) return 'The plug depth must be more than the start depth, so the plug stands proud of the surface.';
+  if (!(d.D > d.S)) return 'The pocket must be deeper than the plug’s start depth, or the plug bottoms out before its walls meet.';
+  if (DOC.stock && DOC.stock.t > 0 && (d.D > DOC.stock.t || d.M > DOC.stock.t)) return 'That’s deeper than the material (' + fmtDisp(DOC.stock.t) + ' ' + unitTag() + ', in Job setup).';
+  return '';
+}
+function inwRender(){
+  if (!INW) return;
+  var u = unitTag(), d = inwDepths(), bit = INW.vbit, mill = INW.mill;
+  document.getElementById('inwShapes').textContent = INW.ents.length ? INW.ents.length + (INW.ents.length === 1 ? ' shape' : ' shapes') : 'none selected';
+  document.getElementById('inwBit').textContent = bit ? bit.name + ' · ' + bit.vAngle + '°' + (bit.vBall ? ', ' + fmtDisp(bit.vTipR) + ' ' + u + ' tip radius' : bit.vTip > 0 ? ', ' + fmtDisp(bit.vTip) + ' ' + u + ' flat tip' : '') : 'none chosen';
+  document.getElementById('inwMill').textContent = mill ? mill.name + ' · ' + fmtDisp(mill.dia) + ' ' + u : 'none chosen';
+  ['inwDU', 'inwSU', 'inwMU'].forEach(function (id) { document.getElementById(id).textContent = u; });
+  var fit = '';
+  if (d.D > 0 && d.S > 0 && d.M > 0 && d.M > d.S && d.D > d.S)
+    fit = 'The plug seats ' + fmtDisp(d.S) + ' ' + u + ' into the pocket, with ' + fmtDisp(d.D - d.S) + ' ' + u + ' underneath for glue, and stands ' +
+          fmtDisp(d.M - d.S) + ' ' + u + ' proud of the surface, to plane off.';
+  document.getElementById('inwFit').textContent = fit;
+  var bad = inwProblem();
+  document.getElementById('inwProblem').textContent = bad;
+  document.getElementById('inwCreate').disabled = !!bad;
+}
+function inwChoose(which){
+  if (!TOOLLIB){ toast('info', 'No tool library yet', 'Open the tool library (the bit icon at the top) and import or add your bits, then choose them here.'); return; }
+  var cur = INW[which];
+  libOpen(cur ? cur.toolId : null, function (id) {
+    var o = inwToolSettings(id);
+    if (which === 'vbit' && !(o && o.vAngle > 0)){ toast('warn', 'That isn’t a V-bit', o ? o.name + ' has no angle. An inlay is carved with a V-bit or a tapered ball nose.' : ''); return; }
+    INW[which] = o;
+    inwRender();
+  });
+}
+// Make both halves, with the Working panel up: the shapes and sheet first, then each of the four toolpaths in turn,
+// so it can say which it's on. Resolves with {pocket, plug, sheet} (each half {group, tpV, tpC}), or null.
+function inwCreate(){
+  if (!INW || inwProblem()) return Promise.resolve(null);
+  var d = inwDepths(), keepSheet = document.getElementById('inwSheet').checked, ents = INW.ents.slice();
+  UICFG.inlayWiz = {vbit: INW.vbit.toolId, mill: INW.mill.toolId, D: d.D, S: d.S, M: d.M, sheet: keepSheet}; uiCfgSave();
+  var base = {vbit: INW.vbit, mill: INW.mill, D: d.D, S: d.S, M: d.M, generate: false}, made = null;
+  inwClose();
+  return busyRun('Making the inlay\u2026', [
+    {label: 'the plug\u2019s shapes', fn: function () { made = inwLayOut(ents, base, keepSheet); }},
+    {label: 'Inlay pocket: clearing', fn: function () { tpGenerate(made.pocket.tpC); }},
+    {label: 'Inlay pocket: V-carve', fn: function () { tpGenerate(made.pocket.tpV); }},
+    {label: 'Inlay plug: clearing', fn: function () { tpGenerate(made.plug.tpC); }},
+    {label: 'Inlay plug: V-carve', fn: function () { tpGenerate(made.plug.tpV); return inwDone(made); }}
+  ]);
+}
+// The shapes, sheet, toolpaths and groups, before any toolpath is worked out (one undo for it all).
+function inwLayOut(ents, base, keepSheet){
+  pushUndo(); layersInit();
+  var pocket = inlayHalf(Object.assign({plug: false, ents: ents.slice()}, base));
+  var plugSheet = null;
+  if (keepSheet){
+    sheetsInit();
+    if (!sheetList().length){ DOC.sheets = [{id: 'S1', name: 'Sheet 1'}]; DOC.activeSheet = 'S1'; }
+    var here = DOC.activeSheet;
+    DOC.ents.forEach(function (e) { if (!sheetById(e.sheet)) e.sheet = here; });
+    tpList().forEach(function (tp) { if (!sheetById(tp.sheet)) tp.sheet = sheetsOfEnts(tp.ents)[0] || here; });
+    var n = 1; while (sheetById('S' + n)) n++;
+    var nm = 'Inlay plug', k = 2; while (sheetList().some(function (s) { return s.name === nm; })) nm = 'Inlay plug ' + k++;
+    plugSheet = {id: 'S' + n, name: nm};
+    DOC.sheets.push(plugSheet);
+  }
+  var plug = inlayHalf(Object.assign({plug: true, ents: ents.slice(), sheet: plugSheet ? plugSheet.id : null}, base));
+  [[pocket, 'Inlay pocket'], [plug, 'Inlay plug']].forEach(function (p) {
+    var g = {id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: p[1], folded: false};
+    var names = tpGroups().map(function (x) { return x.name; }), k2 = 2;
+    while (names.indexOf(g.name) >= 0) g.name = p[1] + ' ' + k2++;
+    tpGroups().push(g);
+    p[0].tpC.group = g.id; p[0].tpV.group = g.id; p[0].group = g;
+  });
+  tpGroupsTidy();
+  return {pocket: pocket, plug: plug, sheet: plugSheet};
+}
+function inwDone(made){
+  var pocket = made.pocket, plug = made.plug, plugSheet = made.sheet;
+  persist();
+  renderToolpathPanel(); draw();
+  toast('ok', 'Inlay toolpaths created',
+        'Two groups: “' + pocket.group.name + '”, for the base, and “' + plug.group.name + '”, for the inlay piece' +
+        (plugSheet ? ', on its own sheet, “' + plugSheet.name + '”: show it with the Sheet bar. Each sheet saves its own G-code.' : '.') +
+        ' Cut the pocket and the plug with the same bit, and trim the inlay piece to the plug’s boundary before gluing.');
+  return {pocket: pocket, plug: plug, sheet: plugSheet};
+}
+// One half of an inlay: its clearing pocket and V-carve, put into the list (the plug's on a mirrored copy of the shapes
+// inside a boundary, on `sheet` if given). o: {plug, ents, vbit, mill, D, S, M, sheet}. The caller takes care of undo.
+function inlayHalf(o){
+  var ents = o.ents.slice(), bitShape = Cam.vbitShape({angle: o.vbit.vAngle, tip: o.vbit.vBall ? 0 : o.vbit.vTip || 0, tipR: o.vbit.vBall ? o.vbit.vTipR : 0});
+  if (o.plug){
+    // mirrored about the shapes' own centre line; beside the design on the same sheet, or where it is on its own sheet
+    var bb = null;
+    ents.forEach(function (id) { var b = entBBox(entById(id)); bb = bb ? {x0: Math.min(bb.x0, b.x0), y0: Math.min(bb.y0, b.y0), x1: Math.max(bb.x1, b.x1), y1: Math.max(bb.y1, b.y1)} : b; });
+    var cx = (bb.x0 + bb.x1) / 2, shift = o.sheet ? 0 : (bb.x1 - bb.x0) + 20, mg = Math.max(6, bitShape.reach(o.M) * 2 + 2);
+    var keepActive = DOC.activeLayer, lid = layerNew('Inlay plug');
+    DOC.activeLayer = keepActive;
+    var copies = ents.map(function (id) {
+      var c = cloneEnt(entById(id));
+      mirrorEnt(c, cx, 0, 0, 1);                        // across the vertical line through the centre
+      moveEntity(c, shift, 0);
+      c.layer = lid; delete c.id; delete c._id;
+      if (o.sheet) c.sheet = o.sheet;
+      DOC.ents.push(c);
+      return entId(c);
+    });
+    var box = {t: 'rect', x: bb.x0 + shift - mg, y: bb.y0 - mg, w: (bb.x1 - bb.x0) + 2 * mg, h: (bb.y1 - bb.y0) + 2 * mg, layer: lid};
+    if (o.sheet) box.sheet = o.sheet;
+    DOC.ents.push(box);
+    ents = [entId(box)].concat(copies);
+  }
+  var b = o.vbit, m = o.mill, plug = o.plug, floor = plug ? o.M : o.D;
+  var common = {safeZ: 6, climb: true, tabPts: {}, tabsOn: false, hidden: false, exclude: false, through: false};
+  if (o.sheet) common.sheet = o.sheet;
+  var tpV = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: V-carve' : 'Inlay pocket: V-carve', side: 'vcarve', type: 'vcarve', ents: ents.slice(),
+    vAngle: b.vAngle, vTip: b.vBall ? 0 : b.vTip || 0, vcMax: floor, vcStart: plug ? o.S : 0, dia: b.dia, step: 0,
+    feed: b.feed || 1000, plunge: b.plunge || 300, rpm: b.rpm || 18000, toolId: b.toolId, toolChosen: true});
+  if (b.vBall){ tpV.vBall = true; tpV.vTipR = b.vTipR; }
+  if (!plug) delete tpV.vcStart;
+  var tpC = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: clearing' : 'Inlay pocket: clearing', side: 'pocket', type: 'pocket', ents: ents.slice(), clearFor: tpV.id,
+    depth: floor, step: m.step > 0 ? Math.min(m.step, floor) : Math.max(0.5, floor / 2), allowance: tpVFloorEdge(tpV), finishPass: false, stepoverPct: m.stepoverPct || 40,
+    dia: m.dia, feed: m.feed || 800, plunge: m.plunge || 300, rpm: m.rpm || 18000, toolId: m.toolId, toolChosen: true});
+  tpInsertByRank(tpC); tpInsertByRank(tpV);             // clearing before the V-carve, as VCarve does
+  if (o.generate !== false){ tpGenerate(tpC); tpGenerate(tpV); }   // (the V-carve last: it flattens what the clearing's cutter leaves)
+  return {tpV: tpV, tpC: tpC, ents: ents};
+}
+// ---- "Working…": showing that the app is busy ----
+// Working out toolpaths can take seconds, and while it runs the page can't draw: it looks frozen. So before the
+// work starts, a panel says what's being done, with a spinner, and gives the page a moment to show it. The spinner
+// turns by a CSS animation of transform alone, which the browser runs apart from the page, so it keeps turning
+// while the work runs. Work done in steps (the Inlay wizard's four toolpaths, Recalculate all) shows "2 of 4"
+// and a bar, with a pause between steps for the panel to update. Clicks and keys are held off meanwhile.
+var BUSY = null;           // {title, steps, done, waiters}
+var BUSY_PAUSE = 30;       // ms between steps: long enough for the page to draw a frame
+function busyShow(title, total){
+  var box = document.getElementById('busy');
+  document.getElementById('busyTitle').textContent = title;
+  document.getElementById('busyStep').textContent = '';
+  document.getElementById('busyBarWrap').hidden = !(total > 1);
+  document.getElementById('busyBar').style.width = '0%';
+  box.hidden = false;
+}
+function busyStep(i, total, label){
+  document.getElementById('busyStep').textContent = total > 1 ? (i + 1) + ' of ' + total + (label ? ': ' + label : '') : label || '';
+  document.getElementById('busyBar').style.width = (total > 1 ? Math.round(i / total * 100) : 0) + '%';
+}
+function busyHide(){ document.getElementById('busy').hidden = true; }
+function busyNow(){ return !!BUSY; }
+// Run steps (functions, or {label, fn}) one after another with the panel up. Resolves with the last step's result,
+// or rejects with its error (the panel goes either way). One run at a time: another while busy waits its turn.
+function busyRun(title, steps){
+  if (BUSY) return busyIdle().then(function () { return busyRun(title, steps); });
+  steps = steps.map(function (s) { return typeof s === 'function' ? {fn: s} : s; });
+  BUSY = {title: title, waiters: []};
+  busyShow(title, steps.length);
+  var i = 0, last;
+  function finish(){
+    var w = BUSY.waiters; BUSY = null; busyHide();
+    w.forEach(function (f) { f(); });
+  }
+  return new Promise(function (resolve, reject) {
+    function next(){
+      if (i >= steps.length){ finish(); resolve(last); return; }
+      busyStep(i, steps.length, steps[i].label);
+      setTimeout(function () {
+        try { last = steps[i].fn(last); }
+        catch (e){ finish(); reject(e); return; }
+        i++;
+        if (steps.length > 1) document.getElementById('busyBar').style.width = Math.round(i / steps.length * 100) + '%';
+        next();
+      }, BUSY_PAUSE);
+    }
+    next();
+  });
+}
+// Resolves once nothing is running.
+function busyIdle(){
+  return new Promise(function (resolve) { if (!BUSY) resolve(); else BUSY.waiters.push(resolve); });
+}
+// A button whose work takes a while: the panel shows while it runs. Errors are shown, not lost.
+function busyButton(id, title, fn){
+  var b = document.getElementById(id);
+  if (!b) return;
+  b.addEventListener('click', function () {
+    busyRun(title, [fn]).catch(function (e) { toast('err', 'Something went wrong', String((e && e.message) || e)); });
+  });
+}
 // ---- Preview in 454 Control ----
 // Hands the job's G-code (exactly what Save G-code writes) to 454 Control, for its preview: the 3D view
 // and playback, the time estimate with the machine's acceleration, and the checks. Nothing is sent to the
@@ -8104,7 +8482,7 @@ function woodShadeRect(sim, out, i0, j0, i1, j1){
 // The ticked toolpaths of the sheet shown, as parts for woodSim, in cutting order.
 function woodParts(){
   return tpList().filter(function (tp){ return !tp.exclude && (typeof multiSheet !== 'function' || !multiSheet() || tpSheetOf(tp) === DOC.activeSheet); })
-    .map(function (tp){ if (tpStale(tp)) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name, feed: tp.feed}; })
+    .map(function (tp){ if (tpStale(tp) || !tp.moves) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name, feed: tp.feed}; })
     .filter(function (p){ return p.moves.length; });
 }
 function woodBox(){
@@ -8898,9 +9276,10 @@ function tplApplyText(text, fileName){
                    body: lines.join('\n') + '\n\nThey’re added after any toolpaths already here, with tabs spaced evenly. Check each one before cutting: depths that cut through use this drawing’s material thickness.',
                    ok: 'Make ' + ok.length + (ok.length === 1 ? ' toolpath' : ' toolpaths')}).then(function (go) {
     if (!go) return [];
-    var made = tplMakeToolpaths(plan);
+    return busyRun('Making the toolpaths…', [function () { return tplMakeToolpaths(plan); }]).then(function (made) {
     toast('ok', 'Template applied', made.length + (made.length === 1 ? ' toolpath' : ' toolpaths') + ' made' + (made.length < plan.length ? ', ' + (plan.length - made.length) + ' skipped' : '') + '.');
     return made;
+    });
   });
 }
 function tplWire(){
@@ -12354,7 +12733,7 @@ function menuDo(what, arg){
   else if (what === 'settings') press('settingsBtn');
   else if (what === 'gcode'){
     if (camReady() && tpShownList().some(function (t){ return !t.exclude; })) tpExport();
-    else toast('info', 'No toolpaths to save', 'Make a toolpath first: select shapes, then press + in the Toolpaths panel.');
+    else toast('info', 'No toolpaths to save', 'Make a toolpath first: select shapes, then press + at the top of the Toolpaths panel, or the + key.');
   }
   else return false;
   return true;
@@ -17044,6 +17423,17 @@ function wire(){
   })();
   document.getElementById('settingsBtn').addEventListener('click', openSettings);
   document.getElementById('offObjs').addEventListener('click', function(){ if (OFF) offRender(); });
+  // the Inlay wizard
+  ['inwD', 'inwS', 'inwM'].forEach(function (id) { document.getElementById(id).addEventListener('input', inwRender); });
+  document.getElementById('inwSheet').addEventListener('change', inwRender);
+  document.getElementById('inwBitBtn').addEventListener('click', function(){ inwChoose('vbit'); });
+  document.getElementById('inwMillBtn').addEventListener('click', function(){ inwChoose('mill'); });
+  document.getElementById('inwCreate').addEventListener('click', function () {
+    inwCreate().catch(function (e) { toast('err', 'The inlay wasn’t finished', String((e && e.message) || e) + '. Undo takes back what was made.'); });
+  });
+  document.getElementById('inwCancel').addEventListener('click', inwClose);
+  document.getElementById('inwX').addEventListener('click', inwClose);
+  document.getElementById('inwModal').addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.getElementById('libModal').hidden){ e.stopPropagation(); inwClose(); } });
   // Fillet corners: the radius and kind are the Fillet tool's own, so the two always agree
   document.getElementById('fallObjs').addEventListener('click', function(){ if (FALL) fallRender(); });
   document.getElementById('fallR').addEventListener('input', function(e){
@@ -17078,9 +17468,9 @@ function wire(){
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
-  document.getElementById('tpVcConvert').addEventListener('click', vcMakeEditable);
+  busyButton('tpVcConvert', 'Making the VCarve toolpaths editable…', vcMakeEditable);   // seconds, on a big project
   sheetWire();
-  document.getElementById('tpRecalcAll').addEventListener('click', tpRecalcAll);
+  document.getElementById('tpRecalcAll').addEventListener('click', function () { tpRecalcAll(); });
   document.getElementById('jsClose').addEventListener('click', jobSheetClose);
   document.getElementById('jsPrint').addEventListener('click', function(){ window.print(); });
   document.getElementById('jsModal').addEventListener('keydown', function(e){ if (e.key === 'Escape' && !e.target.isContentEditable){ e.stopPropagation(); jobSheetClose(); } });
@@ -17097,7 +17487,7 @@ function wire(){
   document.getElementById('tpCheck').addEventListener('click', function(){ if (camReady()) vecCheckAll(); });
   document.getElementById('cutX').addEventListener('click', cutClose);
   document.getElementById('cutCancel').addEventListener('click', cutClose);
-  document.getElementById('cutOk').addEventListener('click', cutApply);
+  busyButton('cutOk', 'Working out the toolpath\u2026', cutApply);   // a big drawing's toolpath can take a while
   document.getElementById('cutTool').addEventListener('click', function(){
     if (!CUT) return;
     if (!TOOLLIB){ toast('info', 'No tool library yet', 'Import your VCarve library from the tool library window, or type the cutter diameter and feeds in yourself.'); libOpen(); return; }
@@ -17106,6 +17496,8 @@ function wire(){
   document.getElementById('cutType').addEventListener('change', function(){
     if (!CUT) return;
     CUT.side = document.getElementById('cutType').value;
+    // an inlay is made by the Inlay wizard: both halves, their bits first
+    if (CUT.side === 'inlay'){ var inwEnts = CUT.ents.slice(); cutClose(); inwOpen(inwEnts); return; }
     if (CUT.side === 'drill' && !(CUT.plunge > 0)) CUT.plunge = 300;
     cutToForm(); cutRender();                            // boxes now show what this type uses
   });
@@ -17757,6 +18149,8 @@ function wire(){
     if (!document.getElementById('toolModal').hidden) return;   // and tool details
     if (!document.getElementById('dlgModal').hidden) return;    // and an in-app dialog
     if (!document.getElementById('woodModal').hidden) return;   // and Preview in wood
+    if (!document.getElementById('inwModal').hidden) return;    // and the Inlay wizard
+    if (busyNow()) return;                                      // nothing while the app is busy
     if (e.key === 'Escape' && !document.getElementById('msgPanel').hidden){ setMsgPanel(false); return; }
     var inField = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA';
     // Ctrl-combos are global: they work from anywhere, including while an input has focus,
@@ -17808,6 +18202,10 @@ function wire(){
         : 'Distance between the two \u2014 type the new value; the second-selected item moves',
         _pr && _pr.cur ? _pr.cur.toFixed(2) : '', true);
       return;
+    }
+    // + (either key): a new toolpath for the shapes selected, as the + at the top of the Toolpaths panel does
+    if (e.key === '+' && TOOL === 'select' && !e.ctrlKey && !e.metaKey && !e.altKey && !CUT && DRAW === null && camReady()){
+      e.preventDefault(); cutOpen(null); return;
     }
     if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 1 && !e.ctrlKey){
       var de = DOC.ents[SEL[0]];

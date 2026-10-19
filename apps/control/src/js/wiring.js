@@ -23,6 +23,21 @@ function plannerOpts(){
   }
   return o;
 }
+// A big file takes a moment to read and draw (Spikes.gcode, 5.8 MB: 0.7 s), and the page can't draw meanwhile:
+// a panel says it's loading first, with a spinner that keeps turning (a CSS transform animation, which the browser
+// runs apart from the page). Small files load straight away, so the panel doesn't flash.
+var LOAD_SHOW_FROM = 1e6;          // characters
+function loadTextShown(text, name){
+  if (!(text && text.length >= LOAD_SHOW_FROM)){ loadText(text, name); return; }
+  var box = document.getElementById('loadBusy');
+  document.getElementById('loadBusyName').textContent = 'Loading ' + name + '…';
+  box.hidden = false;
+  setTimeout(function (){
+    try { loadText(text, name); }
+    catch (e){ uiNote('Couldn’t load ' + name, String((e && e.message) || e)); }
+    finally { box.hidden = true; }
+  }, 30);
+}
 function loadText(text, name){
   if (typeof JOB !== 'undefined' && JOB.active){
     uiNote('A job is running', 'Stop the job on the machine before loading a new file.');
@@ -121,7 +136,7 @@ function wire(){
     var f = e.target.files[0];
     if (!f) return;
     var rd = new FileReader();
-    rd.onload = function(){ loadText(rd.result, f.name); };
+    rd.onload = function(){ loadTextShown(rd.result, f.name); };
     rd.readAsText(f);
     e.target.value = '';
   });
@@ -138,7 +153,7 @@ function wire(){
     var f = e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f) return;
     var rd = new FileReader();
-    rd.onload = function(){ loadText(rd.result, f.name); };
+    rd.onload = function(){ loadTextShown(rd.result, f.name); };
     rd.readAsText(f);
   });
 

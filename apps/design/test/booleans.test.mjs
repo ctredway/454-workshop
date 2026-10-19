@@ -139,7 +139,7 @@ test('open shapes take no part, and it says so', () => {
   const { r: r2 } = apply(D, [{t:'rect', x:0, y:0, w:40, h:20}, {t:'line', x1:0, y1:0, x2:50, y2:50}], [0, 1], 'weld');
   assert.equal(r2.ok, false);
 });
-test('a toolpath that cut a welded shape cuts the result; dimensions on it go; undo puts it all back', () => {
+test('a toolpath that cut a welded shape cuts the result; dimensions on it go; undo puts it all back', async () => {
   const D = loadDesign({ cam: true }); D.wire(); D.run = (code) => vm.runInContext(code, D);
   D.run(`DOC.stock = Object.assign({}, DOC.stock, {w:200, h:120, t:12, zero:'top'});
     DOC.layers = [{id:'L1', name:'Layer 1', visible:true, locked:false}]; DOC.activeLayer = 'L1';
@@ -154,11 +154,13 @@ test('a toolpath that cut a welded shape cuts the result; dimensions on it go; u
   const before = plain(D.run('DOC.ents'));
   D.run('SEL = [0, 1]');
   D.boolBtnClick('weld');
+  await D.run('busyIdle()');                                // (worked out again, with the Working panel up)
   const ents = plain(D.run('DOC.ents')), tp = plain(D.run('DOC.toolpaths[0]'));
   assert.deepEqual(tp.ents, [ents[1]._id, before[2]._id], 'the welded outline in place of the rectangle, and the circle still');
   assert.ok(Math.abs(maxX() - (50 + 6.35 / 2)) < 0.05, `after: the profile goes round the welded outline (reaches x ${maxX()})`);
   assert.equal(plain(D.run('DOC.dims')).length, 0, 'the dimension on the rectangle went with it');
   D.run('doUndo()');
+  assert.equal(D.run('busyNow()'), false, 'undo has the first outline’s profile back at once: worked out before, for exactly that');
   assert.deepEqual(plain(D.run('DOC.ents')), before);
   assert.equal(plain(D.run('DOC.dims')).length, 1);
   assert.ok(maxX() < 45, 'undone: round the rectangle again');

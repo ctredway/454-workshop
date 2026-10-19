@@ -116,7 +116,11 @@ function tpGroupInclude(gid){
 }
 function tpGroupRecalc(gid){
   var g = tpGroupById(gid), m = tpGroupMembers(gid), warned = [];
-  m.forEach(function (t) { tpGenerate(t); if (t.warning) warned.push(t.name); });
+  return busyRun('Recalculating \u201c' + g.name + '\u201d\u2026', m.map(function (t) {
+    return {label: t.name, fn: function () { tpGenerate(t); if (t.warning) warned.push(t.name); }};
+  })).then(function () { tpGroupRecalcSaid(g, m, warned); });
+}
+function tpGroupRecalcSaid(g, m, warned){
   persist(); renderToolpathPanel(); draw();
   if (warned.length) toast('warn', g.name + ' recalculated', 'Check ' + warned.join(', ') + ': ' + (warned.length === 1 ? 'it has' : 'they have') + ' a note.');
   else toast('ok', g.name + ' recalculated', m.length + (m.length === 1 ? ' toolpath' : ' toolpaths') + ' rebuilt from their shapes and the material as they are now.');

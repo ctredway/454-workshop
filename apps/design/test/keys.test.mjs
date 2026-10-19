@@ -376,3 +376,23 @@ test('desktop: projects dropped on the window go on the recent files; other file
   D.droppedFiles([{ name: 'bench.454.json' }, { name: 'logo.svg' }, { name: 'sign.crv' }, { name: 'box.c2d' }, { name: 'photo.png' }]);
   assert.deepEqual(noted, ['C:/Drops/bench.454.json', 'C:/Drops/sign.crv', 'C:/Drops/box.c2d']);
 });
+test('the + key: a new toolpath for the shapes selected, as the + at the top of the Toolpaths panel does', () => {
+  const D = loadDesign({ cam: true, start: false });
+  const keydown = [];
+  D.addEventListener = (type, f) => { if (type === 'keydown') keydown.push(f); };
+  D.wire();
+  const press = (key, target) => { const ev = { key, ctrlKey: false, metaKey: false, shiftKey: key === '+', altKey: false, code: '', target: target || D.document.body,
+    defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} }; keydown.forEach((f) => f(ev)); return ev; };
+  vm.runInContext("DOC.ents = [{t:'rect', x:0, y:0, w:40, h:20}]; DOC.toolpaths = []; SEL = [0]; setTool('select'); 1", D);
+  const ev = press('+');
+  assert.equal(ev.defaultPrevented, true);
+  assert.ok(D.CUT, 'the toolpath editor is open');
+  assert.equal(plain(D.CUT.ents).length, 1, 'for the selected rectangle');
+  vm.runInContext('cutClose(); 1', D);
+  // not while typing in a box, and not while another tool is drawing
+  press('+', D.document.getElementById('cutDepth'));
+  assert.equal(D.CUT, null);
+  vm.runInContext("setTool('line'); 1", D);
+  press('+');
+  assert.equal(D.CUT, null);
+});

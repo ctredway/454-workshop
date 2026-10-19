@@ -8,7 +8,7 @@ function handoffTake(job){
   if (!job || typeof job.text !== 'string') return {loaded: false, why: 'Nothing arrived.'};
   if (typeof JOB !== 'undefined' && JOB.active)            // loadText says so on screen, too
     return {loaded: false, why: 'A job is running on the machine, so the loaded file wasn\u2019t replaced. Preview again once it has finished.'};
-  loadText(job.text, job.name || 'from 454 Design.nc');
+  loadTextShown(job.text, job.name || 'from 454 Design.nc');
   logC('sys', 'loaded ' + (job.name || 'a job') + ' from 454 Design, for preview');
   return {loaded: true};
 }

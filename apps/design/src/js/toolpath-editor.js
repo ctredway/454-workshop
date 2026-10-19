@@ -184,12 +184,16 @@ function cutRender(){
 }
 function cutRenderMain(){
   document.getElementById('cutName').placeholder = tpAutoName(CUT);
-  tpGenerate.last = null;
   cutRenderInner(); cutRenderHintExtra();
-  // going past the material comes first in the hint, whatever else it says (tpPastMaterial)
-  var pv = tpGenerate.last, h = document.getElementById('cutHint');
+  // going past the material comes first in the hint, whatever else it says: known from the depth set, without
+  // working the toolpath out (a V-carve's depth isn't known until then: its card says, after Create)
+  var h = document.getElementById('cutHint');
   if (h && cutExprProblem()){ h.textContent = '⚠ ' + cutExprProblem() + '.'; CUT.previewPast = null; return; }
-  CUT.previewPast = pv && pv.ents === CUT.ents ? pv.past : null;
+  CUT.previewPast = null;
+  if (CUT.side !== 'vcarve' && CUT.side !== 'inlay' && DOC.stock && DOC.stock.t > 0 && CUT.ents.length){
+    var dset = tpDepth(CUT), pastBy = dset - DOC.stock.t;
+    if (pastBy > 1e-3 && !(CUT.through && pastBy <= (CUT.over === undefined ? 0.2 : CUT.over) + 1e-3)) CUT.previewPast = {depth: dset, past: pastBy, t: DOC.stock.t};
+  }
   if (h && CUT.previewPast) h.textContent = '⚠ This ' + tpPastSay(Object.assign({}, CUT, {past: CUT.previewPast})) + '. ' + h.textContent.replace(/^⚠ /, '');
 }   // every hint also says how the walls are finished
 function cutRenderInner(){
@@ -306,7 +310,7 @@ function cutRenderInner(){
          (CUT.through ? 'through ' + fmtDisp(DOC.stock.t || 0) + ' ' + unitTag() + ' + ' + fmtDisp(CUT.over) : fmtDisp(CUT.depth) + ' ' + unitTag() + ' deep') +
          (CUT.peck > 0 ? ', pecking every ' + fmtDisp(CUT.peck) : ', one plunge each') + '.' +
          (off ? ' \u26a0 ' + off + (off === 1 ? ' hole doesn\u2019t' : ' holes don\u2019t') + ' match the ' + fmtDisp(CUT.dia) + ' ' + unitTag() + ' drill.' : ''));
-    CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
+    CUT.preview = ok ? cutLastMoves() : [];
     CUT.previewHoles = ok ? loops.map(function (h) { return h.p; }) : [];
     SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
     cutIssuesRender();
@@ -320,13 +324,10 @@ function cutRenderInner(){
     var cdp = tpChamferDepth(CUT);
     dEl.disabled = true; dEl.value = fmtDisp(cdp);
     if (ok){
-      var pvc = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
-      CUT.preview = pvc.moves;
+      CUT.preview = cutLastMoves();
       CUT.chamBand = tpOutlines(CUT.ents);
       var np = Math.ceil(cdp / CUT.step);
-      document.getElementById('cutHint').textContent = pvc.warning
-        ? '\u26a0 ' + pvc.warning.charAt(0).toUpperCase() + pvc.warning.slice(1) + '.'
-        : (CUT.chamMode === 'in' || CUT.chamMode === 'out')
+      document.getElementById('cutHint').textContent = (CUT.chamMode === 'in' || CUT.chamMode === 'out')
           ? 'A ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' bevel with its top edge on the line, going ' + (CUT.chamMode === 'in' ? 'inside' : 'outside') +
             ': the tip runs ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' ' + (CUT.chamMode === 'in' ? 'in' : 'out') + ' from it, ' + fmtDisp(cdp) + ' ' + unitTag() + ' deep, in ' + np + (np === 1 ? ' pass.' : ' passes.')
           : 'A ' + fmtDisp(CUT.chamW) + ' ' + unitTag() + ' bevel: the ' + (CUT.vAngle || 90) + '\u00b0 bit\u2019s tip runs along the edge ' +
@@ -364,17 +365,16 @@ function cutRenderInner(){
     document.getElementById('cutTabSize').hidden = true; document.getElementById('cutTabTools').hidden = true;
     var dEv = document.getElementById('cutDepth'); dEv.disabled = true;
     if (ok){
-      var pvv = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
-      CUT.preview = pvv.moves; dEv.value = fmtDisp(pvv.vcDepth || 0);
-      var nt = pvv.vcNote, lib = CUT.toolId ? libTool(CUT.toolId) : null;
+      // how deep it goes depends on the shapes: worked out on Create or Update (the last time's, if editing)
+      var lastV = cutLast(), lib = CUT.toolId ? libTool(CUT.toolId) : null;
       var notV = lib && !(lib.angle > 0);
+      CUT.preview = cutLastMoves();
+      dEv.value = lastV && lastV.vcDepth > 0 ? fmtDisp(lastV.vcDepth) : ''; dEv.placeholder = 'on Create';
       document.getElementById('cutHint').textContent =
         notV ? '\u26a0 V-carving needs a V-bit: this tool has no angle.'
-        : pvv.warning ? '\u26a0 ' + pvv.warning.charAt(0).toUpperCase() + pvv.warning.slice(1) + '.'
-        : nt ? 'V-carve with a ' + (CUT.vAngle || 60) + '\u00b0 bit: ' + fmtDisp(nt.depth) + ' ' + unitTag() + ' deep at the widest part (' + fmtDisp(nt.widest) + ' ' + unitTag() + ' across)' +
-               (nt.passes > 1 ? ', in ' + nt.passes + ' passes' : '') + '.' +
-               (nt.flat ? ' Wider parts get a flat floor at the max depth; a clearing pocket for their middles is added with it.' : '')
-        : 'Nothing to carve: pick closed shapes, text or a traced logo.';
+        : 'V-carve with a ' + (CUT.vAngle || 60) + '\u00b0 ' + (CUT.vBall ? 'tapered ball nose' : 'bit') + '. ' +
+          (CUT.vcMax > 0 ? 'Deeper than ' + fmtDisp(CUT.vcMax) + ' ' + unitTag() + ', the carving gets a flat floor, and a clearing pocket for its middles is added with it. ' : '') +
+          'How deep it goes is worked out when you press ' + (CUT.editing ? 'Update' : 'Create') + (lastV && lastV.vcDepth > 0 ? ' (last time: ' + fmtDisp(lastV.vcDepth) + ' ' + unitTag() + ' at the deepest).' : '.');
     } else { CUT.preview = []; dEv.value = ''; document.getElementById('cutHint').textContent = 'Click the shapes to carve: text, a traced logo, or closed outlines.'; }
     SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
     draw();
@@ -382,15 +382,11 @@ function cutRenderInner(){
   }
   if (pocketing && ok){
     var grp = tpPocketGroups(CUT.ents), isl = grp.reduce(function (s3, g) { return s3 + g.islands.length; }, 0);
-    var pv = tpGenerate(Object.assign({}, CUT, {ents: CUT.ents}));
-    CUT.preview = pv.moves;
+    CUT.preview = cutLastMoves();
     var so = CUT.dia * (CUT.stepoverPct || 40) / 100;
-    document.getElementById('cutHint').textContent = pv.warning
-      ? '\u26a0 ' + pv.warning.charAt(0).toUpperCase() + pv.warning.slice(1) + '.'
-      : restSrc
+    document.getElementById('cutHint').textContent = restSrc
       ? 'Cleans up after \u201c' + restSrc.name + '\u201d (' + fmtDisp(restSrc.dia) + ' ' + unitTag() + ' bit): only its corners and the parts too narrow for it, ' +
-        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + tpPassCount(tpDepth(restSrc), CUT.step) + (tpPassCount(tpDepth(restSrc), CUT.step) === 1 ? ' pass' : ' passes') +
-        (pv.restRuns ? ' (' + pv.restRuns + (pv.restRuns === 1 ? ' stretch' : ' stretches') + ').' : ': the larger bit reaches everywhere, so there\u2019s nothing left for this one.') +
+        fmtDisp(tpDepth(restSrc)) + ' ' + unitTag() + ' deep as it is, in ' + tpPassCount(tpDepth(restSrc), CUT.step) + (tpPassCount(tpDepth(restSrc), CUT.step) === 1 ? ' pass.' : ' passes.') +
         (CUT.pocketClear === 'raster' ? ' It follows the walls rather than raster lines.' : '')
       : grp.length + (grp.length === 1 ? ' pocket' : ' pockets') + (isl ? ' with ' + isl + (isl === 1 ? ' island' : ' islands') + ' left standing' : '') + '. ' +
         (CUT.through ? 'Through ' + fmtDisp(DOC.stock.t || 0) + ' + ' + fmtDisp(CUT.over) : fmtDisp(tpDepth(CUT)) + ' ' + unitTag() + ' deep') +
@@ -416,8 +412,38 @@ function cutRenderInner(){
              'Passes: ' + tpPassCount(tpDepth(CUT), CUT.step) + ' at ' + fmtDisp(CUT.step) + ' ' + unitTag() +
              (CUT.tabsOn ? ', ' + nTabs + (CUT.tabStyle === '3d' ? ' 3D' : '') + (nTabs === 1 ? ' tab' : ' tabs') + ' ' + fmtDisp(CUT.tabThk) + ' ' + unitTag() + ' thick' : ', no tabs') + '.');
   SEL = CUT.ents.map(function (id) { return DOC.ents.indexOf(entById(id)); }).filter(function (i) { return i >= 0; });
-  CUT.preview = ok ? tpGenerate(Object.assign({}, CUT, {ents: CUT.ents})).moves : [];
+  CUT.preview = ok ? cutLastMoves() : [];
   draw();
+}
+// The editor works nothing out while settings change (as VCarve's doesn't): on a big job that made typing in a box
+// lag. Create or Update works the toolpath out, once, with the Working panel up. Meanwhile the drawing shows the
+// toolpath as it was last worked out (editing one), or nothing but its shapes (a new one), and the hint says only
+// what's known without working it out.
+function cutLastMoves(){
+  var was = CUT && CUT.editing ? tpList().filter(function (t) { return t.id === CUT.editing; })[0] : null;
+  return was && was.moves ? was.moves : [];
+}
+function cutLast(){ return CUT && CUT.editing ? tpList().filter(function (t) { return t.id === CUT.editing; })[0] || null : null; }
+// Which of the picked shapes this kind of cut can use: closed outlines (a rectangle, a circle, a closed polyline,
+// text, a traced logo), or for drilling, circles and closed shapes. {good: [ids], bad: [{id, why}]}, why 'open'
+// (a line, an arc, an open polyline) or 'empty' (nothing closed in it).
+function cutShapesUsable(){
+  var good = [], bad = [];
+  CUT.ents.forEach(function (id) {
+    var ok = CUT.side === 'drill' ? tpDrillPoints([id]).length > 0 : tpOutlinesById([id]).length > 0;
+    if (ok){ good.push(id); return; }
+    var e = entById(id), open = e && (e.t === 'line' || e.t === 'arc' || ((e.t === 'poly' || e.t === 'path') && !e.closed));
+    bad.push({id: id, why: open ? 'open' : 'empty'});
+  });
+  return {good: good, bad: bad};
+}
+// Why some shapes can't be used, in words: "2 of 5 shapes are open: a pocket needs closed ones."
+function cutShapesSay(bad, total){
+  var kind = CUT.side === 'drill' ? 'drilling' : CUT.side === 'pocket' ? 'a pocket' : CUT.side === 'vcarve' ? 'a V-carve' : CUT.side === 'chamfer' ? 'a chamfer' : 'a profile';
+  var open = bad.filter(function (b) { return b.why === 'open'; }).length, other = bad.length - open, out = [];
+  if (open) out.push((total > bad.length ? open + ' of the ' + total + ' shapes ' + (open === 1 ? 'is' : 'are') : open === 1 ? 'It’s' : 'They’re') + ' open (a line, an arc or an open outline): ' + kind + ' needs closed shapes. Close ' + (open === 1 ? 'it' : 'them') + ' with Join or the Fix button under the hint, or pick closed ones.');
+  if (other) out.push((total > bad.length || open ? other + ' ' + (other === 1 ? 'has' : 'have') : (other === 1 ? 'It has' : 'They have')) + ' no closed outline in ' + (other === 1 ? 'it' : 'them') + ' to cut.');
+  return out.join(' ');
 }
 // Problems with the picked shapes, shown under the hint with a fix where one is safe.
 // Recomputed only when the set of shapes changes, not on every keystroke.
@@ -637,7 +663,10 @@ function cutApply(){
   cutFromForm();
   if (cutExprProblem()){ toast('warn', 'Check the values', cutExprProblem() + '.'); return; }
   if (restSrc){ CUT.through = false; CUT.depth = tpDepth(restSrc); }
-  if (!CUT.ents.length) return;
+  // As VCarve does on saving a toolpath: nothing selected, or nothing selected it can cut, says so and makes nothing
+  if (!CUT.ents.length){ toast('warn', 'Select the shapes to cut first', 'Click them on the drawing, then press ' + (CUT.editing ? 'Update' : 'Create') + ' again.'); return; }
+  var usable = cutShapesUsable();
+  if (!usable.good.length){ toast('warn', usable.bad.length === 1 ? 'That shape can’t be used' : 'None of the ' + usable.bad.length + ' shapes can be used', cutShapesSay(usable.bad, usable.bad.length) + ' Nothing was ' + (CUT.editing ? 'changed' : 'made') + '.'); return; }
   pushUndo();
   var tp = {
     id: CUT.editing || tpNewId(),
@@ -700,6 +729,7 @@ function cutApply(){
           ? tp.name + ': ' + (tp.holes ? tp.holes.length : 0) + ' holes with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' drill.'
           : tp.name + ': ' + tpPassCount(tpDepth(tp), tp.step) + (tpPassCount(tpDepth(tp), tp.step) === 1 ? ' pass' : ' passes') + ' with a ' + fmtDisp(tp.dia) + ' ' + unitTag() + ' cutter' + (tp.side === 'pocket' && tp.islands ? ', leaving ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : '') + '.');
   if (clearMsg) toast('info', 'Clearing for the flat areas', clearMsg);
+  if (usable.bad.length) toast('warn', usable.bad.length + ' of ' + CUT.ents.length + ' shapes left out', cutShapesSay(usable.bad, CUT.ents.length));
   cutClose();
   renderToolpathPanel();
 }

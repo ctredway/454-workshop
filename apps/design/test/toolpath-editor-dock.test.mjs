@@ -75,8 +75,7 @@ test('each kind of cut shows its own headings, and none with nothing under it', 
     drill: ['Tool', 'Depth'],
     chamfer: ['Tool', 'Depth'],
     vcarve: ['Tool', 'Depth'],
-    inlay: ['Tool', 'Depth'],
-  };
+  };   // (Inlay opens the Inlay wizard instead: inlay-wizard.test.mjs)
   open();
   for (const [type, heads] of Object.entries(want)) {
     set('cutType', type, 'change'); D.CUT.toolChosen = true; D.cutRender();
@@ -177,7 +176,8 @@ test('ramp, lead, tabs and stepover have a small picture beside the words; the o
   assert.equal(pic().svg, says(D.CUT_TYPE_PIC.vcarve));
   fire(el('cutType'), 'focusin');                          // on the Cut row itself: the same
   assert.equal(pic().svg, says(D.CUT_TYPE_PIC.vcarve));
-  for (const o of el('cutType').options) { set('cutType', o.value, 'change'); assert.equal(pic().svg, says(D.CUT_TYPE_PIC[o.value]), o.value); assert.equal(pic().shown, true); }
+  for (const o of el('cutType').options) { if (o.value === 'inlay') continue;   // (it opens the Inlay wizard)
+    set('cutType', o.value, 'change'); assert.equal(pic().svg, says(D.CUT_TYPE_PIC[o.value]), o.value); assert.equal(pic().shown, true); }
   D.cutClose();
 });
 test('every picture belongs to a setting, says what it shows, and is drawn in the page’s colours', () => {

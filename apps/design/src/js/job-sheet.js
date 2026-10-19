@@ -30,7 +30,7 @@ function jobSheetOpen(){
   var left = list.filter(function (tp) { return tp.exclude; });
   if (!chosen.length){ toast('info', 'No toolpaths to describe', 'Every toolpath is left out of the G-code; include one to make a job sheet.'); return; }
   var recalculated = 0;
-  chosen.forEach(function (tp) { if (tpStale(tp)){ tpGenerate(tp); recalculated++; } });   // as Save G-code does
+  chosen.forEach(function (tp) { if (tpStale(tp) || !tp.moves){ tpGenerate(tp); recalculated++; } });   // as Save G-code does
   if (recalculated){ persist(); renderToolpathPanel(); draw(); }
   var numberOf = toolNumbering(), u = unitTag();
   // the tools, in the order they're first used
@@ -168,11 +168,17 @@ function tpRecalc(tp, quiet){
     else toast('ok', tp.name + ' recalculated', 'Rebuilt from its shapes as they are now.');
   }
 }
+// Every toolpath on the sheet shown, one at a time, with the Working panel saying which ("3 of 12: Pocket").
+// Returns a promise.
 function tpRecalcAll(){
   var list = tpList().filter(function (tp) { return !multiSheet() || tpSheetOf(tp) === DOC.activeSheet; });
-  if (!list.length) return;
+  if (!list.length) return Promise.resolve();
   var warned = [];
-  list.forEach(function (tp) { tpGenerate(tp); if (tp.warning) warned.push(tp.name); });
+  return busyRun('Recalculating the toolpaths\u2026', list.map(function (tp) {
+    return {label: tp.name, fn: function () { tpGenerate(tp); if (tp.warning) warned.push(tp.name); }};
+  })).then(function () { tpRecalcAllSaid(list, warned); });
+}
+function tpRecalcAllSaid(list, warned){
   persist(); renderToolpathPanel(); draw();
   var what = list.length === 1 ? '1 toolpath' : list.length + ' toolpaths';
   if (warned.length) toast('warn', what + ' recalculated', 'Check ' + warned.join(', ') + ': ' + (warned.length === 1 ? 'it has' : 'they have') + ' a note.');

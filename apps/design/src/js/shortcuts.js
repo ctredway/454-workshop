@@ -30,7 +30,7 @@ function menuDo(what, arg){
   else if (what === 'settings') press('settingsBtn');
   else if (what === 'gcode'){
     if (camReady() && tpShownList().some(function (t){ return !t.exclude; })) tpExport();
-    else toast('info', 'No toolpaths to save', 'Make a toolpath first: select shapes, then press + in the Toolpaths panel.');
+    else toast('info', 'No toolpaths to save', 'Make a toolpath first: select shapes, then press + at the top of the Toolpaths panel, or the + key.');
   }
   else return false;
   return true;

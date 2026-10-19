@@ -277,7 +277,7 @@ function renderMyToolpaths(){
     var none = document.createElement('div');
     none.className = 'tpEmptySheet';
     none.style.cssText = 'padding:10px 14px;font-size:12.5px;color:var(--muted);line-height:1.5';
-    none.textContent = 'No toolpaths on ' + sheetName + ' yet. Select its shapes and press + to make one.';
+    none.textContent = 'No toolpaths on ' + sheetName + ' yet. Select its shapes and press + (at the top of this panel, or the + key) to make one.';
     box.appendChild(none);
   }
   if (camReady() && onSheet.length){

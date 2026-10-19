@@ -182,7 +182,7 @@ test('its V-carve is carved with the ball, keeps it through the editor, and says
 test('an inlay made with a tapered ball nose: both its V-carves are carved with the ball, and its clearing stands off to suit', () => {
   for (const half of ['pocket', 'plug']) {
     setup();
-    D.SEL = [0]; D.cutOpen(null); set('cutType', 'inlay', 'change');
+    D.SEL = [0]; D.cutOpen(null); D.run("CUT.side = 'inlay'; 1");   // (one half at a time, as the editor's own Inlay made them)
     D.run(`cutUseTool('tbn'); CUT.inlayHalf = '${half}'; CUT.inlayD = 4; CUT.inlayS = 2; CUT.inlayM = 4; CUT.toolChosen = true; inlayApply(); 1`);
     const l = plain(D.run('tpList()')), v = l.find((t) => t.side === 'vcarve'), c = l.find((t) => t.side === 'pocket');
     assert.equal(v.vBall, true, half); near(v.vTipR, 0.7938, 1e-4);

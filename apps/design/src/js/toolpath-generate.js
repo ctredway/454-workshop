@@ -70,6 +70,7 @@ function tpRamp(tp){ return tp.rampOff ? 0 : (tp.rampLen > 0 ? tp.rampLen : tpRa
 function tpGenerate(tp){
   tpGenerateMoves(tp);
   tp.past = camReady() ? tpPastMaterial(tp) : null;
+  if (typeof tpDoneKeep === 'function') tpDoneKeep(tp);   // kept, so undo can have it back without working it out
   tpGenerate.last = tp;                                   // the editor reads its preview's depth from this
   return tp;
 }

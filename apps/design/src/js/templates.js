@@ -115,9 +115,10 @@ function tplApplyText(text, fileName){
                    body: lines.join('\n') + '\n\nThey’re added after any toolpaths already here, with tabs spaced evenly. Check each one before cutting: depths that cut through use this drawing’s material thickness.',
                    ok: 'Make ' + ok.length + (ok.length === 1 ? ' toolpath' : ' toolpaths')}).then(function (go) {
     if (!go) return [];
-    var made = tplMakeToolpaths(plan);
+    return busyRun('Making the toolpaths…', [function () { return tplMakeToolpaths(plan); }]).then(function (made) {
     toast('ok', 'Template applied', made.length + (made.length === 1 ? ' toolpath' : ' toolpaths') + ' made' + (made.length < plan.length ? ', ' + (plan.length - made.length) + ' skipped' : '') + '.');
     return made;
+    });
   });
 }
 function tplWire(){

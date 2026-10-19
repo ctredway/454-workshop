@@ -21,11 +21,12 @@ function savedDrawing() {
   return file;
 }
 
-test('a drawing opened from a file shows its toolpaths in the panel, built, without pressing refresh', () => {
+test('a drawing opened from a file shows its toolpaths in the panel, built, without pressing refresh', async () => {
   const file = savedDrawing();
   assert.doesNotMatch(D.document.getElementById('tpPanel').textContent, /Sign outline/, 'not there before opening');
   D.openDrawing(run(`(${JSON.stringify(file)})`), 'sign.454.json');
   assert.match(D.document.getElementById('tpPanel').textContent, /Sign outline/, 'listed in the panel');
+  await run('busyIdle()');                                  // (worked out with the Working panel up)
   const tp = run('DOC.toolpaths[0]');
   assert.ok(tp.moves && tp.moves.length > 10, 'and built: its moves are there to preview and save as G-code');
   assert.equal(D.tpStale(tp), false);

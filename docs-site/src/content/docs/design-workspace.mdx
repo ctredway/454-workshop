@@ -124,10 +124,13 @@ in the air, before cutting material.
 
 <Steps>
 
-1. Select the shapes to cut, then press **+** (New toolpath) at the top of the panel.
-2. In the editor, choose what kind of cut it is, the tool and the depth, and check the rest. A preview
-   appears on the drawing as you go.
-3. Press **Create**. The toolpath gets a card in the panel.
+1. Select the shapes to cut, then press **+** (New toolpath) at the top of the panel, or the <kbd>+</kbd> key.
+2. In the editor, choose what kind of cut it is, the tool and the depth, and check the rest. Nothing is worked
+   out while you change settings, as in VCarve, so typing never lags; editing a toolpath, the drawing shows it
+   as it was last worked out.
+3. Press **Create**. The toolpath is worked out, with a **Working…** panel while it is, and gets a card in the
+   panel. If none of the shapes selected can be cut (open lines for a pocket, say), or none are selected, it says
+   so and makes nothing; if only some can, it says which were left out.
 4. When they're all made, press **Preview in 454 Control** to check the job in Control's 3D preview, then
    **Save G-code…** for the file to run, and **Job sheet…** for
    a printable page to keep at the machine.

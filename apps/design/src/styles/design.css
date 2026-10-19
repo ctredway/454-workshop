@@ -81,6 +81,32 @@
   .toast .tx{background:none;border:0;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
   .toast .tx:hover{color:var(--ink)}
   @keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* "Working…": over everything while the app is busy; its spinner turns by transform alone, which the browser
+     animates apart from the page, so it keeps turning while the work runs */
+  #busy{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:400;cursor:progress}
+  #busy[hidden]{display:none}
+  #busyCard{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 20px;min-width:260px;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+  #busyTitle{font-size:14px;color:var(--ink)}
+  #busyStep{font-size:12px;color:var(--muted);margin-top:3px;min-height:1em}
+  #busySpin{width:26px;height:26px;flex:none;border:3px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:busySpin .8s linear infinite;will-change:transform}
+  @keyframes busySpin{to{transform:rotate(360deg)}}
+  #busyBarWrap{margin-top:8px;height:5px;width:220px;background:var(--line);border-radius:3px;overflow:hidden}
+  #busyBarWrap[hidden]{display:none}
+  #busyBar{height:100%;width:0;background:var(--amber);transition:width .15s}
+  /* the Inlay wizard: a window like Job setup's */
+  #inwModal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
+  #inwModal[hidden]{display:none}
+  #inwPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px 24px;width:min(480px,92vw);box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+  #inwPanel h3{margin:0 0 10px;font-size:16px}
+  #inwPanel h4{margin:14px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted)}
+  #inwPanel .srow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  #inwPanel .srow > label{font-size:13px;color:var(--muted);min-width:118px}
+  #inwPanel .srow input[type=text]{width:72px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:3px 6px}
+  #inwPanel .unit{font-size:12px;color:var(--muted)}
+  #inwPanel .inwVal{flex:1;font-size:12.5px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #inwPanel .srow input[type=checkbox] + label{min-width:0;color:var(--ink)}
+  #inwPanel .snote{font-size:12px;font-weight:400;color:var(--muted);margin:6px 0 10px;line-height:1.45}
+  #inwPanel .inwBad{color:var(--amber);min-height:1em}
   #jobModal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
   #jobModal[hidden]{display:none}
   #jobMachCustom[hidden],#jobMOffRow[hidden]{display:none}

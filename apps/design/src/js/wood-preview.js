@@ -236,7 +236,7 @@ function woodShadeRect(sim, out, i0, j0, i1, j1){
 // The ticked toolpaths of the sheet shown, as parts for woodSim, in cutting order.
 function woodParts(){
   return tpList().filter(function (tp){ return !tp.exclude && (typeof multiSheet !== 'function' || !multiSheet() || tpSheetOf(tp) === DOC.activeSheet); })
-    .map(function (tp){ if (tpStale(tp)) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name, feed: tp.feed}; })
+    .map(function (tp){ if (tpStale(tp) || !tp.moves) tpGenerate(tp); return {moves: tp.moves || [], tool: woodTool(tp), name: tp.name, feed: tp.feed}; })
     .filter(function (p){ return p.moves.length; });
 }
 function woodBox(){

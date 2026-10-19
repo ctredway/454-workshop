@@ -27,6 +27,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.49 — the Inlay wizard; a Working panel; undo without the wait
+- Includes Design 0.135.0: the Inlay wizard (both halves from the bits chosen first, the plug on a sheet of its
+  own, in groups), the + key for a new toolpath, and the Working panel for slow work.
+- Includes Design 0.136.0: the toolpath editor works nothing out until Create or Update; Create checks the shapes
+  first; undo and redo use toolpaths already worked out; the Working panel for Make editable, templates and
+  opening drawings.
+- Includes Control 0.35.0: "Loading…" while a big G-code file loads.
+
 ### 0.6.2-beta.48 — V-carving with a tapered ball nose; flat and ball tips stay inside the walls
 - Includes Design 0.134.0 **(cutting)**: a tapered ball nose is carved with its ball; where a V-carve climbs to a
   corner, a flat or ball tip no longer cuts past the walls; Preview in wood shows sloping cuts as deep as they are.
@@ -629,6 +637,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.35.0 — "Loading…" while a big file loads
+- **Loading a big G-code file shows a panel first**, naming the file, with a spinner that keeps turning (a CSS
+  transform animation, which the browser runs apart from the page). Reading and drawing Clint's biggest file,
+  Spikes.gcode (5.8 MB, 370,000 lines), takes 0.7 s, and the page can't draw meanwhile. Files under a million
+  characters load straight away, so the panel doesn't flash. For files opened, dropped, or sent from Design.
+- If loading fails, the panel goes and it says why, instead of the error being lost.
+- **Tested** (3 tests in `load-busy.test.mjs`; broken on purpose 3 ways, all caught).
+
 ### 0.34.0 — the 3D view is drawn when it changes; the screen stays on during a job in a browser
 - **(machine) The 3D view is drawn when something in it changes,** not 60 times a second whatever happens. Turning,
   panning, zooming, resizing, the view cube and playback still draw every frame; a job's progress and the tool's
@@ -1107,6 +1123,67 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.136.0 — nothing worked out while you type; undo without the wait; a Working panel wherever there's one
+Clint asked where else the Working panel was needed. Timed in the app on a VCarve tutorial's inlay (5 toolpaths):
+Make editable 10.5 s, redo 9.4 s, opening a saved drawing 10.6 s, changing a layer or sheet 10.3 s.
+- **The toolpath editor works nothing out while settings change,** as VCarve's doesn't (Clint's preference). It
+  used to work the whole toolpath out at every keystroke, so typing in a box lagged on a big job. **Create** and
+  **Update** work it out, once, with the Working panel. Meanwhile the drawing shows the toolpath as it was last
+  worked out (editing one), or just its shapes (a new one). A V-carve's depth, and warnings that need the toolpath
+  worked out, show on its card after; the hint says only what's known without it (passes, tabs, a clean-up's
+  depth, going past the material from the depth set).
+- **Create and Update check the shapes first,** as VCarve does on saving a toolpath (Clint's point): nothing
+  selected says "Select the shapes to cut first" and keeps the editor open; none usable ("They're open (a line, an
+  arc or an open outline): a pocket needs closed shapes. Close them with Join or the Fix button…") makes nothing;
+  some unusable says how many were left out and why. (Before, nothing selected did nothing, silently, and only open
+  shapes made a toolpath whose card said "nothing to cut".)
+- **Undo and redo use toolpaths already worked out** (`undo.js`). Undo keeps toolpaths without their moves, so it
+  worked every one out again, 9 to 10 seconds a step on that inlay. Now each toolpath worked out is kept (the last
+  200), keyed by everything its moves follow from: its shapes and the material (its signature, which also covers a
+  clean-up's larger pocket and a V-carve's clearing pocket) and every setting except its name, group, and whether
+  it's shown, ticked or folded. A toolpath that matches exactly gets those moves back at once; anything that
+  differs, a setting added later included, is worked out again. Opening a drawing, and the changes that rebuild
+  every toolpath (layers, sheets, units, a Weld that moves a toolpath onto the welded shape), use the same, and
+  work out what's left with the Working panel, one toolpath at a time.
+- **The Working panel** also for Make editable (VCarve) and applying a template.
+- **Tested** (5 tests in `undo-reuse.test.mjs`: each against the same toolpath worked out from scratch: undoing a
+  change of depth, a moved shape, a thickness never worked out before (worked out, with the panel), changes that
+  don't touch the moves, the 200 kept; broken on purpose 5 ways, 4 caught and the fifth after the depth test changed
+  only the depth. 4 tests in `cut-shapes-check.test.mjs`, broken 4 ways, all caught. And two older tests wait for the
+  panel now.)
+- **Timed again in the app** on that inlay: redo 9.4 s to 0.1 s, and rebuilding every toolpath (a layer or sheet
+  change, or the same drawing opened again) 10.5 s to nothing. Two fixes found doing it: Make editable records a
+  toolpath's sheet and its clearing pocket's V-carve after working it out, and those (which don't change its moves)
+  stopped it matching; and a toolpath waiting to be worked out was worked out by the cards on their own, without
+  the panel. Both are tested (2 more tests; broken 3 ways, all caught).
+
+### 0.135.0 — the Inlay wizard
+- **Both halves of an inlay at once.** Choosing **Inlay** for a new toolpath opens the Inlay wizard with the shapes
+  selected. The bits come first: the carving bit (a V-bit or a tapered ball nose) and the clearing end mill, each
+  from the tool library with its feeds and speeds for the material chosen. Then the depths, with a line saying how
+  it fits (how deep the plug seats, the glue gap underneath, how much stands proud) and what stops it, if anything.
+- **Create** makes two groups, **Inlay pocket** and **Inlay plug**, each a clearing pocket and a V-carve, linked so
+  the V-carve flattens the floor the end mill can't reach. The plug's mirrored copy and its boundary go on a sheet
+  of their own, **Inlay plug** (its own material and G-code file), unless that's unticked, when they go beside the
+  design as before. The clearing pockets stand off by where the bit's side meets the floor, a ball tip included.
+  All of it is one step to undo, and the wizard remembers the bits, depths and sheet for next time.
+- The toolpath editor's own Inlay (one half at a time, its end mill chosen afterwards) is replaced by the wizard.
+- **The + key** makes a new toolpath for the shapes selected, as the + at the top of the Toolpaths panel does (with
+  the Select tool, not while typing in a box). The panel's hints said "press +", and Clint pressed the key, which did
+  nothing; they now say which + they mean. (A test in `keys.test.mjs`.) The Inlay wizard also keeps the keyboard
+  while it's open, so typing a depth can't switch tools behind it.
+- **"Working…", so the app doesn't look frozen** (`busy.js`). Working out toolpaths can take seconds, and while it
+  runs the page can't draw. Now a panel comes up first, saying what's being done, with a spinner that turns by a
+  CSS transform animation, which the browser runs apart from the page, so it keeps turning while the work runs.
+  Work done in steps says which step and shows a bar, with a pause between steps for the panel to update: the
+  Inlay wizard ("3 of 5: Inlay pocket: V-carve"), Recalculate all and recalculating a group (one step per
+  toolpath). The toolpath editor's Create and Update show it too. Clicks and keys wait while it's up. Asked for by
+  Clint, after the wizard's Create seemed to freeze.
+- Asked for by Clint: choose the bit, then the toolpaths are made; the plug on a sheet of its own.
+- **Tested** (5 tests in `inlay-wizard.test.mjs`: opening from the editor, the bits from the library, every depth
+  problem, both halves with their depths, sheets, groups, links, feeds and stand-offs, a tapered ball nose, the plug
+  beside the design, remembering, one undo; broken on purpose 13 ways, all caught), and looked at in the app.
 
 ### 0.134.0 — V-carving and inlays with a tapered ball nose; flat and ball tips no longer cut past the walls (cutting)
 - **A tapered ball nose** (VCarve's type 5) is now carved as what it is: a cone that ends in a small ball, not a

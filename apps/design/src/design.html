@@ -135,6 +135,28 @@
   </div>
 
 
+  <div id="busy" hidden role="alertdialog" aria-live="polite" aria-labelledby="busyTitle">
+    <div id="busyCard"><span id="busySpin" aria-hidden="true"></span>
+      <div><b id="busyTitle">Working…</b><div id="busyStep"></div><div id="busyBarWrap" hidden><div id="busyBar"></div></div></div></div>
+  </div>
+  <div id="inwModal" hidden>
+    <div id="inwPanel" role="dialog" aria-labelledby="inwTitle">
+      <div class="modalHead"><h3 id="inwTitle">Inlay</h3><button class="modalX" id="inwX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <p class="snote" style="margin-top:0">Both halves of a V-carve inlay from the shapes selected: the pocket in the base, and the plug, mirrored, in the inlay piece. Cut both with the same bit.</p>
+      <div class="srow"><label>Shapes</label><span id="inwShapes" class="inwVal"></span></div>
+      <h4>Bits</h4>
+      <div class="srow"><label>Carving bit</label><span id="inwBit" class="inwVal"></span><button id="inwBitBtn" title="A V-bit or a tapered ball nose, from the tool library">Choose…</button></div>
+      <div class="srow"><label>Clearing end mill</label><span id="inwMill" class="inwVal"></span><button id="inwMillBtn" title="The end mill that clears the flat floor, from the tool library">Choose…</button></div>
+      <h4>Depths</h4>
+      <div class="srow"><label for="inwD">Pocket depth</label><input id="inwD" type="text" inputmode="decimal" autocomplete="off" title="How deep the pocket's flat floor is, in the base"><span class="unit" id="inwDU"></span></div>
+      <div class="srow"><label for="inwS">Plug start depth</label><input id="inwS" type="text" inputmode="decimal" autocomplete="off" title="How deep the plug's walls begin: it seats this deep in the pocket"><span class="unit" id="inwSU"></span></div>
+      <div class="srow"><label for="inwM">Plug depth</label><input id="inwM" type="text" inputmode="decimal" autocomplete="off" title="How deep the plug is carved: more than the start depth, so it stands proud"><span class="unit" id="inwMU"></span></div>
+      <p class="snote" id="inwFit"></p>
+      <div class="srow"><input type="checkbox" id="inwSheet"><label for="inwSheet">The plug on a sheet of its own (its own piece of material and G-code file)</label></div>
+      <p class="snote inwBad" id="inwProblem"></p>
+      <div class="mirBtns"><button id="inwCancel">Cancel</button><button id="inwCreate" class="primary">Create</button></div>
+    </div>
+  </div>
   <div id="jobModal" hidden>
     <div id="jobPanel" role="dialog" aria-labelledby="jobTitle">
       <div class="modalHead"><h3 id="jobTitle">Job setup</h3><button class="modalX" id="jobX" title="Close (Esc)" aria-label="Close">✕</button></div>
@@ -311,7 +333,7 @@
     <div id="tpCount" class="tpCountLine"></div>
     <p id="tpBeta" hidden><b>Beta.</b> Toolpaths are new and still being tested. Check every job in 454 Control&rsquo;s
       preview and run it in the air before cutting material. <a href="docs/cam-reference.html" target="_blank" rel="noopener">What to check</a></p>
-    <p class="tpNote" id="tpEmpty">No toolpaths yet. Select shapes on the drawing and press <b>+</b> to make one. A VCarve project (.crv) that has toolpaths lists them here.</p>
+    <p class="tpNote" id="tpEmpty">No toolpaths yet. Select shapes on the drawing and press <b>+</b> (at the top of this panel, or the + key) to make one. A VCarve project (.crv) that has toolpaths lists them here.</p>
     <p class="tpNote" id="tpSrcNote">Read from the VCarve project, in the order VCarve lists them. They show how the job was set up; 454 Design can&rsquo;t cut them yet, and editing the drawing doesn&rsquo;t update them.</p>
     <p class="tpNote" id="tpCamMissing" hidden style="color:var(--amber)">The toolpath tools didn’t load: <code>geom.js</code> and <code>cam.js</code> need to be in the same folder as this <code>design.html</code>.</p>
     <p class="tpNote" id="tpLibNote"></p>
@@ -342,7 +364,7 @@
           <option value="drill">Drill at centres</option>
           <option value="chamfer">Chamfer edges (V-bit)</option>
           <option value="vcarve">V-carve (V-bit)</option>
-          <option value="inlay">Inlay (V-bit pocket or plug)</option>
+          <option value="inlay">Inlay (both halves, in the Inlay wizard)</option>
         </select></div>
       <section class="cutGroup" data-grp="tool"><h4>Tool</h4>
       <button class="mirSlot" data-help="tool" id="cutTool" title="Choose from your tool library"><span class="mirLbl">Tool</span>
@@ -632,6 +654,8 @@
 @@include js/context-menu.js
 @@include js/toolpath-cards.js
 @@include js/toolpath-groups.js
+@@include js/inlay-wizard.js
+@@include js/busy.js
 @@include js/preview-in-control.js
 @@include js/wood-preview.js
 @@include js/wood-3d.js
