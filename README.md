@@ -31,9 +31,9 @@
 
 454 Workshop is two apps that work together:
 
-- **454 Design** draws the parts: lines, arcs, shapes, text, traced images, layers and dimensions. It
-  opens VCarve projects (with their toolpaths, even multi-sheet jobs) and DXF files, and exports DXF
-  and SVG.
+- **454 Design** draws the parts: lines, arcs, shapes, text, traced images, layers and dimensions, with
+  a design history you can go back through and change. It opens VCarve projects (with their toolpaths,
+  even multi-sheet jobs) and DXF files, and exports DXF and SVG.
 - **454 Control** runs the machine: it streams G-code to GRBL, and handles homing, zeroing, jogging,
   probing, the BitSetter and tool changes, following Carbide Motion's way of working step by step.
 
@@ -48,6 +48,9 @@ desktop app** for Windows and Linux.
 ## Why 454 Workshop?
 
 - **Free and open source**, MIT licensed: use it, change it, share it.
+- **A design history, as in Fusion**: every change is a step on a timeline, saved with the drawing. Go
+  back to any step, or change one (a rectangle's size, a fillet's radius, an offset's distance) and every
+  step after it is done again; one that can't be is marked red and skipped, never guessed at.
 - **Brings your VCarve work with you**: projects open with their drawings and toolpaths, and your
   VCarve tool library comes across with its feeds and speeds.
 - **Works the way Carbide Motion does**, so the steps at the machine are the ones you already know;
