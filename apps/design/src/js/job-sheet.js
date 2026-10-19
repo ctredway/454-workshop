@@ -41,7 +41,8 @@ function jobSheetOpen(){
     if (!byKey[key]){
       var mm = t && t.units === 'in' ? 25.4 : 1;
       byKey[key] = {num: n, name: t ? t.name : fmtDisp(tp.dia) + ' ' + u + (tp.side === 'drill' ? ' drill' : (tp.side === 'vcarve' || tp.side === 'chamfer') ? ' ' + (tp.vAngle || 90) + '\u00b0 V-bit' : ' end mill'),
-        dia: tp.dia, kind: (tp.side === 'vcarve' || tp.side === 'chamfer') ? (tp.vAngle || 90) + '\u00b0 V-bit' + (tp.vTip > 0 ? ', ' + fmtDisp(tp.vTip) + ' ' + u + ' flat' : '') : tp.side === 'drill' ? 'drill' : 'end mill',
+        dia: tp.dia, kind: (tp.side === 'vcarve' || tp.side === 'chamfer') ? (tp.vBall ? (tp.vAngle || 60) + '\u00b0 tapered ball nose, ' + fmtDisp(tp.vTipR || 0) + ' ' + u + ' tip radius'
+                                                                : (tp.vAngle || 90) + '\u00b0 V-bit' + (tp.vTip > 0 ? ', ' + fmtDisp(tp.vTip) + ' ' + u + ' flat' : '')) : tp.side === 'drill' ? 'drill' : 'end mill',
         flutes: t && t.flutes ? t.flutes : '', notes: t && t.notes ? t.notes : '', rpm: {}, used: []};
       tools.push(byKey[key]);
     }

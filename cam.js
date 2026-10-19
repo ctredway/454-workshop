@@ -704,6 +704,31 @@
   }
 
   // ---- V-carving -------------------------------------------------------
+  // The shape of a V-bit or a tapered ball nose: a cone (half angle `half`, radians) ending in a flat tip `tip`
+  // wide, or in a ball of radius `tipR` that the cone runs into smoothly. Both answers are measured from the tip:
+  //   rise(r):  how far above its tip the bit's side is, r from its axis
+  //   reach(d): how far from its axis the bit's side is, d above its tip (the inverse of rise)
+  // A flat tip: rise = (r - tip/2) / tan(half) beyond the tip. A ball: on the ball, rise = R - sqrt(R^2 - r^2), up to
+  // where the cone meets it, at r = R cos(half), R (1 - sin(half)) up; the cone from there on. A V-bit's sides meet
+  // the walls where rise(r) is the depth below where the carve starts, r being the shape's half width there.
+  function vbitShape(o){
+    var half = (o.angle || 60) / 2 * Math.PI / 180, tanH = Math.tan(half), R = o.tipR > 0 ? o.tipR : 0, ht = R ? 0 : Math.max(0, o.tip || 0) / 2;
+    var rT = R * Math.cos(half), zT = R * (1 - Math.sin(half));        // where the cone meets the ball
+    return {
+      half: half, tanH: tanH, tipR: R, halfTip: ht,
+      rise: function (r){
+        if (R){ if (r <= rT) return R - Math.sqrt(Math.max(0, R * R - r * r)); return zT + (r - rT) / tanH; }
+        return Math.max(0, r - ht) / tanH;
+      },
+      reach: function (d){
+        d = Math.max(0, d);
+        if (R){ if (d <= zT) return Math.sqrt(Math.max(0, R * R - (R - d) * (R - d))); return rT + (d - zT) * tanH; }
+        return ht + d * tanH;
+      },
+      // how far from its axis it cuts the floor it's standing on: its flat tip's edge, or (a ball) only its centre
+      floorReach: ht
+    };
+  }
   // A V-bit's tip follows the centre-line of the shape: wherever the shape is W wide, the tip
   // sits W/2 from both edges at a depth of (W/2) / tan(half angle), so the cone's sides just
   // touch the outline. Found the way F-Engrave does it: walk every outline in small steps; at
@@ -719,11 +744,11 @@
   //       on the walls. Given that, the V-bit also flattens the floor that cutter can't get to (see FLOOR, below),
   //       in passes floorStep apart (0.127 mm, 0.005 in, if not given).
   function vcarve(opts){
-    var o = Object.assign({angle: 60, tip: 0, maxDepth: 0, startDepth: 0, passDepth: 0, z0: 0, safeZ: 5, feed: 1000, plunge: 400, step: 0.15}, opts);
+    var o = Object.assign({angle: 60, tip: 0, tipR: 0, maxDepth: 0, startDepth: 0, passDepth: 0, z0: 0, safeZ: 5, feed: 1000, plunge: 400, step: 0.15}, opts);
     // startDepth: the carve begins this far below the surface, so the walls meet the outline at that
     // depth rather than at the surface. It's what makes an inlay plug wedge into its pocket.
     var sd = o.startDepth > 0 ? o.startDepth : 0;
-    var tanH = Math.tan(o.angle / 2 * Math.PI / 180), halfTip = Math.max(0, o.tip || 0) / 2;
+    var bit = vbitShape(o), tanH = bit.tanH;
     var loops = o.loops.map(function (l) { return G.clean(l); }).filter(function (l) { return l.length > 2; });
     if (!loops.length) return {moves: [], warning: 'nothing to carve: pick closed shapes'};
     // Each outline runs with the shape on its left: nesting depth decides which way that is.
@@ -735,8 +760,8 @@
     var idx = loops.map(function (l) { return G.pathIndex(l, true); });
     var span = 0;
     loops.forEach(function (l) { l.forEach(function (p) { span = Math.max(span, Math.abs(p[0]), Math.abs(p[1])); }); });
-    // a flat tip starts the cone half its width out: the cone reaches radius r at depth (r - tip/2) / tan
-    var rCap = o.maxDepth > 0 ? halfTip + Math.max(0, o.maxDepth - sd) * tanH : Infinity, rLimit = Math.min(rCap, 4 * span + 10);
+    // the bit's side meets the walls at the shape's half width r when it's rise(r) below the start depth
+    var rCap = o.maxDepth > 0 ? bit.reach(o.maxDepth - sd) : Infinity, rLimit = Math.min(rCap, 4 * span + 10);
     // Is every outline at least `need` away from (x, y), looking no further than cap? It stops at the first that
     // isn't, and tries the outline the point came from first, since that's the likeliest. (This used to measure
     // to every outline every time and compare the nearest: the same answer, but a carve over hundreds of shapes
@@ -762,8 +787,8 @@
       var n = l.length, pts = [];
       function push(x, y, r){
         if (r >= rCap - 1e-6) flatHit = true;
-        var z = -(sd + Math.max(0, r - halfTip) / tanH); if (z < deepest) deepest = z;   // narrower than the tip: at the start depth
-        pts.push([x, y, z]);
+        var z = -(sd + bit.rise(r)); if (z < deepest) deepest = z;   // narrower than a flat tip: at the start depth
+        pts.push([x, y, z, r]);                                   // (r: the half width here, for curved bits below)
       }
       for (var i = 0; i < n; i++){
         var a = l[i], b = l[(i + 1) % n], pv = l[(i - 1 + n) % n];
@@ -794,6 +819,29 @@
         }
       }
       if (pts.length) pts.push(pts[0].slice());                    // round to the start
+      // A sharp V-bit's side is straight, so going straight from one point to the next it touches the walls all the
+      // way, and its depth follows. A flat or ball tip makes the side curved: going straight between a deep point
+      // and a shallow one (up into a corner, or out to a corner of an outline made of short straight pieces), the bit
+      // is too low part way, and its side cuts past the walls. (Up to 0.7 mm past a letter's outline with a tapered
+      // ball nose.) So for those bits each step is cut into short ones, each as deep as the bit's shape says for the
+      // half width there. Taken partway between two points, that's never deeper than the straight line.
+      if (bit.tipR > 0 || bit.halfTip > 0){
+        var fine = [];
+        for (var pq = 0; pq < pts.length; pq++){
+          var P0 = pts[pq];
+          if (pq > 0){
+            var P1 = pts[pq - 1], dl = Math.hypot(P0[0] - P1[0], P0[1] - P1[1]), nf = Math.ceil(dl / 0.05);
+            if (nf > 1 && Math.abs(P0[3] - P1[3]) > 1e-9){
+              for (var f = 1; f < nf; f++){
+                var u = f / nf, ru = P1[3] + (P0[3] - P1[3]) * u;
+                fine.push([P1[0] + (P0[0] - P1[0]) * u, P1[1] + (P0[1] - P1[1]) * u, -(sd + bit.rise(ru)), ru]);
+              }
+            }
+          }
+          fine.push(P0);
+        }
+        pts = fine;
+      }
       paths.push(simplify3(pts, 0.004));
     });
     // passes: the same paths, each level no deeper than its share of the depth
@@ -1057,6 +1105,6 @@
     return out.join('\n') + '\n';
   }
 
-  return {profile: profile, pocket: pocket, vcarve: vcarve, drill: drill, orderNearest: orderNearest, toGcode: toGcode, toGcodeJob: toGcodeJob, loopLength: loopLength, orient: orient,
+  return {profile: profile, pocket: pocket, vcarve: vcarve, vbitShape: vbitShape, drill: drill, orderNearest: orderNearest, toGcode: toGcode, toGcodeJob: toGcodeJob, loopLength: loopLength, orient: orient,
           distanceAlong: distanceAlong, evenTabPoints: evenTabPoints, pointAt: pointAt, passCount: passCount, passDepths: passDepths};
 });

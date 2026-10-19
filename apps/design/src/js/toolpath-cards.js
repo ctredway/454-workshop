@@ -9,12 +9,13 @@ function tpRows(tp){
   if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Job setup');
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
-  else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
-  if (tp.side === 'vcarve' && tp.vcFloor > 0 && tpClearingOf(tp)) row('Floor', 'also flattens what \u201c' + tpClearingOf(tp).name + '\u201d can\u2019t reach: its corners and narrow parts');
+  else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 ' + (tp.vBall ? 'tapered ball nose (' + fmtDisp(tp.vTipR || 0) + ' ' + unitTag() + ' tip radius), ' : 'bit, ') + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
   else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
   else if (tp.side === 'pocket' && tpRestSource(tp)) row('Clearing', 'only what \u201c' + tpRestSource(tp).name + '\u201d left: its corners and narrow parts');
   else if (tp.side === 'pocket') row('Clearing', (tp.pocketClear === 'raster' ? 'raster at ' + (tp.rasterAngle || 0) + '\u00b0, ' : 'offset rings, ') + (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
   else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tp.tabStyle === '3d' ? ' 3D' : '') + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
+  // (after the line above, not in it: an if here split that chain, and drillings and V-carves got a Shapes line too)
+  if (tp.side === 'vcarve' && tp.vcFloor > 0 && tpClearingOf(tp)) row('Floor', 'also flattens what \u201c' + tpClearingOf(tp).name + '\u201d can\u2019t reach: its corners and narrow parts');
   if (tp.side === 'pocket' || tp.side === 'inside' || tp.side === 'outside' || tp.side === 'on')
     row('Entry', tp.rampOff ? 'straight plunge' : 'ramps in over ' + fmtDisp(tpRamp(tp)) + ' ' + unitTag());
   if (tp.warning) row('Note', tp.warning);

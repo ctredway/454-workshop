@@ -66,6 +66,10 @@ function cutUseTool(id){
   if (t.diameter) CUT.dia = +(t.diameter * mm).toFixed(3);
   if (t.angle > 0 && t.angle < 180) CUT.vAngle = t.angle;               // a V-bit's included angle
   CUT.vTip = t.flat > 0 ? +(t.flat * mm).toFixed(4) : 0;                // and its flat tip, if any
+  // a tapered ball nose (VCarve's type 5): its cone ends in a ball, whose radius the library gives
+  CUT.vBall = +t.type === 5 && t.tipRadius > 0;
+  CUT.vTipR = CUT.vBall ? +(t.tipRadius * mm).toFixed(4) : 0;
+  if (CUT.vBall) CUT.vTip = 0;
   var cut = libCutFor(t, libDefaultMachine(), UICFG.libMaterial || null) ||
             t.cuts.filter(function (c) { return c.machine === libDefaultMachine(); })[0] || t.cuts[0];
   if (cut){
@@ -105,7 +109,10 @@ function cutToForm(){
   document.getElementById('cutChamMode').value = CUT.chamMode || 'edge';
   document.getElementById('cutVcAngle').value = CUT.vAngle || 60;
   document.getElementById('cutVcMax').value = CUT.vcMax > 0 ? fmtDisp(CUT.vcMax) : '';
-  document.getElementById('cutVcTip').value = fmtDisp(CUT.vTip || 0);
+  // a tapered ball nose: the Tip box is its ball's radius; any other bit, its flat tip's width
+  document.getElementById('cutVcTip').value = fmtDisp(CUT.vBall ? CUT.vTipR || 0 : CUT.vTip || 0);
+  document.getElementById('cutVcTipLbl').textContent = CUT.vBall ? 'Tip radius' : 'Tip';
+  document.getElementById('cutVcTip').title = CUT.vBall ? 'The radius of the ball the tapered bit ends in' : 'The width of the bit\u2019s flat tip, if it has one (engraving bits usually do)';
   document.getElementById('cutInlayHalf').value = CUT.inlayHalf === 'plug' ? 'plug' : 'pocket';
   document.getElementById('cutInlayD').value = fmtDisp(CUT.inlayD > 0 ? CUT.inlayD : 5);
   document.getElementById('cutInlayS').value = fmtDisp(CUT.inlayS > 0 ? CUT.inlayS : 2.5);
@@ -155,7 +162,10 @@ function cutFromForm(){
   if (CUT.side === 'vcarve' || CUT.side === 'inlay'){
     var vva = parseFloat(document.getElementById('cutVcAngle').value); if (vva > 5 && vva < 175) CUT.vAngle = vva;
     var vmx = document.getElementById('cutVcMax').value.trim(); CUT.vcMax = vmx === '' ? 0 : Math.max(0, lenIn(vmx) || 0);
-    var vtp = lenIn(document.getElementById('cutVcTip').value); if (vtp >= 0) CUT.vTip = vtp;
+    // only if it was changed: the box shows two decimal places, and reading that back would round a library's
+    // 0.79375 mm tip radius to 0.79 on every Update
+    var tipBox = document.getElementById('cutVcTip').value, tipWas = CUT.vBall ? CUT.vTipR || 0 : CUT.vTip || 0;
+    var vtp = lenIn(tipBox); if (vtp >= 0 && tipBox.trim() !== fmtDisp(tipWas)){ if (CUT.vBall) CUT.vTipR = vtp; else CUT.vTip = vtp; }
   }
   CUT.tabsOn = document.getElementById('cutTabsOn').checked;
   var tb = parseInt(document.getElementById('cutTabs').value, 10); if (tb > 0) CUT.tabCount = Math.min(20, tb);
@@ -533,10 +543,11 @@ function inlayApply(){
   }
   var common = {vcFrom: undefined, safeZ: 6, rpm: CUT.rpm || 18000, climb: true, tabPts: {}, tabsOn: false, hidden: false, exclude: false};
   var tpV = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: V-carve' : 'Inlay pocket: V-carve', side: 'vcarve', type: 'vcarve', ents: ents.slice(),
-    vAngle: CUT.vAngle || 60, vTip: CUT.vTip || 0, vcMax: plug ? M : D, vcStart: plug ? S : 0, dia: CUT.dia, step: 0,
+    vAngle: CUT.vAngle || 60, vTip: CUT.vBall ? 0 : CUT.vTip || 0, vBall: CUT.vBall && CUT.vTipR > 0 ? true : undefined, vTipR: CUT.vBall && CUT.vTipR > 0 ? CUT.vTipR : undefined,
+    vcMax: plug ? M : D, vcStart: plug ? S : 0, dia: CUT.dia, step: 0,
     feed: CUT.feed, plunge: CUT.plunge, toolId: CUT.toolId, toolChosen: true, through: false});
   var tpC = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: clearing' : 'Inlay pocket: clearing', side: 'pocket', type: 'pocket', ents: ents.slice(), clearFor: tpV.id,
-    depth: plug ? M : D, step: Math.max(0.5, (plug ? M : D) / 2), allowance: (plug ? M - S : D) * tanH, finishPass: false, stepoverPct: 40,
+    depth: plug ? M : D, step: Math.max(0.5, (plug ? M : D) / 2), allowance: tpVFloorEdge(tpV), finishPass: false, stepoverPct: 40,
     dia: 3.175, feed: 800, plunge: 300, toolId: null, toolChosen: false, through: false});
   tpInsertByRank(tpC); tpInsertByRank(tpV);             // clearing before the V-carve, as VCarve does
   tpGenerate(tpC); tpGenerate(tpV);                     // (the V-carve last: it flattens what the clearing's cutter leaves)
@@ -565,7 +576,7 @@ function tpInsertByRank(tp){
 // begin there), runs first, and follows the V-carve's settings.
 function vcarveClearing(tp){
   var linked = tpList().filter(function (x) { return x.clearFor === tp.id; });
-  var tanH = Math.tan((tp.vAngle || 60) / 2 * Math.PI / 180), off = Math.max(0, tp.vcMax - (tp.vcStart > 0 ? tp.vcStart : 0)) * tanH;
+  var off = tpVFloorEdge(tp);
   if (!(tp.vcMax > 0) || !tp.vcFlat){
     if (linked.length) return 'The V-carve no longer has flat areas, so \u201c' + linked[0].name + '\u201d isn\u2019t needed: delete it if you like.';
     return '';
@@ -632,7 +643,7 @@ function cutApply(){
     id: CUT.editing || tpNewId(),
     name: tpNameClean(document.getElementById('cutName').value) || tpAutoName(CUT),   // no name given: the kind of cut it is now
     type: CUT.side === 'drill' ? 'drill' : CUT.side === 'pocket' ? 'pocket' : CUT.side === 'chamfer' ? 'chamfer' : CUT.side === 'vcarve' ? 'vcarve' : 'profile', stepoverPct: CUT.stepoverPct || 40,
-    vcMax: CUT.vcMax || 0, vTip: CUT.vTip || 0,
+    vcMax: CUT.vcMax || 0, vTip: CUT.vBall ? 0 : CUT.vTip || 0, vBall: CUT.vBall && CUT.vTipR > 0 ? true : undefined, vTipR: CUT.vBall && CUT.vTipR > 0 ? CUT.vTipR : undefined,
     chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge', toolChosen: !!CUT.toolChosen,
     pocketClear: CUT.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: CUT.rasterAngle || 0,
     rampLen: CUT.rampLen > 0 ? CUT.rampLen : null, rampOff: !!CUT.rampOff, allowance: CUT.allowance || 0, climb: CUT.climb !== false, finishPass: !!(CUT.allowance > 0 && CUT.finishPass),
@@ -671,6 +682,7 @@ function cutApply(){
   if (tp.restFrom === undefined) delete tp.restFrom;
   if (tp.vcStart === undefined) delete tp.vcStart;
   if (tp.vcStep === undefined) delete tp.vcStep;
+  if (tp.vBall === undefined){ delete tp.vBall; delete tp.vTipR; }
   if (tp.clearFor === undefined) delete tp.clearFor;
   if (tp.tabsOn) cutTabsRemember(tp);                      // the next new toolpath starts with these tabs
   if (at >= 0) list[at] = tp; else tpInsertByRank(tp);   // new ones take their place in the cutting order

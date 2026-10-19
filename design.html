@@ -993,7 +993,7 @@
         <span class="mirVal">°</span>
         <span class="mirLbl" style="margin-left:10px" id="cutVcMaxLbl"><label for="cutVcMax">Max depth</label></span>
         <input id="cutVcMax" type="text" inputmode="decimal" autocomplete="off" style="width:44px" placeholder="none" title="Optional: deeper than this, the carving gets a flat floor and the middle is left for a clearing toolpath">
-        <span class="mirLbl" style="margin-left:10px"><label for="cutVcTip">Tip</label></span>
+        <span class="mirLbl" style="margin-left:10px"><label for="cutVcTip" id="cutVcTipLbl">Tip</label></span>
         <input id="cutVcTip" type="text" inputmode="decimal" autocomplete="off" style="width:40px" title="The width of the bit's flat tip, if it has one (engraving bits usually do)">
       </div>
       <div class="mirSlot" data-help="inlay" id="cutInlayRow" hidden style="cursor:default;flex-wrap:wrap;row-gap:6px">
@@ -1204,7 +1204,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.133.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.134.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -4318,15 +4318,21 @@ function tpGenerateMoves(tp){
     return tp;
   }
   if (tp.side === 'vcarve'){
+    // made before 0.134.0 with a tapered ball nose from the library: it was carved as a sharp V-bit, far too deep.
+    // Its ball comes from the library now, once (vBall then says either way).
+    if (tp.vBall === undefined && tp.toolId && typeof libTool === 'function'){
+      var lt = libTool(tp.toolId);
+      if (lt && +lt.type === 5 && lt.tipRadius > 0){ tp.vBall = true; tp.vTipR = +(lt.tipRadius * (lt.units === 'in' ? 25.4 : 1)).toFixed(4); tp.vTip = 0; }
+    }
     var vz = tpSurface(), vclr = tpClearingOf(tp);
-    var vr = Cam.vcarve({loops: tpOutlinesById(tp.ents).map(function (o) { return o.loop; }), angle: tp.vAngle || 60, tip: tp.vTip || 0,
+    var vr = Cam.vcarve({loops: tpOutlinesById(tp.ents).map(function (o) { return o.loop; }), angle: tp.vAngle || 60, tip: tp.vBall ? 0 : tp.vTip || 0, tipR: tp.vBall ? tp.vTipR || 0 : 0,
                          maxDepth: tp.vcMax > 0 ? tp.vcMax : 0, startDepth: tp.vcStart > 0 ? tp.vcStart : 0, passDepth: tp.step > 0 ? tp.step : 0,
                          z0: vz, safeZ: vz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
                          clear: vclr ? {toolDia: vclr.dia, allowance: vclr.allowance || 0} : null, floorStep: tp.vcStep > 0 ? tp.vcStep : 0});
     tp.moves = vr.moves; tp.vcDepth = vr.depth || 0; tp.vcFlat = !!vr.flatCapped;
     // the floor its clearing pocket's cutter couldn't get to, which it flattens: how much, in mm2 (0: none)
     tp.vcFloor = vclr && vr.floorArea > 0 ? +vr.floorArea.toFixed(2) : 0;
-    var widest = (tp.vTip || 0) + (vr.depth || 0) * 2 * Math.tan((tp.vAngle || 60) / 2 * Math.PI / 180);
+    var widest = 2 * tpVBit(tp).reach(vr.depth || 0);       // the bit's width at the deepest it goes
     tp.warning = vr.warning && !vr.moves.length ? vr.warning : null;
     tp.vcNote = vr.moves.length ? {depth: vr.depth, widest: widest, flat: vr.flatCapped, passes: vr.passes, outlines: vr.paths} : null;
     // the cone at the surface is as wide as the widest part carved: a bit narrower than that can't do it
@@ -4432,6 +4438,16 @@ function tpStale(tp){ return tp.sig !== tpSignature(tp.ents) + tpStockSig(tp); }
 function tpTabHeight(tp){
   var thk = tp.tabThk || 0.5, t = DOC.stock && DOC.stock.t > 0 ? DOC.stock.t : 0;
   return thk + (t > 0 ? Math.max(0, tpDepth(tp) - t) : 0);
+}
+// The bit a V-carve or chamfer uses, as the engine knows it: its cone, and its flat tip or (a tapered ball nose) the
+// ball its cone ends in.
+function tpVBit(tp){ return Cam.vbitShape({angle: tp.vAngle || 60, tip: tp.vBall ? 0 : tp.vTip || 0, tipR: tp.vBall ? tp.vTipR || 0 : 0}); }
+// How far in from the walls a capped V-carve's flat floor starts, so its clearing pocket stops just there: where
+// the bit, at the floor, meets the walls, less what its tip flattens either side of its centre. (A flat tip: the
+// depth below the start x tan(half angle), as before. A ball: where its side meets the walls, all of it.)
+function tpVFloorEdge(tp){
+  var b = tpVBit(tp);
+  return Math.max(0, b.reach(Math.max(0, (tp.vcMax || 0) - (tp.vcStart > 0 ? tp.vcStart : 0))) - b.floorReach);
 }
 // The pocket that clears the flat floor for a V-carve (the one whose clearFor names it), or null. It's looked for
 // among the drawing's toolpaths, and any being made that aren't among them yet (tpClearingOf.also, set by whoever
@@ -4560,6 +4576,10 @@ function cutUseTool(id){
   if (t.diameter) CUT.dia = +(t.diameter * mm).toFixed(3);
   if (t.angle > 0 && t.angle < 180) CUT.vAngle = t.angle;               // a V-bit's included angle
   CUT.vTip = t.flat > 0 ? +(t.flat * mm).toFixed(4) : 0;                // and its flat tip, if any
+  // a tapered ball nose (VCarve's type 5): its cone ends in a ball, whose radius the library gives
+  CUT.vBall = +t.type === 5 && t.tipRadius > 0;
+  CUT.vTipR = CUT.vBall ? +(t.tipRadius * mm).toFixed(4) : 0;
+  if (CUT.vBall) CUT.vTip = 0;
   var cut = libCutFor(t, libDefaultMachine(), UICFG.libMaterial || null) ||
             t.cuts.filter(function (c) { return c.machine === libDefaultMachine(); })[0] || t.cuts[0];
   if (cut){
@@ -4599,7 +4619,10 @@ function cutToForm(){
   document.getElementById('cutChamMode').value = CUT.chamMode || 'edge';
   document.getElementById('cutVcAngle').value = CUT.vAngle || 60;
   document.getElementById('cutVcMax').value = CUT.vcMax > 0 ? fmtDisp(CUT.vcMax) : '';
-  document.getElementById('cutVcTip').value = fmtDisp(CUT.vTip || 0);
+  // a tapered ball nose: the Tip box is its ball's radius; any other bit, its flat tip's width
+  document.getElementById('cutVcTip').value = fmtDisp(CUT.vBall ? CUT.vTipR || 0 : CUT.vTip || 0);
+  document.getElementById('cutVcTipLbl').textContent = CUT.vBall ? 'Tip radius' : 'Tip';
+  document.getElementById('cutVcTip').title = CUT.vBall ? 'The radius of the ball the tapered bit ends in' : 'The width of the bit\u2019s flat tip, if it has one (engraving bits usually do)';
   document.getElementById('cutInlayHalf').value = CUT.inlayHalf === 'plug' ? 'plug' : 'pocket';
   document.getElementById('cutInlayD').value = fmtDisp(CUT.inlayD > 0 ? CUT.inlayD : 5);
   document.getElementById('cutInlayS').value = fmtDisp(CUT.inlayS > 0 ? CUT.inlayS : 2.5);
@@ -4649,7 +4672,10 @@ function cutFromForm(){
   if (CUT.side === 'vcarve' || CUT.side === 'inlay'){
     var vva = parseFloat(document.getElementById('cutVcAngle').value); if (vva > 5 && vva < 175) CUT.vAngle = vva;
     var vmx = document.getElementById('cutVcMax').value.trim(); CUT.vcMax = vmx === '' ? 0 : Math.max(0, lenIn(vmx) || 0);
-    var vtp = lenIn(document.getElementById('cutVcTip').value); if (vtp >= 0) CUT.vTip = vtp;
+    // only if it was changed: the box shows two decimal places, and reading that back would round a library's
+    // 0.79375 mm tip radius to 0.79 on every Update
+    var tipBox = document.getElementById('cutVcTip').value, tipWas = CUT.vBall ? CUT.vTipR || 0 : CUT.vTip || 0;
+    var vtp = lenIn(tipBox); if (vtp >= 0 && tipBox.trim() !== fmtDisp(tipWas)){ if (CUT.vBall) CUT.vTipR = vtp; else CUT.vTip = vtp; }
   }
   CUT.tabsOn = document.getElementById('cutTabsOn').checked;
   var tb = parseInt(document.getElementById('cutTabs').value, 10); if (tb > 0) CUT.tabCount = Math.min(20, tb);
@@ -5027,10 +5053,11 @@ function inlayApply(){
   }
   var common = {vcFrom: undefined, safeZ: 6, rpm: CUT.rpm || 18000, climb: true, tabPts: {}, tabsOn: false, hidden: false, exclude: false};
   var tpV = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: V-carve' : 'Inlay pocket: V-carve', side: 'vcarve', type: 'vcarve', ents: ents.slice(),
-    vAngle: CUT.vAngle || 60, vTip: CUT.vTip || 0, vcMax: plug ? M : D, vcStart: plug ? S : 0, dia: CUT.dia, step: 0,
+    vAngle: CUT.vAngle || 60, vTip: CUT.vBall ? 0 : CUT.vTip || 0, vBall: CUT.vBall && CUT.vTipR > 0 ? true : undefined, vTipR: CUT.vBall && CUT.vTipR > 0 ? CUT.vTipR : undefined,
+    vcMax: plug ? M : D, vcStart: plug ? S : 0, dia: CUT.dia, step: 0,
     feed: CUT.feed, plunge: CUT.plunge, toolId: CUT.toolId, toolChosen: true, through: false});
   var tpC = Object.assign({}, common, {id: tpNewId(), name: plug ? 'Inlay plug: clearing' : 'Inlay pocket: clearing', side: 'pocket', type: 'pocket', ents: ents.slice(), clearFor: tpV.id,
-    depth: plug ? M : D, step: Math.max(0.5, (plug ? M : D) / 2), allowance: (plug ? M - S : D) * tanH, finishPass: false, stepoverPct: 40,
+    depth: plug ? M : D, step: Math.max(0.5, (plug ? M : D) / 2), allowance: tpVFloorEdge(tpV), finishPass: false, stepoverPct: 40,
     dia: 3.175, feed: 800, plunge: 300, toolId: null, toolChosen: false, through: false});
   tpInsertByRank(tpC); tpInsertByRank(tpV);             // clearing before the V-carve, as VCarve does
   tpGenerate(tpC); tpGenerate(tpV);                     // (the V-carve last: it flattens what the clearing's cutter leaves)
@@ -5059,7 +5086,7 @@ function tpInsertByRank(tp){
 // begin there), runs first, and follows the V-carve's settings.
 function vcarveClearing(tp){
   var linked = tpList().filter(function (x) { return x.clearFor === tp.id; });
-  var tanH = Math.tan((tp.vAngle || 60) / 2 * Math.PI / 180), off = Math.max(0, tp.vcMax - (tp.vcStart > 0 ? tp.vcStart : 0)) * tanH;
+  var off = tpVFloorEdge(tp);
   if (!(tp.vcMax > 0) || !tp.vcFlat){
     if (linked.length) return 'The V-carve no longer has flat areas, so \u201c' + linked[0].name + '\u201d isn\u2019t needed: delete it if you like.';
     return '';
@@ -5126,7 +5153,7 @@ function cutApply(){
     id: CUT.editing || tpNewId(),
     name: tpNameClean(document.getElementById('cutName').value) || tpAutoName(CUT),   // no name given: the kind of cut it is now
     type: CUT.side === 'drill' ? 'drill' : CUT.side === 'pocket' ? 'pocket' : CUT.side === 'chamfer' ? 'chamfer' : CUT.side === 'vcarve' ? 'vcarve' : 'profile', stepoverPct: CUT.stepoverPct || 40,
-    vcMax: CUT.vcMax || 0, vTip: CUT.vTip || 0,
+    vcMax: CUT.vcMax || 0, vTip: CUT.vBall ? 0 : CUT.vTip || 0, vBall: CUT.vBall && CUT.vTipR > 0 ? true : undefined, vTipR: CUT.vBall && CUT.vTipR > 0 ? CUT.vTipR : undefined,
     chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge', toolChosen: !!CUT.toolChosen,
     pocketClear: CUT.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: CUT.rasterAngle || 0,
     rampLen: CUT.rampLen > 0 ? CUT.rampLen : null, rampOff: !!CUT.rampOff, allowance: CUT.allowance || 0, climb: CUT.climb !== false, finishPass: !!(CUT.allowance > 0 && CUT.finishPass),
@@ -5165,6 +5192,7 @@ function cutApply(){
   if (tp.restFrom === undefined) delete tp.restFrom;
   if (tp.vcStart === undefined) delete tp.vcStart;
   if (tp.vcStep === undefined) delete tp.vcStep;
+  if (tp.vBall === undefined){ delete tp.vBall; delete tp.vTipR; }
   if (tp.clearFor === undefined) delete tp.clearFor;
   if (tp.tabsOn) cutTabsRemember(tp);                      // the next new toolpath starts with these tabs
   if (at >= 0) list[at] = tp; else tpInsertByRank(tp);   // new ones take their place in the cutting order
@@ -7040,7 +7068,8 @@ function jobSheetOpen(){
     if (!byKey[key]){
       var mm = t && t.units === 'in' ? 25.4 : 1;
       byKey[key] = {num: n, name: t ? t.name : fmtDisp(tp.dia) + ' ' + u + (tp.side === 'drill' ? ' drill' : (tp.side === 'vcarve' || tp.side === 'chamfer') ? ' ' + (tp.vAngle || 90) + '\u00b0 V-bit' : ' end mill'),
-        dia: tp.dia, kind: (tp.side === 'vcarve' || tp.side === 'chamfer') ? (tp.vAngle || 90) + '\u00b0 V-bit' + (tp.vTip > 0 ? ', ' + fmtDisp(tp.vTip) + ' ' + u + ' flat' : '') : tp.side === 'drill' ? 'drill' : 'end mill',
+        dia: tp.dia, kind: (tp.side === 'vcarve' || tp.side === 'chamfer') ? (tp.vBall ? (tp.vAngle || 60) + '\u00b0 tapered ball nose, ' + fmtDisp(tp.vTipR || 0) + ' ' + u + ' tip radius'
+                                                                : (tp.vAngle || 90) + '\u00b0 V-bit' + (tp.vTip > 0 ? ', ' + fmtDisp(tp.vTip) + ' ' + u + ' flat' : '')) : tp.side === 'drill' ? 'drill' : 'end mill',
         flutes: t && t.flutes ? t.flutes : '', notes: t && t.notes ? t.notes : '', rpm: {}, used: []};
       tools.push(byKey[key]);
     }
@@ -7211,12 +7240,13 @@ function tpRows(tp){
   if (tp.through && !(DOC.stock.t > 0)) row('Note', 'set the material thickness in Job setup');
   var tabN = tp.tabsOn ? tpTabTotal(tp) : 0;
   if (tp.side === 'drill') row('Holes', String(tp.holes ? tp.holes.length : 0));
-  else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 bit, ' + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
-  if (tp.side === 'vcarve' && tp.vcFloor > 0 && tpClearingOf(tp)) row('Floor', 'also flattens what \u201c' + tpClearingOf(tp).name + '\u201d can\u2019t reach: its corners and narrow parts');
+  else if (tp.side === 'vcarve') row('Carve', (tp.vAngle || 60) + '\u00b0 ' + (tp.vBall ? 'tapered ball nose (' + fmtDisp(tp.vTipR || 0) + ' ' + unitTag() + ' tip radius), ' : 'bit, ') + fmtDisp(tp.vcDepth || 0) + ' ' + unitTag() + ' deep at most' + (tp.vcMax > 0 ? ' (capped)' : ''));
   else if (tp.side === 'chamfer') row('Bevel', fmtDisp(tp.chamW) + ' ' + unitTag() + ' wide, ' + (tp.vAngle || 90) + '\u00b0 bit');
   else if (tp.side === 'pocket' && tpRestSource(tp)) row('Clearing', 'only what \u201c' + tpRestSource(tp).name + '\u201d left: its corners and narrow parts');
   else if (tp.side === 'pocket') row('Clearing', (tp.pocketClear === 'raster' ? 'raster at ' + (tp.rasterAngle || 0) + '\u00b0, ' : 'offset rings, ') + (tp.stepoverPct || 40) + '% stepover' + (tp.islands ? ' \u00b7 ' + tp.islands + (tp.islands === 1 ? ' island' : ' islands') : ''));
   else row('Shapes', tp.ents.length + (tp.tabsOn ? ' \u00b7 ' + tabN + (tp.tabStyle === '3d' ? ' 3D' : '') + (tabN === 1 ? ' tab' : ' tabs') : ' \u00b7 no tabs'));
+  // (after the line above, not in it: an if here split that chain, and drillings and V-carves got a Shapes line too)
+  if (tp.side === 'vcarve' && tp.vcFloor > 0 && tpClearingOf(tp)) row('Floor', 'also flattens what \u201c' + tpClearingOf(tp).name + '\u201d can\u2019t reach: its corners and narrow parts');
   if (tp.side === 'pocket' || tp.side === 'inside' || tp.side === 'outside' || tp.side === 'on')
     row('Entry', tp.rampOff ? 'straight plunge' : 'ramps in over ' + fmtDisp(tpRamp(tp)) + ' ' + unitTag());
   if (tp.warning) row('Note', tp.warning);
@@ -7863,11 +7893,12 @@ function woodColour(sim, h){
   return [WOOD_TOP[0] + (WOOD_DEEP[0] - WOOD_TOP[0]) * f, WOOD_TOP[1] + (WOOD_DEEP[1] - WOOD_TOP[1]) * f, WOOD_TOP[2] + (WOOD_DEEP[2] - WOOD_TOP[2]) * f];
 }
 
-// The bit's shape for a toolpath: {kind:'flat'|'ball'|'v', r, half (V: half the included angle, radians), tip}
+// The bit's shape for a toolpath: {kind:'flat'|'ball'|'v', r, half (V: half the included angle, radians), tip, and
+// tipR for a tapered ball nose: the radius of the ball its cone ends in}
 function woodTool(tp){
   var r = (tp.dia > 0 ? tp.dia : 3) / 2;
   if (tp.side === 'vcarve' || tp.side === 'chamfer' || tp.side === 'inlay')
-    return {kind:'v', r: tp.dia > 0 ? r : 50, half: (tp.vAngle || 60) / 2 * Math.PI / 180, tip: tp.vTip || 0};
+    return {kind:'v', r: tp.dia > 0 ? r : 50, half: (tp.vAngle || 60) / 2 * Math.PI / 180, tip: tp.vBall ? 0 : tp.vTip || 0, tipR: tp.vBall ? tp.vTipR || 0 : 0};
   var t = tp.toolId && typeof libTool === 'function' ? libTool(tp.toolId) : null;
   if (t && /ball/i.test(t.typeName || '')) return {kind:'ball', r:r};
   return {kind:'flat', r:r};
@@ -7875,6 +7906,10 @@ function woodTool(tp){
 // How far the bit reaches sideways when its tip is `depth` below the top: a V-bit's cone widens with depth.
 function woodReach(tool, depth){
   if (tool.kind !== 'v') return tool.r;
+  if (tool.tipR > 0){                                    // a tapered ball nose: on its ball, then its cone
+    var R = tool.tipR, d = Math.max(0, depth), zT = R * (1 - Math.sin(tool.half));
+    return Math.min(tool.r, d <= zT ? Math.sqrt(Math.max(0, R * R - (R - d) * (R - d))) : R * Math.cos(tool.half) + (d - zT) * Math.tan(tool.half));
+  }
   return Math.min(tool.r, tool.tip / 2 + Math.max(0, depth) * Math.tan(tool.half));
 }
 // Height of the bit's cutting edge at distance d from its axis, above its tip (Infinity beyond its reach).
@@ -7882,7 +7917,64 @@ function woodEdge(tool, d){
   if (d > tool.r + 1e-12) return Infinity;
   if (tool.kind === 'flat') return 0;
   if (tool.kind === 'ball') return tool.r - Math.sqrt(Math.max(0, tool.r * tool.r - d * d));
+  if (tool.tipR > 0){
+    var R = tool.tipR, rT = R * Math.cos(tool.half);
+    return d <= rT ? R - Math.sqrt(Math.max(0, R * R - d * d)) : R * (1 - Math.sin(tool.half)) + (d - rT) / Math.tan(tool.half);
+  }
   return d <= tool.tip / 2 ? 0 : (d - tool.tip / 2) / Math.tan(tool.half);
+}
+// The lowest a pointed or round bit cuts the spot (cx, cy) on a straight move from a to b: the lowest, along the move,
+// of its tip's height plus its side's height at that distance (woodEdge); Infinity if it never reaches the spot.
+// Taking the point of the move nearest the spot is right only when the move is level: running down a slope, a
+// V-bit cuts a spot beside its path deepest some way further on, where it's lower (taking the nearest point showed
+// V-carves' corners shallower than they're cut, by millimetres on a narrow bit). That height is convex along the
+// move, so the lowest is one of a few places, worked out rather than searched for:
+//   the ends, and the nearest point;
+//   on a cone (a V-bit's side, or a tapered ball nose's above its ball), where the side's slope and the move's
+//   balance: going a little further changes the tip's height and the side's by the same;
+//   where the distance crosses a flat tip's edge, or where the cone meets a ball (within, the flat tip is level and
+//   the ball curved);
+//   where the bit's widest just reaches the spot;
+//   on a ball (a ball nose, or a tapered one's tip), narrowed in on, since there's no simple answer there.
+function woodLowest(tool, ax, ay, az, bx, by, bz, cx, cy){
+  var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy, dz = bz - az, ex = cx - ax, ey = cy - ay;
+  if (L2 < 1e-18) return Math.min(woodHAt(tool, ex, ey, 0, 0, az, dz, 0), woodHAt(tool, ex, ey, 0, 0, az, dz, 1));
+  var L = Math.sqrt(L2), u = (ex * dx + ey * dy) / L, v = Math.abs(ex * dy - ey * dx) / L, t0 = u / L;
+  var best = woodHAt(tool, ex, ey, dx, dy, az, dz, t0 < 0 ? 0 : t0 > 1 ? 1 : t0);
+  if (Math.abs(dz) < 1e-12) return best;                  // level: the nearest point is the lowest
+  best = Math.min(best, woodHAt(tool, ex, ey, dx, dy, az, dz, 0), woodHAt(tool, ex, ey, dx, dy, az, dz, 1));
+  // where the distance from the spot crosses d (the bit's widest; a flat tip's edge; where a cone meets its ball)
+  var d, w, s0, s1;
+  for (var pass = 0; pass < 2; pass++){
+    d = pass === 0 ? tool.r : (tool.kind === 'v' ? (tool.tipR > 0 ? tool.tipR * Math.cos(tool.half) : tool.tip / 2) : 0);
+    if (!(d > 0) || v > d) continue;
+    w = Math.sqrt(d * d - v * v); s0 = (u - w) / L; s1 = (u + w) / L;
+    s0 = s0 < 0 ? 0 : s0 > 1 ? 1 : s0; s1 = s1 < 0 ? 0 : s1 > 1 ? 1 : s1;
+    best = Math.min(best, woodHAt(tool, ex, ey, dx, dy, az, dz, s0), woodHAt(tool, ex, ey, dx, dy, az, dz, s1));
+    // a ball (a ball nose's whole end; a tapered one's tip): no simple answer there, so it's narrowed in on
+    if ((pass === 0 && tool.kind === 'ball') || (pass === 1 && tool.tipR > 0)) best = Math.min(best, woodNarrow(tool, ex, ey, dx, dy, az, dz, s0, s1));
+  }
+  if (tool.kind === 'v'){
+    // on a cone, the lowest is where the cone's slope and the move's balance
+    var k = dz * Math.tan(tool.half) / L;
+    if (Math.abs(k) < 1){ var ts = (u - k * v / Math.sqrt(1 - k * k)) / L; best = Math.min(best, woodHAt(tool, ex, ey, dx, dy, az, dz, ts < 0 ? 0 : ts > 1 ? 1 : ts)); }
+  }
+  return best;
+}
+// The height the bit cuts the spot to with its tip at s along the move (the spot at ex, ey from the move's start).
+function woodHAt(tool, ex, ey, dx, dy, az, dz, s){
+  var e = woodEdge(tool, Math.hypot(ex - dx * s, ey - dy * s));
+  return e === Infinity ? Infinity : az + dz * s + e;
+}
+// The lowest of that between s = lo and hi, where it's convex, narrowed in on by golden sections.
+function woodNarrow(tool, ex, ey, dx, dy, az, dz, lo, hi){
+  if (!(hi > lo)) return woodHAt(tool, ex, ey, dx, dy, az, dz, lo);
+  var gr = 0.381966, m1 = lo + (hi - lo) * gr, m2 = hi - (hi - lo) * gr, f1 = woodHAt(tool, ex, ey, dx, dy, az, dz, m1), f2 = woodHAt(tool, ex, ey, dx, dy, az, dz, m2);
+  for (var it = 0; it < 30 && hi - lo > 1e-7; it++){
+    if (f1 <= f2){ hi = m2; m2 = m1; f2 = f1; m1 = lo + (hi - lo) * gr; f1 = woodHAt(tool, ex, ey, dx, dy, az, dz, m1); }
+    else { lo = m1; m1 = m2; f1 = f2; m2 = hi - (hi - lo) * gr; f2 = woodHAt(tool, ex, ey, dx, dy, az, dz, m2); }
+  }
+  return Math.min(f1, f2);
 }
 // One straight move of the bit cut into a job's grid of heights; returns the most it took off anywhere. The cells
 // it changed are added to job.dirty ({i0, j0, i1, j1}), for whoever is drawing the job as it's cut.
@@ -7910,10 +8002,10 @@ function woodStamp(job, tool, ax, ay, az, bx, by, bz){
           h = Math.min(az + (bz - az) * t1, az + (bz - az) * t2);
         }
       } else {
-        var t = L2 > 1e-18 ? Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / L2)) : 0;
-        var px = ax + dx * t, py = ay + dy * t, e = woodEdge(tool, Math.hypot(cx - px, cy - py));
-        if (e === Infinity) continue;
-        h = az + (bz - az) * t + e;
+        // A pointed or round bit: the deepest it cuts this cell along the move (woodLowest). Level, that's where the
+        // move passes nearest the cell; sloping, it can be further on, where the bit is lower.
+        h = woodLowest(tool, ax, ay, az, bx, by, bz, cx, cy);
+        if (h === Infinity) continue;
       }
       if (h < z[row + i]){ if (z[row + i] - h > most) most = z[row + i] - h; z[row + i] = h; }
     }
@@ -8187,12 +8279,17 @@ function woodMeshNormals(m, nor, a0, b0, a1, b1){
   return {a0: a0, b0: b0, a1: a1, b1: b1};
 }
 // The bit's outline from its tip up, as [how far from its axis, how high above its tip], to be spun round its
-// axis: a flat end, a ball, or a V at its angle with its tip flat. thick: the material's thickness (a V-bit is
+// axis: a flat end, a ball, a V at its angle with its tip flat, or a tapered ball nose (a ball, then the cone). thick: the material's thickness (a V-bit is
 // drawn as wide as it could ever cut in it, and the shank stands clear of the top).
 function woodBitShape(tool, thick){
   var pts = [[0, 0]];
   if (tool.kind === 'ball'){
     for (var s = 1; s <= 8; s++){ var a = s / 8 * Math.PI / 2; pts.push([tool.r * Math.sin(a), tool.r - tool.r * Math.cos(a)]); }
+  } else if (tool.kind === 'v' && tool.tipR > 0){       // a tapered ball nose: round its ball, then up its cone
+    var R = tool.tipR, rT = R * Math.cos(tool.half), zT = R * (1 - Math.sin(tool.half));
+    for (var q = 1; q <= 8; q++){ var b = q / 8 * (Math.PI / 2 - tool.half); pts.push([R * Math.sin(b), R - R * Math.cos(b)]); }
+    var rb = Math.min(tool.r, woodReach(tool, thick + 3));
+    if (rb > rT) pts.push([rb, zT + (rb - rT) / Math.tan(tool.half)]);
   } else if (tool.kind === 'v'){
     var tan = Math.tan(tool.half), r = Math.min(tool.r, tool.tip / 2 + (thick + 3) * tan);
     if (tool.tip > 0) pts.push([tool.tip / 2, 0]);

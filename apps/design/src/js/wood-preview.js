@@ -25,11 +25,12 @@ function woodColour(sim, h){
   return [WOOD_TOP[0] + (WOOD_DEEP[0] - WOOD_TOP[0]) * f, WOOD_TOP[1] + (WOOD_DEEP[1] - WOOD_TOP[1]) * f, WOOD_TOP[2] + (WOOD_DEEP[2] - WOOD_TOP[2]) * f];
 }
 
-// The bit's shape for a toolpath: {kind:'flat'|'ball'|'v', r, half (V: half the included angle, radians), tip}
+// The bit's shape for a toolpath: {kind:'flat'|'ball'|'v', r, half (V: half the included angle, radians), tip, and
+// tipR for a tapered ball nose: the radius of the ball its cone ends in}
 function woodTool(tp){
   var r = (tp.dia > 0 ? tp.dia : 3) / 2;
   if (tp.side === 'vcarve' || tp.side === 'chamfer' || tp.side === 'inlay')
-    return {kind:'v', r: tp.dia > 0 ? r : 50, half: (tp.vAngle || 60) / 2 * Math.PI / 180, tip: tp.vTip || 0};
+    return {kind:'v', r: tp.dia > 0 ? r : 50, half: (tp.vAngle || 60) / 2 * Math.PI / 180, tip: tp.vBall ? 0 : tp.vTip || 0, tipR: tp.vBall ? tp.vTipR || 0 : 0};
   var t = tp.toolId && typeof libTool === 'function' ? libTool(tp.toolId) : null;
   if (t && /ball/i.test(t.typeName || '')) return {kind:'ball', r:r};
   return {kind:'flat', r:r};
@@ -37,6 +38,10 @@ function woodTool(tp){
 // How far the bit reaches sideways when its tip is `depth` below the top: a V-bit's cone widens with depth.
 function woodReach(tool, depth){
   if (tool.kind !== 'v') return tool.r;
+  if (tool.tipR > 0){                                    // a tapered ball nose: on its ball, then its cone
+    var R = tool.tipR, d = Math.max(0, depth), zT = R * (1 - Math.sin(tool.half));
+    return Math.min(tool.r, d <= zT ? Math.sqrt(Math.max(0, R * R - (R - d) * (R - d))) : R * Math.cos(tool.half) + (d - zT) * Math.tan(tool.half));
+  }
   return Math.min(tool.r, tool.tip / 2 + Math.max(0, depth) * Math.tan(tool.half));
 }
 // Height of the bit's cutting edge at distance d from its axis, above its tip (Infinity beyond its reach).
@@ -44,7 +49,64 @@ function woodEdge(tool, d){
   if (d > tool.r + 1e-12) return Infinity;
   if (tool.kind === 'flat') return 0;
   if (tool.kind === 'ball') return tool.r - Math.sqrt(Math.max(0, tool.r * tool.r - d * d));
+  if (tool.tipR > 0){
+    var R = tool.tipR, rT = R * Math.cos(tool.half);
+    return d <= rT ? R - Math.sqrt(Math.max(0, R * R - d * d)) : R * (1 - Math.sin(tool.half)) + (d - rT) / Math.tan(tool.half);
+  }
   return d <= tool.tip / 2 ? 0 : (d - tool.tip / 2) / Math.tan(tool.half);
+}
+// The lowest a pointed or round bit cuts the spot (cx, cy) on a straight move from a to b: the lowest, along the move,
+// of its tip's height plus its side's height at that distance (woodEdge); Infinity if it never reaches the spot.
+// Taking the point of the move nearest the spot is right only when the move is level: running down a slope, a
+// V-bit cuts a spot beside its path deepest some way further on, where it's lower (taking the nearest point showed
+// V-carves' corners shallower than they're cut, by millimetres on a narrow bit). That height is convex along the
+// move, so the lowest is one of a few places, worked out rather than searched for:
+//   the ends, and the nearest point;
+//   on a cone (a V-bit's side, or a tapered ball nose's above its ball), where the side's slope and the move's
+//   balance: going a little further changes the tip's height and the side's by the same;
+//   where the distance crosses a flat tip's edge, or where the cone meets a ball (within, the flat tip is level and
+//   the ball curved);
+//   where the bit's widest just reaches the spot;
+//   on a ball (a ball nose, or a tapered one's tip), narrowed in on, since there's no simple answer there.
+function woodLowest(tool, ax, ay, az, bx, by, bz, cx, cy){
+  var dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy, dz = bz - az, ex = cx - ax, ey = cy - ay;
+  if (L2 < 1e-18) return Math.min(woodHAt(tool, ex, ey, 0, 0, az, dz, 0), woodHAt(tool, ex, ey, 0, 0, az, dz, 1));
+  var L = Math.sqrt(L2), u = (ex * dx + ey * dy) / L, v = Math.abs(ex * dy - ey * dx) / L, t0 = u / L;
+  var best = woodHAt(tool, ex, ey, dx, dy, az, dz, t0 < 0 ? 0 : t0 > 1 ? 1 : t0);
+  if (Math.abs(dz) < 1e-12) return best;                  // level: the nearest point is the lowest
+  best = Math.min(best, woodHAt(tool, ex, ey, dx, dy, az, dz, 0), woodHAt(tool, ex, ey, dx, dy, az, dz, 1));
+  // where the distance from the spot crosses d (the bit's widest; a flat tip's edge; where a cone meets its ball)
+  var d, w, s0, s1;
+  for (var pass = 0; pass < 2; pass++){
+    d = pass === 0 ? tool.r : (tool.kind === 'v' ? (tool.tipR > 0 ? tool.tipR * Math.cos(tool.half) : tool.tip / 2) : 0);
+    if (!(d > 0) || v > d) continue;
+    w = Math.sqrt(d * d - v * v); s0 = (u - w) / L; s1 = (u + w) / L;
+    s0 = s0 < 0 ? 0 : s0 > 1 ? 1 : s0; s1 = s1 < 0 ? 0 : s1 > 1 ? 1 : s1;
+    best = Math.min(best, woodHAt(tool, ex, ey, dx, dy, az, dz, s0), woodHAt(tool, ex, ey, dx, dy, az, dz, s1));
+    // a ball (a ball nose's whole end; a tapered one's tip): no simple answer there, so it's narrowed in on
+    if ((pass === 0 && tool.kind === 'ball') || (pass === 1 && tool.tipR > 0)) best = Math.min(best, woodNarrow(tool, ex, ey, dx, dy, az, dz, s0, s1));
+  }
+  if (tool.kind === 'v'){
+    // on a cone, the lowest is where the cone's slope and the move's balance
+    var k = dz * Math.tan(tool.half) / L;
+    if (Math.abs(k) < 1){ var ts = (u - k * v / Math.sqrt(1 - k * k)) / L; best = Math.min(best, woodHAt(tool, ex, ey, dx, dy, az, dz, ts < 0 ? 0 : ts > 1 ? 1 : ts)); }
+  }
+  return best;
+}
+// The height the bit cuts the spot to with its tip at s along the move (the spot at ex, ey from the move's start).
+function woodHAt(tool, ex, ey, dx, dy, az, dz, s){
+  var e = woodEdge(tool, Math.hypot(ex - dx * s, ey - dy * s));
+  return e === Infinity ? Infinity : az + dz * s + e;
+}
+// The lowest of that between s = lo and hi, where it's convex, narrowed in on by golden sections.
+function woodNarrow(tool, ex, ey, dx, dy, az, dz, lo, hi){
+  if (!(hi > lo)) return woodHAt(tool, ex, ey, dx, dy, az, dz, lo);
+  var gr = 0.381966, m1 = lo + (hi - lo) * gr, m2 = hi - (hi - lo) * gr, f1 = woodHAt(tool, ex, ey, dx, dy, az, dz, m1), f2 = woodHAt(tool, ex, ey, dx, dy, az, dz, m2);
+  for (var it = 0; it < 30 && hi - lo > 1e-7; it++){
+    if (f1 <= f2){ hi = m2; m2 = m1; f2 = f1; m1 = lo + (hi - lo) * gr; f1 = woodHAt(tool, ex, ey, dx, dy, az, dz, m1); }
+    else { lo = m1; m1 = m2; f1 = f2; m2 = hi - (hi - lo) * gr; f2 = woodHAt(tool, ex, ey, dx, dy, az, dz, m2); }
+  }
+  return Math.min(f1, f2);
 }
 // One straight move of the bit cut into a job's grid of heights; returns the most it took off anywhere. The cells
 // it changed are added to job.dirty ({i0, j0, i1, j1}), for whoever is drawing the job as it's cut.
@@ -72,10 +134,10 @@ function woodStamp(job, tool, ax, ay, az, bx, by, bz){
           h = Math.min(az + (bz - az) * t1, az + (bz - az) * t2);
         }
       } else {
-        var t = L2 > 1e-18 ? Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / L2)) : 0;
-        var px = ax + dx * t, py = ay + dy * t, e = woodEdge(tool, Math.hypot(cx - px, cy - py));
-        if (e === Infinity) continue;
-        h = az + (bz - az) * t + e;
+        // A pointed or round bit: the deepest it cuts this cell along the move (woodLowest). Level, that's where the
+        // move passes nearest the cell; sloping, it can be further on, where the bit is lower.
+        h = woodLowest(tool, ax, ay, az, bx, by, bz, cx, cy);
+        if (h === Infinity) continue;
       }
       if (h < z[row + i]){ if (z[row + i] - h > most) most = z[row + i] - h; z[row + i] = h; }
     }

@@ -140,15 +140,21 @@ function tpGenerateMoves(tp){
     return tp;
   }
   if (tp.side === 'vcarve'){
+    // made before 0.134.0 with a tapered ball nose from the library: it was carved as a sharp V-bit, far too deep.
+    // Its ball comes from the library now, once (vBall then says either way).
+    if (tp.vBall === undefined && tp.toolId && typeof libTool === 'function'){
+      var lt = libTool(tp.toolId);
+      if (lt && +lt.type === 5 && lt.tipRadius > 0){ tp.vBall = true; tp.vTipR = +(lt.tipRadius * (lt.units === 'in' ? 25.4 : 1)).toFixed(4); tp.vTip = 0; }
+    }
     var vz = tpSurface(), vclr = tpClearingOf(tp);
-    var vr = Cam.vcarve({loops: tpOutlinesById(tp.ents).map(function (o) { return o.loop; }), angle: tp.vAngle || 60, tip: tp.vTip || 0,
+    var vr = Cam.vcarve({loops: tpOutlinesById(tp.ents).map(function (o) { return o.loop; }), angle: tp.vAngle || 60, tip: tp.vBall ? 0 : tp.vTip || 0, tipR: tp.vBall ? tp.vTipR || 0 : 0,
                          maxDepth: tp.vcMax > 0 ? tp.vcMax : 0, startDepth: tp.vcStart > 0 ? tp.vcStart : 0, passDepth: tp.step > 0 ? tp.step : 0,
                          z0: vz, safeZ: vz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
                          clear: vclr ? {toolDia: vclr.dia, allowance: vclr.allowance || 0} : null, floorStep: tp.vcStep > 0 ? tp.vcStep : 0});
     tp.moves = vr.moves; tp.vcDepth = vr.depth || 0; tp.vcFlat = !!vr.flatCapped;
     // the floor its clearing pocket's cutter couldn't get to, which it flattens: how much, in mm2 (0: none)
     tp.vcFloor = vclr && vr.floorArea > 0 ? +vr.floorArea.toFixed(2) : 0;
-    var widest = (tp.vTip || 0) + (vr.depth || 0) * 2 * Math.tan((tp.vAngle || 60) / 2 * Math.PI / 180);
+    var widest = 2 * tpVBit(tp).reach(vr.depth || 0);       // the bit's width at the deepest it goes
     tp.warning = vr.warning && !vr.moves.length ? vr.warning : null;
     tp.vcNote = vr.moves.length ? {depth: vr.depth, widest: widest, flat: vr.flatCapped, passes: vr.passes, outlines: vr.paths} : null;
     // the cone at the surface is as wide as the widest part carved: a bit narrower than that can't do it
@@ -254,6 +260,16 @@ function tpStale(tp){ return tp.sig !== tpSignature(tp.ents) + tpStockSig(tp); }
 function tpTabHeight(tp){
   var thk = tp.tabThk || 0.5, t = DOC.stock && DOC.stock.t > 0 ? DOC.stock.t : 0;
   return thk + (t > 0 ? Math.max(0, tpDepth(tp) - t) : 0);
+}
+// The bit a V-carve or chamfer uses, as the engine knows it: its cone, and its flat tip or (a tapered ball nose) the
+// ball its cone ends in.
+function tpVBit(tp){ return Cam.vbitShape({angle: tp.vAngle || 60, tip: tp.vBall ? 0 : tp.vTip || 0, tipR: tp.vBall ? tp.vTipR || 0 : 0}); }
+// How far in from the walls a capped V-carve's flat floor starts, so its clearing pocket stops just there: where
+// the bit, at the floor, meets the walls, less what its tip flattens either side of its centre. (A flat tip: the
+// depth below the start x tan(half angle), as before. A ball: where its side meets the walls, all of it.)
+function tpVFloorEdge(tp){
+  var b = tpVBit(tp);
+  return Math.max(0, b.reach(Math.max(0, (tp.vcMax || 0) - (tp.vcStart > 0 ? tp.vcStart : 0))) - b.floorReach);
 }
 // The pocket that clears the flat floor for a V-carve (the one whose clearFor names it), or null. It's looked for
 // among the drawing's toolpaths, and any being made that aren't among them yet (tpClearingOf.also, set by whoever

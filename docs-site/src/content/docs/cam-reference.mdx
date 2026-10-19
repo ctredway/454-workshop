@@ -175,9 +175,9 @@ A bevel wider than the bit can cut is refused, with the reason in the hint.
 
 | Setting | What it does |
 | --- | --- |
-| **Bit** | The V-bit’s included angle, from the library. |
+| **Bit** | The bit’s included angle, from the library: a V-bit, or a **tapered ball nose** (its cone ends in a small ball; VCarve’s libraries store it as twice the angle on the bit’s name, so a “5.4°” bit is 10.8° here). |
 | **Max depth** | Optional. Deeper than this, the carving gets a flat floor. A **clearing pocket** is added with it for the flat middles, runs first, and follows if you change the max depth; open it and choose its end mill. |
-| **Tip** | The width of the bit’s flat tip, if it has one (engraving bits usually do). From the library. Lines narrower than the tip stay at the surface. |
+| **Tip** | The width of the bit’s flat tip, if it has one (engraving bits usually do). From the library. Lines narrower than the tip stay at the surface. For a tapered ball nose it reads **Tip radius**: the radius of its ball. |
 
 **Warnings** in the hint: the tool isn’t a V-bit; the carving is wider than the bit can make (set a max depth, or use a larger bit); or it would go deeper than the material.
 
@@ -191,7 +191,7 @@ Flat depth with a clearance tool works as VCarve’s does: clearing runs before 
 
 ## Inlay
 
-**Inlay (V-bit pocket or plug)** makes the two halves of a V-carve inlay from the same shapes, so they fit. Cut both with the **same V-bit**.
+**Inlay (V-bit pocket or plug)** makes the two halves of a V-carve inlay from the same shapes, so they fit. Cut both with the **same bit**: a V-bit, or a tapered ball nose. The plug’s fit and the clearing pocket allow for the bit’s real shape, ball tip included.
 
 <Shot src={camInlay} alt="On the left, a star with its inlay pocket cleared in rings. On the right, a mirrored star inside a square boundary, with the plug's V-carve along its walls and clearing between the star and the boundary." caption="The pocket in the base (left), and the plug (right), which Design makes on a mirrored copy with its boundary, on an “Inlay plug” layer beside the design." />
 

@@ -1104,6 +1104,58 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.134.0 — V-carving and inlays with a tapered ball nose; flat and ball tips no longer cut past the walls (cutting)
+- **A tapered ball nose** (VCarve's type 5) is now carved as what it is: a cone that ends in a small ball, not a
+  sharp V. Choose one from the library and the V-carve takes its angle and its ball's radius; the editor's Tip box
+  reads **Tip radius**. Before, its ball was ignored and it was carved as a sharp V-bit of that angle, which on a
+  bit this narrow is far too deep: with the TBN1-32 (10.8°, 0.79 mm tip radius) from VCarve's own library, a line
+  2 mm wide was carved 10.6 mm deep, not 2.9 mm. A V-carve made before with a tapered ball nose from the library
+  takes its ball from the library when it's next recalculated (opening the drawing does it). **Check its depth, and
+  its clearing pocket, before cutting:** a clearing pocket made for it was set for the sharp bit.
+- **The angle:** VCarve's libraries store the whole included angle. Its own TBN1-16, "3.6°" in its name, is stored
+  as 7.2°: the name gives the angle on one side. (Read from VCarve Pro 12.5's tools.vtdb on Clint's computer, and
+  from his libraries.) The tip radius is a radius, as VCarve's field says.
+- **How deep for how wide** (`vbitShape` in `cam.js`): where the bit's side touches the walls, half the width out
+  from its axis. On the ball, R - sqrt(R^2 - r^2); past where the cone meets it smoothly, at R cos(half), the cone.
+  The V-carve uses it for every depth, for where a max depth's flat floor begins, and for the flattening passes.
+  A flat-tipped or sharp V-bit is worked out exactly as before: 120 random V-carves, old against new, identical.
+- **Inlays and clearing pockets** stand off the walls by where the ball's side meets them at the floor. A ball
+  touches a floor only at its centre, so all of that (a flat tip's own width is still taken off, as before).
+- **Preview in wood** cuts with the ball, and shows it on the bit in 3D.
+- **Kept through the editor:** a toolpath's ball tip, and the tip size typed exactly: the Tip box shows two
+  decimal places, and reading it back on Update rounded a library's 0.79375 mm to 0.79. Now it's read only if
+  changed (a V-bit's flat tip too).
+- **Fixed: drilling and V-carve cards had a Shapes line** since beta.44, from the floor line added then.
+- **Fixed (cutting): a flat or ball tip cut past the walls where the V-carve's path climbs.** At a corner of an
+  outline made of short straight pieces (a curve from a font, a DXF or a trace), and up into a sharp corner, the path
+  went straight from a deep point to the outline. A sharp V-bit's side is straight, so that's exact for it. A flat
+  tip's or a ball's isn't: part way up the bit was too low and its side cut past the outline, up to 0.7 mm past a
+  letter with a tapered ball nose, less with a flat-tipped engraving bit. Those climbs are now cut in steps of
+  0.05 mm, each as deep as the bit's shape allows. Sharp V-bits are untouched: 88 random V-carves with one,
+  identical old against new. (32 flat-tipped ones changed, as they should.)
+- **Fixed: Preview in wood showed V-carves shallower than they're cut.** For a pointed or round bit on a sloping
+  move, it took each spot's cut from where the move passes nearest that spot. Running down a slope the bit cuts
+  a spot beside its path deepest further on, where it's lower. With a 10.8° tapered ball nose a carve 4.00 mm deep
+  showed 3.48; corners of letters showed millimetres too shallow. Now the lowest point is worked out (`woodLowest`):
+  the move's ends, its nearest point, where a cone's slope and the move's balance, where the distance crosses the
+  bit's widest, a flat tip's edge or where a cone meets its ball, and on a ball, narrowed in on. Checked against a
+  4,000-step search on 3,000 random moves and spots for five kinds of bit: never shallower, and deeper only by what
+  the search's steps miss. A 60° V-carve job takes 0.19 s to simulate, from 0.10. (The comparisons with VCarve's
+  G-code made with the old simulator, for the tutorial inlay, were of both sides through the same simulator;
+  they're no more than a guide.)
+- **Against VCarve's own G-code,** for a test project Clint made in VCarve Pro 12.5 with the TBN1-32 (the word TEST,
+  carved with no flat depth, and a star with a 1/8 in flat depth cleared by a 1/8 in end mill), both cut in the
+  simulation: the star 99.99% the same within 0.05 mm and Design never deeper; the text 99.49% the same, the same
+  area cut (1180.5 mm² against 1180.6), Design never deeper by more than 0.11 mm, and neither cutting past the
+  outline. Deepest 19.70 mm against VCarve's 19.85.
+- **Not yet:** VCarve projects whose toolpaths use a tapered ball nose aren't converted with it: the toolpath's
+  tool record for one hasn't been read from a real file yet (that project has one now).
+- **Tested** (12 tests in `vcarve-tapered.test.mjs`: the bit's shape, a slot's depth, a capped carve cut in the
+  simulation, the preview's bit against the engine's, no cut past an outline of short pieces with a ball or a flat
+  tip, the simulator's lowest point against a fine search and on a slope, the library, the editor, an inlay both
+  ways, a V-carve made before taking its ball, the card lines; broken on purpose 19 ways, 17 caught and the other
+  2 after adding a test for each).
+
 ### 0.133.0 — the tool library: choose the material by clicking it
 - **The Material dropdown is gone.** A tool's **Feeds and speeds** list is the way to choose: click a material's
   row and it's highlighted (with a bar down its edge), and new toolpaths take that material's feeds and speeds, as

@@ -100,12 +100,17 @@ function woodMeshNormals(m, nor, a0, b0, a1, b1){
   return {a0: a0, b0: b0, a1: a1, b1: b1};
 }
 // The bit's outline from its tip up, as [how far from its axis, how high above its tip], to be spun round its
-// axis: a flat end, a ball, or a V at its angle with its tip flat. thick: the material's thickness (a V-bit is
+// axis: a flat end, a ball, a V at its angle with its tip flat, or a tapered ball nose (a ball, then the cone). thick: the material's thickness (a V-bit is
 // drawn as wide as it could ever cut in it, and the shank stands clear of the top).
 function woodBitShape(tool, thick){
   var pts = [[0, 0]];
   if (tool.kind === 'ball'){
     for (var s = 1; s <= 8; s++){ var a = s / 8 * Math.PI / 2; pts.push([tool.r * Math.sin(a), tool.r - tool.r * Math.cos(a)]); }
+  } else if (tool.kind === 'v' && tool.tipR > 0){       // a tapered ball nose: round its ball, then up its cone
+    var R = tool.tipR, rT = R * Math.cos(tool.half), zT = R * (1 - Math.sin(tool.half));
+    for (var q = 1; q <= 8; q++){ var b = q / 8 * (Math.PI / 2 - tool.half); pts.push([R * Math.sin(b), R - R * Math.cos(b)]); }
+    var rb = Math.min(tool.r, woodReach(tool, thick + 3));
+    if (rb > rT) pts.push([rb, zT + (rb - rT) / Math.tan(tool.half)]);
   } else if (tool.kind === 'v'){
     var tan = Math.tan(tool.half), r = Math.min(tool.r, tool.tip / 2 + (thick + 3) * tan);
     if (tool.tip > 0) pts.push([tool.tip / 2, 0]);
