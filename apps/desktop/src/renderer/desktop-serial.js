@@ -70,27 +70,48 @@
         var testPort = ports.filter(function (p) { return p.manufacturer === 'test port'; })[0];
         resolve(testPort || ports[0]); return;
       }
+      // Each port by its name (port-names.js: "Carbide3D Shapeoko"), its path under it; the likely machine first
+      // and marked. Ports built into the computer (not USB) are hidden until asked for, unless there's nothing else.
       var box = document.createElement('div');
       box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Choose the machine\u2019s port');
       box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999;font:14px system-ui,sans-serif';
       var card = document.createElement('div');
-      card.style.cssText = 'background:#1d232b;color:#dce3ea;border:1px solid #2a323c;border-radius:8px;padding:16px 18px;min-width:320px;max-width:90vw';
-      card.innerHTML = '<div style="font-weight:600;margin-bottom:10px">Choose the machine\u2019s port</div>';
-      function done(v, err) { document.body.removeChild(box); if (err) reject(err); else resolve(v); }
-      ports.forEach(function (p) {
+      card.style.cssText = 'background:#1d232b;color:#dce3ea;border:1px solid #2a323c;border-radius:8px;padding:16px 18px;min-width:340px;max-width:90vw;max-height:85vh;overflow:auto';
+      card.innerHTML = '<div style="font-weight:600;margin-bottom:4px">Choose the machine\u2019s port</div>' +
+        '<div style="color:#8794a1;font-size:13px;margin-bottom:8px">The machine is plugged in by USB. Not sure which? Unplug its cable, look again, and see which one goes.</div>';
+      function done(v, err) { document.removeEventListener('keydown', esc, true); document.body.removeChild(box); if (err) reject(err); else resolve(v); }
+      function esc(e) { if (e.key === 'Escape') { e.stopPropagation(); done(null, new DOMException('No port selected.', 'NotFoundError')); } }
+      document.addEventListener('keydown', esc, true);
+      var usb = ports.filter(function (p) { return p.usb !== false; }), others = ports.filter(function (p) { return p.usb === false; });
+      if (!usb.length) { usb = ports; others = []; }               // nothing USB to be seen: show them all
+      function add(p, parent) {
         var b = document.createElement('button');
-        b.textContent = p.path + (p.manufacturer ? '  \u2014  ' + p.manufacturer : '');
-        b.style.cssText = 'display:block;width:100%;text-align:left;margin:4px 0;padding:8px 10px;background:#232b35;color:inherit;border:1px solid #2a323c;border-radius:5px;cursor:pointer;font:inherit';
+        b.style.cssText = 'display:block;width:100%;text-align:left;margin:4px 0;padding:8px 10px;background:#232b35;color:inherit;border:1px solid ' +
+          (p.likely ? '#0083ff' : '#2a323c') + ';border-radius:5px;cursor:pointer;font:inherit';
+        var top = document.createElement('div'); top.style.fontWeight = '600'; top.textContent = p.name || p.path;
+        b.appendChild(top);
+        var sub = document.createElement('div'); sub.style.cssText = 'color:#8794a1;font-size:12.5px';
+        sub.textContent = (p.name ? p.path : (p.usb === false ? 'built into this computer' : 'USB')) + (p.likely ? '  \u00b7  this looks like your machine' : '');
+        b.appendChild(sub);
         b.onclick = function () { done(p); };
-        card.appendChild(b);
-      });
+        parent.appendChild(b);
+        return b;
+      }
+      var buttons = usb.map(function (p) { return add(p, card); });
+      if (others.length) {
+        var more = document.createElement('details'); more.style.cssText = 'margin-top:8px;color:#8794a1';
+        var sm = document.createElement('summary'); sm.style.cursor = 'pointer';
+        sm.textContent = 'Show all ports (' + others.length + ' built into this computer, not your machine)';
+        more.appendChild(sm); others.forEach(function (p) { add(p, more); });
+        card.appendChild(more);
+      }
       var cancel = document.createElement('button');
       cancel.textContent = 'Cancel';
       cancel.style.cssText = 'margin-top:10px;padding:6px 12px;background:transparent;color:#8794a1;border:1px solid #2a323c;border-radius:5px;cursor:pointer;font:inherit';
       cancel.onclick = function () { done(null, new DOMException('No port selected.', 'NotFoundError')); };
       card.appendChild(cancel);
       box.appendChild(card); document.body.appendChild(box);
-      var first = card.querySelector('button'); if (first) first.focus();
+      if (buttons[0]) buttons[0].focus();
     });
   }
 

@@ -2,6 +2,7 @@
 'use strict';
 const { SerialPort } = require('serialport');
 const fs = require('fs');
+const { describePorts } = require('./port-names');
 
 /** Ports that could be a controller. Uses the OS's device list, with a fallback for Linux systems
  *  without udev tools. Extra paths can be added with P454_SERIAL_PORTS (colon-separated), for testing. */
@@ -13,14 +14,19 @@ async function list() {
       try { ports = fs.readdirSync('/dev').filter((n) => /^tty(ACM|USB)\d+$/.test(n)).map((n) => ({ path: '/dev/' + n })); } catch (e2) { ports = []; }
     }
   }
+  // tests only: P454_SERIAL_LIST names a JSON file of ports, as the OS lists them, in place of this computer's
+  if (process.env.P454_SERIAL_LIST) ports = JSON.parse(fs.readFileSync(process.env.P454_SERIAL_LIST, 'utf8'));
   const extra = (process.env.P454_SERIAL_PORTS || '').split(':').filter(Boolean).map((p) => ({ path: p, manufacturer: 'test port' }));
-  return ports.concat(extra).map((p) => ({
+  // with a name for each, and the likely machine first (port-names.js)
+  return describePorts(ports.concat(extra).map((p) => ({
     path: p.path,
     vendorId: p.vendorId ? parseInt(p.vendorId, 16) : null,
     productId: p.productId ? parseInt(p.productId, 16) : null,
     manufacturer: p.manufacturer || '',
     serialNumber: p.serialNumber || '',
-  }));
+    pnpId: p.pnpId || '',
+    friendlyName: p.friendlyName || '',
+  })));
 }
 
 /** Turn the OS's error into what to do about it. */
