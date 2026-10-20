@@ -27,6 +27,22 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.56 — the port chooser names the machine
+Clint, on Linux Mint: "I cannot tell what device is the cnc machine, but if I do lsusb it shows up with Shapeoko in
+the name." The list showed each port's path only, the machine's /dev/ttyACM0 among the 32 /dev/ttyS ports built
+into the PC; and with a long list, Cancel scrolled away.
+- **Each port by its name**, from the operating system: on Linux the USB id lsusb's name comes from
+  (`usb-Carbide_3D_Shapeoko_5_Shapeoko5Pro-if00` is **Carbide 3D Shapeoko 5**), on Windows the device's name.
+  Its path is under it, smaller (`src/machine/port-names.js`).
+- **The machine first, chosen, and marked** "this looks like your machine": a port whose name or maker says
+  Shapeoko, Carbide or Nomad. Other USB devices next.
+- **Ports built into the computer** (not USB, never the machine) are under **Show all ports**, unless there's
+  nothing else. ttyACM and ttyUSB ports count as USB even when Linux's details can't be read.
+- **Only the list scrolls**: the title and Cancel stay in view, however many ports there are. Escape cancels.
+- **Proven:** 7 tests, with Clint's Shapeoko 5 Pro's real id; each check broken on purpose and failed. In the app,
+  with a pretend Linux Mint list (P454_SERIAL_LIST, for tests): the Shapeoko first and chosen, the 32 built-in
+  ports hidden, and with 45 ports shown, the list scrolling and Cancel on screen.
+
 ### 0.6.2-beta.55 — a moved curved outline is drawn where it is
 - Includes Design 0.144.1: a curved outline (such as one made with Join), moved, was still drawn where it had been.
 
