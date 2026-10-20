@@ -333,3 +333,29 @@ test('Extend, done again to a boundary that has moved; red if there’s nothing 
   assert.equal(D.run(`histEdit(1, {x1: 120, y1: 10, x2: 120, y2: 20})`), 1, 'it no longer reaches across the line’s path');
   assert.match(D.run('histSteps()[2].failed'), /nothing for it to reach/);
 });
+
+// Clint, 2026-10-20: a joined outline, copied and pasted, wouldn't move: its holes and construction line did. It had
+// moved; the screen kept drawing it where it was. A curved outline keeps its drawn points (_tess2, draw.js), which
+// moving didn't clear.
+test('a pasted joined outline, dragged or nudged, is drawn where it now is, with its holes', () => {
+  setup(); canvasReady();
+  D.run(`pushUndo();
+    DOC.ents.push({t: 'path', pts: [[0, 0, 0], [100, 0, 0], [100, 50, 1], [0, 50, 0]], closed: true, layer: 'L1'});
+    DOC.ents.push({t: 'circle', cx: 30, cy: 20, r: 5, layer: 'L1'});
+    DOC.ents.push({t: 'line', x1: 50, y1: -10, x2: 50, y2: 110, con: true, layer: 'L1'}); persist();
+    SEL = [0, 1, 2]; clipCopy(); CLIP_OVER = false; clipPaste(false); setTool('select'); 1`);
+  assert.deepEqual(plain(D.run('SEL')), [3, 4, 5]);
+  // where the screen draws an outline: its drawn points, as draw.js keeps them
+  const drawn = (i) => plain(D.run(`(function () { var e = DOC.ents[${i}]; var t = e._tess2 || (e._tess2 = tessPath(e)); return [Math.round(t[0][0]), Math.round(t[0][1])]; })()`));
+  assert.deepEqual(drawn(3), [10, -10], 'pasted 10 right and 10 down');
+  pointer('pointermove', 60, -10, 0);                                     // its bottom edge
+  pointer('pointerdown', 60, -10, 1);
+  pointer('pointermove', 100, -10, 1);
+  pointer('pointermove', 160, -10, 1);
+  pointer('pointerup', 160, -10, 0);
+  assert.deepEqual(plain(D.run('[DOC.ents[3].pts[0][0], DOC.ents[4].cx]')), [110, 140], 'the outline and its hole moved');
+  assert.deepEqual(drawn(3), [110, -10], 'and the outline is drawn there');
+  assert.deepEqual(drawn(0), [0, 0], 'the original stays');
+  D.run('moveEntity(DOC.ents[3], 1, 0); 1');                              // as an arrow key nudges it
+  assert.deepEqual(drawn(3), [111, -10], 'nudged, too');
+});

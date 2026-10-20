@@ -1175,6 +1175,17 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.144.1 — a moved curved outline is drawn where it is
+Clint: "I copied vectors that have been joined because I need 2 of these, but I cannot move the pasted version other
+than the construction line and holes." The outline had moved; the screen kept drawing it where it was. An outline
+with curves in it (as Join makes from lines and arcs) keeps the points it's drawn with, and moving it (a drag, the
+arrow keys, Paste, Duplicate, Center in material, nesting) cleared the points used for clicking on it but not those.
+- **Moving a curved outline now redraws it where it is.** Its toolpaths always followed where it really was, so a
+  toolpath could be made on an outline drawn somewhere else: check any drawing where a curved outline was moved.
+- Since 2026-09 (before the Design refactor); not new in the recent betas.
+- **Proven:** a test drags a pasted joined outline with its holes and construction line, and nudges it; it failed
+  before the fix. In the app, the same drag left the outline drawn behind without the fix, and moved it with it.
+
 ### 0.144.0 — a Tools menu
 Clint: "instead of adding more things to the Edit menu, I think we should make a Tools menu: better organization, and it
 won't clutter the Edit menu." The desktop app's menu bar in 454 Design is now File, Edit, View, **Tools**, Window, Help.

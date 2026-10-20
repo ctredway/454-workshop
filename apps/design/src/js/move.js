@@ -4,7 +4,8 @@ function moveEntity(e, dx, dy){
   else if (e.t==='rect'){ e.x+=dx; e.y+=dy; }
   else if (e.t==='circle'){ e.cx+=dx; e.cy+=dy; }
   else if (e.t==='arc'){ e.cx+=dx; e.cy+=dy; }
-  else if (e.t==='path'){ e.pts.forEach(function(p){ p[0]+=dx; p[1]+=dy; }); e._tess = null; }
+  // a curved outline keeps its points for picking (_tess) and for drawing (_tess2): both go, or it's drawn where it was
+  else if (e.t==='path'){ e.pts.forEach(function(p){ p[0]+=dx; p[1]+=dy; }); e._tess = null; e._tess2 = null; }
   else if (e.t==='poly'){ e.pts.forEach(function(p){ p[0]+=dx; p[1]+=dy; }); }
   else if (e.t==='group'){ e.ents.forEach(function(me){ moveEntity(me, dx, dy); }); }
   else if (e.t==='text'){ e.x+=dx; e.y+=dy; }
