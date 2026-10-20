@@ -72,6 +72,41 @@ Mint need a small package that AppImages use: `sudo apt install libfuse2t64` on 
 Your settings, tool library and drawings are kept in `~/.config/454`, separately from the program, so they carry
 over between versions.
 
+### A desktop shortcut
+
+To start 454 Workshop from your applications menu, with its icon, and pin it to the taskbar or dock:
+
+<Steps>
+
+1. **Rename the AppImage to `454-Workshop.AppImage`.** This matters: while its name has a version in it, each
+   update saves the new version under the new version's name and deletes the old file, so a shortcut to it stops
+   working. With no version in the name, updates keep the name, and the shortcut keeps working.
+2. Make the shortcut. If the AppImage is in `~/Applications`, paste this into a terminal (it downloads the icon
+   and writes the shortcut):
+
+   ```sh
+   wget -q -O ~/Applications/454-workshop-icon.png https://454workshop.com/docs/454-workshop-icon.png
+   mkdir -p ~/.local/share/applications
+   cat > ~/.local/share/applications/454-workshop.desktop <<EOF
+   [Desktop Entry]
+   Type=Application
+   Name=454 Workshop
+   Comment=CNC design and control for GRBL routers
+   Exec=$HOME/Applications/454-Workshop.AppImage
+   Icon=$HOME/Applications/454-workshop-icon.png
+   Terminal=false
+   Categories=Utility;Graphics;
+   StartupWMClass=454 Workshop
+   EOF
+   ```
+
+   If it's somewhere else, change `Applications` to that folder in the three places it appears. The icon on its
+   own (256 × 256): [454-workshop-icon.png](454-workshop-icon.png).
+3. Look for **454 Workshop** in your applications menu. It may take a moment to appear, or need a log out and back
+   in. Right-click it there to pin it.
+
+</Steps>
+
 ## Updates
 
 The installed app checks for updates 30 seconds after it starts, then every 6 hours while it's open. **Help → Check for updates…** checks straight away.
