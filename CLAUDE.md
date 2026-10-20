@@ -152,6 +152,11 @@ without a published release looks to them like a newest release with nothing in 
 
 ## Open items
 
+- **Before version 1.0: fill out the Edit menu** (Clint, 2026-10-20). Today it holds only Electron's own roles
+  (undo, redo, cut, copy, paste, select all, in `apps/desktop/src/app-menu.js`), which act on text boxes, not on
+  the drawing: Design's own Undo and Redo (the History bar), Copy, Paste, Paste in place, Delete, Duplicate, Select
+  all and the like aren't in it. Put most of the edit functions there, each through `page(...)` and the page's
+  `menuDo`, as File's items are, with the keys shown.
 - **Offered, not done:** publishing beta releases automatically instead of as drafts.
 - **Next restructuring steps:** tests for Control's status parsing, time estimates and recovery; for Design,
   nesting and the geometry operations; the small quirks each README lists from the byte-identical splits.
