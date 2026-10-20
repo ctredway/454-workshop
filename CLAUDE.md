@@ -160,9 +160,11 @@ without a published release looks to them like a newest release with nothing in 
   was offered, not done.
 - **Control gaps worth having** (compared with ncSender, 2026-10-19, which is grblHAL-only and so doesn't run a stock
   Shapeoko; in this order): 1. BitZero XY and corner probing (XYZ), and centre-finding in a hole, as Carbide Motion
-  does; 2. probe a crooked edge and rotate the job to it; 3. Quick actions that run on job start, pause, end or tool
-  change (dust collector, air); 4. gamepad jogging; 5. laser mode ($32, J Tech lasers); 6. surface mapping for
-  V-carving uneven boards. Maybe later: grblHAL, a Mac desktop app, translations. Not for us: network connections,
+  does (waiting on Clint's caliper measurements of his plate); 2. probe a crooked edge and rotate the job to it;
+  3. Quick actions that run on job start, end or tool change: set aside, as no stock Shapeoko board brings out an
+  output for a dust-collector relay (Clint's is manual); a job-start checklist was offered instead; 4. gamepad
+  jogging: done (Control 0.36.0, not yet tried with a real controller); 5. laser mode ($32, J Tech lasers);
+  6. surface mapping for V-carving uneven boards. Maybe later: grblHAL, a Mac desktop app, translations. Not for us: network connections,
   tool changers, 4th axis. Control already checks the work area and the machine's travel before a job.
 - **Later:** code signing (Windows shows a SmartScreen warning), GitHub Sponsors,
   and seeing the Shapeoko 5.1 Pro connect for real (Control should name it "Shapeoko 5 Pro 4×4, ballscrew Z").

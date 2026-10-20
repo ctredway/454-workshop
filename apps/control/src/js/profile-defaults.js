@@ -4,6 +4,7 @@ var PROFILE = {
   bitZero:{enabled:false, version:'v2', thk:null},
   spindle:{type:'router', spinup:7},
   jog:{inc:'1', fastXY:3000, fastZ:600},
+  gamepad:{enabled:false},                                   // jogging with a game controller (gamepad.js)
   run:{highStart:true, travelZ:5, topZ:2, parkEnd:true,
        park:{enabled:false, x:null, y:null},                 // end of job
        tc:{enabled:true, preset:'fc', x:null, y:null}},      // tool changes; preset unless 'custom'

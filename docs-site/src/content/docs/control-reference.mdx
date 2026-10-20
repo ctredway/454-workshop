@@ -298,6 +298,33 @@ thickness, measured with calipers from its bottom face to the top face the tool 
 sets Z0 at the top of the stock: the height where the tool touched, less the thickness. Touch the pin to the
 plate to check the circuit before probing, and check the zero with a piece of paper before cutting.
 
+### Game controller
+
+An Xbox-style game controller, USB or Bluetooth, makes a handy pendant at the machine. Tick **Jog with a game
+controller** in **Settings → Accessories**, plug the controller in (or pair it), and press any button on it: the
+browser only shows Control a controller once a button has been pressed. The setting says **Connected** and its
+name. That first press does nothing.
+
+| On the controller | What it does |
+| --- | --- |
+| **Left stick**, held | Jogs X and Y, in eight directions, at the **Fast XY** speed |
+| **Right stick**, up or down, held | Jogs Z at the **Fast Z** speed |
+| **LB**, held with a stick | Slow: a fifth of the speed, for creeping up on an edge |
+| **D-pad** | One step in X or Y, of the size chosen in the jog panel (1 mm when that's **Fast**) |
+| **Y** / **A** | One step up / down in Z |
+| **X** | The next step size: 0.025, 0.1, 1, 10 mm |
+| **B** | Stop: cancels a jog. During a job, **Hold** |
+
+- **Let go and it stops.** A held jog is cancelled the moment the stick comes back past a quarter of its travel,
+  and goes no further than the machine's travel allows, as the jog panel's do.
+- **One direction at a time.** Push the stick a new way while jogging and the jog stops: bring the stick back to
+  the middle, then push again. The same after anything else stops a jog (B, the window losing focus, the page
+  going into the background, the controller switched off).
+- **It jogs only when the jog panel could:** connected and idle, not during a job except when it's stopped at a
+  tool change, and not while probing or running a quick action.
+- **It can't start anything.** No Start, no Resume, no zeroing and no spindle from the controller: a knocked button
+  only ever jogs or stops. Resume a held job, and set zero, on the screen.
+
 ### Spindle type and spin-up
 
 Trim router or VFD spindle, and how long to wait after the spindle starts (M3 or M4) before any cutting move.

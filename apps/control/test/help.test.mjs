@@ -30,8 +30,8 @@ const tipText = () => { const t = C.el('helpTip'); return !t || t.hidden ? null 
 
 test('every place marked for an icon in Control’s page has one, straight from the start', () => {
   const marked = [...C.document.querySelectorAll('.helpAt')].map((s) => s.getAttribute('data-k'));
-  assert.equal(marked.length, 19);
-  assert.equal(new Set(marked).size, 19, 'each marked once');
+  assert.equal(marked.length, 20);
+  assert.equal(new Set(marked).size, 20, 'each marked once');
   assert.deepEqual(ICONS.map((r) => r[0]).sort(), marked.map((k) => '.helpAt[data-k="' + k + '"]').sort(), 'the list and the page agree');
   for (const [sel, where, tip] of ICONS) {
     const b = iconAt(sel);
@@ -39,7 +39,7 @@ test('every place marked for an icon in Control’s page has one, straight from 
     assert.equal(b.getAttribute('data-help-at'), where);
     assert.equal(b.getAttribute('aria-label'), tip + ' Click for the guide.');
   }
-  assert.equal(C.document.querySelectorAll('.helpI').length, 19);
+  assert.equal(C.document.querySelectorAll('.helpI').length, 20);
 });
 test('the old help buttons and their pop-up text are gone: the guides are the one set of words', () => {
   assert.equal(C.document.querySelectorAll('.hlp').length, 0);
@@ -116,7 +116,7 @@ test('while help is open, a key press is kept from Control, so the jog keys can�
 });
 test('every place Control’s help opens at is in the guides (when they’re built here)', () => {
   const list = targets(read('../src/js/help-where.js'));
-  assert.ok(list.length >= 19 + 6);
+  assert.ok(list.length >= 20 + 6);
   const dist = new URL('../../../docs-site/dist/help-index.json', import.meta.url);
   if (!fs.existsSync(dist)) return;                        // the docs' own build checks it
   assert.deepEqual(missing(JSON.parse(fs.readFileSync(dist, 'utf8')), list), []);

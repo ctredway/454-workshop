@@ -16,8 +16,10 @@ function jogLiftZ6(){
   sendLine(jogCmd([0, 0, 1], d, PROFILE.jog.fastZ));
   if (d < 5.95) logC('sys', 'Z lifted ' + d.toFixed(1) + ' mm: that\u2019s as far as the top of travel allows');
 }
-function jogStepOnce(p){
-  var inc = PROFILE.jog.inc, dist = parseFloat(inc);
+// one step of the size chosen in the jog panel, or of inc (the game controller's, when the panel says Fast)
+function jogStepOnce(p, inc){
+  inc = inc || PROFILE.jog.inc;
+  var dist = parseFloat(inc);
   var feed = STEP_FEEDS[inc] || 1000;
   if (p[2]) feed = Math.min(feed, PROFILE.jog.fastZ);
   sendLine(jogCmd(p, dist, feed));
@@ -68,9 +70,10 @@ function jogTopUp(){
     if (JOGC.inflight === before) break; // clamp ended the jog
   }
 }
-function jogFastStart(p){
+// A held jog in direction p, at the Fast speed (times scale: the game controller's slow), until jogFastStop.
+function jogFastStart(p, scale){
   jogFastStop(false);
-  var feed = p[2] ? PROFILE.jog.fastZ : PROFILE.jog.fastXY;
+  var feed = (p[2] ? PROFILE.jog.fastZ : PROFILE.jog.fastXY) * (scale > 0 ? scale : 1);
   JOGC.p = p; JOGC.feed = feed;
   JOGC.dist = Math.max(0.5, feed / 60 * 0.18); // ~180 ms of motion per segment
   JOGC.pred = {x:SERIAL.mpos.x, y:SERIAL.mpos.y, z:SERIAL.mpos.z};
@@ -78,6 +81,8 @@ function jogFastStart(p){
   jogTopUp();
   JOGC.timer = setInterval(function(){
     if (!SERIAL.connected || SERIAL.state === 'Alarm'){ jogFastStop(true); return; }
+    // the game controller keeps its jog alive as it polls; if it stops being polled, the jog stops (gamepad.js)
+    if (JOGC.owner === 'gamepad' && Date.now() - JOGC.alive > GPAD_WATCHDOG){ jogFastStop(true); return; }
     sendRT(0x3f); // ~10 Hz status while jogging fast: pins + fresh mpos for the clamp
     jogTopUp();   // watchdog top-up in case an ok was missed
   }, 100);
@@ -87,5 +92,6 @@ function jogFastStop(cancel){
   if (JOGC.active && cancel !== false && SERIAL.connected) sendRT(0x85, 'jog cancel');
   JOGC.active = false;
   JOGC.inflight = 0;
+  JOGC.owner = null;
 }
 

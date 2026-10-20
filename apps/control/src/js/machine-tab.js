@@ -319,7 +319,8 @@ function wireMachine(){
   // ----- profile wiring -----
   profileLoad();
   applyProfileToUI();
-  ['bsEnable','bsX','bsY','bzEnable','bzVersion','bzThk','spinType','spinupSec','jogFeedXY','jogFeedZ','highStart','uiTheme','uiAccent','uiAccentHex','travelZIn','topZIn','tcEnable','tcPreset','tcEndPark','tcX','tcY','pkX','pkY',
+  gpadWire();                                         // a game controller, if switched on (gamepad.js)
+  ['bsEnable','bsX','bsY','bzEnable','bzVersion','gpEnable','bzThk','spinType','spinupSec','jogFeedXY','jogFeedZ','highStart','uiTheme','uiAccent','uiAccentHex','travelZIn','topZIn','tcEnable','tcPreset','tcEndPark','tcX','tcY','pkX','pkY',
    'envW','envD','originSel','stockThk','rapidRate','checkEnvelope','showEnvelope'].forEach(function(id){
     document.getElementById(id).addEventListener('change', readUIToProfile);
   });

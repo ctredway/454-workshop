@@ -10,6 +10,7 @@ function profileLoad(){
     if (p.bitZero)   PROFILE.bitZero   = Object.assign(PROFILE.bitZero, p.bitZero);
     if (p.spindle)   PROFILE.spindle   = Object.assign(PROFILE.spindle, p.spindle);
     if (p.jog)       PROFILE.jog       = Object.assign(PROFILE.jog, p.jog);
+    if (p.gamepad)   PROFILE.gamepad   = {enabled: p.gamepad.enabled === true};
     if (p.run){
       var pk = Object.assign({}, PROFILE.run.park, p.run.park || {});
       PROFILE.run = Object.assign(PROFILE.run, p.run);
@@ -88,6 +89,7 @@ function applyProfileToUI(){
   if (PROFILE.bitSetter.y !== null) v('bsY').value = PROFILE.bitSetter.y;
   v('bzEnable').checked = PROFILE.bitZero.enabled;
   v('bzVersion').value = PROFILE.bitZero.version;
+  v('gpEnable').checked = !!(PROFILE.gamepad && PROFILE.gamepad.enabled);
   if (PROFILE.bitZero.thk !== null) v('bzThk').value = PROFILE.bitZero.thk;
   v('spinType').value = PROFILE.spindle.type;
   v('spinupSec').value = PROFILE.spindle.spinup;
@@ -126,6 +128,8 @@ function readUIToProfile(){
   PROFILE.bitSetter.y = v('bsY').value === '' ? null : parseFloat(v('bsY').value);
   PROFILE.bitZero.enabled = v('bzEnable').checked;
   PROFILE.bitZero.version = v('bzVersion').value;
+  PROFILE.gamepad = {enabled: v('gpEnable').checked};
+  if (typeof gpadSync === 'function') gpadSync();
   PROFILE.bitZero.thk = v('bzThk').value === '' ? null : parseFloat(v('bzThk').value);
   PROFILE.spindle.type = v('spinType').value;
   PROFILE.spindle.spinup = parseFloat(v('spinupSec').value) || 0;

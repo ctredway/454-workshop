@@ -719,6 +719,10 @@
         <select id="bzVersion"><option value="v1">v1</option><option value="v2">v2</option></select>
       </div>
       <div class="mRow">
+        <input type="checkbox" id="gpEnable"><label for="gpEnable">Jog with a game controller</label><span class="helpAt" data-k="gamepad"></span>
+        <span id="gpStatus" style="color:var(--faint)"></span>
+      </div>
+      <div class="mRow">
         <label>Spindle</label><span class="helpAt" data-k="spindle"></span>
         <select id="spinType"><option value="router">Trim router</option><option value="vfd">VFD spindle</option></select>
         <label>spin-up</label><input type="number" id="spinupSec" value="7" step="0.5" min="0" style="width:64px"><span style="color:var(--faint)">s dwell after M3 or M4</span>
@@ -964,7 +968,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.35.0';
+var CONTROL_VERSION = '0.36.0';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -2647,6 +2651,7 @@ var HELP_ICONS = [
   ['.helpAt[data-k="rapid"]', 'control-reference.html#time-estimate', 'How long a job will take, worked out the way the controller moves the machine. The rapid rate here changes the estimate only.'],
   ['.helpAt[data-k="controllercfg"]', 'control-reference.html#controller-config', 'The controller\u2019s own settings, as read when you connect. Control only reads them, and can check them for trouble.'],
   ['.helpAt[data-k="bitsetter"]', 'control-reference.html#bitsetter', 'The button the tool touches so the machine can measure its length, which keeps Z zero right through tool changes.'],
+  ['.helpAt[data-k="gamepad"]', 'control-reference.html#game-controller', 'Jog with an Xbox-style game controller at the machine: sticks to move, the D-pad for steps, B to stop. It can\u2019t start a job or set zero.'],
   ['.helpAt[data-k="bitzero"]', 'control-reference.html#bitzero', 'The touch plate that sets Z zero. Measure its thickness yourself: every depth you cut is off by whatever this number is off.'],
   ['.helpAt[data-k="spindle"]', 'control-reference.html#spindle-type-and-spin-up', 'Router or VFD, and how long Control waits after the spindle starts before cutting. A VFD needs longer than a router.'],
   ['.helpAt[data-k="highstart"]', 'control-reference.html#start-and-stop-high', 'Keeps the bit above clamps and stock whenever it\u2019s travelling, and lifts it clear before the spindle stops. Leave it on.'],
@@ -2948,7 +2953,8 @@ var SERIAL = {
 
 var JOB = {active:false, held:false, list:null, total:0, idx:0,
            inflight:[], acked:0, lastLn:0, toolWait:null, startedAt:0};
-var JOGC = {active:false, timer:null, limitHit:false, inflight:0, p:null, dist:0, feed:0, pred:{x:0,y:0,z:0}};
+var JOGC = {active:false, timer:null, limitHit:false, inflight:0, p:null, dist:0, feed:0, pred:{x:0,y:0,z:0},
+            owner:null, alive:0};    // owner 'gamepad': kept alive by its poll (gamepad.js)
 var KEYJOG = {code:null};
 var JOG_KEYS = {ArrowLeft:[-1,0,0], ArrowRight:[1,0,0], ArrowUp:[0,1,0], ArrowDown:[0,-1,0], PageUp:[0,0,1], PageDown:[0,0,-1]};
 
@@ -2989,8 +2995,10 @@ function jogLiftZ6(){
   sendLine(jogCmd([0, 0, 1], d, PROFILE.jog.fastZ));
   if (d < 5.95) logC('sys', 'Z lifted ' + d.toFixed(1) + ' mm: that\u2019s as far as the top of travel allows');
 }
-function jogStepOnce(p){
-  var inc = PROFILE.jog.inc, dist = parseFloat(inc);
+// one step of the size chosen in the jog panel, or of inc (the game controller's, when the panel says Fast)
+function jogStepOnce(p, inc){
+  inc = inc || PROFILE.jog.inc;
+  var dist = parseFloat(inc);
   var feed = STEP_FEEDS[inc] || 1000;
   if (p[2]) feed = Math.min(feed, PROFILE.jog.fastZ);
   sendLine(jogCmd(p, dist, feed));
@@ -3041,9 +3049,10 @@ function jogTopUp(){
     if (JOGC.inflight === before) break; // clamp ended the jog
   }
 }
-function jogFastStart(p){
+// A held jog in direction p, at the Fast speed (times scale: the game controller's slow), until jogFastStop.
+function jogFastStart(p, scale){
   jogFastStop(false);
-  var feed = p[2] ? PROFILE.jog.fastZ : PROFILE.jog.fastXY;
+  var feed = (p[2] ? PROFILE.jog.fastZ : PROFILE.jog.fastXY) * (scale > 0 ? scale : 1);
   JOGC.p = p; JOGC.feed = feed;
   JOGC.dist = Math.max(0.5, feed / 60 * 0.18); // ~180 ms of motion per segment
   JOGC.pred = {x:SERIAL.mpos.x, y:SERIAL.mpos.y, z:SERIAL.mpos.z};
@@ -3051,6 +3060,8 @@ function jogFastStart(p){
   jogTopUp();
   JOGC.timer = setInterval(function(){
     if (!SERIAL.connected || SERIAL.state === 'Alarm'){ jogFastStop(true); return; }
+    // the game controller keeps its jog alive as it polls; if it stops being polled, the jog stops (gamepad.js)
+    if (JOGC.owner === 'gamepad' && Date.now() - JOGC.alive > GPAD_WATCHDOG){ jogFastStop(true); return; }
     sendRT(0x3f); // ~10 Hz status while jogging fast: pins + fresh mpos for the clamp
     jogTopUp();   // watchdog top-up in case an ok was missed
   }, 100);
@@ -3060,6 +3071,7 @@ function jogFastStop(cancel){
   if (JOGC.active && cancel !== false && SERIAL.connected) sendRT(0x85, 'jog cancel');
   JOGC.active = false;
   JOGC.inflight = 0;
+  JOGC.owner = null;
 }
 
 /* ---------------- emergency stop ----------------
@@ -3733,6 +3745,165 @@ var GRBL_ALARMS = {
   8:'Homing fail: could not clear the switch.',9:'Homing fail: switch not found within travel.'
 };
 
+/* ---------------- game controller (gamepad) jogging ----------------
+   An Xbox-style game controller, USB or Bluetooth, as a pendant at the machine. Switched on in Settings ->
+   Accessories (off until then, so a controller left on the bench moves nothing). It drives the same jogging the
+   jog panel does (jogging.js): held jogs in short segments clamped to the machine's travel and cancelled the
+   moment the stick is let go; steps one per press. It only ever jogs or stops. It can't start or resume a job,
+   set zero, or run the spindle: a button knocked by accident must never start anything.
+
+     Left stick       jog X and Y while held (eight directions), at the Fast XY speed
+     Right stick      jog Z (up and down) while held, at the Fast Z speed
+     LB, held         slow: a fifth of the speed, for creeping up on an edge
+     D-pad            one step in X or Y, of the step chosen in the jog panel (1 mm when that's Fast)
+     Y / A            one step up / down in Z
+     X                the next step: 0.025, 0.1, 1, 10 mm
+     B                stop: cancels a jog; during a job, Hold
+
+   Safety:
+   - A stick starts a jog past GPAD_START and stops under GPAD_STOP (so it doesn't flicker at the edge). A jog keeps
+     the direction it started in: pushed another way, it stops, and the stick has to come back to the middle
+     before it jogs again. So does any jog this stopped for another reason (the window lost focus, the page was
+     hidden, the controller went away, a job or a probe began).
+   - Jogs only when the jog panel's buttons could: connected, Idle (or already jogging), not during a job except
+     stopped at a tool change, not while probing or running a quick action.
+   - The poll keeps a held jog alive (JOGC.alive): if it stops being polled (the browser slows timers for a page in
+     the background), jogging.js cancels the jog within GPAD_WATCHDOG ms. */
+var GPAD = {timer:null, index:null, name:'', jog:null, needCentre:false, prev:{}, said:{}};
+var GPAD_START = 0.5, GPAD_STOP = 0.25, GPAD_POLL = 50, GPAD_WATCHDOG = 300, GPAD_SLOW = 0.2;
+var GPAD_STEPS = ['0.025', '0.1', '1', '10'];
+
+function gpadOn(){ return !!(PROFILE.gamepad && PROFILE.gamepad.enabled); }
+// the first standard-layout controller the browser sees (it shows them only after a button is pressed)
+function gpadFind(){
+  var nav = typeof navigator !== 'undefined' ? navigator : null;
+  var pads = nav && nav.getGamepads ? nav.getGamepads() : [];
+  for (var i = 0; i < pads.length; i++){
+    var p = pads[i];
+    if (p && p.connected !== false && p.buttons && p.buttons.length >= 16 && p.axes && p.axes.length >= 4) return p;
+  }
+  return null;
+}
+// may it jog now? Quietly: the stick is polled 20 times a second, so a refusal is said once, when it's pushed
+function gpadMayJog(){
+  if (!SERIAL.connected || SERIAL.state === 'Alarm') return false;
+  if (SERIAL.state !== 'Idle' && SERIAL.state !== 'Jog') return false;
+  if (JOB.active && !atToolChange()) return false;
+  if (PROBE.active || QA.active) return false;
+  return true;
+}
+// A held jog from the sticks: {p: direction, slow} or null. The left stick's eight directions, or the right
+// stick's up and down; the left stick wins if both are pushed.
+function gpadStick(pad, held){
+  var lx = pad.axes[0] || 0, ly = -(pad.axes[1] || 0), rz = -(pad.axes[3] || 0);   // (sticks report up as negative)
+  var past = function (x, y) { return Math.hypot(x, y) >= (held ? GPAD_STOP : GPAD_START); };
+  if (past(lx, ly)){
+    var a = Math.atan2(ly, lx), k = Math.round(a / (Math.PI / 4));                 // the nearest of eight directions
+    var dirs = {0: [1, 0], 1: [1, 1], 2: [0, 1], 3: [-1, 1], 4: [-1, 0], '-4': [-1, 0], '-3': [-1, -1], '-2': [0, -1], '-1': [1, -1]};
+    var d = dirs[k];
+    return {p: [d[0], d[1], 0]};
+  }
+  if (Math.abs(rz) >= (held ? GPAD_STOP : GPAD_START)) return {p: [0, 0, rz > 0 ? 1 : -1]};
+  return null;
+}
+function gpadSame(a, b){ return a && b && a.p.join() === b.p.join() && a.slow === b.slow; }
+function gpadStopJog(needCentre){
+  if (GPAD.jog){ GPAD.jog = null; if (JOGC.active && JOGC.owner === 'gamepad') jogFastStop(true); }
+  if (needCentre) GPAD.needCentre = true;
+}
+function gpadSayOnce(key, cls, msg){ if (!GPAD.said[key]){ GPAD.said[key] = true; logC(cls, msg); } }
+
+// one look at the controller: called every GPAD_POLL ms while it's switched on
+function gpadPoll(){
+  var pad = gpadFind();
+  if (!gpadOn() || !pad){
+    if (GPAD.index !== null){
+      gpadStopJog(true);
+      logC('sys', 'game controller ' + (pad ? 'switched off in Settings' : 'gone: ' + GPAD.name));
+      GPAD.index = null; GPAD.name = ''; GPAD.prev = {};
+      gpadStatus();
+    }
+    return;
+  }
+  if (GPAD.index !== pad.index){
+    // (a browser shows a controller only once a button is pressed: that press, and any button already down, isn't
+    // a command; nor is a stick already pushed)
+    GPAD.index = pad.index; GPAD.name = pad.id; GPAD.prev = {}; GPAD.needCentre = true;
+    pad.buttons.forEach(function (b, i) { GPAD.prev[i] = !!(b && (b.pressed || b.value > 0.5)); });
+    logC('sys', 'game controller ready: ' + pad.id + ' (left stick X and Y, right stick Z, B stops)');
+    gpadStatus();
+  }
+  var btn = function (i) { var b = pad.buttons[i]; return !!(b && (b.pressed || b.value > 0.5)); };
+  var pressed = function (i) { var now = btn(i), was = !!GPAD.prev[i]; GPAD.prev[i] = now; return now && !was; };
+
+  // B: stop, whatever else is going on (checked first, and never needs the machine Idle)
+  if (pressed(1)){
+    gpadStopJog(true);
+    if (JOB.active && !JOB.held && !atToolChange()) jobHold();
+    else if (JOGC.active) jogFastStop(true);
+  }
+  // the page must be in front: a held jog stops, and waits for the stick to come back to the middle
+  var visible = typeof document === 'undefined' || document.visibilityState !== 'hidden';
+  if (!visible){ gpadStopJog(true); return; }
+
+  // held jogs from the sticks
+  var want = gpadStick(pad, !!GPAD.jog);
+  if (want) want.slow = btn(4);
+  if (!want){ GPAD.needCentre = false; gpadStopJog(false); }
+  else if (GPAD.jog){
+    if (!gpadSame(want, GPAD.jog) || !JOGC.active) gpadStopJog(true);             // turned, slowed, or stopped elsewhere
+    else JOGC.alive = Date.now();                                                // still held: keep it going
+  }
+  else if (!GPAD.needCentre){
+    if (!gpadMayJog()){
+      gpadSayOnce('busy', 'err', 'game controller: can’t jog now — ' + (JOB.active ? 'a job is running' : 'the machine is ' + (SERIAL.connected ? SERIAL.state : 'not connected')));
+      GPAD.needCentre = true;
+    } else {
+      GPAD.said.busy = false;
+      GPAD.jog = want;
+      jogFastStart(want.p, want.slow ? GPAD_SLOW : 1);
+      JOGC.owner = 'gamepad'; JOGC.alive = Date.now();
+    }
+  }
+
+  // steps: one per press
+  var steps = [[12, [0, 1, 0]], [13, [0, -1, 0]], [14, [-1, 0, 0]], [15, [1, 0, 0]], [3, [0, 0, 1]], [0, [0, 0, -1]]];
+  steps.forEach(function (s) {
+    if (!pressed(s[0]) || GPAD.jog) return;
+    if (!gpadMayJog()){ gpadSayOnce('busy', 'err', 'game controller: can’t jog now — the machine is busy'); return; }
+    GPAD.said.busy = false;
+    jogStepOnce(s[1], PROFILE.jog.inc === 'fast' ? '1' : null);
+  });
+  // X: the next step size
+  if (pressed(2)){
+    var at = GPAD_STEPS.indexOf(PROFILE.jog.inc);
+    PROFILE.jog.inc = GPAD_STEPS[(at + 1) % GPAD_STEPS.length];
+    if (typeof setIncUI === 'function') setIncUI(PROFILE.jog.inc);
+    if (typeof profileSave === 'function') profileSave();
+    logC('sys', 'game controller: steps of ' + PROFILE.jog.inc + ' mm');
+  }
+}
+// Settings -> Accessories: what it sees
+function gpadStatus(){
+  var el = typeof document !== 'undefined' && document.getElementById ? document.getElementById('gpStatus') : null;
+  if (!el) return;
+  el.textContent = !gpadOn() ? '' : GPAD.index !== null ? 'Connected: ' + GPAD.name
+    : 'None found yet: plug one in (or pair it) and press any button on it.';
+}
+// switched on or off in Settings (and at startup)
+function gpadSync(){
+  if (gpadOn() && !GPAD.timer) GPAD.timer = setInterval(gpadPoll, GPAD_POLL);
+  if (!gpadOn() && GPAD.timer){ gpadPoll(); clearInterval(GPAD.timer); GPAD.timer = null; }
+  gpadStatus();
+}
+function gpadWire(){
+  if (typeof window !== 'undefined' && window.addEventListener){
+    window.addEventListener('gamepadconnected', gpadSync);
+    window.addEventListener('gamepaddisconnected', function () { gpadPoll(); });
+    window.addEventListener('blur', function () { gpadStopJog(true); });
+  }
+  gpadSync();
+}
 function logC(cls, text){
   var log = document.getElementById('consoleLog');
   var d = document.createElement('div');
@@ -4167,6 +4338,7 @@ var PROFILE = {
   bitZero:{enabled:false, version:'v2', thk:null},
   spindle:{type:'router', spinup:7},
   jog:{inc:'1', fastXY:3000, fastZ:600},
+  gamepad:{enabled:false},                                   // jogging with a game controller (gamepad.js)
   run:{highStart:true, travelZ:5, topZ:2, parkEnd:true,
        park:{enabled:false, x:null, y:null},                 // end of job
        tc:{enabled:true, preset:'fc', x:null, y:null}},      // tool changes; preset unless 'custom'
@@ -4543,6 +4715,7 @@ function profileLoad(){
     if (p.bitZero)   PROFILE.bitZero   = Object.assign(PROFILE.bitZero, p.bitZero);
     if (p.spindle)   PROFILE.spindle   = Object.assign(PROFILE.spindle, p.spindle);
     if (p.jog)       PROFILE.jog       = Object.assign(PROFILE.jog, p.jog);
+    if (p.gamepad)   PROFILE.gamepad   = {enabled: p.gamepad.enabled === true};
     if (p.run){
       var pk = Object.assign({}, PROFILE.run.park, p.run.park || {});
       PROFILE.run = Object.assign(PROFILE.run, p.run);
@@ -4621,6 +4794,7 @@ function applyProfileToUI(){
   if (PROFILE.bitSetter.y !== null) v('bsY').value = PROFILE.bitSetter.y;
   v('bzEnable').checked = PROFILE.bitZero.enabled;
   v('bzVersion').value = PROFILE.bitZero.version;
+  v('gpEnable').checked = !!(PROFILE.gamepad && PROFILE.gamepad.enabled);
   if (PROFILE.bitZero.thk !== null) v('bzThk').value = PROFILE.bitZero.thk;
   v('spinType').value = PROFILE.spindle.type;
   v('spinupSec').value = PROFILE.spindle.spinup;
@@ -4659,6 +4833,8 @@ function readUIToProfile(){
   PROFILE.bitSetter.y = v('bsY').value === '' ? null : parseFloat(v('bsY').value);
   PROFILE.bitZero.enabled = v('bzEnable').checked;
   PROFILE.bitZero.version = v('bzVersion').value;
+  PROFILE.gamepad = {enabled: v('gpEnable').checked};
+  if (typeof gpadSync === 'function') gpadSync();
   PROFILE.bitZero.thk = v('bzThk').value === '' ? null : parseFloat(v('bzThk').value);
   PROFILE.spindle.type = v('spinType').value;
   PROFILE.spindle.spinup = parseFloat(v('spinupSec').value) || 0;
@@ -6096,7 +6272,8 @@ function wireMachine(){
   // ----- profile wiring -----
   profileLoad();
   applyProfileToUI();
-  ['bsEnable','bsX','bsY','bzEnable','bzVersion','bzThk','spinType','spinupSec','jogFeedXY','jogFeedZ','highStart','uiTheme','uiAccent','uiAccentHex','travelZIn','topZIn','tcEnable','tcPreset','tcEndPark','tcX','tcY','pkX','pkY',
+  gpadWire();                                         // a game controller, if switched on (gamepad.js)
+  ['bsEnable','bsX','bsY','bzEnable','bzVersion','gpEnable','bzThk','spinType','spinupSec','jogFeedXY','jogFeedZ','highStart','uiTheme','uiAccent','uiAccentHex','travelZIn','topZIn','tcEnable','tcPreset','tcEndPark','tcX','tcY','pkX','pkY',
    'envW','envD','originSel','stockThk','rapidRate','checkEnvelope','showEnvelope'].forEach(function(id){
     document.getElementById(id).addEventListener('change', readUIToProfile);
   });

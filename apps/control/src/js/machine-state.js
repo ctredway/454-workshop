@@ -18,7 +18,8 @@ var SERIAL = {
 
 var JOB = {active:false, held:false, list:null, total:0, idx:0,
            inflight:[], acked:0, lastLn:0, toolWait:null, startedAt:0};
-var JOGC = {active:false, timer:null, limitHit:false, inflight:0, p:null, dist:0, feed:0, pred:{x:0,y:0,z:0}};
+var JOGC = {active:false, timer:null, limitHit:false, inflight:0, p:null, dist:0, feed:0, pred:{x:0,y:0,z:0},
+            owner:null, alive:0};    // owner 'gamepad': kept alive by its poll (gamepad.js)
 var KEYJOG = {code:null};
 var JOG_KEYS = {ArrowLeft:[-1,0,0], ArrowRight:[1,0,0], ArrowUp:[0,1,0], ArrowDown:[0,-1,0], PageUp:[0,0,1], PageDown:[0,0,-1]};
 

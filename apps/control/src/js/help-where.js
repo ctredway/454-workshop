@@ -53,6 +53,7 @@ var HELP_ICONS = [
   ['.helpAt[data-k="rapid"]', 'control-reference.html#time-estimate', 'How long a job will take, worked out the way the controller moves the machine. The rapid rate here changes the estimate only.'],
   ['.helpAt[data-k="controllercfg"]', 'control-reference.html#controller-config', 'The controller\u2019s own settings, as read when you connect. Control only reads them, and can check them for trouble.'],
   ['.helpAt[data-k="bitsetter"]', 'control-reference.html#bitsetter', 'The button the tool touches so the machine can measure its length, which keeps Z zero right through tool changes.'],
+  ['.helpAt[data-k="gamepad"]', 'control-reference.html#game-controller', 'Jog with an Xbox-style game controller at the machine: sticks to move, the D-pad for steps, B to stop. It can\u2019t start a job or set zero.'],
   ['.helpAt[data-k="bitzero"]', 'control-reference.html#bitzero', 'The touch plate that sets Z zero. Measure its thickness yourself: every depth you cut is off by whatever this number is off.'],
   ['.helpAt[data-k="spindle"]', 'control-reference.html#spindle-type-and-spin-up', 'Router or VFD, and how long Control waits after the spindle starts before cutting. A VFD needs longer than a router.'],
   ['.helpAt[data-k="highstart"]', 'control-reference.html#start-and-stop-high', 'Keeps the bit above clamps and stock whenever it\u2019s travelling, and lifts it clear before the spindle stops. Leave it on.'],

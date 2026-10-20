@@ -652,6 +652,31 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Control
 
+### 0.36.0 — jog with a game controller
+From comparing ncSender (Clint's list of gaps worth having, #4): an Xbox-style game controller, USB or Bluetooth,
+as a pendant at the machine. Nothing to buy beyond the controller.
+- **Settings → Accessories → Jog with a game controller**, off until ticked, so a controller left on the bench moves
+  nothing. It says **Connected** and the controller's name once the browser shows it one (after a button is
+  pressed: that press does nothing).
+- **Left stick** jogs X and Y (eight directions) and the **right stick** Z, while held, at the Fast speeds; **LB**
+  held makes it a fifth. **D-pad** steps X and Y, **Y**/**A** step Z, by the step chosen in the jog panel (1 mm when
+  that's Fast); **X** picks the next step. **B** stops: cancels a jog, or Holds a job.
+- **Built on the jog panel's own jogging** (jogging.js), so a held jog goes in short segments clamped to the
+  machine's travel and is cancelled (GRBL's jog cancel) the moment the stick is let go.
+- **Safety:** a jog starts past half the stick's travel and stops under a quarter. It keeps the direction it
+  started in: pushed another way it stops, and the stick has to come back to the middle first; so does any jog
+  stopped for another reason (B, the window losing focus, the page hidden, the controller gone or switched off).
+  It jogs only when the jog panel could (connected, idle, no job except stopped at a tool change, not probing or
+  running a quick action), and says once when it can't. **It can't start, resume, zero or run the spindle:** a
+  knocked button only jogs or stops. If its polling stops (a page in the background has its timers slowed), the
+  jog stops itself within 0.3 s.
+- **Proven:** 14 tests on Control's real jogging, with a stand-in controller and machine recording what's sent:
+  off by default, held jogs and letting go, the dead zone, eight directions, Z and slow, turning, steps one per
+  press, step sizes, the waking press, B (cancel, Hold, and nothing else ever sent), during a job (also the
+  moment GRBL says Idle), probing, quick actions, locked, disconnected, unplugged, hidden, switched off, and the
+  watchdog. Each check was broken on purpose and failed. In the app: switched on, it found a stand-in controller
+  and said Connected; with no machine it refused, once. Not yet tried with a real controller at a real machine.
+
 ### 0.35.0 — "Loading…" while a big file loads
 - **Loading a big G-code file shows a panel first**, naming the file, with a spinner that keeps turning (a CSS
   transform animation, which the browser runs apart from the page). Reading and drawing Clint's biggest file,
