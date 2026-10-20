@@ -73,3 +73,69 @@ test('settings that can’t make a sound part are named, in words', () => {
   assert.match(problems(P({ NotchDepth: 9 })).join(' '), /notches don’t fit/);
   assert.deepEqual(problems(P({ NotchDepth: 9, notches: false })), [], 'no notches: their size doesn’t matter');
 });
+
+// ---- the 3MF file, read back by Python's own zip and XML readers, not ours ----
+import { execFileSync } from 'node:child_process';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { make3mf } from '../parts-bin/threemf.js';
+import { partsFor } from '../parts-bin/geometry.js';
+
+const READ = `
+import sys, zipfile, json, xml.etree.ElementTree as ET
+z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None
+raw = open(sys.argv[1], 'rb').read()
+import struct
+for i in z.infolist():   # each file's own header agrees with the index (some readers go by one, some the other)
+    sig, crc, csize, usize, nlen = struct.unpack('<I10xIIIH', raw[i.header_offset:i.header_offset + 28])
+    assert (sig, crc, csize, usize) == (0x04034b50, i.CRC, i.compress_size, i.file_size), i.filename
+    assert raw[i.header_offset + 30:i.header_offset + 30 + nlen].decode() == i.filename
+names = z.namelist()
+ns = {'m': 'http://schemas.microsoft.com/3dmanufacturing/core/2015/02'}
+root = ET.fromstring(z.read('3D/3dmodel.model'))
+ct = ET.fromstring(z.read('[Content_Types].xml')); rels = ET.fromstring(z.read('_rels/.rels'))
+out = {'names': names, 'unit': root.get('unit'), 'objects': [], 'items': [],
+       'rel': [r.get('Target') for r in rels], 'types': sorted(d.get('Extension') for d in ct)}
+for o in root.find('m:resources', ns):
+    v = [(float(e.get('x')), float(e.get('y')), float(e.get('z'))) for e in o.find('m:mesh/m:vertices', ns)]
+    t = [(int(e.get('v1')), int(e.get('v2')), int(e.get('v3'))) for e in o.find('m:mesh/m:triangles', ns)]
+    edges = {}
+    for a, b, c in t:
+        for e in ((a, b), (b, c), (c, a)): edges[e] = edges.get(e, 0) + 1
+    closed = all(n == 1 and edges.get((e[1], e[0])) == 1 for e, n in edges.items())
+    vol = sum((v[a][0] * (v[b][1] * v[c][2] - v[b][2] * v[c][1]) - v[a][1] * (v[b][0] * v[c][2] - v[b][2] * v[c][0]) + v[a][2] * (v[b][0] * v[c][1] - v[b][1] * v[c][0])) for a, b, c in t) / 6
+    zs = [p[2] for p in v]
+    out['objects'].append({'id': o.get('id'), 'name': o.get('name'), 'closed': closed, 'volume': vol, 'zmin': min(zs), 'tris': len(t)})
+for i in root.find('m:build', ns): out['items'].append({'objectid': i.get('objectid'), 't': [float(x) for x in i.get('transform').split()]})
+print(json.dumps(out))
+`;
+function readBack(bytes) {
+  const dir = mkdtempSync(join(tmpdir(), 'p454-3mf-')), f = join(dir, 'bin.3mf'), py = join(dir, 'read.py');
+  writeFileSync(f, bytes); writeFileSync(py, READ);
+  let out;
+  for (const exe of ['python3', 'python']) { try { out = execFileSync(exe, ['-I', py, f], { encoding: 'utf8' }); break; } catch (e) { if (e.code !== 'ENOENT') throw e; } }
+  return JSON.parse(out);
+}
+test('the 3MF: a Frame and its inserts, each its own closed part, the right size, side by side on the plate', () => {
+  const p = P({}), parts = partsFor(M, p, { frames: 1, inserts: { 1: 2, 2: 1 } });
+  const bytes = make3mf(parts.map((x) => ({ name: x.name, mesh: x.solid.getMesh(), x: x.x, y: x.y })), 'Parts bin');
+  const r = readBack(bytes);
+  assert.deepEqual(r.names, ['[Content_Types].xml', '_rels/.rels', '3D/3dmodel.model']);
+  assert.equal(r.unit, 'millimeter');
+  assert.deepEqual(r.rel, ['/3D/3dmodel.model']);
+  assert.deepEqual(r.types, ['model', 'rels']);
+  assert.deepEqual(r.objects.map((o) => o.name), ['Frame 4 slots', 'Insert 2 slots (1)', 'Insert 1 slot (1)', 'Insert 1 slot (2)']);
+  r.objects.forEach((o, i) => {
+    assert.ok(o.closed, o.name + ': every edge shared by exactly two triangles, the right way round');
+    assert.ok(Math.abs(o.volume - parts[i].solid.volume()) < parts[i].solid.volume() * 1e-4, o.name + ': its volume, read back, is the part’s (' + o.volume + ')');
+    assert.ok(Math.abs(o.zmin) < 1e-9, o.name + ': flat on the plate');
+  });
+  // laid out apart: no two parts' outlines overlap
+  const d = derived(p), outline = (x, i) => { const w = i === 0 ? p.TrayL : d.insL(parts[i].units), h = i === 0 ? p.TrayW : d.InsW; return [x.t[9] - w / 2, x.t[10] - h / 2, x.t[9] + w / 2, x.t[10] + h / 2]; };
+  const boxes = r.items.map(outline);
+  for (let a = 0; a < boxes.length; a++) for (let b = a + 1; b < boxes.length; b++) {
+    const [A, B] = [boxes[a], boxes[b]];
+    assert.ok(A[2] <= B[0] || B[2] <= A[0] || A[3] <= B[1] || B[3] <= A[1], `parts ${a + 1} and ${b + 1} overlap on the plate`);
+  }
+});

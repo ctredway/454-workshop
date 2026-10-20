@@ -119,6 +119,27 @@ export function frame(M, p, q = {}) {
   return f;
 }
 
+// Everything to print, laid out on the build plate: the Frame (frames of them), then the inserts in rows behind it,
+// gap mm apart, each row no longer than the Frame. order: { frames, inserts: { [units]: count } }.
+// Returns [{ name, solid, x, y }], x and y the centre of each part's outline.
+export function partsFor(M, p, order, q = {}) {
+  const d = derived(p), gap = q.gap || 5, out = [];
+  let y = 0;
+  for (let i = 0; i < (order.frames || 0); i++) { out.push({ name: 'Frame ' + p.Units + ' slots' + (order.frames > 1 ? ' (' + (i + 1) + ')' : ''), solid: frame(M, p, q), x: 0, y }); y += p.TrayW + gap; }
+  const row = [];
+  for (const u of Object.keys(order.inserts || {}).map(Number).sort((a, b) => b - a))
+    for (let i = 0; i < order.inserts[u]; i++) row.push(u);
+  let x = -p.TrayL / 2, made = {};
+  for (const u of row) {
+    const L = d.insL(u);
+    if (x > -p.TrayL / 2 && x + L > p.TrayL / 2) { x = -p.TrayL / 2; y += d.InsW + gap; }
+    made[u] = (made[u] || 0) + 1;
+    out.push({ name: 'Insert ' + u + (u === 1 ? ' slot' : ' slots') + ' (' + made[u] + ')', solid: insert(M, p, u, q), x: x + L / 2, y, units: u });
+    x += L + gap;
+  }
+  return out;
+}
+
 // An Insert `units` slots long, its bottom at z = 0, centred on 0.
 export function insert(M, p, units, q = {}) {
   const seg = q.seg || 16, d = derived(p), L = d.insL(units), W = d.InsW, H = d.InsH;
