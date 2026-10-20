@@ -4,6 +4,7 @@
 import Module from './manifold.js';
 import { DEFAULTS, derived, problems, frame, insert, partsFor } from './geometry.js';
 import { make3mf } from './threemf.js';
+import { stlDownload } from './stl.js';
 import { viewer } from './viewer.js';
 
 const $ = (id) => document.getElementById(id);
@@ -31,13 +32,15 @@ function write(p, frames) {
   $('notches').checked = p.notches !== false; $('rim').checked = p.rim !== false;
   $('frames').value = frames;
 }
+const fileType = () => (document.querySelector('input[name=fmt]:checked') || {}).value === 'stl' ? 'stl' : '3mf';
 function remember(p, frames) {
-  try { localStorage.setItem(SAVE, JSON.stringify({ p, frames, counts })); } catch (e) { /* private window: not kept */ }
+  try { localStorage.setItem(SAVE, JSON.stringify({ p, frames, counts, fmt: fileType() })); } catch (e) { /* private window: not kept */ }
 }
 function recall() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE) || 'null');
     if (s && s.p) { counts = s.counts || counts; write(Object.assign({}, DEFAULTS, s.p), s.frames ?? 1); }
+    if (s && s.fmt === 'stl') document.querySelector('input[name=fmt][value=stl]').checked = true;
   } catch (e) { /* nothing kept, or unreadable: the standard sizes */ }
 }
 
@@ -81,6 +84,7 @@ function update() {
   if (bad.length) { pr.hidden = false; pr.innerHTML = '<b>That can’t be made yet:</b><ul>' + bad.map((b) => '<li>' + esc(b) + '</li>').join('') + '</ul>'; }
   else pr.hidden = true;
   const nothing = !frames && !used;
+  $('dlBtn').textContent = 'Download ' + fileType().toUpperCase();
   $('dlBtn').disabled = !!bad.length || nothing || !M;
   $('dlSays').textContent = bad.length ? '' : nothing ? 'Nothing to make: add a tray or an insert.'
     : (frames ? frames + (frames === 1 ? ' tray' : ' trays') : '') + (frames && used ? ' and ' : '') +
@@ -126,10 +130,14 @@ function download() {
   setTimeout(() => {
     try {
       const parts = partsFor(M, p, order(frames), { seg: 24, filletSteps: 16 });
-      const bytes = make3mf(parts.map((x) => ({ name: x.name, mesh: x.solid.getMesh(), x: x.x, y: x.y })), 'Parts bin ' + fmt(p.TrayL) + ' x ' + fmt(p.TrayW) + ' mm');
+      const base = 'parts-bin-' + p.Units + '-slot-' + fmt(p.TrayL) + 'x' + fmt(p.TrayW) + 'x' + fmt(p.TrayH);
+      let file;
+      if (fileType() === 'stl') file = stlDownload(parts.map((x) => ({ name: x.name, kind: x.kind, mesh: x.solid.getMesh() })), base + '-stl.zip');
+      else file = { name: base + '.3mf', type: 'model/3mf',
+        bytes: make3mf(parts.map((x) => ({ name: x.name, mesh: x.solid.getMesh(), x: x.x, y: x.y })), 'Parts bin ' + fmt(p.TrayL) + ' x ' + fmt(p.TrayW) + ' mm') };
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([bytes], { type: 'model/3mf' }));
-      a.download = 'parts-bin-' + p.Units + '-slot-' + fmt(p.TrayL) + 'x' + fmt(p.TrayW) + 'x' + fmt(p.TrayH) + '.3mf';
+      a.href = URL.createObjectURL(new Blob([file.bytes], { type: file.type }));
+      a.download = file.name;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 30000);
     } catch (e) {
@@ -145,6 +153,10 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 // ---- the page ----
 recall();
 for (const el of $('form').querySelectorAll('input, select')) el.addEventListener('input', later);
+for (const el of document.querySelectorAll('input[name=fmt]')) el.addEventListener('change', () => {
+  const { p, frames } = read();
+  $('dlBtn').textContent = 'Download ' + fileType().toUpperCase(); remember(p, frames);
+});
 $('height').addEventListener('change', () => { if ($('height').value === 'custom') $('TrayH').focus(); later(); });
 $('fillBtn').addEventListener('click', () => {
   const { p, frames } = read();

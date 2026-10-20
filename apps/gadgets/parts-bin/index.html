@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Parts bin maker · 454 Workshop gadgets</title>
-<meta name="description" content="Make a 3D-printable parts tray with drop-in inserts in your browser: set the size and slots, mix insert lengths, and download a 3MF for your slicer. Trays stack and interlock.">
+<meta name="description" content="Make a 3D-printable parts tray with drop-in inserts in your browser: set the size and slots, mix insert lengths, and download a 3MF or STL for your slicer. Trays stack and interlock.">
 <meta name="theme-color" content="#14181d">
 <link rel="icon" href="../../images/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,7 @@
     <h1>Parts bin maker</h1>
     <p class="lede">A tray with drop-in inserts, for 3D printing. Mix inserts of different lengths in the same tray, and
       stack the trays: each one sits in the rim of the one below. Set it up here, check the preview, then download a
-      <b>3MF</b> file for your slicer (Bambu Studio, PrusaSlicer, Orca, Cura).</p>
+      <b>3MF</b> or <b>STL</b> file for your slicer (Bambu Studio, PrusaSlicer, Orca, Cura).</p>
 
     <div class="maker">
       <form id="form" class="controls" autocomplete="off" onsubmit="return false">
@@ -100,6 +100,11 @@
         </div>
         <p class="hint">Drag to turn it. Scroll, or pinch, to zoom.</p>
         <div id="problems" class="problems" role="alert" hidden></div>
+        <fieldset class="fileType">
+          <legend>File type</legend>
+          <label class="check"><input type="radio" name="fmt" value="3mf" checked> <span><b>3MF</b>: every part in one file, laid out on the plate</span></label>
+          <label class="check"><input type="radio" name="fmt" value="stl"> <span><b>STL</b>: a file for each kind of part, named with how many to print (in a zip when there’s more than one)</span></label>
+        </fieldset>
         <div class="get">
           <button type="button" class="btn primary" id="dlBtn">Download 3MF</button>
           <span class="dlSays" id="dlSays"></span>
@@ -107,7 +112,7 @@
         <div class="tips">
           <h2>Printing it</h2>
           <ul>
-            <li>Every part is its own object in the file, laid out flat side down, ready to slice. Print them as they are.</li>
+            <li>Every part is flat side down, ready to slice. In a 3MF each part is its own object, laid out on the plate; print them as they are.</li>
             <li>The parts need no supports. PLA or PETG, 0.2 mm layers, is a good start.</li>
             <li>Print one insert first to check the fit, and change the <b>Clearance</b> if you need to.</li>
           </ul>

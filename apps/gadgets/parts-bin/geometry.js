@@ -127,11 +127,16 @@ export function frame(M, p, q = {}) {
 
 // Everything to print, laid out on the build plate: the Frame (frames of them), then the inserts in rows behind it,
 // gap mm apart, each row no longer than the Frame. order: { frames, inserts: { [units]: count } }.
-// Returns [{ name, solid, x, y }], x and y the centre of each part's outline.
+// Returns [{ name, kind, solid, x, y }], x and y the centre of each part's outline.
 export function partsFor(M, p, order, q = {}) {
   const d = derived(p), gap = q.gap || 5, out = [];
   let y = 0;
-  for (let i = 0; i < (order.frames || 0); i++) { out.push({ name: 'Tray ' + p.Units + (p.Units === 1 ? ' slot' : ' slots') + (order.frames > 1 ? ' (' + (i + 1) + ')' : ''), solid: frame(M, p, q), x: 0, y }); y += p.TrayW + gap; }
+  // kind: the same for parts of the same shape (one STL each kind); a shape is made once and used for each copy
+  const trayKind = 'Tray ' + p.Units + (p.Units === 1 ? ' slot' : ' slots'), made1 = {};
+  for (let i = 0; i < (order.frames || 0); i++) {
+    made1.tray = made1.tray || frame(M, p, q);
+    out.push({ name: trayKind + (order.frames > 1 ? ' (' + (i + 1) + ')' : ''), kind: trayKind, solid: made1.tray, x: 0, y }); y += p.TrayW + gap;
+  }
   const row = [];
   for (const u of Object.keys(order.inserts || {}).map(Number).sort((a, b) => b - a))
     for (let i = 0; i < order.inserts[u]; i++) row.push(u);
@@ -140,7 +145,8 @@ export function partsFor(M, p, order, q = {}) {
     const L = d.insL(u);
     if (x > -p.TrayL / 2 && x + L > p.TrayL / 2) { x = -p.TrayL / 2; y += d.InsW + gap; }
     made[u] = (made[u] || 0) + 1;
-    out.push({ name: 'Insert ' + u + (u === 1 ? ' slot' : ' slots') + ' (' + made[u] + ')', solid: insert(M, p, u, q), x: x + L / 2, y, units: u });
+    made1[u] = made1[u] || insert(M, p, u, q);
+    out.push({ name: 'Insert ' + u + (u === 1 ? ' slot' : ' slots') + ' (' + made[u] + ')', kind: 'Insert ' + u + (u === 1 ? ' slot' : ' slots'), solid: made1[u], x: x + L / 2, y, units: u });
     x += L + gap;
   }
   return out;

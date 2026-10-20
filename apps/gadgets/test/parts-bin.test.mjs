@@ -146,3 +146,55 @@ test('a box left empty is named as the page names it', () => {
   assert.deepEqual(problems(P({ TrayL: NaN })), ['Length needs a number.']);
   assert.deepEqual(problems(P({ Clear: NaN, NotchDepth: NaN })), ['Clearance needs a number.', 'Notch depth needs a number.']);
 });
+
+// ---- STL: one file per kind of part, read back by Python ----
+import { stlDownload } from '../parts-bin/stl.js';
+const READ_STL = `
+import sys, zipfile, struct, json, io
+def part(name, b):
+    assert not b[:5].lower() == b'solid', name + ': a binary STL must not start with solid'
+    n = struct.unpack('<I', b[80:84])[0]
+    assert len(b) == 84 + 50 * n, name + ': size and triangle count disagree'
+    tris, edges, vol, bad = [], {}, 0.0, 0
+    key = lambda p: tuple(round(c, 4) for c in p)
+    for i in range(n):
+        f = struct.unpack('<12fH', b[84 + 50 * i:134 + 50 * i])
+        nrm, a, b2, c = f[0:3], f[3:6], f[6:9], f[9:12]
+        u = [b2[k] - a[k] for k in range(3)]; w = [c[k] - a[k] for k in range(3)]
+        cr = (u[1]*w[2]-u[2]*w[1], u[2]*w[0]-u[0]*w[2], u[0]*w[1]-u[1]*w[0])
+        if sum(cr[k] * nrm[k] for k in range(3)) < 0: bad += 1
+        vol += (a[0]*(b2[1]*c[2]-b2[2]*c[1]) - a[1]*(b2[0]*c[2]-b2[2]*c[0]) + a[2]*(b2[0]*c[1]-b2[1]*c[0])) / 6
+        A, B, C = key(a), key(b2), key(c)
+        for e in ((A, B), (B, C), (C, A)): edges[e] = edges.get(e, 0) + 1
+    closed = all(k == 1 and edges.get((e[1], e[0])) == 1 for e, k in edges.items())
+    return {'name': name, 'tris': n, 'volume': vol, 'closed': closed, 'normalsWrong': bad}
+data = open(sys.argv[1], 'rb').read()
+out = [part(i.filename, zipfile.ZipFile(io.BytesIO(data)).read(i)) for i in zipfile.ZipFile(io.BytesIO(data)).infolist()] if data[:2] == b'PK' else [part('one', data)]
+print(json.dumps(out))
+`;
+function readStl(bytes) {
+  const dir = mkdtempSync(join(tmpdir(), 'p454-stl-')), f = join(dir, 'x.bin'), py = join(dir, 'read.py');
+  writeFileSync(f, bytes); writeFileSync(py, READ_STL);
+  let last;
+  for (const exe of ['python3', 'python']) {
+    try { return JSON.parse(execFileSync(exe, ['-I', py, f], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })); } catch (e) { last = e; }
+  }
+  throw last;
+}
+test('STL: one file per kind of part, named with how many to print, each closed, facing out, the right size', () => {
+  const p = P({}), parts = partsFor(M, p, { frames: 2, inserts: { 1: 2, 2: 1 } });
+  const dl = stlDownload(parts.map((x) => ({ name: x.name, kind: x.kind, mesh: x.solid.getMesh() })), 'parts-bin.zip');
+  assert.equal(dl.name, 'parts-bin.zip');
+  const r = readStl(dl.bytes);
+  assert.deepEqual(r.map((x) => x.name), ['Tray 4 slots - print 2.stl', 'Insert 2 slots - print 1.stl', 'Insert 1 slot - print 2.stl']);
+  const want = { 'Tray 4 slots - print 2.stl': frame(M, p).volume(), 'Insert 2 slots - print 1.stl': insert(M, p, 2).volume(), 'Insert 1 slot - print 2.stl': insert(M, p, 1).volume() };
+  for (const x of r) {
+    assert.ok(x.closed, x.name + ': closed');
+    assert.equal(x.normalsWrong, 0, x.name + ': every triangle faces out');
+    assert.ok(Math.abs(x.volume - want[x.name]) < want[x.name] * 1e-4, x.name + ': volume ' + x.volume + ', not ' + want[x.name]);
+  }
+  // one kind of part: the STL itself, not a zip
+  const one = stlDownload(partsFor(M, p, { frames: 0, inserts: { 1: 3 } }).map((x) => ({ name: x.name, kind: x.kind, mesh: x.solid.getMesh() })), 'parts-bin.zip');
+  assert.equal(one.name, 'Insert 1 slot - print 3.stl');
+  assert.equal(readStl(one.bytes)[0].closed, true);
+});

@@ -553,6 +553,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
     and an oversize one wouldn't; stacked trays don't collide, rest on the walls and can't slide; the 3MF reads
     back in Python's own zip and XML readers, each part closed and the right volume. Each check was broken on
     purpose and failed. In a browser: every view, a refused setting, phone width, and a real download.
+  - **STL as well as 3MF** (Clint: "we should make stl an option for the export"): a **File type** choice beside
+    the download. An STL holds one part, so it's a file for each kind of part, named with how many to print
+    (`Insert 1 slot - print 2.stl`), in a zip when there's more than one kind. Read back by Python in the test:
+    each closed, every triangle facing out, the right volume; each check broken on purpose and failed. Each kind
+    of part is now made once and used for its copies, so downloads are quicker.
   - Made with Manifold 3.5.4 (Apache-2.0), copied into `apps/gadgets/vendor`.
   - **Gadgets** is in the front page's menu and footer, and in the sitemap.
 - **Easier for search engines to find and describe** (nothing changes in the apps):
