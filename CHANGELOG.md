@@ -32,6 +32,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.57 — a change made back in the history keeps the steps after it
+- Includes Design 0.145.0: going back on the History bar and changing something puts the change in there, as in
+  Fusion; the steps after it stay, and are done again on top of it going forward (red if one can't be).
+
 ### 0.6.2-beta.56 — the port chooser names the machine
 Clint, on Linux Mint: "I cannot tell what device is the cnc machine, but if I do lsusb it shows up with Shapeoko in
 the name." The list showed each port's path only, the machine's /dev/ttyACM0 among the 32 /dev/ttyS ports built
