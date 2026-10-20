@@ -76,9 +76,13 @@
       box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Choose the machine\u2019s port');
       box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999;font:14px system-ui,sans-serif';
       var card = document.createElement('div');
-      card.style.cssText = 'background:#1d232b;color:#dce3ea;border:1px solid #2a323c;border-radius:8px;padding:16px 18px;min-width:340px;max-width:90vw;max-height:85vh;overflow:auto';
+      // the title and Cancel stay put; only the list between them scrolls, however long it is
+      card.style.cssText = 'background:#1d232b;color:#dce3ea;border:1px solid #2a323c;border-radius:8px;padding:16px 18px;min-width:340px;max-width:min(560px,90vw);max-height:85vh;display:flex;flex-direction:column;color-scheme:dark';
       card.innerHTML = '<div style="font-weight:600;margin-bottom:4px">Choose the machine\u2019s port</div>' +
         '<div style="color:#8794a1;font-size:13px;margin-bottom:8px">The machine is plugged in by USB. Not sure which? Unplug its cable, look again, and see which one goes.</div>';
+      var list = document.createElement('div');
+      list.style.cssText = 'overflow-y:auto;min-height:0;flex:1 1 auto;padding-right:4px';
+      card.appendChild(list);
       function done(v, err) { document.removeEventListener('keydown', esc, true); document.body.removeChild(box); if (err) reject(err); else resolve(v); }
       function esc(e) { if (e.key === 'Escape') { e.stopPropagation(); done(null, new DOMException('No port selected.', 'NotFoundError')); } }
       document.addEventListener('keydown', esc, true);
@@ -97,17 +101,17 @@
         parent.appendChild(b);
         return b;
       }
-      var buttons = usb.map(function (p) { return add(p, card); });
+      var buttons = usb.map(function (p) { return add(p, list); });
       if (others.length) {
         var more = document.createElement('details'); more.style.cssText = 'margin-top:8px;color:#8794a1';
         var sm = document.createElement('summary'); sm.style.cursor = 'pointer';
         sm.textContent = 'Show all ports (' + others.length + ' built into this computer, not your machine)';
         more.appendChild(sm); others.forEach(function (p) { add(p, more); });
-        card.appendChild(more);
+        list.appendChild(more);
       }
       var cancel = document.createElement('button');
       cancel.textContent = 'Cancel';
-      cancel.style.cssText = 'margin-top:10px;padding:6px 12px;background:transparent;color:#8794a1;border:1px solid #2a323c;border-radius:5px;cursor:pointer;font:inherit';
+      cancel.style.cssText = 'flex:none;align-self:flex-start;margin-top:10px;padding:6px 12px;background:transparent;color:#8794a1;border:1px solid #2a323c;border-radius:5px;cursor:pointer;font:inherit';
       cancel.onclick = function () { done(null, new DOMException('No port selected.', 'NotFoundError')); };
       card.appendChild(cancel);
       box.appendChild(card); document.body.appendChild(box);
