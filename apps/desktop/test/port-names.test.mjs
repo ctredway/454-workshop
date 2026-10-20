@@ -8,12 +8,15 @@ const { portName, describePorts } = require('../src/machine/port-names.js');
 
 // Linux Mint on a PC: 32 built-in ports with nothing known about them, and the machine on USB
 const builtIn = Array.from({ length: 32 }, (_, i) => ({ path: '/dev/ttyS' + i, vendorId: null, manufacturer: '', pnpId: '' }));
-const shapeoko = { path: '/dev/ttyACM0', vendorId: 0x2341, productId: 0x0043, manufacturer: 'Carbide3D', serialNumber: '75834353930351F0D0B1',
-  pnpId: 'usb-Carbide3D_Shapeoko_75834353930351F0D0B1-if00' };
+// Clint's Shapeoko 5 Pro, on Linux Mint (ls /dev/serial/by-id, 2026-10-20): maker Carbide_3D, product Shapeoko_5,
+// serial number Shapeoko5Pro (the id is real; its other details weren't read, so they're left out)
+const shapeoko = { path: '/dev/ttyACM0', serialNumber: 'Shapeoko5Pro', pnpId: 'usb-Carbide_3D_Shapeoko_5_Shapeoko5Pro-if00' };
 
 describe('naming a port', () => {
   it('Linux: the maker and product from its USB id, without the serial number or interface', () => {
-    expect(portName(shapeoko)).toBe('Carbide3D Shapeoko');
+    expect(portName(shapeoko)).toBe('Carbide 3D Shapeoko 5');
+    // its serial number unread (the id alone): still named, with it
+    expect(portName({ pnpId: shapeoko.pnpId })).toBe('Carbide 3D Shapeoko 5 Shapeoko5Pro');
     expect(portName({ pnpId: 'usb-1a86_USB2.0-Serial-if00-port0' })).toBe('1a86 USB2.0-Serial');
     expect(portName({ pnpId: 'usb-Arduino__www.arduino.cc__0043_8573332373935141F0B1-if00', serialNumber: '8573332373935141F0B1' })).toBe('Arduino www.arduino.cc 0043');
   });
@@ -31,7 +34,9 @@ describe('the order, and which is the machine', () => {
   it('the Shapeoko first and marked, the built-in ports last and not USB', () => {
     const d = describePorts(builtIn.concat([shapeoko]));
     expect(d[0].path).toBe('/dev/ttyACM0');
-    expect([d[0].name, d[0].usb, d[0].likely]).toEqual(['Carbide3D Shapeoko', true, true]);
+    expect([d[0].name, d[0].usb, d[0].likely]).toEqual(['Carbide 3D Shapeoko 5', true, true]);
+    // known only by its path and id (no maker or serial number read): still found
+    expect(describePorts(builtIn.concat([{ path: '/dev/ttyACM0', pnpId: shapeoko.pnpId }]))[0].likely).toBe(true);
     expect(d.slice(1).every((p) => p.usb === false && !p.likely)).toBe(true);
     expect(d).toHaveLength(33);
   });
