@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.55 — a moved curved outline is drawn where it is
+- Includes Design 0.144.1: a curved outline (such as one made with Join), moved, was still drawn where it had been.
+
 ### 0.6.2-beta.54 — a Tools menu
 - Includes Design 0.144.0: in 454 Design, a Tools menu after View, with every toolbar tool in the toolbar's own groups.
 
