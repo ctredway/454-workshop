@@ -3,7 +3,7 @@
 // hair smaller; with fine facets, within 0.05%.  node --test 'apps/gadgets/test/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import Module from 'manifold-3d';
+import Module from '../vendor/manifold-3d/manifold.js';
 import { DEFAULTS, derived, problems, frame, insert } from '../parts-bin/geometry.js';
 
 const M = await Module();
@@ -113,9 +113,12 @@ print(json.dumps(out))
 function readBack(bytes) {
   const dir = mkdtempSync(join(tmpdir(), 'p454-3mf-')), f = join(dir, 'bin.3mf'), py = join(dir, 'read.py');
   writeFileSync(f, bytes); writeFileSync(py, READ);
-  let out;
-  for (const exe of ['python3', 'python']) { try { out = execFileSync(exe, ['-I', py, f], { encoding: 'utf8' }); break; } catch (e) { if (e.code !== 'ENOENT') throw e; } }
-  return JSON.parse(out);
+  // python3 on Linux; on Windows python (python3 there may be a stand-in that only offers the Microsoft Store)
+  let last;
+  for (const exe of ['python3', 'python']) {
+    try { return JSON.parse(execFileSync(exe, ['-I', py, f], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })); } catch (e) { last = e; }
+  }
+  throw last;
 }
 test('the 3MF: a Frame and its inserts, each its own closed part, the right size, side by side on the plate', () => {
   const p = P({}), parts = partsFor(M, p, { frames: 1, inserts: { 1: 2, 2: 1 } });
@@ -125,7 +128,7 @@ test('the 3MF: a Frame and its inserts, each its own closed part, the right size
   assert.equal(r.unit, 'millimeter');
   assert.deepEqual(r.rel, ['/3D/3dmodel.model']);
   assert.deepEqual(r.types, ['model', 'rels']);
-  assert.deepEqual(r.objects.map((o) => o.name), ['Frame 4 slots', 'Insert 2 slots (1)', 'Insert 1 slot (1)', 'Insert 1 slot (2)']);
+  assert.deepEqual(r.objects.map((o) => o.name), ['Tray 4 slots', 'Insert 2 slots (1)', 'Insert 1 slot (1)', 'Insert 1 slot (2)']);
   r.objects.forEach((o, i) => {
     assert.ok(o.closed, o.name + ': every edge shared by exactly two triangles, the right way round');
     assert.ok(Math.abs(o.volume - parts[i].solid.volume()) < parts[i].solid.volume() * 1e-4, o.name + ': its volume, read back, is the part’s (' + o.volume + ')');
@@ -138,4 +141,8 @@ test('the 3MF: a Frame and its inserts, each its own closed part, the right size
     const [A, B] = [boxes[a], boxes[b]];
     assert.ok(A[2] <= B[0] || B[2] <= A[0] || A[3] <= B[1] || B[3] <= A[1], `parts ${a + 1} and ${b + 1} overlap on the plate`);
   }
+});
+test('a box left empty is named as the page names it', () => {
+  assert.deepEqual(problems(P({ TrayL: NaN })), ['Length needs a number.']);
+  assert.deepEqual(problems(P({ Clear: NaN, NotchDepth: NaN })), ['Clearance needs a number.', 'Notch depth needs a number.']);
 });

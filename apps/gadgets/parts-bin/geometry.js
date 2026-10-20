@@ -30,6 +30,12 @@ export const DEFAULTS = {
   rim: true,        // stacking rim (and the bevel underneath that sits in it)
 };
 
+// What each is called on the page
+export const LABELS = { TrayL: 'Length', TrayW: 'Width', TrayH: 'Wall height', Units: 'Slots', Clear: 'Clearance', Wall: 'Tray walls',
+  Floor: 'Tray floor', InsWall: 'Insert walls and floor', CornerR: 'Corner radius', FloorR: 'Insert floor rounding', RimH: 'Rim height',
+  RimW: 'Rim width at its foot', RimTop: 'Rim width at its top', BaseCh: 'Bevel under the tray', NotchR: 'Notch radius',
+  NotchDepth: 'Notch depth', InsCh: 'Bevel under the inserts' };
+
 // What follows from them (SolidCraft's PocketL, PocketW, Pitch, InsL, InsW, InsH)
 export function derived(p) {
   const PocketL = p.TrayL - 2 * p.Wall, PocketW = p.TrayW - 2 * p.Wall, Pitch = PocketL / p.Units;
@@ -41,21 +47,21 @@ export function derived(p) {
 export function problems(p) {
   const d = derived(p), out = [];
   const num = (k) => typeof p[k] === 'number' && isFinite(p[k]);
-  for (const k of Object.keys(DEFAULTS)) if (typeof DEFAULTS[k] === 'number' && !num(k)) out.push(k + ' must be a number.');
+  for (const k of Object.keys(DEFAULTS)) if (typeof DEFAULTS[k] === 'number' && !num(k)) out.push((LABELS[k] || k) + ' needs a number.');
   if (out.length) return out;
-  if (!Number.isInteger(p.Units) || p.Units < 1) out.push('The Frame needs at least 1 slot.');
+  if (!Number.isInteger(p.Units) || p.Units < 1) out.push('The tray needs at least 1 slot.');
   if (p.Wall <= 0 || p.Floor <= 0 || p.InsWall <= 0) out.push('Walls and floors must be thicker than 0.');
   // an insert's own pocket needs room for its rounded corners and 1 mm more
   const room = 2 * p.Clear + 2 * p.InsWall + 2 * Math.max(0, p.CornerR) + 1;
-  if (d.PocketW < room) out.push('The Frame is too narrow for its walls and an insert.');
-  if (d.Pitch < room) out.push('The slots are too short for an insert: use fewer slots or a longer Frame.');
-  if (d.InsH <= p.InsWall + 0.5) out.push('The Frame is too low for its floor and an insert.');
+  if (d.PocketW < room) out.push('The tray is too narrow for its walls and an insert.');
+  if (d.Pitch < room) out.push('The slots are too short for an insert: use fewer slots or a longer tray.');
+  if (d.InsH <= p.InsWall + 0.5) out.push('The tray is too low for its floor and an insert.');
   if (p.CornerR < 0 || p.CornerR * 2 > Math.min(d.PocketW, d.Pitch) - 2 * p.Clear) out.push('The corner radius is too big for the slots.');
   if (p.CornerR - p.Clear < 0) out.push('The clearance can’t be more than the corner radius.');
   if (p.FloorR < 0 || p.FloorR > p.CornerR) out.push('The insert’s floor rounding can’t be more than the corner radius.');
   if (p.Clear < 0) out.push('The clearance can’t be less than 0.');
   if (p.rim && (p.RimH <= 0 || p.RimW <= p.RimTop || p.RimTop < 0 || p.RimW >= p.Wall)) out.push('The stacking rim must be narrower at the top than at its foot, and narrower than the wall.');
-  if (p.rim && (p.BaseCh < 0 || p.BaseCh > Math.min(p.TrayH, p.Wall, p.CornerR))) out.push('The bottom bevel can’t be more than the wall, the corner radius or the Frame’s height.');
+  if (p.rim && (p.BaseCh < 0 || p.BaseCh > Math.min(p.TrayH, p.Wall, p.CornerR))) out.push('The bottom bevel can’t be more than the wall, the corner radius or the tray’s height.');
   if (p.InsCh < 0 || p.InsCh > Math.min(p.InsWall, d.InsH / 2)) out.push('The insert’s bottom bevel is too big.');
   if (p.notches && (p.NotchR <= 0 || p.NotchDepth <= 0 || p.NotchDepth > p.TrayH - p.Floor || p.NotchR * 2 >= d.Pitch)) out.push('The finger notches don’t fit: make them smaller or shallower.');
   return out;
@@ -125,7 +131,7 @@ export function frame(M, p, q = {}) {
 export function partsFor(M, p, order, q = {}) {
   const d = derived(p), gap = q.gap || 5, out = [];
   let y = 0;
-  for (let i = 0; i < (order.frames || 0); i++) { out.push({ name: 'Frame ' + p.Units + ' slots' + (order.frames > 1 ? ' (' + (i + 1) + ')' : ''), solid: frame(M, p, q), x: 0, y }); y += p.TrayW + gap; }
+  for (let i = 0; i < (order.frames || 0); i++) { out.push({ name: 'Tray ' + p.Units + (p.Units === 1 ? ' slot' : ' slots') + (order.frames > 1 ? ' (' + (i + 1) + ')' : ''), solid: frame(M, p, q), x: 0, y }); y += p.TrayW + gap; }
   const row = [];
   for (const u of Object.keys(order.inserts || {}).map(Number).sort((a, b) => b - a))
     for (let i = 0; i < order.inserts[u]; i++) row.push(u);

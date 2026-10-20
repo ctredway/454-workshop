@@ -18,5 +18,7 @@ jobs:
         run: node --test 'apps/control/test/*.test.mjs'
       - name: 454 Design's tests (on its real source files; needs npm ci for linkedom)
         run: node --test 'apps/design/test/*.test.mjs'
+      - name: The gadgets' tests (the parts bin's shapes against Clint's SolidCraft design, and its 3MF read back by Python)
+        run: node --test 'apps/gadgets/test/*.test.mjs'
       - name: The website builds, with every internal link checked (the same build Cloudflare runs)
         run: npm ci --prefix docs-site && node site/build.js

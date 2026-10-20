@@ -14,3 +14,5 @@
 *.vtdb binary
 *.crv binary
 *.c2d binary
+*.wasm binary
+*.3mf binary

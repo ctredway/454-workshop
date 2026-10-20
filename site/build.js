@@ -42,6 +42,16 @@ function forSearch(html, title, page, desc, what) {
 for (const f of ['index.html', '_headers', '_redirects']) fs.copyFileSync(path.join(__dirname, f), path.join(out, f));
 fs.cpSync(path.join(__dirname, 'images'), path.join(out, 'images'), { recursive: true });
 
+// the gadgets at /gadgets/ (apps/gadgets): each maker is its page and its scripts, with Manifold beside it
+const gadgets = path.join(repo, 'apps', 'gadgets'), manifold = path.join(gadgets, 'vendor', 'manifold-3d');
+for (const f of ['index.html', 'gadgets.css']) { fs.mkdirSync(path.join(out, 'gadgets'), { recursive: true }); fs.copyFileSync(path.join(gadgets, f), path.join(out, 'gadgets', f)); }
+for (const g of ['parts-bin']) {
+  const dir = path.join(out, 'gadgets', g);
+  fs.mkdirSync(dir, { recursive: true });
+  for (const f of fs.readdirSync(path.join(gadgets, g))) if (/\.(html|js)$/.test(f)) fs.copyFileSync(path.join(gadgets, g, f), path.join(dir, f));
+  for (const f of ['manifold.js', 'manifold.wasm', 'LICENSE']) fs.copyFileSync(path.join(manifold, f), path.join(dir, f === 'LICENSE' ? 'manifold-LICENSE.txt' : f));
+}
+
 // 454 Control at /control/
 let control = read('index.html');
 control = swap(control, 'href="design.html"', 'href="../design/"', 'Control');
@@ -83,7 +93,7 @@ for (const f of fs.readdirSync(path.join(out, 'docs'))) {
 const docsMaps = fs.readdirSync(path.join(out, 'docs')).filter((f) => /^sitemap-\d+\.xml$/.test(f)).sort();
 if (!docsMaps.length) throw new Error('site build: the docs made no sitemap (docs/sitemap-0.xml)');
 const today = new Date().toISOString().slice(0, 10);
-const pages = ['/', '/design/', '/control/'];
+const pages = ['/', '/design/', '/control/', '/gadgets/', '/gadgets/parts-bin/'];
 write('sitemap-pages.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   pages.map((u) => '  <url><loc>' + SITE + u + '</loc><lastmod>' + today + '</lastmod></url>\n').join('') + '</urlset>\n');
 write('sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
@@ -115,4 +125,4 @@ const missing = [];
   }
 })(out);
 if (missing.length) throw new Error('site build: links that lead nowhere:\n  ' + missing.join('\n  '));
-console.log('site-dist/ built: landing page, /control/, /design/ (with CAM, beta), /docs/ (' + docsPages + ' pages); ' + listed.length + ' pages in the sitemap; every internal link checked');
+console.log('site-dist/ built: landing page, /control/, /design/ (with CAM, beta), /gadgets/, /docs/ (' + docsPages + ' pages); ' + listed.length + ' pages in the sitemap; every internal link checked');

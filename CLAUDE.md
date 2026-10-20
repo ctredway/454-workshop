@@ -39,6 +39,7 @@ part. Correctness beats speed. Prove changes; don't assume them.
 | `apps/desktop/` | the Electron app: `src/main.js`, `src/updater.js`, `scripts/build-app.js`, tests |
 | `packages/gcode/src/parser.cjs` | **the G-code parser**, shared: Control's build includes it |
 | `packages/grbl/` | a GRBL simulator, for the end-to-end tests |
+| `apps/gadgets/` | the website's gadgets (`/gadgets/`): makers that run in the browser and download a file. The parts bin (`parts-bin/`) makes a 3MF with Manifold (`vendor/manifold-3d`, copied in: Cloudflare installs only the docs' packages) |
 | `docs-site/` | the docs (Astro Starlight): `src/content/docs/*.mdx`, screenshots in `src/assets/shots` |
 | `site/` | the website's landing page and `build.js` |
 | `.github/workflows/` | `test.yml` (every push), `windows.yml` ("desktop build": Windows and Linux builds, one draft release) |
@@ -152,6 +153,9 @@ without a published release looks to them like a newest release with nothing in 
   along the middle of the cut (the cutter stays up over the length plus its diameter). New toolpaths start with
   the last tabs used (`cutTabsStart`; 1.5 mm thick before any). Tabs are **Flat**
   or **3D (tapered)**. Profiles sit at the cutter's radius, padded by up to 0.011 mm on purpose (never closer).
+- **The gadgets follow their designs exactly** (`apps/gadgets`): the parts bin is Clint's SolidCraft TrayConfigurator
+  (2026-10-17), feature for feature, checked against the volumes SolidCraft measured. A change to its shapes is a
+  change to that design: ask Clint. Its tests also check that inserts drop in and trays stack and interlock.
 - **Dimensions remember which edge they measure** (a rectangle's side, an outline's segment), not a point.
 
 ## Open items

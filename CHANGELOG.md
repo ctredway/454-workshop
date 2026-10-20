@@ -541,6 +541,20 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 - The docs' footer said "454 Werks", an old name; it now says 454 Workshop.
 
 ## 454workshop.com
+- **Gadgets** (`/gadgets/`): makers that run in the browser, for the workshop. Clint: "I want to start adding some
+  gadget creators to the website. First one is the parts bin creator", for 3D printing, as a 3MF.
+  - **The parts bin maker** (`/gadgets/parts-bin/`): a tray with drop-in inserts 1 to 6 slots long, which stack
+    and interlock. It's Clint's SolidCraft design (TrayConfigurator, 2026-10-17) made from the same parameters
+    and features: slots, length, width, height (6 mm, 12 mm or any), clearance, finger notches, the stacking rim,
+    and the walls, floors, corners and bevels under **More settings**. A 3D preview (in the tray, stacked, as
+    printed), and **Download 3MF** with each part its own object, flat on the plate. Settings that can't make a
+    sound part are refused, in words. Nothing is uploaded; the settings are remembered in the browser.
+  - **Proven:** its parts match SolidCraft's measured volumes within 0.02%; inserts drop in, at both heights,
+    and an oversize one wouldn't; stacked trays don't collide, rest on the walls and can't slide; the 3MF reads
+    back in Python's own zip and XML readers, each part closed and the right volume. Each check was broken on
+    purpose and failed. In a browser: every view, a refused setting, phone width, and a real download.
+  - Made with Manifold 3.5.4 (Apache-2.0), copied into `apps/gadgets/vendor`.
+  - **Gadgets** is in the front page's menu and footer, and in the sitemap.
 - **Easier for search engines to find and describe** (nothing changes in the apps):
   - The front page's title and description use the words people search with: free, CNC, CAD/CAM, G-code
     sender, Shapeoko, GRBL. Its text names them too: design (CAD), toolpath (CAM), a G-code sender for GRBL,

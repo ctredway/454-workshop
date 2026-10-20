@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parts bin maker · 454 Workshop gadgets</title>
+<meta name="description" content="Make a 3D-printable parts tray with drop-in inserts in your browser: set the size and slots, mix insert lengths, and download a 3MF for your slicer. Trays stack and interlock.">
+<meta name="theme-color" content="#14181d">
+<link rel="icon" href="../../images/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../gadgets.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="mark" href="../../"><img src="../../images/logo.svg" alt="454 Workshop" width="84" height="27"></a>
+    <nav aria-label="Site">
+      <a href="../">Gadgets</a>
+      <a href="../../docs/index.html">Docs</a>
+      <a href="https://github.com/ctredway/454-workshop" target="_blank" rel="noopener">GitHub<span class="sr"> (opens in a new tab)</span></a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="crumb"><a href="../">Gadgets</a> ›</p>
+    <h1>Parts bin maker</h1>
+    <p class="lede">A tray with drop-in inserts, for 3D printing. Mix inserts of different lengths in the same tray, and
+      stack the trays: each one sits in the rim of the one below. Set it up here, check the preview, then download a
+      <b>3MF</b> file for your slicer (Bambu Studio, PrusaSlicer, Orca, Cura).</p>
+
+    <div class="maker">
+      <form id="form" class="controls" autocomplete="off" onsubmit="return false">
+        <fieldset>
+          <legend>Tray</legend>
+          <label>Slots <input id="Units" type="number" min="1" max="20" step="1" value="4"></label>
+          <p class="hint">How many insert spaces the tray holds, end to end.</p>
+          <label>Length <span class="unit"><input id="TrayL" type="number" min="20" max="400" step="0.5" value="125"> mm</span></label>
+          <label>Width <span class="unit"><input id="TrayW" type="number" min="10" max="300" step="0.5" value="24"> mm</span></label>
+          <p class="hint">Outside sizes. <span id="slotSize"></span></p>
+          <label>Height
+            <select id="height">
+              <option value="6">Standard, 6 mm</option>
+              <option value="12">Deep, 12 mm</option>
+              <option value="custom">Your own…</option>
+            </select>
+          </label>
+          <label id="customRow" hidden>Wall height <span class="unit"><input id="TrayH" type="number" min="3" max="200" step="0.5" value="6"> mm</span></label>
+          <p class="hint">The rim adds 1 mm on top, and is what the tray above sits in.</p>
+          <label>How many trays <input id="frames" type="number" min="0" max="20" step="1" value="1"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Inserts</legend>
+          <div id="insertRows"></div>
+          <p class="hint" id="fillSays"></p>
+          <button type="button" class="small" id="fillBtn">Fill the trays with 1-slot inserts</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Fit and finish</legend>
+          <label>Clearance <span class="unit"><input id="Clear" type="number" min="0" max="1" step="0.05" value="0.2"> mm</span></label>
+          <p class="hint">The gap each side of an insert. If inserts print too tight to drop in, make it bigger
+            (0.25 or 0.3); if they rattle, smaller.</p>
+          <label class="check"><input id="notches" type="checkbox" checked> Finger notches</label>
+          <p class="hint">A scoop in the front wall at each slot, to lift an insert out.</p>
+          <label class="check"><input id="rim" type="checkbox" checked> Stacking rim</label>
+          <p class="hint">A 1 mm lip round the top, with a bevel under each tray to match, so trays stack and don’t slide.</p>
+          <details>
+            <summary>More settings</summary>
+            <label>Tray walls <span class="unit"><input id="Wall" type="number" min="0.8" max="10" step="0.1" value="2"> mm</span></label>
+            <label>Tray floor <span class="unit"><input id="Floor" type="number" min="0.4" max="10" step="0.1" value="1.2"> mm</span></label>
+            <label>Insert walls and floor <span class="unit"><input id="InsWall" type="number" min="0.4" max="5" step="0.1" value="1.2"> mm</span></label>
+            <label>Corner radius <span class="unit"><input id="CornerR" type="number" min="0" max="10" step="0.1" value="1.5"> mm</span></label>
+            <label>Insert floor rounding <span class="unit"><input id="FloorR" type="number" min="0" max="10" step="0.1" value="1"> mm</span></label>
+            <label>Notch radius <span class="unit"><input id="NotchR" type="number" min="1" max="20" step="0.1" value="4.5"> mm</span></label>
+            <label>Notch depth <span class="unit"><input id="NotchDepth" type="number" min="0.5" max="50" step="0.1" value="2.5"> mm</span></label>
+            <label>Rim height <span class="unit"><input id="RimH" type="number" min="0.2" max="5" step="0.1" value="1"> mm</span></label>
+            <label>Rim width at its foot <span class="unit"><input id="RimW" type="number" min="0.2" max="5" step="0.1" value="1"> mm</span></label>
+            <label>Rim width at its top <span class="unit"><input id="RimTop" type="number" min="0" max="5" step="0.05" value="0.2"> mm</span></label>
+            <label>Bevel under the tray <span class="unit"><input id="BaseCh" type="number" min="0" max="5" step="0.1" value="1.4"> mm</span></label>
+            <label>Bevel under the inserts <span class="unit"><input id="InsCh" type="number" min="0" max="2" step="0.05" value="0.4"> mm</span></label>
+            <button type="button" class="small" id="resetBtn">Back to the standard sizes</button>
+          </details>
+        </fieldset>
+      </form>
+
+      <section class="view" aria-label="Preview">
+        <div class="viewBar" role="group" aria-label="What the preview shows">
+          <button type="button" class="seg on" data-view="assembled" aria-pressed="true">In the tray</button>
+          <button type="button" class="seg" data-view="stacked" aria-pressed="false">Stacked</button>
+          <button type="button" class="seg" data-view="plate" aria-pressed="false">As printed</button>
+          <button type="button" class="seg plain" id="resetView" title="Back to the starting view">Reset view</button>
+        </div>
+        <div class="canvasBox">
+          <canvas id="cv" aria-label="3D preview of the parts bin. Drag to turn it; use the wheel or two fingers to zoom."></canvas>
+          <p class="busy" id="busy" hidden>Working…</p>
+          <p class="noGl" id="noGl" hidden>This browser can’t show the 3D preview, but the download still works.</p>
+        </div>
+        <p class="hint">Drag to turn it. Scroll, or pinch, to zoom.</p>
+        <div id="problems" class="problems" role="alert" hidden></div>
+        <div class="get">
+          <button type="button" class="btn primary" id="dlBtn">Download 3MF</button>
+          <span class="dlSays" id="dlSays"></span>
+        </div>
+        <div class="tips">
+          <h2>Printing it</h2>
+          <ul>
+            <li>Every part is its own object in the file, laid out flat side down, ready to slice. Print them as they are.</li>
+            <li>The parts need no supports. PLA or PETG, 0.2 mm layers, is a good start.</li>
+            <li>Print one insert first to check the fit, and change the <b>Clearance</b> if you need to.</li>
+          </ul>
+          <p class="credit">From a design by Clint Tredway. Runs in your browser: nothing is uploaded.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<footer>
+  <div class="wrap">
+    <span class="grow">454 Workshop, free and open source under the MIT licence</span>
+    <a href="../">Gadgets</a>
+    <a href="../../docs/index.html">Documentation</a>
+    <a href="https://github.com/ctredway/454-workshop/issues" target="_blank" rel="noopener">Report a problem<span class="sr"> (opens in a new tab)</span></a>
+  </div>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>
