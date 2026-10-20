@@ -117,10 +117,22 @@ function histMadeFlush(){
 // A tool that makes shapes gives them their ids as it finishes, in the drawing's order, so done again it gives them
 // the same ones in the same order, whatever else asks for an id in between.
 function histGiveIds(){ (DOC.ents || []).forEach(function (e) { if (e && typeof e === 'object') entId(e); }); }
+// A change made with steps undone (gone back on the History bar) goes in there, as in Fusion: the steps after it
+// stay, still undone, and are done again on top of it when the drawing goes forward to them (histFresh). Until then
+// their drawings are out of date: HIST_STALE_FROM is the first step whose are (null: none). (It used to be Undo's
+// way, Clint 2026-10-20: a change dropped every step after it.)
+var HIST_STALE_FROM = null;
 function pushUndo(name, kind){
   if (typeof DRY !== 'undefined' && DRY) return;
   FALL_MARKS = null;
   var p = histPack();
+  var keep = REDO.length && !kind ? REDO : null;        // (a new or opened drawing starts afresh: histStartAfresh)
+  if (keep){
+    // each step that will be done again keeps what it did the first time (as histKeepOrig does): the next to do
+    // went from the drawing as it is to its own; each after it, from the one before's
+    for (var j = REDO.length - 1; j >= 0; j--)
+      if (!REDO[j].orig) REDO[j].orig = {b: j === REDO.length - 1 ? p : REDO[j + 1].p, a: REDO[j].p};
+  }
   // ids given to shapes in the drawing are the last step's; any others were given by the tool starting this one, to
   // shapes it hasn't put in yet (Weld's), and are this step's
   var inDoc = {};
@@ -131,10 +143,25 @@ function pushUndo(name, kind){
   HIST_MADE = later;
   UNDO.push({p: p, name: typeof name === 'string' ? name : null, at: Date.now(), kind: kind || null, seq: ++HIST_SEQ});
   HIST_EDITS_UNDONE = [];                               // a new step: a change to a step that was undone stays undone
-  if (UNDO.length > HIST_MAX) UNDO.shift();
-  REDO = [];
+  if (UNDO.length > HIST_MAX){ UNDO.shift(); if (HIST_STALE_FROM !== null) HIST_STALE_FROM = Math.max(0, HIST_STALE_FROM - 1); }
+  REDO = keep || [];
+  if (keep) HIST_STALE_FROM = UNDO.length;               // the first step after this one (any later were too)
+  else HIST_STALE_FROM = null;
   histSweep();
   histChanged();
+}
+// Bring the steps after a change made in the middle up to date: do them again on top of it. Steps that can't be
+// done now turn red, as when a step is changed. Returns how many did.
+function histFresh(){
+  if (HIST_STALE_FROM === null || typeof histReplay !== 'function') return 0;
+  var L = histLine(), from = HIST_STALE_FROM;
+  HIST_STALE_FROM = null;
+  if (from >= L.steps.length) return 0;
+  var failed = histReplay(L, from);
+  histSetLine(L);
+  if (failed) toast('warn', failed === 1 ? 'A step can’t be done now' : failed + ' steps can’t be done now',
+    'They’re red on the History bar, and skipped: the shapes they changed aren’t there, or aren’t as they were. Hover over one to see why.');
+  return failed;
 }
 // Another drawing from here on (New, Open, Recover, Don't save on closing): the steps of the one before go, with any
 // changes to steps that could be taken back. Its steps up to the one that started this drawing, or (all) every step.
@@ -143,7 +170,8 @@ function pushUndo(name, kind){
 function histStartAfresh(all){
   var last = -1;
   if (!all) for (var i = UNDO.length - 1; i >= 0; i--) if (UNDO[i].kind){ last = i; break; }
-  if (all){ UNDO = []; REDO = []; } else if (last >= 0) UNDO.splice(0, last + 1);   // (steps undone are this drawing's)
+  if (all){ UNDO = []; REDO = []; HIST_STALE_FROM = null; }
+  else if (last >= 0){ UNDO.splice(0, last + 1); if (HIST_STALE_FROM !== null) HIST_STALE_FROM = Math.max(0, HIST_STALE_FROM - last - 1); }   // (steps undone are this drawing's)
   HIST_MADE = [];
   if (typeof HIST_EDITS !== 'undefined'){ HIST_EDITS = []; HIST_EDITS_UNDONE = []; }
   histChanged();
@@ -156,6 +184,7 @@ function histMoved(e, p){ var o = {}; for (var k in e) o[k] = e[k]; o.p = p; ret
 function histGoTo(n){
   n = Math.max(0, Math.min(n, UNDO.length + REDO.length));
   if (n === UNDO.length) return;
+  if (n > UNDO.length) histFresh();                     // going forward: the steps there done again, if they need it
   var cur = histPack();
   histMadeFlush();
   while (UNDO.length > n){ var e = UNDO.pop(); REDO.push(histMoved(e, cur)); cur = e.p; }
@@ -298,7 +327,8 @@ function histSetLine(L){
 function histSteps(){
   var L = histLine();
   return L.steps.map(function (e, i) {
-    var o = e.failed && e.orig ? e.orig : {b: L.s[i], a: L.s[i + 1]};       // a red step: named for what it did
+    // a red step, or one waiting to be done again (its drawings out of date): named for what it did
+    var o = (e.failed || (HIST_STALE_FROM !== null && i >= HIST_STALE_FROM)) && e.orig ? e.orig : {b: L.s[i], a: L.s[i + 1]};
     // unnamed: named by its recipe (a handle drag's, once it's moved), or for what it changed
     var op = e.recipe && typeof HIST_OPS !== 'undefined' && HIST_OPS[e.recipe.op];
     var named = e.name || (op && (e.recipe.op !== 'xform' || e.recipe.kind) ? op.name(e.recipe) : null);
@@ -330,7 +360,10 @@ function histForKeeping(){
     return o;
   });
   var states = L.s.slice(first, last + 1).map(pack);           // (before the pieces are listed: it adds to them)
-  return {v: 1, pieces: pieces.map(function (s) { return JSON.parse(s); }), states: states, extra: extra, steps: steps, at: L.n - first};
+  var h = {v: 1, pieces: pieces.map(function (s) { return JSON.parse(s); }), states: states, extra: extra, steps: steps, at: L.n - first};
+  // steps after a change made in the middle, not done again yet: from which (their drawings are out of date)
+  if (HIST_STALE_FROM !== null && HIST_STALE_FROM < last) h.stale = Math.max(0, HIST_STALE_FROM - first);
+  return h;
 }
 // The drawing's file, with its history added at the end.
 function histAttach(text){
@@ -366,9 +399,14 @@ function histTake(h){
     if (Array.isArray(s.orig) && extra[s.orig[0]] && extra[s.orig[1]]) o.orig = {b: extra[s.orig[0]], a: extra[s.orig[1]]};
     return o;
   };
+  var base = UNDO.length;
   for (var i = 0; i < h.at; i++){ var e = step(i); e.p = p[i]; UNDO.push(e); }
   if (histJoin(p[h.at]) !== docSnap()) UNDO.push({p: p[h.at], name: null, at: 0, kind: null});
-  else for (var j = h.states.length - 1; j > h.at; j--){ var r = step(j - 1); r.p = p[j]; REDO.push(r); }
+  else {
+    for (var j = h.states.length - 1; j > h.at; j--){ var r = step(j - 1); r.p = p[j]; REDO.push(r); }
+    // steps waiting to be done again after a change made in the middle (only steps undone ever are)
+    if (Number.isInteger(h.stale) && h.stale >= h.at && h.stale < h.steps.length) HIST_STALE_FROM = base + h.stale;
+  }
   while (UNDO.length > HIST_MAX) UNDO.shift();
   histChanged();
   return true;
@@ -454,7 +492,8 @@ function histRender(){
     list.appendChild(b);
   });
   var ahead = REDO.length;
-  note.textContent = ahead ? 'Back ' + ahead + (ahead === 1 ? ' step: a change here drops the step after it' : ' steps: a change here drops the ' + ahead + ' after it') : '';
+  note.textContent = ahead ? 'Back ' + ahead + (ahead === 1 ? ' step. A change goes in here; the step after it is redone on top.' :
+    ' steps. A change goes in here; the ' + ahead + ' after it are redone on top.') : '';
   var now = list.querySelector('.now');
   if (now && now.scrollIntoView) now.scrollIntoView({block: 'nearest', inline: 'center'});
 }

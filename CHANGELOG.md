@@ -13,6 +13,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## The 454 logo
 
+- **454 Workshop: the logo with WORKSHOP underneath** (`docs/images/logo-workshop.svg`), in the logo's blue with the
+  same white edge, lettered in Russo One (chosen by Clint, 2026-10-20) and turned into outlines so it needs no font.
+  It's at the top of the README, in the website's header (where it replaces the logo and the word Workshop), cut as
+  the hero's toolpath (WORKSHOP is cut letter by letter after the 454; the cut runs a little faster so it doesn't take
+  longer), and in the docs' header beside "docs". `node docs/images/make-logo-workshop.cjs` makes it again.
 - **Your logo throughout**, traced from the PNG into a crisp SVG (checked against the original: the only
   differences are the PNG's soft edges). Two colours: the logo blue #0083ff and its white outline.
 - **The website:** in the header beside "Workshop"; the hero now cuts **your logo** on a wide gridded plate
@@ -1212,6 +1217,23 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.145.0 — a change made back in the history keeps the steps after it
+Clint: "I clicked a previous step in the history timeline and then made a change, and the history items that were
+after that change were removed. That shouldn't happen." The History bar was Undo's list, and a change after undoing
+drops what was undone. Now it works as Fusion's timeline does:
+- **The change goes in there**, and the steps after it stay on the bar, faded. Going forward to them (a click on a
+  later step, or Redo) does them again on top of it, with the same replay as changing a step (history-replay.js):
+  a step with a recipe is done again on its shapes by their ids; any other puts back what it did. One that can't
+  be done turns red and is skipped, with a note saying so; hovering over it says why.
+- Until then their drawings are out of date (`HIST_STALE_FROM`): they're named for what they did, kept so in the
+  file and the browser's storage, and brought up to date before a step is changed. Undoing a change to a step puts
+  the line back as it was, still waiting.
+- New, Open and Recover still start the history afresh. The bar's note, while back: "Back 2 steps. A change goes in
+  here; the 2 after it are redone on top."
+- **Proven:** 6 tests (the steps kept and done again, Redo and Undo, a step that turns red, saved and opened, a new
+  drawing, changing a step meanwhile); each part broken on purpose and failed. In the app: three steps, back to the
+  first by a click on the bar, Duplicate, then a click on the last: all four steps, and all the shapes.
 
 ### 0.144.1 — a moved curved outline is drawn where it is
 Clint: "I copied vectors that have been joined because I need 2 of these, but I cannot move the pasted version other

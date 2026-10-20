@@ -345,10 +345,10 @@ function histEntryCopy(e){ var o = {}; for (var k in e) o[k] = e[k]; return o; }
 function histLineCopy(){
   var cur = histPack();
   histMadeFlush();
-  return {undo: UNDO.map(histEntryCopy), redo: REDO.map(histEntryCopy), cur: cur};
+  return {undo: UNDO.map(histEntryCopy), redo: REDO.map(histEntryCopy), cur: cur, stale: HIST_STALE_FROM};
 }
 function histLinePut(c){
-  UNDO = c.undo.map(histEntryCopy); REDO = c.redo.map(histEntryCopy);
+  UNDO = c.undo.map(histEntryCopy); REDO = c.redo.map(histEntryCopy); HIST_STALE_FROM = c.stale === undefined ? null : c.stale;
   docRestore(histJoin(c.cur)); SEL = []; draw(); persist(); histChanged();
 }
 function histEditUndo(){
@@ -379,9 +379,11 @@ function histSweepEdits(re){
 // there are more than HIST_BUSY_STEPS to do again, a promise of it, done in parts with the Working panel up.
 var HIST_BUSY_STEPS = 40, HIST_BUSY_PART = 25;
 function histEdit(i, values){
-  var L = histLine(), info = histEditInfo(L, i);
-  if (!info) return -1;
-  var before = histLineCopy(), title = info.title;                  // (before anything changes: to take it back)
+  if (!histEditInfo(histLine(), i)) return -1;
+  var before = histLineCopy();                                      // (before anything changes: to take it back)
+  histFresh();                                                      // steps after a change made in the middle: up to date first
+  var L = histLine(), info = histEditInfo(L, i), title = info && info.title;
+  if (!info){ histLinePut(before); return -1; }
   histKeepOrig(L, i);
   info.change(L.steps[i], values);
   L.edited = i;

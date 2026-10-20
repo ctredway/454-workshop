@@ -92,18 +92,81 @@ test('undo, redo and a click on the bar give exactly the drawing as it was at ea
   }
 });
 
-test('a change made after going back drops the steps after it, as undo always has, and the bar says so first', async () => {
+// Clint, 2026-10-20: "I clicked a previous step in the history timeline and then made a change and the history items
+// that were after that change were removed, that shouldn't happen." As in Fusion: the change goes in there, and the
+// steps after it stay, done again on top of it when the drawing goes forward to them.
+const ents = () => plain(D.run('DOC.ents')).map((e) => { delete e._id; delete e.layer; return e; });
+test('a change made after going back goes in there; the steps after it stay, and are done again on top of it', () => {
   setup();
   step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
   step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
   step(`DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 9, y2: 9})`);
   D.run('histGoTo(1); histRender(); 1');
-  assert.match(D.document.getElementById('histNote').textContent, /Back 2 steps: a change here drops the 2 after it/);
-  step(`DOC.ents[0].h = 99`);
+  assert.match(D.document.getElementById('histNote').textContent, /Back 2 steps\. A change goes in here; the 2 after it are redone on top\./);
+  step(`DOC.ents[0].h = 99`, 'Taller');
+  assert.deepEqual(names(), ['Rectangle', 'Taller', 'Circle', 'Line'], 'the steps after it are still there');
+  assert.equal(D.run('UNDO.length'), 2, 'and still undone: the drawing is as it is just after the change');
+  assert.deepEqual(ents(), [{t: 'rect', x: 10, y: 10, w: 40, h: 99}]);
+  D.run('histGoTo(4); 1');
+  assert.deepEqual(ents(), [{t: 'rect', x: 10, y: 10, w: 40, h: 99}, {t: 'circle', cx: 120, cy: 40, r: 15}, {t: 'line', x1: 0, y1: 0, x2: 9, y2: 9}],
+    'going forward does them again, on top of it');
+  assert.equal(D.run('HIST_STALE_FROM'), null);
+  assert.deepEqual(plain(D.run('histSteps().map(function (s) { return !!s.failed; })')), [false, false, false, false]);
+  // and back and forward again: each step's drawing as it is now
+  D.run('histGoTo(2); 1');
+  assert.deepEqual(ents(), [{t: 'rect', x: 10, y: 10, w: 40, h: 99}]);
+  D.run('histGoTo(3); 1');
+  assert.deepEqual(ents().map((e) => e.t), ['rect', 'circle']);
+});
+test('Redo goes forward one step at a time on top of the change, and Undo takes the change back', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
+  D.run('histGoTo(1); 1');
+  step(`DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 9, y2: 9})`);
+  D.run('doRedo(); 1');
+  assert.deepEqual(ents().map((e) => e.t).sort(), ['circle', 'line', 'rect'], 'the circle, done again after the line');
+  D.run('doUndo(); doUndo(); 1');
+  assert.deepEqual(ents().map((e) => e.t), ['rect']);
+  assert.deepEqual(names(), ['Rectangle', 'Line', 'Circle'], 'undone, still on the bar');
+});
+test('a later step that can’t be done on top of the change turns red and is skipped; the rest are done', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30}); DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
+  // move the rectangle (a recipe: done again on the same shape, by its id), then move the circle
+  D.run(`SEL = [0]; pushUndo('Move'); histRecipe({op: 'move', ids: histIdsOf([0]), dx: 5, dy: 0}); moveEntity(DOC.ents[0], 5, 0); persist();
+    SEL = [1]; pushUndo('Move'); histRecipe({op: 'move', ids: histIdsOf([1]), dx: 0, dy: 7}); moveEntity(DOC.ents[1], 0, 7); persist(); SEL = []; 1`);
+  D.run('histGoTo(1); 1');
+  step(`DOC.ents.splice(0, 1)`, 'Delete');                     // the rectangle the first move moved is gone
+  D.run('histGoTo(4); 1');
+  const st = plain(D.run('histSteps().map(function (s) { return [s.name, s.failed]; })'));
+  assert.deepEqual(st.map((s) => s[0]), ['Added 2 shapes', 'Delete', 'Move', 'Move']);
+  assert.ok(st[2][1], 'the rectangle’s move is red');
+  assert.equal(st[3][1], null, 'the circle’s move is done');
+  assert.deepEqual(ents(), [{t: 'circle', cx: 120, cy: 47, r: 15}]);
+  assert.match(D.document.body.textContent, /A step can’t be done now/);
+});
+test('a drawing saved with steps waiting to be done again keeps them waiting, and opened, does them going forward', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
+  D.run('histGoTo(1); 1');
+  step(`DOC.ents[0].w = 80`);
+  const h = plain(D.run('histForKeeping()'));
+  assert.equal(h.stale, 2, 'the circle (step 3) waits');
+  D.run('UNDO = []; REDO = []; HIST_STALE_FROM = null; 1');
+  assert.equal(D.run(`histTake(${JSON.stringify(h)})`), true);
+  assert.equal(D.run('HIST_STALE_FROM'), 2);
+  D.run('histGoTo(3); 1');
+  assert.deepEqual(ents(), [{t: 'rect', x: 10, y: 10, w: 80, h: 30}, {t: 'circle', cx: 120, cy: 40, r: 15}]);
+});
+test('opening or starting a drawing still starts a history afresh, after going back', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
+  D.run(`histGoTo(1); pushUndo('New drawing', 'new'); DOC.ents = []; persist(); 1`);
   assert.equal(D.run('REDO.length'), 0);
-  assert.deepEqual(names(), ['Rectangle', 'Changed rectangle']);
-  D.run('histRender(); 1');
-  assert.equal(D.document.getElementById('histNote').textContent, '');
+  assert.equal(D.run('HIST_STALE_FROM'), null);
 });
 
 test('each step is named for what it did', () => {
@@ -295,4 +358,21 @@ test('a red step’s label says why it was skipped', () => {
   assert.equal(b.getAttribute('aria-label'), 'Changed rectangle (skipped)');
   b.dispatchEvent(new D.window.Event('mouseenter'));
   assert.match(D.document.getElementById('histTip').textContent, /Skipped: A shape it changes is different now/);
+});
+test('changing an earlier step while steps wait does them all again; Undo puts back the line as it was, still waiting', () => {
+  setup();
+  step(`DOC.ents.push({t: 'rect', x: 10, y: 10, w: 40, h: 30})`);
+  step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
+  D.run('histGoTo(1); 1');
+  step(`DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 9, y2: 9})`);
+  assert.equal(D.run('HIST_STALE_FROM'), 2);
+  // the rectangle (step 1) made wider: every step after it done again, the circle included
+  assert.equal(D.run('histEdit(0, {w: 60})'), 0);
+  assert.equal(D.run('HIST_STALE_FROM'), null);
+  D.run('histGoTo(3); 1');
+  assert.deepEqual(ents().map((e) => e.t + (e.w ? e.w : '')).sort(), ['circle', 'line', 'rect60']);
+  // Undo, Undo: back to before the change to the rectangle, the circle waiting again
+  D.run('histGoTo(2); doUndo(); 1');
+  assert.equal(D.run('HIST_STALE_FROM'), 2);
+  assert.deepEqual(ents().map((e) => e.t + (e.w ? e.w : '')), ['rect40', 'line']);
 });

@@ -194,9 +194,11 @@ list Undo goes back through, but you can see it and jump straight to any step.
   bar, faded, and the step you're on is underlined. Click a later step to come forward again; nothing is lost
   by looking. The first button, **Start**, is the drawing before the first step.
 - **Undo** (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) and **Redo** (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) move one step along the same line.
-- **Changing something while you're back at an earlier step** carries on from there, and drops the faded steps
-  after it, as Undo always has. The bar says so while you're back: "Back 2 steps: a change here drops the 2
-  after it".
+- **Changing something while you're back at an earlier step** puts the change in there, as in Fusion. The faded
+  steps after it stay on the bar, and when you come forward to them (click a later step, or Redo) they're done
+  again on top of your change. One that can't be, because the shapes it changed aren't there any more, turns red
+  and is skipped; hover over it to see why. The bar says so while you're back: "Back 2 steps. A change goes in
+  here; the 2 after it are redone on top."
 - **The history is saved with the drawing.** Save puts it in the drawing's file, and opening the file brings it
   back, so you can go back to how a project was last week. It's kept between visits too, with the drawing.
 - **A new drawing starts a new history,** and an opened one has its own, saved with it. The drawing that was open
