@@ -71,6 +71,7 @@ node --test 'apps/control/test/*.test.mjs'        # Control: parser, job builder
 node --test 'apps/design/test/*.test.mjs'         # Design: file formats and toolpaths, on its real sources
 cd apps/desktop && npm ci && npx vitest run       # the desktop app: updater, serial
 cd docs-site && npm ci && npm run build           # the docs (Node 22.12 or later)
+node site/build.js && node site/serve.js          # the whole website on this computer: http://localhost:8454/
 ```
 
 - **Design's tests** load its real source files into Node through `apps/design/test/harness.mjs` (Design's
