@@ -57,10 +57,28 @@ function menuTemplate({ kind, act, updates = [], recent = [] }) {
     sep,
     ...fileEnd,
   ] : fileEnd;
+  // Edit, in 454 Design: the drawing's own edits, through the page (shortcuts.js, menuEdit), with its keys shown.
+  // In a text box the page answers 'text' and the app does the box's own (main.js), so Copy copies typed text there.
+  // Elsewhere, the browser's own, for text boxes and the docs.
+  const edit = kind === 'design' ? [
+    page('Undo', 'undo', 'CmdOrCtrl+Z'),
+    page('Redo', 'redo', 'CmdOrCtrl+Y'),
+    sep,
+    page('Cut', 'cut', 'CmdOrCtrl+X'),
+    page('Copy', 'copy', 'CmdOrCtrl+C'),
+    page('Paste', 'paste', 'CmdOrCtrl+V'),
+    page('Paste in place', 'pasteInPlace', 'CmdOrCtrl+Shift+V'),
+    page('Duplicate', 'duplicate', 'CmdOrCtrl+D'),
+    page('Delete', 'delete', 'Delete'),
+    sep,
+    page('Select all', 'selectAll', 'CmdOrCtrl+A'),
+    page('Group', 'group', 'CmdOrCtrl+G'),
+    page('Ungroup', 'ungroup', 'CmdOrCtrl+U'),
+  ] : [{ role: 'undo' }, { role: 'redo' }, sep, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }];
   const inApp = kind === 'design' || kind === 'control';
   return [
     { label: 'File', submenu: file },
-    { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, sep, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+    { label: 'Edit', submenu: edit },
     { label: 'View', submenu: [
       { role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, sep, { role: 'togglefullscreen' },
       sep, { label: 'Toggle developer tools', accelerator: 'CmdOrCtrl+Shift+I', click: act.devTools },

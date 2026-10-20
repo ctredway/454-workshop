@@ -1168,6 +1168,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.143.0 — the Edit menu edits the drawing
+Clint: "before we go to a full version 1.0, we need to fill out the Edit menu." The desktop app's Edit menu held only
+the browser's own Undo, Redo, Cut, Copy, Paste and Select all, which act on text boxes: Edit → Undo didn't take back
+a drawing step, and Select all selected the page's text, not the shapes.
+- **In 454 Design, Edit now holds the drawing's own:** Undo, Redo, Cut, Copy, Paste, Paste in place, Duplicate,
+  Delete, Select all, Group and Ungroup, each doing exactly what its key does (the key is shown beside it). Delete
+  removes a selected dimension when no shapes are selected, as the Delete key does.
+- **Typing in a box,** Cut, Copy, Paste, Delete and Select all act on the typed text, as before; Paste in place,
+  Duplicate, Group and Ungroup leave the drawing alone. Undo and Redo stay the drawing's, as Ctrl+Z and Ctrl+Y are.
+- **Nothing** while a dialog, the Inlay wizard, the help or the Working panel has the screen.
+- 454 Control and the docs keep the browser's own Edit menu, for their text boxes.
+- **Proven:** 6 tests on Design's real sources and one on the menu; each check was broken on purpose and failed.
+
 ### 0.142.1 — the History bar as icons
 Clint: "instead of text for the history items, we should use icons, and make the text the hover state. Using icons
 takes up less room than text."

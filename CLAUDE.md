@@ -102,6 +102,8 @@ without a published release looks to them like a newest release with nothing in 
 - **The menu bar is File, Edit, View, Window, Help** (`apps/desktop/src/app-menu.js`, built again whenever
   another window comes to the front). A menu item asks the page (`menuDo` in each app), which does what its
   button or keys do and nothing while a dialog is open. Keys the pages handle are shown, not registered.
+  Design's Edit items are the drawing's (`menuEdit` in `shortcuts.js`); with the focus in a text box the page
+  answers `'text'` and `main.js` does the box's own cut, copy, paste, delete or select all.
 - **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
   (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
   454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.
@@ -152,11 +154,8 @@ without a published release looks to them like a newest release with nothing in 
 
 ## Open items
 
-- **Before version 1.0: fill out the Edit menu** (Clint, 2026-10-20). Today it holds only Electron's own roles
-  (undo, redo, cut, copy, paste, select all, in `apps/desktop/src/app-menu.js`), which act on text boxes, not on
-  the drawing: Design's own Undo and Redo (the History bar), Copy, Paste, Paste in place, Delete, Duplicate, Select
-  all and the like aren't in it. Put most of the edit functions there, each through `page(...)` and the page's
-  `menuDo`, as File's items are, with the keys shown.
+- **Before version 1.0: the Edit menu** (Clint, 2026-10-20): filled out for Design in Design 0.143.0. Check
+  again before 1.0 that every edit with a key or a toolbar button is in it.
 - **Offered, not done:** publishing beta releases automatically instead of as drafts.
 - **Next restructuring steps:** tests for Control's status parsing, time estimates and recovery; for Design,
   nesting and the geometry operations; the small quirks each README lists from the byte-identical splits.

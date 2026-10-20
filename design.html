@@ -1286,7 +1286,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.142.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.143.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -13745,6 +13745,7 @@ function selectAll(){
 // The desktop app's File and Help menus act through here, so a menu item does exactly what its button or its
 // keys do, and nothing while a dialog (or the help) has the screen: the same rule the keys follow.
 function menuDo(what, arg){
+  if (MENU_EDITS.indexOf(what) >= 0) return menuEdit(what);
   if (typeof helpIsOpen === 'function' && helpIsOpen()) return false;
   if (what === 'help'){ helpOpen(); return true; }
   if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
@@ -13765,6 +13766,35 @@ function menuDo(what, arg){
     else toast('info', 'No toolpaths to save', 'Make a toolpath first: select shapes, then press + at the top of the Toolpaths panel, or the + key.');
   }
   else return false;
+  return true;
+}
+// The desktop app's Edit menu, on the drawing: each item does what its key does. In a text box, Cut, Copy, Paste,
+// Delete and Select all are the box's (the answer 'text' tells the app to do the box's own), and the items with no
+// meaning there do nothing; Undo and Redo are the drawing's even there, as Ctrl+Z and Ctrl+Y are. While a dialog,
+// the help or a slow job has the screen, nothing.
+var MENU_EDITS = ['undo', 'redo', 'cut', 'copy', 'paste', 'pasteInPlace', 'duplicate', 'delete', 'selectAll', 'group', 'ungroup'];
+function menuEdit(what){
+  var t = document.activeElement;
+  var inField = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+  if (inField && what !== 'undo' && what !== 'redo') return 'text';
+  if (typeof helpIsOpen === 'function' && helpIsOpen()) return false;
+  if (CLIP_DIALOGS.concat(['inwModal']).some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
+  if (typeof busyNow === 'function' && busyNow()) return false;
+  if (what === 'undo') doUndo();
+  else if (what === 'redo') doRedo();
+  else if (what === 'cut') return clipCut();
+  else if (what === 'copy') return clipCopy();
+  else if (what === 'paste') return clipPaste(false);
+  else if (what === 'pasteInPlace') return clipPaste(true);
+  else if (what === 'duplicate') return clipDuplicate();
+  else if (what === 'delete'){
+    if (SEL.length) deleteSelection();
+    else if (DIMSEL !== null && DOC.dims && DOC.dims[DIMSEL]) deleteDim(DIMSEL);
+    else return false;
+  }
+  else if (what === 'selectAll') selectAll();
+  else if (what === 'group'){ if (!SEL.length) return false; doGroupSelectionRef(); }
+  else if (what === 'ungroup'){ if (!SEL.length) return false; doUngroupSelectionRef(); }
   return true;
 }
 function keysWire(){

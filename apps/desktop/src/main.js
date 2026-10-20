@@ -262,6 +262,8 @@ function updateMenu() {
   ];
 }
 const { menuTemplate, windowKind } = require('./app-menu');
+// the Edit items a text box does for itself (each is a webContents method of the same name)
+const TEXT_EDITS = ['cut', 'copy', 'paste', 'delete', 'selectAll'];
 // The menu bar (app-menu.js): File, Edit, View, Window, Help. File follows the window in front, so the menu is
 // built again whenever another window comes to the front.
 function menu() {
@@ -270,7 +272,9 @@ function menu() {
   const kind = front && !front.isDestroyed() ? (front === design ? 'design' : front === control ? 'control' : windowKind(front.webContents.getURL())) : 'other';
   return Menu.buildFromTemplate(menuTemplate({ kind, updates: updateMenu(), recent: kind === 'design' ? files().recent() : [], act: {
     // the page does it, through its own menuDo: the same thing its button or its keys do
-    page: (name) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo(' + JSON.stringify(name) + ')', true).catch(() => {}); },
+    // An Edit item with the focus in a text box comes back 'text': the box's own cut, copy, paste, delete or select all
+    page: (name) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo(' + JSON.stringify(name) + ')', true)
+      .then((r) => { const wc = w.webContents; if (r === 'text' && TEXT_EDITS.includes(name) && !wc.isDestroyed()) wc[name](); }).catch(() => {}); },
     // a recent file: the page opens it, as it opens any other (and asks nothing of a dialog that has the screen)
     openRecent: (p) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo("recent", ' + JSON.stringify(p) + ')', true).catch(() => {}); },
     clearRecent: () => files().clearRecent(),
@@ -310,6 +314,11 @@ function testHook() {
       const hide = /^(\d+):(\d+)$/.exec(process.env.P454_E2E_HIDE || '');
       if (hide) setTimeout(() => { w.hide(); setTimeout(() => w.show(), hide[2] * 1000); }, hide[1] * 1000);
       await new Promise((r) => setTimeout(r, 1200));
+      // P454_E2E_MENU="Edit/Copy@1000,Edit/Paste@1500": click the menu bar's items, that long after the script starts
+      (process.env.P454_E2E_MENU || '').split(',').filter(Boolean).forEach((s) => {
+        const m = /^([^/]+)\/(.+)@(\d+)$/.exec(s);
+        if (m) setTimeout(() => { const top = Menu.getApplicationMenu().items.find((i) => i.label === m[1]); const it = top && top.submenu.items.find((i) => i.label === m[2]); if (it) it.click(); }, +m[3]);
+      });
       let result;
       try { result = await w.webContents.executeJavaScript(fs.readFileSync(j.script, 'utf8')); }
       catch (e) { result = { error: String((e && e.message) || e) }; }

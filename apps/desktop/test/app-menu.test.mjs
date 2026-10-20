@@ -81,9 +81,26 @@ describe('the menu bar', () => {
     // the docs window has no help of its own to open
     expect(labels(sub(build('other', updates).menu, 'Help'))).toEqual(['Docs', 'Report a problem…', '-', 'Check for updates…', 'Updates', '-', 'About 454 Workshop']);
   });
-  it('Edit and View are as they were', () => {
+  it('Edit, in 454 Design: the drawing’s own edits, each asking the page, with its keys shown and left to the page', () => {
+    const { menu, did } = build('design');
+    expect(labels(sub(menu, 'Edit'))).toEqual(['Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'Paste in place', 'Duplicate', 'Delete', '-', 'Select all', 'Group', 'Ungroup']);
+    const want = { 'Undo': ['undo', 'CmdOrCtrl+Z'], 'Redo': ['redo', 'CmdOrCtrl+Y'], 'Cut': ['cut', 'CmdOrCtrl+X'], 'Copy': ['copy', 'CmdOrCtrl+C'],
+      'Paste': ['paste', 'CmdOrCtrl+V'], 'Paste in place': ['pasteInPlace', 'CmdOrCtrl+Shift+V'], 'Duplicate': ['duplicate', 'CmdOrCtrl+D'],
+      'Delete': ['delete', 'Delete'], 'Select all': ['selectAll', 'CmdOrCtrl+A'], 'Group': ['group', 'CmdOrCtrl+G'], 'Ungroup': ['ungroup', 'CmdOrCtrl+U'] };
+    for (const [label, [name, key]] of Object.entries(want)) {
+      const it = item(menu, 'Edit', label);
+      did.length = 0; it.click();
+      expect(did, label).toEqual(['page:' + name]);
+      expect(it.role, label + ': not the browser’s, which acts on text, not the drawing').toBeUndefined();
+      expect(it.accelerator).toBe(key);
+      expect(it.registerAccelerator, label).toBe(false);
+    }
+  });
+  it('Edit, in 454 Control and the docs: the browser’s own, for text', () => {
+    for (const kind of ['control', 'other']) expect(labels(sub(build(kind).menu, 'Edit'))).toEqual(['undo', 'redo', '-', 'cut', 'copy', 'paste', 'selectAll']);
+  });
+  it('View is as it was', () => {
     const { menu } = build('design');
-    expect(labels(sub(menu, 'Edit'))).toEqual(['undo', 'redo', '-', 'cut', 'copy', 'paste', 'selectAll']);
     expect(labels(sub(menu, 'View'))).toEqual(['reload', 'resetZoom', 'zoomIn', 'zoomOut', '-', 'togglefullscreen', '-', 'Toggle developer tools']);
   });
 });

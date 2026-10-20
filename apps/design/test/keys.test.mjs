@@ -282,6 +282,94 @@ test('the menus do nothing while a dialog or the help has the screen, as the key
   assert.deepEqual(did, ['new']);
 });
 
+// ---- the desktop app's Edit menu: the drawing's own edits (shortcuts.js, menuEdit) ----
+// focus a box, as clicking into it would (or nothing, with null)
+function focusOn(D, el) { Object.defineProperty(D.document, 'activeElement', { value: el, configurable: true }); }
+test('Edit menu: Undo and Redo take back and put back drawing steps, as Ctrl+Z and Ctrl+Y do', () => {
+  const D = fresh();
+  D.run(`pushUndo(); DOC.ents.push({t:'line', x1:0, y1:0, x2:5, y2:5}); persist(); 1`);
+  assert.equal(D.menuDo('undo'), true);
+  assert.equal(plain(D.run('DOC.ents')).length, 2);
+  assert.equal(D.menuDo('redo'), true);
+  assert.equal(plain(D.run('DOC.ents')).length, 3);
+});
+test('Edit menu: Copy, Paste in place, Cut, Paste and Duplicate work on the selected shapes, with their dimensions', () => {
+  const D = fresh();
+  D.run('SEL = [0]; 1');
+  assert.equal(D.menuDo('copy'), true);
+  assert.equal(JSON.parse(D.localStorage.getItem('d454DesignClip')).ents[0].t, 'rect');
+  assert.equal(D.menuDo('pasteInPlace'), true);
+  let e = plain(D.run('DOC.ents'));
+  assert.equal(e.length, 3);
+  assert.deepEqual([e[2].t, e[2].x, e[2].y], ['rect', 0, 0], 'exactly where it was copied from');
+  assert.equal(plain(D.run('DOC.dims')).length, 2, 'with its dimension');
+  D.run('SEL = [1]; 1');
+  assert.equal(D.menuDo('cut'), true);
+  e = plain(D.run('DOC.ents'));
+  assert.deepEqual(e.map((x) => x.t), ['rect', 'rect'], 'the circle is gone');
+  assert.equal(D.menuDo('paste'), true);
+  assert.equal(plain(D.run('DOC.ents'))[2].t, 'circle', 'and back');
+  D.run('SEL = [0]; 1');
+  assert.equal(D.menuDo('duplicate'), true);
+  e = plain(D.run('DOC.ents'));
+  assert.deepEqual([e[3].t, e[3].x, e[3].y], ['rect', 10, -10]);
+});
+test('Edit menu: Delete removes the selection, or the selected dimension, as the Delete key does', () => {
+  const D = fresh();
+  assert.equal(D.menuDo('delete'), false, 'nothing selected: nothing to delete');
+  assert.equal(plain(D.run('DOC.ents')).length, 2);
+  D.run('DIMSEL = 0; 1');
+  assert.equal(D.menuDo('delete'), true);
+  assert.equal(plain(D.run('DOC.dims')).length, 0, 'the dimension');
+  assert.equal(plain(D.run('DOC.ents')).length, 2, 'not the shapes');
+  D.run('DIMSEL = null; SEL = [1]; 1');
+  assert.equal(D.menuDo('delete'), true);
+  assert.deepEqual(plain(D.run('DOC.ents')).map((x) => x.t), ['rect']);
+  D.menuDo('undo');
+  assert.equal(plain(D.run('DOC.ents')).length, 2, 'and Undo brings it back');
+});
+test('Edit menu: Select all, Group and Ungroup', () => {
+  const D = fresh();
+  assert.equal(D.menuDo('group'), false, 'nothing selected');
+  assert.equal(D.menuDo('selectAll'), true);
+  assert.deepEqual(plain(D.run('SEL')), [0, 1]);
+  assert.equal(D.menuDo('group'), true);
+  let e = plain(D.run('DOC.ents'));
+  assert.deepEqual(e.map((x) => x.t), ['group']);
+  D.run('SEL = [0]; 1');
+  assert.equal(D.menuDo('ungroup'), true);
+  e = plain(D.run('DOC.ents'));
+  assert.deepEqual(e.map((x) => x.t).sort(), ['circle', 'rect']);
+});
+test('Edit menu, typing in a box: Cut, Copy, Paste, Delete and Select all are the box’s; the rest leave the drawing alone; Undo is still the drawing’s', () => {
+  const D = fresh();
+  D.run(`SEL = [0]; pushUndo(); DOC.ents.push({t:'line', x1:0, y1:0, x2:5, y2:5}); persist(); SEL = [0]; 1`);
+  const clip = D.localStorage.getItem('d454DesignClip');
+  focusOn(D, D.document.createElement('input'));
+  for (const what of ['cut', 'copy', 'paste', 'pasteInPlace', 'duplicate', 'delete', 'selectAll', 'group', 'ungroup'])
+    assert.equal(D.menuDo(what), 'text', what);
+  assert.deepEqual(plain(D.run('DOC.ents')).map((x) => x.t), ['rect', 'circle', 'line'], 'the drawing is as it was');
+  assert.deepEqual(plain(D.run('SEL')), [0]);
+  assert.equal(D.localStorage.getItem('d454DesignClip'), clip, 'and the clipboard');
+  assert.equal(D.menuDo('undo'), true);
+  assert.equal(plain(D.run('DOC.ents')).length, 2, 'Undo is the drawing’s, as Ctrl+Z is in a box');
+});
+test('Edit menu: nothing while a dialog, the Inlay wizard or the help has the screen', () => {
+  const D = fresh();
+  D.run(`pushUndo(); DOC.ents.push({t:'line', x1:0, y1:0, x2:5, y2:5}); persist(); SEL = [0]; 1`);
+  for (const id of ['jobModal', 'inwModal']) {
+    D.document.getElementById(id).hidden = false;
+    for (const what of ['undo', 'redo', 'cut', 'copy', 'paste', 'pasteInPlace', 'duplicate', 'delete', 'selectAll', 'group', 'ungroup'])
+      assert.equal(D.menuDo(what), false, id + ': ' + what);
+    D.document.getElementById(id).hidden = true;
+  }
+  D.menuDo('help');
+  assert.equal(D.menuDo('undo'), false, 'the help');
+  D.helpClose();
+  assert.equal(plain(D.run('DOC.ents')).length, 3, 'nothing changed');
+  assert.equal(D.menuDo('undo'), true);
+});
+
 // ---- Open and Import: two buttons, two kinds of file ----
 const later = (ms = 40) => new Promise((r) => setTimeout(r, ms));
 test('the File group: New, Open, Import, Recover, Save, Save As, the exports, then Undo, Redo, Fit and Measure', () => {
