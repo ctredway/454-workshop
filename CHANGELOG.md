@@ -27,6 +27,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.54 — a Tools menu
+- Includes Design 0.144.0: in 454 Design, a Tools menu after View, with every toolbar tool in the toolbar's own groups.
+
 ### 0.6.2-beta.53 — the Edit menu edits the drawing
 - Includes Design 0.143.0: in 454 Design, Edit holds Undo, Redo, Cut, Copy, Paste, Paste in place, Duplicate, Delete,
   Select all, Group and Ungroup, on the drawing (they used to be the browser's, which act on text boxes only).
