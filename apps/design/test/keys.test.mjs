@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { loadDesign } from './harness.mjs';
+import { createRequire } from 'node:module';
 
 const plain = (v) => JSON.parse(JSON.stringify(v));
 function fresh() {
@@ -368,6 +369,80 @@ test('Edit menu: nothing while a dialog, the Inlay wizard or the help has the sc
   D.helpClose();
   assert.equal(plain(D.run('DOC.ents')).length, 3, 'nothing changed');
   assert.equal(D.menuDo('undo'), true);
+});
+
+// ---- the desktop app's Tools menu: the toolbar's tools (app-menu.js asks menuDo('tb:' + button)) ----
+const requireCjs = createRequire(import.meta.url);
+const { menuTemplate } = requireCjs('../../desktop/src/app-menu.js');
+// every item in Design's Tools menu, submenus opened out: [{label, name, key}]
+function toolsMenu() {
+  const did = [], act = { page: (n) => did.push(n) };
+  const tools = menuTemplate({ kind: 'design', act }).find((m) => m.label === 'Tools').submenu;
+  const out = [];
+  (function walk(items) { for (const i of items) {
+    if (i.submenu) walk(i.submenu);
+    else if (i.click) { did.length = 0; i.click(); out.push({ label: i.label, name: did[0], key: i.accelerator }); }
+  } })(tools);
+  return out;
+}
+test('Tools menu: every tool on the toolbar is in it (Group and Ungroup are in Edit), and every item is a real toolbar button', () => {
+  const D = fresh();
+  const items = toolsMenu();
+  const names = items.map((i) => i.name);
+  assert.ok(names.every((n) => n.startsWith('tb:')), 'each asks for a toolbar button');
+  const btns = plain(D.run('PANEL_BTNS'));
+  for (const n of names) assert.ok(btns[n.slice(3)], n + ' is a toolbar button');
+  const groups = plain(D.run('PANEL_GROUPS')).filter((g) => g.id !== 'file');
+  const want = groups.flatMap((g) => g.btns).concat(['measureT']).filter((b) => b !== 'groupBtn' && b !== 'ungroupBtn');
+  for (const b of want) assert.ok(names.includes('tb:' + b), b + ' is in the Tools menu');
+  assert.equal(new Set(names).size, names.length, 'none twice');
+});
+test('Tools menu: each key shown is the one its button names, and a button that names one shows it', () => {
+  const D = fresh();
+  const btns = plain(D.run('PANEL_BTNS'));
+  for (const i of toolsMenu()) {
+    const m = /\(((?:Shift\+)?[A-Z][A-Z0-9]*)\)/.exec(btns[i.name.slice(3)].title);
+    assert.equal(i.key, m ? m[1] : undefined, i.label);
+  }
+});
+test('Tools menu: a drawing tool is picked, as its button picks it; any other button is pressed', () => {
+  const D = fresh();
+  const pressed = [];
+  for (const i of toolsMenu()) {
+    const b = plain(D.run('PANEL_BTNS'))[i.name.slice(3)];
+    if (b.tool) {
+      D.run("setTool('select'); 1");
+      assert.equal(D.menuDo(i.name), true, i.label);
+      assert.equal(D.run('TOOL'), b.tool, i.label);
+    } else {
+      const el = D.document.getElementById(b.id);
+      assert.ok(el, i.label + ': its button is in the page');
+      el.disabled = false; el.click = () => pressed.push(b.id);
+      assert.equal(D.menuDo(i.name), true, i.label);
+      assert.equal(pressed[pressed.length - 1], b.id, i.label);
+    }
+  }
+});
+test('Tools menu: a greyed-out button stays greyed out; nothing while a dialog, the help or the Working panel has the screen', () => {
+  const D = fresh();
+  const pressed = [];
+  const weld = D.document.getElementById('weldBtn');
+  weld.click = () => pressed.push('weld');
+  weld.disabled = true;
+  assert.equal(D.menuDo('tb:weldBtn'), false);
+  weld.disabled = false;
+  D.document.getElementById('jobModal').hidden = false;
+  assert.equal(D.menuDo('tb:weldBtn'), false, 'a dialog');
+  assert.equal(D.menuDo('tb:line'), false);
+  D.document.getElementById('jobModal').hidden = true;
+  D.busyNow = () => true;
+  assert.equal(D.menuDo('tb:line'), false, 'busy');
+  D.busyNow = () => false;
+  assert.equal(D.menuDo('tb:nonsense'), false, 'no such button');
+  assert.deepEqual(pressed, []);
+  assert.equal(D.run('TOOL'), 'select');
+  assert.equal(D.menuDo('tb:weldBtn'), true);
+  assert.deepEqual(pressed, ['weld']);
 });
 
 // ---- Open and Import: two buttons, two kinds of file ----

@@ -16,8 +16,9 @@ const sub = (menu, name) => menu.find((m) => m.label === name).submenu;
 const item = (menu, top, label) => sub(menu, top).find((i) => i.label === label);
 
 describe('the menu bar', () => {
-  it('is File, Edit, View, Window, Help, whichever window is in front', () => {
-    for (const kind of ['design', 'control', 'other']) expect(labels(build(kind).menu)).toEqual(['File', 'Edit', 'View', 'Window', 'Help']);
+  it('is File, Edit, View, Window, Help, with Tools after View in 454 Design', () => {
+    expect(labels(build('design').menu)).toEqual(['File', 'Edit', 'View', 'Tools', 'Window', 'Help']);
+    for (const kind of ['control', 'other']) expect(labels(build(kind).menu)).toEqual(['File', 'Edit', 'View', 'Window', 'Help']);
     expect(labels(build('design').menu)).not.toContain('454 Workshop');
   });
   it('File, in 454 Design: a drawing’s actions, then Job setup and Settings, then Close and Exit', () => {
@@ -98,6 +99,17 @@ describe('the menu bar', () => {
   });
   it('Edit, in 454 Control and the docs: the browser’s own, for text', () => {
     for (const kind of ['control', 'other']) expect(labels(sub(build(kind).menu, 'Edit'))).toEqual(['undo', 'redo', '-', 'cut', 'copy', 'paste', 'selectAll']);
+  });
+  it('Tools, in 454 Design: the toolbar’s groups as submenus, then measuring and guides; each item asks the page', () => {
+    const { menu, did } = build('design');
+    expect(labels(sub(menu, 'Tools'))).toEqual(['Draw', 'Change shapes', 'Move and copy', 'Combine', 'Text', 'Align and nest', '-',
+      'Dimension', 'Measure', 'Parameters…', '-', 'Offset guide', 'Remove all guides', 'Machine area']);
+    expect(labels(item(menu, 'Tools', 'Draw').submenu)).toEqual(['Select', 'Line', 'Rectangle', 'Circle', 'Ellipse', 'Polygon', 'Star', 'Arc', 'Polyline', 'Text']);
+    const line = item(menu, 'Tools', 'Draw').submenu.find((i) => i.label === 'Line');
+    line.click(); item(menu, 'Tools', 'Measure').click();
+    expect(did).toEqual(['page:tb:line', 'page:tb:measureT']);
+    expect([line.accelerator, line.registerAccelerator]).toEqual(['L', false]);
+    // (Design's own tests check every item against its toolbar)
   });
   it('View is as it was', () => {
     const { menu } = build('design');

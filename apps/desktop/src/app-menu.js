@@ -75,6 +75,43 @@ function menuTemplate({ kind, act, updates = [], recent = [] }) {
     page('Group', 'group', 'CmdOrCtrl+G'),
     page('Ungroup', 'ungroup', 'CmdOrCtrl+U'),
   ] : [{ role: 'undo' }, { role: 'redo' }, sep, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }];
+  // Tools, in 454 Design only: the toolbar's tools, in its own groups. Each item is 'tb:' and the button's name in
+  // Design's PANEL_BTNS (move.js), and does what that button does; a key is shown where the tool has one.
+  // (Design's tests hold this list to the toolbar: every tool is here, and each key is the one its button names.)
+  const tb = (label, name, key) => page(label, 'tb:' + name, key);
+  const tools = [
+    { label: 'Draw', submenu: [
+      tb('Select', 'select', 'V'), tb('Line', 'line', 'L'), tb('Rectangle', 'rect', 'R'), tb('Circle', 'circle', 'C'),
+      tb('Ellipse', 'ellipse'), tb('Polygon', 'polygon'), tb('Star', 'star'), tb('Arc', 'arc', 'A'), tb('Polyline', 'poly', 'P'),
+      tb('Text', 'textT', 'K'),
+    ] },
+    { label: 'Change shapes', submenu: [
+      tb('Fillet', 'fillet', 'F'), tb('Fillet corners', 'filletAllT'), tb('Trim', 'trim', 'T'), tb('Extend', 'extend', 'E'),
+      tb('Offset', 'offsetT', 'O'), tb('Edit nodes', 'nodeT', 'N'),
+    ] },
+    { label: 'Move and copy', submenu: [
+      tb('Copy by base point', 'copyT', 'M'), tb('Mirror', 'mirrorT', 'Shift+M'), tb('Flip horizontal', 'flipHBtn', 'Shift+H'),
+      tb('Flip vertical', 'flipVBtn', 'Shift+V'), tb('Rotate', 'rotateT', 'Shift+R'), tb('Array', 'arrayT', 'Y'),
+    ] },
+    { label: 'Combine', submenu: [
+      tb('Weld', 'weldBtn'), tb('Subtract', 'subtractBtn'), tb('Intersect', 'intersectBtn'), sep, tb('Join', 'joinBtn'), tb('Explode', 'explodeBtn'),
+    ] },
+    { label: 'Text', submenu: [tb('Text on curve', 'textCurveBtn'), tb('Convert to curves', 'curvesBtn')] },
+    { label: 'Align and nest', submenu: [
+      tb('Nest parts…', 'nestBtn'),
+      sep,
+      tb('Center in material', 'alMat', 'F9'), tb('Center left-right in material', 'alMatX'), tb('Center top-bottom in material', 'alMatY'),
+      sep,
+      tb('Center on last picked', 'alCenter'), tb('Line up centers left-right', 'alHCenter'), tb('Line up centers top-bottom', 'alVCenter'),
+      tb('Align left edges', 'alLeft'), tb('Align right edges', 'alRight'), tb('Align top edges', 'alTop'), tb('Align bottom edges', 'alBottom'),
+      sep,
+      tb('Space evenly left to right', 'alDistH'), tb('Space evenly top to bottom', 'alDistV'),
+    ] },
+    sep,
+    tb('Dimension', 'dimT', 'D'), tb('Measure', 'measureT', 'I'), tb('Parameters…', 'paramsBtn'),
+    sep,
+    tb('Offset guide', 'guide', 'G'), tb('Remove all guides', 'clearGuides'), tb('Machine area', 'machArea'),
+  ];
   const inApp = kind === 'design' || kind === 'control';
   return [
     { label: 'File', submenu: file },
@@ -83,6 +120,7 @@ function menuTemplate({ kind, act, updates = [], recent = [] }) {
       { role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, sep, { role: 'togglefullscreen' },
       sep, { label: 'Toggle developer tools', accelerator: 'CmdOrCtrl+Shift+I', click: act.devTools },
     ] },
+    ...(kind === 'design' ? [{ label: 'Tools', submenu: tools }] : []),
     { label: 'Window', submenu: [
       { label: '454 Design', accelerator: 'CmdOrCtrl+2', click: act.showDesign, type: 'checkbox', checked: kind === 'design' },
       { label: '454 Control', accelerator: 'CmdOrCtrl+1', click: act.showControl, type: 'checkbox', checked: kind === 'control' },

@@ -314,10 +314,15 @@ function testHook() {
       const hide = /^(\d+):(\d+)$/.exec(process.env.P454_E2E_HIDE || '');
       if (hide) setTimeout(() => { w.hide(); setTimeout(() => w.show(), hide[2] * 1000); }, hide[1] * 1000);
       await new Promise((r) => setTimeout(r, 1200));
-      // P454_E2E_MENU="Edit/Copy@1000,Edit/Paste@1500": click the menu bar's items, that long after the script starts
+      // P454_E2E_MENU="Edit/Copy@1000,Tools/Draw/Line@1500": click the menu bar's items (through submenus), that
+      // long after the script starts
       (process.env.P454_E2E_MENU || '').split(',').filter(Boolean).forEach((s) => {
-        const m = /^([^/]+)\/(.+)@(\d+)$/.exec(s);
-        if (m) setTimeout(() => { const top = Menu.getApplicationMenu().items.find((i) => i.label === m[1]); const it = top && top.submenu.items.find((i) => i.label === m[2]); if (it) it.click(); }, +m[3]);
+        const m = /^(.+)@(\d+)$/.exec(s);
+        if (m) setTimeout(() => {
+          let it = { submenu: Menu.getApplicationMenu() };
+          for (const label of m[1].split('/')) it = it && it.submenu && it.submenu.items.find((i) => i.label === label);
+          if (it) it.click();
+        }, +m[2]);
       });
       let result;
       try { result = await w.webContents.executeJavaScript(fs.readFileSync(j.script, 'utf8')); }

@@ -99,11 +99,13 @@ without a published release looks to them like a newest release with nothing in 
 
 ## How it behaves, on purpose
 
-- **The menu bar is File, Edit, View, Window, Help** (`apps/desktop/src/app-menu.js`, built again whenever
+- **The menu bar is File, Edit, View, Window, Help**, with **Tools** after View in Design (`apps/desktop/src/app-menu.js`, built again whenever
   another window comes to the front). A menu item asks the page (`menuDo` in each app), which does what its
   button or keys do and nothing while a dialog is open. Keys the pages handle are shown, not registered.
   Design's Edit items are the drawing's (`menuEdit` in `shortcuts.js`); with the focus in a text box the page
-  answers `'text'` and `main.js` does the box's own cut, copy, paste, delete or select all.
+  answers `'text'` and `main.js` does the box's own cut, copy, paste, delete or select all. Design's Tools items are
+  `'tb:'` and a toolbar button's name in `PANEL_BTNS`; a test holds the menu to the toolbar, so a new tool on the
+  toolbar must be added to the menu too. Clint chose Tools over a longer Edit menu (2026-10-20).
 - **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
   (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
   454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.
@@ -154,8 +156,8 @@ without a published release looks to them like a newest release with nothing in 
 
 ## Open items
 
-- **Before version 1.0: the Edit menu** (Clint, 2026-10-20): filled out for Design in Design 0.143.0. Check
-  again before 1.0 that every edit with a key or a toolbar button is in it.
+- **Before version 1.0: the Edit menu** (Clint, 2026-10-20): filled out for Design in Design 0.143.0, and the
+  tools went into a Tools menu instead (0.144.0). Check again before 1.0 that every edit and tool is in a menu.
 - **Offered, not done:** publishing beta releases automatically instead of as drafts.
 - **Next restructuring steps:** tests for Control's status parsing, time estimates and recovery; for Design,
   nesting and the geometry operations; the small quirks each README lists from the byte-identical splits.

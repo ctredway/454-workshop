@@ -1172,6 +1172,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.144.0 — a Tools menu
+Clint: "instead of adding more things to the Edit menu, I think we should make a Tools menu: better organization, and it
+won't clutter the Edit menu." The desktop app's menu bar in 454 Design is now File, Edit, View, **Tools**, Window, Help.
+- **Tools follows the toolbar's own groups**, as submenus: Draw, Change shapes, Move and copy, Combine, Text, and Align
+  and nest; then Dimension, Measure and Parameters; then the guides and Machine area. Every tool on the toolbar is in
+  it, except Group and Ungroup, which stay in Edit (where most drawing programs keep them).
+- **Each item does exactly what its toolbar button does** (a drawing tool is picked; any other button is pressed, so a
+  greyed-out one stays greyed out), and shows the tool's key where it has one.
+- **Nothing** while a dialog, the help or the Working panel has the screen.
+- **Proven:** Design's tests hold the menu to the toolbar: every tool is in it, every item is a real button, and each
+  key shown is the one the button's own tip names. Each check was broken on purpose and failed. In the app, Line, Trim,
+  Weld and Measure were picked from the menu bar and did their work.
+
 ### 0.143.0 — the Edit menu edits the drawing
 Clint: "before we go to a full version 1.0, we need to fill out the Edit menu." The desktop app's Edit menu held only
 the browser's own Undo, Redo, Cut, Copy, Paste and Select all, which act on text boxes: Edit → Undo didn't take back

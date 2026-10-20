@@ -18,6 +18,17 @@ function menuDo(what, arg){
   if (what === 'help'){ helpOpen(); return true; }
   if (CLIP_DIALOGS.some(function (id){ var m = document.getElementById(id); return m && !m.hidden; })) return false;
   var press = function (id){ var b = document.getElementById(id); if (b && !b.disabled) b.click(); };
+  // the Tools menu: 'tb:' and a toolbar button's name (PANEL_BTNS, move.js): a drawing tool is picked, as its
+  // button picks it; any other button is pressed, so a greyed-out one stays greyed out. Nothing while busy.
+  if (what.indexOf('tb:') === 0){
+    if (typeof busyNow === 'function' && busyNow()) return false;
+    var tb = PANEL_BTNS[what.slice(3)];
+    if (!tb) return false;
+    if (tb.tool){ setTool(tb.tool); return true; }
+    var el = document.getElementById(tb.id);
+    if (!el || el.disabled) return false;
+    el.click(); return true;
+  }
   if (what === 'new') newDrawing();
   else if (what === 'open') openFiles('open');
   else if (what === 'import') openFiles('import');
