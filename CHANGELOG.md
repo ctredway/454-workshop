@@ -27,6 +27,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.52 — jog with a game controller
+- Includes Control 0.36.0: an Xbox-style game controller as a pendant (Settings → Accessories), jogging and stopping
+  only.
+
 ### 0.6.2-beta.51 — the History bar as icons
 - Includes Design 0.142.1: each step on the History bar is its tool's icon, with its name on hover.
 
