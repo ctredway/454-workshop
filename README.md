@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.svg" width="380" alt="454">
+  <img src="docs/images/logo-workshop.svg" width="380" alt="454 Workshop">
 </p>
 
 <h1 align="center">454 Workshop <sup>beta</sup></h1>
