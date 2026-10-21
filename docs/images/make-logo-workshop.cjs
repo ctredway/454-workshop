@@ -11,16 +11,18 @@ const root = path.resolve(__dirname, '..', '..');
 const req = (m) => require(path.join(root, 'apps', 'desktop', 'node_modules', m));
 const opentype = req('opentype.js');
 
-const BLUE = '#0083ff', CAP = 74, TRACK = 0.12, EDGE = 15, WIDTH = 640, GAP = 8;   // in the logo's units (792 wide)
+// TOP: where WORKSHOP's capitals start, just under the bottom of the blue 5 (y 208), the white edge's width apart
+const BLUE = '#0083ff', CAP = 74, TRACK = 0.12, EDGE = 15, WIDTH = 640, TOP = 223;   // in the logo's units (792 wide)
 const logo = fs.readFileSync(path.join(root, 'docs', 'images', 'logo.svg'), 'utf8');
-const logoPaths = [...logo.matchAll(/<path[^>]*\/>/g)].map((m) => m[0]);
+const logoPaths = [...logo.matchAll(/<path[^>]*\/>/g)].map((m) => m[0]);           // [0] the white edge, [1] the blue
+if (logoPaths.length !== 2 || !/fill="#fff"/.test(logoPaths[0])) throw new Error('logo.svg: expected its white edge, then its blue');
 const font = opentype.parse(fs.readFileSync(path.join(root, 'apps/desktop/node_modules/@fontsource/russo-one/files/russo-one-latin-400-normal.woff')).buffer);
 
 const size = CAP / font.tables.os2.sCapHeight * font.unitsPerEm;           // the font size that gives CAP-high capitals
 let x = 0; const glyphs = [];
 for (const ch of 'WORKSHOP') { const g = font.charToGlyph(ch); glyphs.push({ ch, g, x }); x += g.advanceWidth / font.unitsPerEm * size + TRACK * size; }
 const textW = x - TRACK * size, sx = WIDTH / textW;                       // stretched wide, as the logo is
-const top = 250 + GAP + EDGE, base = top + CAP, left = 396 - WIDTH / 2;
+const top = TOP, base = top + CAP, left = 396 - WIDTH / 2;
 const f = (v) => +v.toFixed(2);
 const letters = glyphs.map(({ ch, g, x }) => {
   const T = (px, py) => f(left + (x + px) * sx) + ' ' + f(base + py);
@@ -37,17 +39,19 @@ const letters = glyphs.map(({ ch, g, x }) => {
 });
 const d = letters.map((l) => l.contours.join(' ')).join(' ');
 const H = Math.ceil(base + EDGE + 6);
-// the white edge: each letter's outline drawn wide, with a band behind the middle of the word so the edge is one
-// shape like the logo's (without it, small dark gaps show between some letters)
+const BAND_TOP = 180;                                                       // inside the logo's white edge, above the 4s' feet
+// the white edge: each letter's outline drawn wide, with a band behind the word reaching up into the logo's own white
+// edge, so one white shape goes round both the 454 and WORKSHOP (and no small dark gaps show between letters)
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 792 ${H}" role="img" aria-label="454 Workshop">
-  ${logoPaths.join('\n  ')}
-  <rect fill="#fff" x="${f(left)}" y="${f(top + CAP * 0.2)}" width="${WIDTH}" height="${f(CAP * 0.6)}"/>
+  ${logoPaths[0]}
+  <rect fill="#fff" x="${f(left)}" y="${BAND_TOP}" width="${WIDTH}" height="${f(top + CAP * 0.8 - BAND_TOP)}"/>
   <path fill="#fff" stroke="#fff" stroke-width="${EDGE * 2}" stroke-linejoin="round" d="${d}"/>
+  ${logoPaths[1]}
   <path fill="${BLUE}" stroke="${BLUE}" stroke-width="0.8" d="${d}"/>
 </svg>
 `;
 for (const out of ['docs/images/logo-workshop.svg', 'site/images/logo-workshop.svg', 'docs-site/src/assets/logo-workshop.svg'])
   fs.writeFileSync(path.join(root, out), svg);
 fs.writeFileSync(path.join(root, 'docs/images/logo-workshop-letters.json'),
-  JSON.stringify({ viewBox: [0, 0, 792, H], band: { x: f(left), y: f(top + CAP * 0.2), w: WIDTH, h: f(CAP * 0.6) }, edge: EDGE, letters }, null, 1) + '\n');
-console.log('logo-workshop.svg: 792 x ' + H + ', WORKSHOP ' + WIDTH + ' wide, capitals ' + CAP + ' high');
+  JSON.stringify({ viewBox: [0, 0, 792, H], band: { x: f(left), y: BAND_TOP, w: WIDTH, h: f(top + CAP * 0.8 - BAND_TOP) }, edge: EDGE, letters }, null, 1) + '\n');
+console.log('logo-workshop.svg: 792 x ' + H + ', WORKSHOP ' + WIDTH + ' wide, capitals ' + CAP + ' high, from y ' + TOP);

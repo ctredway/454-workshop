@@ -15,6 +15,7 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 - **454 Workshop: the logo with WORKSHOP underneath** (`docs/images/logo-workshop.svg`), in the logo's blue with the
   same white edge, lettered in Russo One (chosen by Clint, 2026-10-20) and turned into outlines so it needs no font.
+  WORKSHOP sits close under the 5, and one white edge goes round both (Clint, 2026-10-21).
   It's at the top of the README, in the website's header (where it replaces the logo and the word Workshop), cut as
   the hero's toolpath (WORKSHOP is cut letter by letter after the 454; the cut runs a little faster so it doesn't take
   longer), and in the docs' header beside "docs". `node docs/images/make-logo-workshop.cjs` makes it again.
