@@ -1286,7 +1286,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.147.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.148.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1900,6 +1900,48 @@ function dimAnchor(d){
   var pt = repPoint(e);
   return {x:pt.x, y:pt.y, a:pt, b:pt};
 }
+// Where a dimension is drawn, once dragged out of the way (d.place, in mm, relative to what it measures, so it
+// follows the shapes): a distance moves its line out square to itself by n and slides its value along it by s, with
+// extension lines back to the points it measures; a diameter or radius moves its value by dx, dy, with a leader.
+function dimPlaced(d){
+  var an = dimAnchor(d); if (!an) return null;
+  var pl = d.place || null, L = Math.hypot(an.b.x - an.a.x, an.b.y - an.a.y);
+  if ((d.kind === 'pair' || d.kind === 'side') && L > 1e-9){
+    var ux = (an.b.x - an.a.x)/L, uy = (an.b.y - an.a.y)/L, nx = -uy, ny = ux;
+    var N = pl && pl.n || 0, S = pl && pl.s || 0;
+    return {line:true, placed:!!pl, ea:an.a, eb:an.b, mid:{x:an.x, y:an.y}, u:{x:ux, y:uy}, n:{x:nx, y:ny},
+            a:{x:an.a.x + nx*N, y:an.a.y + ny*N}, b:{x:an.b.x + nx*N, y:an.b.y + ny*N},
+            x:an.x + nx*N + ux*S, y:an.y + ny*N + uy*S};
+  }
+  var dx = pl && pl.dx || 0, dy = pl && pl.dy || 0;
+  return {line:false, placed:!!pl, ea:an.a, eb:an.b, a:an.a, b:an.b, mid:{x:an.x, y:an.y}, x:an.x + dx, y:an.y + dy};
+}
+// put a dimension's value at w (in mm)
+function dimPlaceAt(d, w){
+  var p = dimPlaced(d); if (!p) return;
+  var rx = w.x - p.mid.x, ry = w.y - p.mid.y;
+  d.place = p.line ? {n: rx*p.n.x + ry*p.n.y, s: rx*p.u.x + ry*p.u.y} : {dx: rx, dy: ry};
+}
+// a drag (DRAW.stage 'dimDrag', from the Select tool): nothing moves until the pointer has gone 3 px, so a click
+// only selects; the first move makes the undo step
+function dimDragTo(g, w, sx, sy){
+  var d = DOC.dims[g.di]; if (!d) return;
+  if (!g.moved && Math.hypot(sx - g.sx, sy - g.sy) < 3) return;
+  if (!g.pushed){ pushUndo('Move dimension'); g.pushed = true; }
+  g.moved = true;
+  dimPlaceAt(d, {x: w.x - g.gx, y: w.y - g.gy});
+}
+function dimDragEnd(g){ if (g.moved) persist(); }
+function dimDragCancel(g){
+  var d = DOC.dims[g.di];
+  if (d){ if (g.was) d.place = g.was; else delete d.place; }
+  if (g.pushed) undoDrop();
+}
+// where its value is shown, in mm: on the line once placed; before that, a little above the middle, as always
+function dimLabelWorld(d){
+  var p = dimPlaced(d); if (!p) return null;
+  return p.placed ? {x:p.x, y:p.y} : {x:p.x, y:p.y + 14/VIEW.scale};
+}
 // a rectangle's side: its top or bottom measures the width, its left or right the height
 function rectSideIsWidth(e, at){ var ln = nearestEdgeOf(e, resolveHint(e, at) || repPoint(e)); return !ln || Math.abs(ln.b) > Math.abs(ln.a); }
 function dimLabel(d){
@@ -1954,7 +1996,7 @@ function pickDim(sx, sy){
     var d = DOC.dims[i], hh = d._hit;
     if (!dimOnSheet(d)) continue;
     if (hh && Math.abs(sx - hh.x) < hh.w/2 && Math.abs(sy - hh.y) < hh.h/2) return i;   // the value itself wins
-    var an = dimAnchor(d);
+    var an = dimPlaced(d);
     if (!an || d.kind !== 'pair') continue;
     var pa = w2s(an.a.x, an.a.y), pb = w2s(an.b.x, an.b.y);
     var dd = distToSeg(sx, sy, pa.x, pa.y, pb.x, pb.y);
@@ -1970,7 +2012,7 @@ function editDim(i, sx, sy){
   DRAW = {stage:'dimValue', di:i};
   var cur = dimValue(d);
   if (sx !== undefined) FLOAT_AT = {x:sx, y:sy};     // open the box where it was grabbed
-  else { var an = dimAnchor(d); if (an) floatAtWorld(an.x, an.y); }
+  else { var an = dimLabelWorld(d); if (an) floatAtWorld(an.x, an.y); }
   showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], d.expr || (cur === null ? '' : fmtDisp(cur)), true,
              (d.kind === 'dia' ? '\u00d8 ' : d.kind === 'rad' ? 'R ' : '') + unitTag());
   draw();
@@ -4181,9 +4223,12 @@ function toolClick(w, snap){
   else if (TOOL === 'select'){
     if (CUT){ cutClick(w); return; }                     // the toolpath editor is picking shapes
     var sD = w2s(w.x, w.y), dPick = pickDim(sD.x, sD.y);
-    if (dPick >= 0){                                  // a dimension: select it, ready for Delete
-      DIMSEL = dPick; SEL = []; HANDLES.active = false; DRAW = null;
-      showPrompt('Dimension selected \u2014 Delete removes it, double-click to change its value', '', false);
+    if (dPick >= 0){                                  // a dimension: select it, ready for Delete, or drag it aside
+      DIMSEL = dPick; SEL = []; HANDLES.active = false;
+      var dLab = dimLabelWorld(DOC.dims[dPick]), d0 = DOC.dims[dPick];
+      DRAW = {stage:'dimDrag', di:dPick, gx: dLab ? w.x - dLab.x : 0, gy: dLab ? w.y - dLab.y : 0,
+              was: d0.place ? JSON.parse(JSON.stringify(d0.place)) : null, sx:MOUSE.mx, sy:MOUSE.my, moved:false, pushed:false};
+      showPrompt('Dimension selected \u2014 drag it to move it, Delete removes it, double-click to change its value', '', false);
       draw(); return;
     }
     DIMSEL = null;
@@ -14375,13 +14420,14 @@ function draw(){
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     DOC.dims.forEach(function(d, di){
       if (!dimOnSheet(d)){ d._hit = null; return; }   // on another sheet
-      var lab = dimLabel(d), anc = dimAnchor(d);
+      var lab = dimLabel(d), anc = dimPlaced(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);
       ctx.strokeStyle = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.fillStyle   = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.lineWidth = 1;
       ctx.setLineDash([]);
+      var lp = w2s(anc.x, anc.y);
       if (d.kind === 'pair' || d.kind === 'side'){
         // witness line between the two referenced points, with end ticks
         var pa = w2s(anc.a.x, anc.a.y), pb = w2s(anc.b.x, anc.b.y);
@@ -14390,10 +14436,28 @@ function draw(){
           ctx.beginPath(); ctx.moveTo(q.x-3, q.y-3); ctx.lineTo(q.x+3, q.y+3);
           ctx.moveTo(q.x-3, q.y+3); ctx.lineTo(q.x+3, q.y-3); ctx.stroke();
         });
+        if (anc.placed){
+          // dragged out: thin extension lines back to the points it measures, and on to its value if that's past an end
+          ctx.save(); ctx.globalAlpha = 0.6;
+          [[anc.ea, pa], [anc.eb, pb]].forEach(function (x){
+            var q0 = w2s(x[0].x, x[0].y), q1 = x[1], L = Math.hypot(q1.x - q0.x, q1.y - q0.y);
+            if (L < 4) return;
+            ctx.beginPath(); ctx.moveTo(q0.x + (q1.x - q0.x)/L*3, q0.y + (q1.y - q0.y)/L*3);   // a small gap at the shape
+            ctx.lineTo(q1.x + (q1.x - q0.x)/L*4, q1.y + (q1.y - q0.y)/L*4); ctx.stroke();
+          });
+          var Ls = Math.hypot(pb.x - pa.x, pb.y - pa.y) || 1, along = ((lp.x - pa.x)*(pb.x - pa.x) + (lp.y - pa.y)*(pb.y - pa.y)) / Ls;
+          if (along < 0 || along > Ls){ var pe = along < 0 ? pa : pb; ctx.beginPath(); ctx.moveTo(pe.x, pe.y); ctx.lineTo(lp.x, lp.y); ctx.stroke(); }
+          ctx.restore();
+        }
+      } else if (anc.placed){
+        // a diameter or radius moved off the shape: a leader back to it
+        var la = w2s(anc.mid.x, anc.mid.y);
+        if (Math.hypot(lp.x - la.x, lp.y - la.y) > 10){
+          ctx.save(); ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(la.x, la.y); ctx.lineTo(lp.x, lp.y); ctx.stroke(); ctx.restore();
+        }
       }
       // label with a small backing plate so it stays readable over geometry
-      var lp = w2s(anc.x, anc.y);
-      var offY = d.off || -14;
+      var offY = anc.placed ? 0 : -14;            // on its line once it's been dragged; a little above it until then
       var tw = ctx.measureText(lab).width;
       ctx.save();
       ctx.fillStyle = 'rgba(20,24,29,0.85)';
@@ -19197,6 +19261,11 @@ function wire(){
       }
       return;
     }
+    // dragging a dimension out of the way: its value follows the pointer (not snapped: it's only where it's shown)
+    if (TOOL === 'select' && DRAW && DRAW.stage === 'dimDrag' && (e.buttons & 1)){
+      dimDragTo(DRAW, w, MOUSE.mx, MOUSE.my);
+      draw(); return;
+    }
     // dragging selection
     if (TOOL==='select' && DRAW && DRAW.stage==='drag' && SEL.length && (e.buttons & 1)){
       var dx = MOUSE.snap.x - DRAW.lx, dy = MOUSE.snap.y - DRAW.ly;
@@ -19229,6 +19298,7 @@ function wire(){
         toast('info', 'Angled text scaled evenly', 'Text at an angle can only be scaled evenly. Convert it to curves first to stretch it.');
       draw(); return;
     }
+    if (TOOL === 'select' && DRAW && DRAW.stage === 'dimDrag'){ dimDragEnd(DRAW); DRAW = null; draw(); return; }
     if (TOOL==='select' && DRAW && DRAW.stage==='drag'){
       // clicking a shape that was already selected, without moving, switches scale <-> rotate, as in VCarve
       if (!DRAW.moved && DRAW.wasSel) handlesClickAgain();
@@ -19352,6 +19422,7 @@ function wire(){
         if (DRAW.pushed) undoDrop();
         DRAW = null;
       }
+      else if (DRAW && DRAW.stage === 'dimDrag'){ dimDragCancel(DRAW); DRAW = null; hidePrompt(); }
       else if (DRAW){ DRAW = null; if (TOOL !== 'select') stagePrompt(TOOL + '0'); else hidePrompt(); }
       else if (NODE){ NODE = null; stagePrompt('node0'); }     // close an open node-edit shape
       else if (CUT){ cutClose(); }                             // cancel the toolpath editor

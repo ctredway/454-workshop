@@ -1228,6 +1228,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.148.0 — dimensions can be dragged out of the way
+Clint: "draggable dimensions. meaning I can move the dimension around to make the drawing easier to look at."
+A dimension was drawn on the edges it measures, its value just above, wherever that fell. Now, with the Select tool:
+- **Drag a distance's value** and its line moves out to the side, square to what it measures, with thin extension
+  lines back to the edges; the value slides along it (past an end, the line runs on to it).
+- **Drag a diameter's or radius's value** anywhere, with a thin leader back to the circle.
+- **Where it sits is kept relative to what it measures** (`d.place`, in mm), so it follows when shapes are moved or
+  resized, comes along in copy and paste, and is saved with the drawing. A click without moving still just selects
+  it (the pointer must move 3 px); each drag is one undo step; Esc during a drag puts it back.
+- Tested (`dim-drag.test.mjs`, 6 tests; broken on purpose 3 ways: the position ignored, no small-wobble check, and
+  picking at the old line, all caught).
+
 ### 0.147.0 — the middle of a side shows as "Midpoint"
 Clint: "can we tell when the cursor is at the mid point of a line?" Design snapped to the middle of a lone line only,
 and marked it with the same small square as an end, so it couldn't be told apart. Now:

@@ -700,6 +700,11 @@ function wire(){
       }
       return;
     }
+    // dragging a dimension out of the way: its value follows the pointer (not snapped: it's only where it's shown)
+    if (TOOL === 'select' && DRAW && DRAW.stage === 'dimDrag' && (e.buttons & 1)){
+      dimDragTo(DRAW, w, MOUSE.mx, MOUSE.my);
+      draw(); return;
+    }
     // dragging selection
     if (TOOL==='select' && DRAW && DRAW.stage==='drag' && SEL.length && (e.buttons & 1)){
       var dx = MOUSE.snap.x - DRAW.lx, dy = MOUSE.snap.y - DRAW.ly;
@@ -732,6 +737,7 @@ function wire(){
         toast('info', 'Angled text scaled evenly', 'Text at an angle can only be scaled evenly. Convert it to curves first to stretch it.');
       draw(); return;
     }
+    if (TOOL === 'select' && DRAW && DRAW.stage === 'dimDrag'){ dimDragEnd(DRAW); DRAW = null; draw(); return; }
     if (TOOL==='select' && DRAW && DRAW.stage==='drag'){
       // clicking a shape that was already selected, without moving, switches scale <-> rotate, as in VCarve
       if (!DRAW.moved && DRAW.wasSel) handlesClickAgain();
@@ -855,6 +861,7 @@ function wire(){
         if (DRAW.pushed) undoDrop();
         DRAW = null;
       }
+      else if (DRAW && DRAW.stage === 'dimDrag'){ dimDragCancel(DRAW); DRAW = null; hidePrompt(); }
       else if (DRAW){ DRAW = null; if (TOOL !== 'select') stagePrompt(TOOL + '0'); else hidePrompt(); }
       else if (NODE){ NODE = null; stagePrompt('node0'); }     // close an open node-edit shape
       else if (CUT){ cutClose(); }                             // cancel the toolpath editor

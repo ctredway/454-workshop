@@ -102,6 +102,48 @@ function dimAnchor(d){
   var pt = repPoint(e);
   return {x:pt.x, y:pt.y, a:pt, b:pt};
 }
+// Where a dimension is drawn, once dragged out of the way (d.place, in mm, relative to what it measures, so it
+// follows the shapes): a distance moves its line out square to itself by n and slides its value along it by s, with
+// extension lines back to the points it measures; a diameter or radius moves its value by dx, dy, with a leader.
+function dimPlaced(d){
+  var an = dimAnchor(d); if (!an) return null;
+  var pl = d.place || null, L = Math.hypot(an.b.x - an.a.x, an.b.y - an.a.y);
+  if ((d.kind === 'pair' || d.kind === 'side') && L > 1e-9){
+    var ux = (an.b.x - an.a.x)/L, uy = (an.b.y - an.a.y)/L, nx = -uy, ny = ux;
+    var N = pl && pl.n || 0, S = pl && pl.s || 0;
+    return {line:true, placed:!!pl, ea:an.a, eb:an.b, mid:{x:an.x, y:an.y}, u:{x:ux, y:uy}, n:{x:nx, y:ny},
+            a:{x:an.a.x + nx*N, y:an.a.y + ny*N}, b:{x:an.b.x + nx*N, y:an.b.y + ny*N},
+            x:an.x + nx*N + ux*S, y:an.y + ny*N + uy*S};
+  }
+  var dx = pl && pl.dx || 0, dy = pl && pl.dy || 0;
+  return {line:false, placed:!!pl, ea:an.a, eb:an.b, a:an.a, b:an.b, mid:{x:an.x, y:an.y}, x:an.x + dx, y:an.y + dy};
+}
+// put a dimension's value at w (in mm)
+function dimPlaceAt(d, w){
+  var p = dimPlaced(d); if (!p) return;
+  var rx = w.x - p.mid.x, ry = w.y - p.mid.y;
+  d.place = p.line ? {n: rx*p.n.x + ry*p.n.y, s: rx*p.u.x + ry*p.u.y} : {dx: rx, dy: ry};
+}
+// a drag (DRAW.stage 'dimDrag', from the Select tool): nothing moves until the pointer has gone 3 px, so a click
+// only selects; the first move makes the undo step
+function dimDragTo(g, w, sx, sy){
+  var d = DOC.dims[g.di]; if (!d) return;
+  if (!g.moved && Math.hypot(sx - g.sx, sy - g.sy) < 3) return;
+  if (!g.pushed){ pushUndo('Move dimension'); g.pushed = true; }
+  g.moved = true;
+  dimPlaceAt(d, {x: w.x - g.gx, y: w.y - g.gy});
+}
+function dimDragEnd(g){ if (g.moved) persist(); }
+function dimDragCancel(g){
+  var d = DOC.dims[g.di];
+  if (d){ if (g.was) d.place = g.was; else delete d.place; }
+  if (g.pushed) undoDrop();
+}
+// where its value is shown, in mm: on the line once placed; before that, a little above the middle, as always
+function dimLabelWorld(d){
+  var p = dimPlaced(d); if (!p) return null;
+  return p.placed ? {x:p.x, y:p.y} : {x:p.x, y:p.y + 14/VIEW.scale};
+}
 // a rectangle's side: its top or bottom measures the width, its left or right the height
 function rectSideIsWidth(e, at){ var ln = nearestEdgeOf(e, resolveHint(e, at) || repPoint(e)); return !ln || Math.abs(ln.b) > Math.abs(ln.a); }
 function dimLabel(d){
@@ -156,7 +198,7 @@ function pickDim(sx, sy){
     var d = DOC.dims[i], hh = d._hit;
     if (!dimOnSheet(d)) continue;
     if (hh && Math.abs(sx - hh.x) < hh.w/2 && Math.abs(sy - hh.y) < hh.h/2) return i;   // the value itself wins
-    var an = dimAnchor(d);
+    var an = dimPlaced(d);
     if (!an || d.kind !== 'pair') continue;
     var pa = w2s(an.a.x, an.a.y), pb = w2s(an.b.x, an.b.y);
     var dd = distToSeg(sx, sy, pa.x, pa.y, pb.x, pb.y);
@@ -172,7 +214,7 @@ function editDim(i, sx, sy){
   DRAW = {stage:'dimValue', di:i};
   var cur = dimValue(d);
   if (sx !== undefined) FLOAT_AT = {x:sx, y:sy};     // open the box where it was grabbed
-  else { var an = dimAnchor(d); if (an) floatAtWorld(an.x, an.y); }
+  else { var an = dimLabelWorld(d); if (an) floatAtWorld(an.x, an.y); }
   showPrompt(STAGE_LABEL[d.kind === 'pair' ? 'dimEditV' : 'dimEditS'], d.expr || (cur === null ? '' : fmtDisp(cur)), true,
              (d.kind === 'dia' ? '\u00d8 ' : d.kind === 'rad' ? 'R ' : '') + unitTag());
   draw();

@@ -476,13 +476,14 @@ function draw(){
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     DOC.dims.forEach(function(d, di){
       if (!dimOnSheet(d)){ d._hit = null; return; }   // on another sheet
-      var lab = dimLabel(d), anc = dimAnchor(d);
+      var lab = dimLabel(d), anc = dimPlaced(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);
       ctx.strokeStyle = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.fillStyle   = isSelD ? THEME.accentLight : dispCol('dim');
       ctx.lineWidth = 1;
       ctx.setLineDash([]);
+      var lp = w2s(anc.x, anc.y);
       if (d.kind === 'pair' || d.kind === 'side'){
         // witness line between the two referenced points, with end ticks
         var pa = w2s(anc.a.x, anc.a.y), pb = w2s(anc.b.x, anc.b.y);
@@ -491,10 +492,28 @@ function draw(){
           ctx.beginPath(); ctx.moveTo(q.x-3, q.y-3); ctx.lineTo(q.x+3, q.y+3);
           ctx.moveTo(q.x-3, q.y+3); ctx.lineTo(q.x+3, q.y-3); ctx.stroke();
         });
+        if (anc.placed){
+          // dragged out: thin extension lines back to the points it measures, and on to its value if that's past an end
+          ctx.save(); ctx.globalAlpha = 0.6;
+          [[anc.ea, pa], [anc.eb, pb]].forEach(function (x){
+            var q0 = w2s(x[0].x, x[0].y), q1 = x[1], L = Math.hypot(q1.x - q0.x, q1.y - q0.y);
+            if (L < 4) return;
+            ctx.beginPath(); ctx.moveTo(q0.x + (q1.x - q0.x)/L*3, q0.y + (q1.y - q0.y)/L*3);   // a small gap at the shape
+            ctx.lineTo(q1.x + (q1.x - q0.x)/L*4, q1.y + (q1.y - q0.y)/L*4); ctx.stroke();
+          });
+          var Ls = Math.hypot(pb.x - pa.x, pb.y - pa.y) || 1, along = ((lp.x - pa.x)*(pb.x - pa.x) + (lp.y - pa.y)*(pb.y - pa.y)) / Ls;
+          if (along < 0 || along > Ls){ var pe = along < 0 ? pa : pb; ctx.beginPath(); ctx.moveTo(pe.x, pe.y); ctx.lineTo(lp.x, lp.y); ctx.stroke(); }
+          ctx.restore();
+        }
+      } else if (anc.placed){
+        // a diameter or radius moved off the shape: a leader back to it
+        var la = w2s(anc.mid.x, anc.mid.y);
+        if (Math.hypot(lp.x - la.x, lp.y - la.y) > 10){
+          ctx.save(); ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(la.x, la.y); ctx.lineTo(lp.x, lp.y); ctx.stroke(); ctx.restore();
+        }
       }
       // label with a small backing plate so it stays readable over geometry
-      var lp = w2s(anc.x, anc.y);
-      var offY = d.off || -14;
+      var offY = anc.placed ? 0 : -14;            // on its line once it's been dragged; a little above it until then
       var tw = ctx.measureText(lab).width;
       ctx.save();
       ctx.fillStyle = 'rgba(20,24,29,0.85)';

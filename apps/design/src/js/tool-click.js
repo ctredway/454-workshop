@@ -271,9 +271,12 @@ function toolClick(w, snap){
   else if (TOOL === 'select'){
     if (CUT){ cutClick(w); return; }                     // the toolpath editor is picking shapes
     var sD = w2s(w.x, w.y), dPick = pickDim(sD.x, sD.y);
-    if (dPick >= 0){                                  // a dimension: select it, ready for Delete
-      DIMSEL = dPick; SEL = []; HANDLES.active = false; DRAW = null;
-      showPrompt('Dimension selected \u2014 Delete removes it, double-click to change its value', '', false);
+    if (dPick >= 0){                                  // a dimension: select it, ready for Delete, or drag it aside
+      DIMSEL = dPick; SEL = []; HANDLES.active = false;
+      var dLab = dimLabelWorld(DOC.dims[dPick]), d0 = DOC.dims[dPick];
+      DRAW = {stage:'dimDrag', di:dPick, gx: dLab ? w.x - dLab.x : 0, gy: dLab ? w.y - dLab.y : 0,
+              was: d0.place ? JSON.parse(JSON.stringify(d0.place)) : null, sx:MOUSE.mx, sy:MOUSE.my, moved:false, pushed:false};
+      showPrompt('Dimension selected \u2014 drag it to move it, Delete removes it, double-click to change its value', '', false);
       draw(); return;
     }
     DIMSEL = null;
