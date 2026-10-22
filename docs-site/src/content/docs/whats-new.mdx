@@ -12,6 +12,16 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.60
+
+Not released yet
+
+- **Run only some of a file's toolpaths.** In 454 Control's Toolpaths tab, untick **Run** on the toolpaths to
+  leave out, and Start runs the rest: no need to go back to Design and save the G-code again. Before each
+  toolpath after a left-out one, the machine lifts, changes the tool if the left-out one loaded it, goes to where
+  the toolpath starts and starts the spindle. **(cutting)** Air-cut the first time, and check that a left-out
+  toolpath wasn't the one that cut a part free.
+
 ## 0.6.2-beta.59
 
 22 October 2026

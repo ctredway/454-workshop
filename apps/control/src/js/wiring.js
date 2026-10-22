@@ -56,7 +56,7 @@ function loadText(text, name){
   renderCode();
   renderChecks();
   renderStats();
-  TPSUM_SEL = null; renderToolpathSummary();
+  TPSUM_SEL = null; TP_SKIP = []; renderToolpathSummary();   // a new file: every toolpath ticked
   var ss = document.getElementById('sectionSel');
   if (MODEL.sections && MODEL.sections.length){
     var opts = '<option value="">jump to toolpath…</option>';

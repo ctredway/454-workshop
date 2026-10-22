@@ -37,10 +37,15 @@ function jobStartFrom(target){
   else { znApply(); adjRestore(); }                     // kept: the controller drops both in a reset
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
+  // Toolpaths left out on the Toolpaths tab stay left out for the rest of the job
+  if (jobSkipLine(snapped)){ uiNote('That line is in a left-out toolpath', 'Line ' + snapped + ' is in a toolpath that’s unticked on the Toolpaths tab. ' +
+                                    'Tick it to resume there, or pick a line in a ticked toolpath.'); return; }
+  var run = buildRunList();
+  if (run.why){ uiNote('The ticked toolpaths can’t be run on their own', run.why); return; }
   var st = stateAtLine(snapped);
-  var full = buildJobList(MODEL.lines);
+  var full = run.list;
   var si = -1;
-  for (var i = 0; i < full.length; i++){ if (full[i].ln === snapped && !full[i].m6){ si = i; break; } }
+  for (var i = 0; i < full.length; i++){ if (full[i].ln === snapped && !full[i].m6 && !full[i].syn){ si = i; break; } }   // the line itself, not what Control put before it
   if (si < 0){ uiNote('Nothing to resume there', 'Line ' + snapped + ' isn\u2019t a sendable command.'); return; }
   var slice = full.slice(si);
   // strip a leading m6 marker chain remnant is unnecessary: slice starts at the motion line
@@ -112,6 +117,7 @@ function jobStartFrom(target){
   JOB.total = JOB.list.length; JOB.idx = 0; JOB.acked = 0;
   JOB.inflight = []; JOB.startedAt = performance.now(); JOB.lastLn = snapped;
   JOB.useBS = useBS;
+  JOB.segs = run.plan ? run.plan.segs : null;
   adjBegin();
   bzCloseModal(); jogModalClose();
   fitView(); animateView(0, 0.02);

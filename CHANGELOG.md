@@ -33,6 +33,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.60 — run only some of a file's toolpaths
+- Includes Control 0.37.0: the Toolpaths tab has a Run tick box on each toolpath, and Start runs only the ticked
+  ones, putting the machine back in step (lift, tool change if needed, to the start, spindle on) before each one
+  that follows a left-out one.
+
 ### 0.6.2-beta.59 — Change tool measures the new bit; dimensions can be dragged out of the way
 - Includes Control 0.36.1: Change tool in the jog panel measures the new bit even when no BitSetter reference was
   taken, by measuring the bit that's in first. (The first beta.59 draft, without this, was deleted unpublished.)
@@ -721,6 +726,30 @@ into the PC; and with a long list, Cancel scrolled away.
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.37.0 — run only some of a file's toolpaths
+Clint: "say I need to re-run a job but I only want to run a certain tool path ... I don't want to re-export a job if
+at all possible." Design's tick boxes needed the G-code saved again. Now the Toolpaths tab has a **Run** tick box on
+each toolpath (when the file has more than one), and Start runs only the ticked ones (`job-skip.js`).
+- The left-out toolpaths' lines are blanked (the numbering is kept, so progress and the preview still match) and
+  the job builder does everything it always does with the rest: lifts, spindle stops, tool changes, the ending.
+- Before each ticked toolpath after a left-out one, Control puts the machine where the file expects, as Recover
+  does: up to traverse height; a tool change if the left-out part loaded a different tool (with the BitSetter, it's
+  measured); to the toolpath's start (straight to the end of its first move when that's a rapid above the work, so
+  it doesn't go over the left-out one); the spindle on at the file's speed with the spin-up wait; down, straight if
+  above the work, or close then at a slow plunge if in it; and the units, plane, modes and feed the file was using.
+- Refused, with the reason, when nothing is ticked, when a toolpath starts partway along an arc, or when the file
+  moves in machine coordinates or changes its offsets before one. The start dialog lists what runs and what's left
+  out. Ticks are cleared when a file is opened, can't be changed during a job, and Recover keeps them (and won't
+  resume inside a left-out toolpath). The time estimate and the Z-zero question at tool changes (no BitSetter)
+  count only what runs.
+- Tested (`job-skip.test.mjs`, 10 tests): a three-toolpath file as Design writes it, through Control's own parser,
+  Toolpaths tab, job builder and skip code, run on the simulated GRBL machine in five combinations; what the machine
+  cut is exactly the ticked toolpaths, each with the spindle on at its speed and its own tool in, and nothing rapid
+  sideways below the top of the work. Broken on purpose 6 ways (left-out lines sent, spindle not restarted, tool not
+  loaded, no move to the start, the route over a left-out toolpath, the arc check), all caught. In the real app: the
+  tick boxes, the 2/3 count and the job it builds. Not yet run on a real machine, and the preview still shows the
+  left-out toolpaths.
 
 ### 0.36.1 — Change tool measures the new bit even when no reference was taken
 Clint: "from the jog panel I clicked change tool, the machine moved to the change position and then when I click

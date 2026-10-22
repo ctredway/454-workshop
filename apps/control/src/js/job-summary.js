@@ -108,16 +108,44 @@ function renderToolpathSummary(){
   box.innerHTML = '';
   var sum = jobSummary(MODEL);
   if (!sum){ badge.textContent = '0'; head.textContent = 'Load a G-code file to see its toolpaths.'; return; }
-  badge.textContent = String(sum.list.length);
-  head.textContent = sum.how === 'named'
+  var picks = sum.list.length > 1;                               // tick boxes: run only some of the toolpaths
+  var nRun = sum.list.filter(function (r, i) { return !TP_SKIP[i]; }).length;
+  badge.textContent = picks && nRun < sum.list.length ? nRun + '/' + sum.list.length : String(sum.list.length);
+  head.textContent = (sum.how === 'named'
     ? sum.list.length + (sum.list.length === 1 ? ' toolpath, named in the file.' : ' toolpaths, named in the file.') + ' Click one to show it in the preview.'
     : sum.how === 'tools'
     ? 'This file doesn\u2019t name its toolpaths, so they\u2019re grouped by tool change (' + sum.list.length + ' tools). Click one to show it in the preview.'
-    : 'This file doesn\u2019t name its toolpaths and uses one tool, so it\u2019s summarized as a whole.';
+    : 'This file doesn\u2019t name its toolpaths and uses one tool, so it\u2019s summarized as a whole.') +
+    (picks ? ' Untick one to leave it out when you press Start.' : '');
+  if (picks && nRun < sum.list.length){
+    var only = document.createElement('p'); only.className = 'tpsOnly';
+    only.textContent = 'Start runs ' + nRun + ' of ' + sum.list.length + ' toolpaths. Before each one after a left-out one, the machine lifts, ' +
+                       'changes the tool if needed, goes to where it starts and starts the spindle.';
+    box.appendChild(only);
+  }
   sum.list.forEach(function(r, i){
     var inch = r.units === 'in', U = inch ? 25.4 : 1, lu = inch ? ' in' : ' mm', fu = inch ? ' in/min' : ' mm/min';
     function L(v, dp){ return (v / U).toFixed(dp === undefined ? (inch ? 3 : 2) : dp); }
     function D(v){ return v >= 1000 * U && !inch ? (v / 1000).toFixed(2) + ' m' : (v / U).toFixed(inch ? 1 : 0) + lu; }
+    var wrap = document.createElement('div');
+    wrap.className = 'tpsWrap' + (TP_SKIP[i] ? ' skip' : '');
+    if (picks){
+      var run = document.createElement('label'); run.className = 'tpsRun';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !TP_SKIP[i];
+      cb.disabled = typeof JOB !== 'undefined' && JOB.active;
+      cb.title = TP_SKIP[i] ? 'Left out: Start won\u2019t run it. Tick to run it.' : 'Start runs it. Untick to leave it out.';
+      cb.setAttribute('aria-label', 'Run ' + r.name);
+      cb.addEventListener('change', function () {
+        if (typeof JOB !== 'undefined' && JOB.active){                 // the running job was built with the old ticks
+          cb.checked = !TP_SKIP[i];
+          uiNote('A job is running', 'Which toolpaths run is set before Start. Stop the job first to change it.');
+          return;
+        }
+        TP_SKIP[i] = !cb.checked; renderToolpathSummary();
+      });
+      run.appendChild(cb); run.appendChild(document.createTextNode(' Run'));
+      wrap.appendChild(run);
+    }
     var card = document.createElement('button');
     card.className = 'tpsCard' + (TPSUM_SEL === i ? ' on' : '');
     card.setAttribute('aria-pressed', TPSUM_SEL === i ? 'true' : 'false');
@@ -156,7 +184,8 @@ function renderToolpathSummary(){
       if (target !== null && target <= r.to) jumpToLine(target);
       renderToolpathSummary();
     });
-    box.appendChild(card);
+    wrap.appendChild(card);
+    box.appendChild(wrap);
   });
 }
 

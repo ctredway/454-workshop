@@ -224,15 +224,16 @@ var JobBuilder = (function () {
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = JobBuilder;     // for the tests, in Node
 
-// Control's job builder: its state, gathered for JobBuilder.build
-function buildJobList(lines){
+// Control's job builder: its state, gathered for JobBuilder.build. segs: the moves that are run (all of the file's,
+// unless some toolpaths are left out: job-skip.js)
+function buildJobList(lines, segs){
   var zr = axisRange('z');
   return JobBuilder.build(lines, {
     homed: (typeof SERIAL !== 'undefined') && SERIAL.homedSeen,
     wcoZ: (typeof SERIAL !== 'undefined' && SERIAL.wco) ? SERIAL.wco.z : null,
     stopHigh: PROFILE.run.highStart,
     spinup: PROFILE.spindle.spinup,
-    segs: (typeof MODEL !== 'undefined' && MODEL && MODEL.segs) ? MODEL.segs : null,
+    segs: segs || ((typeof MODEL !== 'undefined' && MODEL && MODEL.segs) ? MODEL.segs : null),
     zMax: zr ? zr.max : 0,
     travelZ: travelZ(),
     topZ: topZ(),

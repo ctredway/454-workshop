@@ -89,6 +89,11 @@
   .tpsCard{display:block;width:100%;text-align:left;margin:0 0 8px;padding:9px 10px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:5px;background:var(--panel-deep);color:var(--ink);cursor:pointer;font-family:var(--sans)}
   .tpsCard:hover{border-color:var(--faint);border-left-color:var(--amber)}
   .tpsCard.on{background:var(--accent-soft);border-color:var(--amber)}
+  .tpsWrap{position:relative}
+  .tpsRun{position:absolute;top:8px;right:10px;z-index:1;display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);cursor:pointer}
+  .tpsWrap .tpsCard{padding-right:64px}
+  .tpsWrap.skip .tpsCard{opacity:.5;border-left-color:var(--line)}
+  .tpsOnly{margin:0 2px 8px;padding:7px 9px;border-radius:5px;background:var(--accent-soft);font-size:12px;line-height:1.45;color:var(--ink)}
   .tpsName{display:flex;align-items:baseline;gap:8px;font-weight:600;font-size:13px}
   .tpsTime{margin-left:auto;font-weight:400;font-family:var(--mono);font-size:11.5px;color:var(--amber)}
   .tpsTool{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -968,7 +973,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.36.1';
+var CONTROL_VERSION = '0.37.0';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -2265,16 +2270,44 @@ function renderToolpathSummary(){
   box.innerHTML = '';
   var sum = jobSummary(MODEL);
   if (!sum){ badge.textContent = '0'; head.textContent = 'Load a G-code file to see its toolpaths.'; return; }
-  badge.textContent = String(sum.list.length);
-  head.textContent = sum.how === 'named'
+  var picks = sum.list.length > 1;                               // tick boxes: run only some of the toolpaths
+  var nRun = sum.list.filter(function (r, i) { return !TP_SKIP[i]; }).length;
+  badge.textContent = picks && nRun < sum.list.length ? nRun + '/' + sum.list.length : String(sum.list.length);
+  head.textContent = (sum.how === 'named'
     ? sum.list.length + (sum.list.length === 1 ? ' toolpath, named in the file.' : ' toolpaths, named in the file.') + ' Click one to show it in the preview.'
     : sum.how === 'tools'
     ? 'This file doesn\u2019t name its toolpaths, so they\u2019re grouped by tool change (' + sum.list.length + ' tools). Click one to show it in the preview.'
-    : 'This file doesn\u2019t name its toolpaths and uses one tool, so it\u2019s summarized as a whole.';
+    : 'This file doesn\u2019t name its toolpaths and uses one tool, so it\u2019s summarized as a whole.') +
+    (picks ? ' Untick one to leave it out when you press Start.' : '');
+  if (picks && nRun < sum.list.length){
+    var only = document.createElement('p'); only.className = 'tpsOnly';
+    only.textContent = 'Start runs ' + nRun + ' of ' + sum.list.length + ' toolpaths. Before each one after a left-out one, the machine lifts, ' +
+                       'changes the tool if needed, goes to where it starts and starts the spindle.';
+    box.appendChild(only);
+  }
   sum.list.forEach(function(r, i){
     var inch = r.units === 'in', U = inch ? 25.4 : 1, lu = inch ? ' in' : ' mm', fu = inch ? ' in/min' : ' mm/min';
     function L(v, dp){ return (v / U).toFixed(dp === undefined ? (inch ? 3 : 2) : dp); }
     function D(v){ return v >= 1000 * U && !inch ? (v / 1000).toFixed(2) + ' m' : (v / U).toFixed(inch ? 1 : 0) + lu; }
+    var wrap = document.createElement('div');
+    wrap.className = 'tpsWrap' + (TP_SKIP[i] ? ' skip' : '');
+    if (picks){
+      var run = document.createElement('label'); run.className = 'tpsRun';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !TP_SKIP[i];
+      cb.disabled = typeof JOB !== 'undefined' && JOB.active;
+      cb.title = TP_SKIP[i] ? 'Left out: Start won\u2019t run it. Tick to run it.' : 'Start runs it. Untick to leave it out.';
+      cb.setAttribute('aria-label', 'Run ' + r.name);
+      cb.addEventListener('change', function () {
+        if (typeof JOB !== 'undefined' && JOB.active){                 // the running job was built with the old ticks
+          cb.checked = !TP_SKIP[i];
+          uiNote('A job is running', 'Which toolpaths run is set before Start. Stop the job first to change it.');
+          return;
+        }
+        TP_SKIP[i] = !cb.checked; renderToolpathSummary();
+      });
+      run.appendChild(cb); run.appendChild(document.createTextNode(' Run'));
+      wrap.appendChild(run);
+    }
     var card = document.createElement('button');
     card.className = 'tpsCard' + (TPSUM_SEL === i ? ' on' : '');
     card.setAttribute('aria-pressed', TPSUM_SEL === i ? 'true' : 'false');
@@ -2313,7 +2346,8 @@ function renderToolpathSummary(){
       if (target !== null && target <= r.to) jumpToLine(target);
       renderToolpathSummary();
     });
-    box.appendChild(card);
+    wrap.appendChild(card);
+    box.appendChild(wrap);
   });
 }
 
@@ -2716,7 +2750,7 @@ function loadText(text, name){
   renderCode();
   renderChecks();
   renderStats();
-  TPSUM_SEL = null; renderToolpathSummary();
+  TPSUM_SEL = null; TP_SKIP = []; renderToolpathSummary();   // a new file: every toolpath ticked
   var ss = document.getElementById('sectionSel');
   if (MODEL.sections && MODEL.sections.length){
     var opts = '<option value="">jump to toolpath…</option>';
@@ -5374,15 +5408,16 @@ var JobBuilder = (function () {
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = JobBuilder;     // for the tests, in Node
 
-// Control's job builder: its state, gathered for JobBuilder.build
-function buildJobList(lines){
+// Control's job builder: its state, gathered for JobBuilder.build. segs: the moves that are run (all of the file's,
+// unless some toolpaths are left out: job-skip.js)
+function buildJobList(lines, segs){
   var zr = axisRange('z');
   return JobBuilder.build(lines, {
     homed: (typeof SERIAL !== 'undefined') && SERIAL.homedSeen,
     wcoZ: (typeof SERIAL !== 'undefined' && SERIAL.wco) ? SERIAL.wco.z : null,
     stopHigh: PROFILE.run.highStart,
     spinup: PROFILE.spindle.spinup,
-    segs: (typeof MODEL !== 'undefined' && MODEL && MODEL.segs) ? MODEL.segs : null,
+    segs: segs || ((typeof MODEL !== 'undefined' && MODEL && MODEL.segs) ? MODEL.segs : null),
     zMax: zr ? zr.max : 0,
     travelZ: travelZ(),
     topZ: topZ(),
@@ -5391,6 +5426,134 @@ function buildJobList(lines){
   });
 }
 
+// Running only some of a file's toolpaths (Control 0.37.0): the Toolpaths tab's tick boxes. The file's own lines in an
+// unticked toolpath are left out; everything else is the normal job (the job builder adds its lifts, spindle stops and
+// tool changes as always). Before each ticked toolpath that follows a left-out one, Control puts the machine in the
+// state the file expects there, as Recover does: up to the top, a tool change if the left-out part loaded a different
+// tool, to where the toolpath starts, the spindle on (with its spin-up wait) if the file had it on, down carefully,
+// and the units, plane and modes the file was using.
+//
+// JobSkip.plan(o) is pure, for the tests (apps/control/test/job-skip.test.mjs):
+//   o.lines      the file's lines
+//   o.sections   its toolpaths in file order: [{from, to, name}] (line ranges, as the Toolpaths tab finds them)
+//   o.skip       [true/false] per section: true = left out
+//   o.segs       the file's moves ({line, ...}), from the parser
+//   o.stateAt(ln)   the file's state just before line ln (recovery-state.js stateAtLine): position in mm, units, modes,
+//                   spindle, tool
+//   o.clean(line)   a line without its comments
+// Returns null if nothing is left out, {why} if it can't be run that way, or {lines, segs, resumes, kept, skipped}:
+// lines with the left-out ones blanked (same numbering, so progress and the preview still match), the moves that are
+// still run, and where to put the machine back in step ({ln, st, tool, ownSpin}).
+//
+// JobSkip.resumeItems(r, mk) is what's sent at one of those places. mk: {zHigh, spinup}.
+// JobSkip.apply(list, plan, mk) puts them into a built job (JobBuilder.build), before the toolpath's first move.
+var JobSkip = (function () {
+  'use strict';
+  function plan(o){
+    var secs = o.sections || [], skip = o.skip || [];
+    if (!secs.some(function (s, i) { return !!skip[i]; })) return null;
+    if (secs.every(function (s, i) { return !!skip[i]; })) return {why: 'Every toolpath is unticked, so there’s nothing to run.'};
+    var lines = o.lines.slice(), out = function (ln) { for (var i = 0; i < secs.length; i++) if (skip[i] && ln >= secs[i].from && ln <= secs[i].to) return true; return false; };
+    for (var ln = 1; ln <= lines.length; ln++) if (out(ln)) lines[ln - 1] = '';
+    var segs = (o.segs || []).filter(function (g) { return !out(g.line); });
+    var resumes = [], since = false, tool = null;          // tool: in the spindle in this run (null: whatever was loaded)
+    for (var i = 0; i < secs.length; i++){
+      var s = secs[i];
+      if (skip[i]){ since = true; continue; }
+      var first = null, fseg = null;
+      for (var k = 0; k < segs.length; k++) if (segs[k].line >= s.from && segs[k].line <= s.to){ first = segs[k].line; fseg = segs[k]; break; }
+      if (since && first !== null){
+        var st = o.stateAt(first), own = '', ownM6 = false, ownSpin = false;
+        for (var l2 = s.from; l2 < first; l2++){
+          own = o.clean(o.lines[l2 - 1]) || '';
+          if (/M0*6(?![\d.])/i.test(own)) ownM6 = true;
+          if (/M0*[34](?![\d.])/i.test(own)) ownSpin = true;
+        }
+        var fl = o.clean(o.lines[first - 1]) || '';
+        if ((st.motion === 2 || st.motion === 3) && !/G\s*0*[0123](?![\d.])/i.test(fl))
+          return {why: '“' + s.name + '” starts partway along an arc, so it can’t be run without the toolpath before it.'};
+        if (st.uncertain)
+          return {why: 'This file moves in machine coordinates or changes its offsets (G53, G92, G10 or another work offset) before “' + s.name +
+                       '”, so where it starts can’t be worked out. Run the whole file instead.'};
+        var needTool = !ownM6 && st.tool !== null && String(st.tool) !== String(tool) ? st.tool : null;
+        // Where to go: the toolpath's first move starts where the left-out one ended. When that move is a rapid above
+        // the work, go straight to its end instead (it's only getting there), rather than over the left-out toolpath.
+        var at = fseg && fseg.rapid && Math.min(fseg.z0, fseg.z1) >= -0.001 ? {x: fseg.x1, y: fseg.y1, z: fseg.z1} : {x: st.x, y: st.y, z: st.z};
+        resumes.push({ln: first, st: st, at: at, tool: needTool, ownSpin: ownSpin, name: s.name});
+      }
+      since = false;
+      var after = o.stateAt(Math.min(s.to + 1, o.lines.length + 1));
+      if (after.tool !== null) tool = after.tool;
+    }
+    return {lines: lines, segs: segs, resumes: resumes,
+            kept: secs.filter(function (s, i) { return !skip[i]; }), skipped: secs.filter(function (s, i) { return !!skip[i]; })};
+  }
+  function resumeItems(r, mk){
+    var st = r.st, at = r.at || st, inch = st.units === 'in', ln = r.ln, out = [];
+    function u(mm){ return inch ? (mm / 25.4).toFixed(4) : mm.toFixed(3); }
+    function add(t){ out.push({text: t, ln: ln, syn: true}); }
+    add(mk.zHigh);                                                   // up out of the way first, every time
+    if (r.tool !== null && r.tool !== undefined){                    // the left-out part loaded this tool: load it here
+      add('M5');
+      out.push({m6: true, ln: ln, tool: String(r.tool), next: {x: at.x, y: at.y}});
+    }
+    add('G21 G90');
+    add('G0 X' + at.x.toFixed(3) + ' Y' + at.y.toFixed(3));
+    if (st.spindle && (!r.ownSpin || r.tool !== null)){
+      add(st.sVal !== null ? 'M3 S' + st.sVal : 'M3');
+      if (mk.spinup > 0) add('G4 P' + mk.spinup);
+    }
+    if (inch) add('G20');
+    if (st.plane !== 17) add('G' + st.plane);
+    if (st.arcAbs) add('G90.1');
+    if (at.z >= -0.001) add('G0 Z' + u(at.z));                      // above the work: straight down
+    else {                                                           // into the work: near it fast, then at a plunge feed
+      add('G0 Z' + u(at.z + 2));
+      var cap = inch ? 15 : 400, pf = st.feedRaw !== null ? Math.min(st.feedRaw, cap) : cap;
+      add('G1 Z' + u(at.z) + ' F' + pf);
+    }
+    if (!st.abs) add('G91');
+    if (st.motion === 1 && st.feedRaw !== null) add('G1 F' + st.feedRaw);
+    else if (st.motion === 0) add('G0');
+    else if (st.feedRaw !== null) add('F' + st.feedRaw);
+    return out;
+  }
+  function apply(list, p, mk){
+    for (var i = p.resumes.length - 1; i >= 0; i--){
+      var r = p.resumes[i], at = list.length;
+      for (var k = 0; k < list.length; k++) if (list[k].ln >= r.ln){ at = k; break; }
+      Array.prototype.splice.apply(list, [at, 0].concat(resumeItems(r, mk)));
+    }
+    return list;
+  }
+  return {plan: plan, resumeItems: resumeItems, apply: apply};
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = JobSkip;     // for the tests, in Node
+
+// Control's side: which toolpaths are unticked (by their place in the Toolpaths tab; cleared when a file is opened),
+// and the job built with them left out.
+var TP_SKIP = [];
+function jobSkipPlan(){
+  if (!MODEL || !TP_SKIP.some(Boolean)) return null;
+  var sum = jobSummary(MODEL);
+  if (!sum || sum.list.length < 2) return null;
+  return JobSkip.plan({lines: MODEL.lines, sections: sum.list.map(function (r) { return {from: r.from, to: r.to, name: r.name}; }),
+                       skip: sum.list.map(function (r, i) { return !!TP_SKIP[i]; }), segs: MODEL.segs, stateAt: stateAtLine, clean: cleanForSend});
+}
+// {list, plan} for the job as ticked; plan is null when every toolpath runs. {why} when it can't be run that way.
+function buildRunList(){
+  var p = jobSkipPlan();
+  if (!p) return {list: buildJobList(MODEL.lines), plan: null};
+  if (p.why) return {why: p.why};
+  var list = buildJobList(p.lines, p.segs);
+  JobSkip.apply(list, p, {zHigh: zHighCmd(travelZ()), spinup: PROFILE.spindle.spinup});
+  return {list: list, plan: p};
+}
+function jobSkipLine(ln){                               // is this line in an unticked toolpath?
+  if (!MODEL || !TP_SKIP.some(Boolean)) return false;
+  var sum = jobSummary(MODEL);
+  return !!(sum && sum.list.some(function (r, i) { return TP_SKIP[i] && ln >= r.from && ln <= r.to; }));
+}
 function jobFill(){
   if (PROBE.active) return; // probe sequence owns the wire
   if (JOB.ending) return;   // End job pressed: nothing more from the file
@@ -5399,7 +5562,7 @@ function jobFill(){
     if (it.m6){
       // Without a BitSetter, a tool change after cutting has started needs Z zeroed again for the
       // new tool. A change before anything has been cut is the tool you zeroed with.
-      var cutBefore = !!(MODEL && MODEL.segs.some(function (sg) { return !sg.rapid && sg.line < it.ln; }));
+      var cutBefore = !!(MODEL && (JOB.segs || MODEL.segs).some(function (sg) { return !sg.rapid && sg.line < it.ln; }));
       JOB.toolWait = {line: it.ln, tool: it.tool, next: it.next, needZero: !JOB.useBS && cutBefore, zeroed: false};
       JOB.parkPending = parkReady();
       JOB.idx++; JOB.acked++;
@@ -5523,7 +5686,12 @@ function jobStart(opts){
   var bb = modelBBox(MODEL);
   var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
   var errs = all.filter(function(i){ return i.sev === 'err'; }).length;
-  var list = buildJobList(MODEL.lines);
+  // Toolpaths left out on the Toolpaths tab: the moves, tool changes and time that are actually run
+  var run = buildRunList();
+  if (run.why){ uiNote('The ticked toolpaths can’t be run on their own', run.why); return; }
+  var list = run.list, plan = run.plan;
+  var segsRun = plan ? plan.segs : MODEL.segs;
+  var toolsRun = plan ? list.filter(function (it) { return it.m6; }).map(function (it) { return {tool: it.tool, line: it.ln}; }) : MODEL.tools;
 
   // "start high": traverse to the file's first XY point at top of travel first
   var highStartNote = '';
@@ -5531,7 +5699,7 @@ function jobStart(opts){
     if (!SERIAL.homedSeen){
       highStartNote = 'Start high: skipped — not homed (preview only).\n';
     } else {
-      var p0 = JobBuilder.startHighTarget(list, MODEL.segs);   // none when the file changes tools first
+      var p0 = JobBuilder.startHighTarget(list, segsRun);      // none when the file changes tools first
       if (!p0 && list.some(function (it){ return it.m6; }))
         highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.\n';
       if (p0){
@@ -5545,6 +5713,9 @@ function jobStart(opts){
   }
 
   var msg = 'Run "' + document.getElementById('fileName').textContent + '" on the machine?\n\n' +
+    (plan ? 'Toolpaths: ' + plan.kept.length + ' of ' + (plan.kept.length + plan.skipped.length) + ' — ' +
+            plan.kept.map(function (s) { return s.name; }).join(', ') + '.\n   Left out: ' + plan.skipped.map(function (s) { return s.name; }).join(', ') +
+            '. Before each toolpath after a left-out one, the machine lifts, changes the tool if needed, goes to where it starts and starts the spindle.\n' : '') +
     'Cut extents  X: ' + bb.cmin.x.toFixed(1) + ' … ' + bb.cmax.x.toFixed(1) + ' mm\n' +
     '             Y: ' + bb.cmin.y.toFixed(1) + ' … ' + bb.cmax.y.toFixed(1) + ' mm\n' +
     '             Z: ' + bb.cmin.z.toFixed(2) + ' … ' + bb.cmax.z.toFixed(2) + ' mm\n' +
@@ -5566,14 +5737,14 @@ function jobStart(opts){
   }
   var bsErr = bitSetterReady();
   var firstCut = null;
-  for (var fc = 0; fc < MODEL.segs.length; fc++) if (!MODEL.segs[fc].rapid){ firstCut = MODEL.segs[fc].line; break; }
-  var startsWithToolChange = MODEL.tools.some(function (t) { return firstCut === null || t.line < firstCut; });
+  for (var fc = 0; fc < segsRun.length; fc++) if (!segsRun[fc].rapid){ firstCut = segsRun[fc].line; break; }
+  var startsWithToolChange = toolsRun.some(function (t) { return firstCut === null || t.line <= firstCut; });
   // Like Carbide Motion: with a BitSetter set up, the tool is measured at Start whether or not the
   // file changes tools. Against a reference taken at Z zero, that also catches a swapped bit.
   var useBS = (bsErr === null);
   // Tool changes after cutting has started, with no BitSetter to measure the new tools: decide
   // how before anything moves, rather than finding out at the first change.
-  var laterChanges = MODEL.tools.filter(function (t) { return MODEL.segs.some(function (sg) { return !sg.rapid && sg.line < t.line; }); }).length;
+  var laterChanges = toolsRun.filter(function (t) { return segsRun.some(function (sg) { return !sg.rapid && sg.line < t.line; }); }).length;
   if (laterChanges && bsErr !== null && !opts.rezeroChosen){
     uiDialog({title: 'This job changes tools, but the BitSetter isn\u2019t set up',
               body: 'It changes tool ' + laterChanges + (laterChanges === 1 ? ' time' : ' times') + ' after cutting starts. The BitSetter is ' +
@@ -5591,8 +5762,8 @@ function jobStart(opts){
     });
     return;
   }
-  if (MODEL.tools.length > 1){
-    var names = MODEL.tools.map(function(t){
+  if (toolsRun.length > 1){
+    var names = toolsRun.map(function(t){
       var ti = MODEL.toolInfo[t.tool];
       return 'T' + t.tool + (ti ? ' ' + ti.desc : '');
     }).join(' → ');
@@ -5603,9 +5774,9 @@ function jobStart(opts){
   }
   if (PROFILE.bitSetter.enabled && bsErr !== null)
     msg += '*** The BitSetter is switched on but can\u2019t be used: ' + bsErr + '. No tool will be measured. ***\n';
-  if (MODEL.tools.length > 0 || useBS){
+  if (toolsRun.length > 0 || useBS){
     if (useBS){
-      var firstTool = startsWithToolChange && MODEL.tools.length ? 'T' + MODEL.tools[0].tool : null;
+      var firstTool = startsWithToolChange && toolsRun.length ? 'T' + toolsRun[0].tool : null;
       var when = firstTool ? 'when you confirm ' + firstTool + ' is loaded' : 'at the start';
       if (PROBE.refZ !== null){
         msg += 'BitSetter: reference taken when Z was zeroed. The first tool is measured against it ' + when + ', and every new tool at each change.\n';
@@ -5662,7 +5833,9 @@ function jobStart(opts){
   JOB.startedAt = performance.now();
   JOB.clock = {last: JOB.startedAt, machine: 0, tool: 0, hold: 0, probe: 0};
   JOB.spinupAdded = (list.injected || 0) * (PROFILE.spindle.spinup || 0);   // waits Control inserted
-  JOB.estimate = MODEL.totalTime; JOB.name = document.getElementById('fileName').textContent;
+  JOB.estimate = plan ? segsRun.reduce(function (t, g) { return t + (g.t1 - g.t0); }, 0) : MODEL.totalTime;
+  JOB.segs = plan ? segsRun : null;          // the moves run: a tool change after any of them needs Z zero again (no BitSetter)
+  JOB.name = document.getElementById('fileName').textContent;
   JOB.useBS = useBS;
   JOB.parkPending = false;
   PROBE.tlo = 0;
@@ -5824,10 +5997,15 @@ function jobStartFrom(target){
   else { znApply(); adjRestore(); }                     // kept: the controller drops both in a reset
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
+  // Toolpaths left out on the Toolpaths tab stay left out for the rest of the job
+  if (jobSkipLine(snapped)){ uiNote('That line is in a left-out toolpath', 'Line ' + snapped + ' is in a toolpath that’s unticked on the Toolpaths tab. ' +
+                                    'Tick it to resume there, or pick a line in a ticked toolpath.'); return; }
+  var run = buildRunList();
+  if (run.why){ uiNote('The ticked toolpaths can’t be run on their own', run.why); return; }
   var st = stateAtLine(snapped);
-  var full = buildJobList(MODEL.lines);
+  var full = run.list;
   var si = -1;
-  for (var i = 0; i < full.length; i++){ if (full[i].ln === snapped && !full[i].m6){ si = i; break; } }
+  for (var i = 0; i < full.length; i++){ if (full[i].ln === snapped && !full[i].m6 && !full[i].syn){ si = i; break; } }   // the line itself, not what Control put before it
   if (si < 0){ uiNote('Nothing to resume there', 'Line ' + snapped + ' isn\u2019t a sendable command.'); return; }
   var slice = full.slice(si);
   // strip a leading m6 marker chain remnant is unnecessary: slice starts at the motion line
@@ -5899,6 +6077,7 @@ function jobStartFrom(target){
   JOB.total = JOB.list.length; JOB.idx = 0; JOB.acked = 0;
   JOB.inflight = []; JOB.startedAt = performance.now(); JOB.lastLn = snapped;
   JOB.useBS = useBS;
+  JOB.segs = run.plan ? run.plan.segs : null;
   adjBegin();
   bzCloseModal(); jogModalClose();
   fitView(); animateView(0, 0.02);

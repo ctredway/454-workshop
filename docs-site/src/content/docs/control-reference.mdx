@@ -201,6 +201,30 @@ Each toolpath in the file, with its tool, estimated time and share of the job, d
 levels, feeds, spindle speed, the area it covers, and its lines. Click one to show just that toolpath in the
 preview. If a file doesn't name its toolpaths, they're grouped by tool change instead.
 
+### Running only some toolpaths
+
+To run part of a job again without going back to Design or your CAM program, untick **Run** on the toolpaths
+to leave out. The tab then shows how many will run (**2/3**), and **Start** runs only the ticked ones. The
+start dialog lists what runs and what's left out.
+
+Before each toolpath that comes after a left-out one, Control puts the machine where the file expects it:
+
+1. It lifts Z to traverse height.
+2. If the left-out toolpath loaded a different tool, it stops for a tool change, as a job's own tool changes do
+   (with the BitSetter, the tool is measured).
+3. It goes to where the toolpath starts, starts the spindle at the file's speed with your spin-up wait, and
+   comes down: straight down if that's above the work, or close and then at a slow plunge if it starts in it.
+
+Opening a file ticks every toolpath again. **Recover** keeps left-out toolpaths left out, and won't resume
+from a line inside one. A toolpath that begins partway along an arc, or a file that moves in machine
+coordinates or changes its work offsets between toolpaths, can't be split this way: Start says so and runs
+nothing.
+
+:::caution
+A left-out toolpath may be the one that cut a part free, or cleared room for the next. Check the preview,
+and air-cut if you're unsure.
+:::
+
 ## The Checks tab
 
 <Shot src={checksTab} alt="The Checks tab: two notes, one for each tool change, each with the line it's on." />

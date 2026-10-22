@@ -6,7 +6,7 @@ function jobFill(){
     if (it.m6){
       // Without a BitSetter, a tool change after cutting has started needs Z zeroed again for the
       // new tool. A change before anything has been cut is the tool you zeroed with.
-      var cutBefore = !!(MODEL && MODEL.segs.some(function (sg) { return !sg.rapid && sg.line < it.ln; }));
+      var cutBefore = !!(MODEL && (JOB.segs || MODEL.segs).some(function (sg) { return !sg.rapid && sg.line < it.ln; }));
       JOB.toolWait = {line: it.ln, tool: it.tool, next: it.next, needZero: !JOB.useBS && cutBefore, zeroed: false};
       JOB.parkPending = parkReady();
       JOB.idx++; JOB.acked++;
@@ -130,7 +130,12 @@ function jobStart(opts){
   var bb = modelBBox(MODEL);
   var all = MODEL.issues.concat(dynamicChecks(MODEL, cfg()));
   var errs = all.filter(function(i){ return i.sev === 'err'; }).length;
-  var list = buildJobList(MODEL.lines);
+  // Toolpaths left out on the Toolpaths tab: the moves, tool changes and time that are actually run
+  var run = buildRunList();
+  if (run.why){ uiNote('The ticked toolpaths can’t be run on their own', run.why); return; }
+  var list = run.list, plan = run.plan;
+  var segsRun = plan ? plan.segs : MODEL.segs;
+  var toolsRun = plan ? list.filter(function (it) { return it.m6; }).map(function (it) { return {tool: it.tool, line: it.ln}; }) : MODEL.tools;
 
   // "start high": traverse to the file's first XY point at top of travel first
   var highStartNote = '';
@@ -138,7 +143,7 @@ function jobStart(opts){
     if (!SERIAL.homedSeen){
       highStartNote = 'Start high: skipped — not homed (preview only).\n';
     } else {
-      var p0 = JobBuilder.startHighTarget(list, MODEL.segs);   // none when the file changes tools first
+      var p0 = JobBuilder.startHighTarget(list, segsRun);      // none when the file changes tools first
       if (!p0 && list.some(function (it){ return it.m6; }))
         highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.\n';
       if (p0){
@@ -152,6 +157,9 @@ function jobStart(opts){
   }
 
   var msg = 'Run "' + document.getElementById('fileName').textContent + '" on the machine?\n\n' +
+    (plan ? 'Toolpaths: ' + plan.kept.length + ' of ' + (plan.kept.length + plan.skipped.length) + ' — ' +
+            plan.kept.map(function (s) { return s.name; }).join(', ') + '.\n   Left out: ' + plan.skipped.map(function (s) { return s.name; }).join(', ') +
+            '. Before each toolpath after a left-out one, the machine lifts, changes the tool if needed, goes to where it starts and starts the spindle.\n' : '') +
     'Cut extents  X: ' + bb.cmin.x.toFixed(1) + ' … ' + bb.cmax.x.toFixed(1) + ' mm\n' +
     '             Y: ' + bb.cmin.y.toFixed(1) + ' … ' + bb.cmax.y.toFixed(1) + ' mm\n' +
     '             Z: ' + bb.cmin.z.toFixed(2) + ' … ' + bb.cmax.z.toFixed(2) + ' mm\n' +
@@ -173,14 +181,14 @@ function jobStart(opts){
   }
   var bsErr = bitSetterReady();
   var firstCut = null;
-  for (var fc = 0; fc < MODEL.segs.length; fc++) if (!MODEL.segs[fc].rapid){ firstCut = MODEL.segs[fc].line; break; }
-  var startsWithToolChange = MODEL.tools.some(function (t) { return firstCut === null || t.line < firstCut; });
+  for (var fc = 0; fc < segsRun.length; fc++) if (!segsRun[fc].rapid){ firstCut = segsRun[fc].line; break; }
+  var startsWithToolChange = toolsRun.some(function (t) { return firstCut === null || t.line <= firstCut; });
   // Like Carbide Motion: with a BitSetter set up, the tool is measured at Start whether or not the
   // file changes tools. Against a reference taken at Z zero, that also catches a swapped bit.
   var useBS = (bsErr === null);
   // Tool changes after cutting has started, with no BitSetter to measure the new tools: decide
   // how before anything moves, rather than finding out at the first change.
-  var laterChanges = MODEL.tools.filter(function (t) { return MODEL.segs.some(function (sg) { return !sg.rapid && sg.line < t.line; }); }).length;
+  var laterChanges = toolsRun.filter(function (t) { return segsRun.some(function (sg) { return !sg.rapid && sg.line < t.line; }); }).length;
   if (laterChanges && bsErr !== null && !opts.rezeroChosen){
     uiDialog({title: 'This job changes tools, but the BitSetter isn\u2019t set up',
               body: 'It changes tool ' + laterChanges + (laterChanges === 1 ? ' time' : ' times') + ' after cutting starts. The BitSetter is ' +
@@ -198,8 +206,8 @@ function jobStart(opts){
     });
     return;
   }
-  if (MODEL.tools.length > 1){
-    var names = MODEL.tools.map(function(t){
+  if (toolsRun.length > 1){
+    var names = toolsRun.map(function(t){
       var ti = MODEL.toolInfo[t.tool];
       return 'T' + t.tool + (ti ? ' ' + ti.desc : '');
     }).join(' → ');
@@ -210,9 +218,9 @@ function jobStart(opts){
   }
   if (PROFILE.bitSetter.enabled && bsErr !== null)
     msg += '*** The BitSetter is switched on but can\u2019t be used: ' + bsErr + '. No tool will be measured. ***\n';
-  if (MODEL.tools.length > 0 || useBS){
+  if (toolsRun.length > 0 || useBS){
     if (useBS){
-      var firstTool = startsWithToolChange && MODEL.tools.length ? 'T' + MODEL.tools[0].tool : null;
+      var firstTool = startsWithToolChange && toolsRun.length ? 'T' + toolsRun[0].tool : null;
       var when = firstTool ? 'when you confirm ' + firstTool + ' is loaded' : 'at the start';
       if (PROBE.refZ !== null){
         msg += 'BitSetter: reference taken when Z was zeroed. The first tool is measured against it ' + when + ', and every new tool at each change.\n';
@@ -269,7 +277,9 @@ function jobStart(opts){
   JOB.startedAt = performance.now();
   JOB.clock = {last: JOB.startedAt, machine: 0, tool: 0, hold: 0, probe: 0};
   JOB.spinupAdded = (list.injected || 0) * (PROFILE.spindle.spinup || 0);   // waits Control inserted
-  JOB.estimate = MODEL.totalTime; JOB.name = document.getElementById('fileName').textContent;
+  JOB.estimate = plan ? segsRun.reduce(function (t, g) { return t + (g.t1 - g.t0); }, 0) : MODEL.totalTime;
+  JOB.segs = plan ? segsRun : null;          // the moves run: a tool change after any of them needs Z zero again (no BitSetter)
+  JOB.name = document.getElementById('fileName').textContent;
   JOB.useBS = useBS;
   JOB.parkPending = false;
   PROBE.tlo = 0;
