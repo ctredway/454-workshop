@@ -49,12 +49,12 @@ test('a depth typed as a parameter: cut at its value, remembered, shown on the c
   assert.match(rows(tp), /Depth: 6\.00 mm = material \/ 2 in/);
   D.cutOpen(tp); assert.equal(el('cutDepth').value, 'material / 2', 'editing shows it'); D.cutClose();
 });
-test('change the parameter, or the material: the toolpath is recalculated', () => {
+test('change the parameter, or the material: the toolpath is recalculated', async () => {
   drawing();
   open('pocket', { depth: 'pk' }); const tp = create(); near(deepest(tp), 5);
   paramTo('pk', '7'); near(tp.depth, 7); near(deepest(tp), 7, 'cut 7 mm deep now');
   open('pocket', { depth: 'material - 2' }); const tp2 = create(); near(deepest(tp2), 10);
-  set('stkT', '18', 'change'); near(deepest(tp2), 16, 'the material went to 18');
+  set('stkT', '18', 'change'); await D.busyIdle(); near(deepest(tp2), 16, 'the material went to 18');
   D.doUndo(); near(D.tpList()[1].depth, 10, 'Undo puts it back');
 });
 test('a parameter change that puts a toolpath past the material says so', () => {
@@ -110,7 +110,7 @@ test('a through cut’s depth is the material’s, whatever was typed before', (
 test('parameters that can’t be worked out stop Save G-code, with no way past', async () => {
   drawing();
   open('pocket', { depth: 'pk' }); const tp = create();
-  set('stkT', '', 'change');                                       // the thickness cleared
+  set('stkT', '', 'change'); await D.busyIdle();                    // the thickness cleared (worked out with the Working panel up)
   assert.match(D.tpExprProblem(tp), /Depth \(pk\): a depth from a parameter needs the material.s thickness/);
   assert.match(rows(tp), /⚠ Parameters: Depth \(pk\)/);
   let saved = null;

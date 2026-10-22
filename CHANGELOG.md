@@ -33,6 +33,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.62 — the Working panel for a new thickness, and Z zero at the bottom
+- Includes Design 0.148.1: a new material thickness is worked out with the Working panel up, and with Z zero at the
+  bottom every toolpath follows it (only through cuts did).
+- Includes Control 0.37.2: the Z nudge buttons say deeper or shallower.
+
 ### 0.6.2-beta.61 — the right feed after the BitSetter, inch files, and the Windows icon
 - Includes Control 0.37.1: a toolpath run after left-out ones, or after a tool change, cuts at the file's feed, not
   the BitSetter's 40 mm/min; and Control's own moves stay in millimetres in and after files in inches.
@@ -735,6 +740,11 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.37.2 — the Z nudge buttons say which way they go
+Clint noticed that − in the Adjust panel's Z row cuts deeper and + shallower. That's meant (+Z is up, as everywhere
+on the machine), but the buttons only said "−0.1" and "+0.1". Each now says so when you point at it: "Cut 0.1 mm
+deeper (Z down), for the rest of this job", and so on; the Control reference says shallower and deeper too.
+
 ### 0.37.1 — the right feed after the BitSetter, and inch files kept in inches around Control's own moves
 Clint: "I ran a job and skipped some tool paths and the one that ran, ran very very slowly." Design writes F only
 when it changes, so a toolpath at the same feed as the one before has no F of its own; and the BitSetter's slow touch
@@ -1309,6 +1319,20 @@ The controller is the authority on the machine, so anything it reports is used r
 ---
 
 ## 454 Design
+
+### 0.148.1 — a new material thickness: the Working panel, and every toolpath follows it with Z zero at the bottom
+Clint: "when the material thickness is changed in the job setup, we need to show the activity modal ... the UI is
+acting like its hung." A new thickness puts toolpaths that follow it out of date, and they were all worked out again
+in one go, inside the check for toolpaths now cutting past the material, with nothing on screen. Now the change runs
+with the Working panel up, one toolpath a step ("3 of 6: Outsides").
+Looking at which toolpaths follow the thickness found a cutting bug: with Z zero at the bottom of the material, the
+top of the material is the thickness, so every toolpath starts from it, but only through cuts were put out of date.
+The others kept their old moves, and Save G-code would have written them at the old heights (after going from 12 to
+15 mm, a 3 mm pocket would have cut 3 mm below a top that was no longer there, and missed the new top by 3 mm). With
+Z zero at the bottom, every toolpath now follows the thickness (`tpStockSig`).
+- Tested (`depth-check.test.mjs`: Z zero at the bottom, 12 then 15 mm, the 3 mm pocket goes from Z 9 to Z 12, with
+  the Working panel up meanwhile); broken on purpose 2 ways (the old staleness rule, no Working panel), both caught.
+  The tests that change the thickness now wait for the panel to finish.
 
 ### 0.148.0 — dimensions can be dragged out of the way
 Clint: "draggable dimensions. meaning I can move the dimension around to make the drawing easier to look at."

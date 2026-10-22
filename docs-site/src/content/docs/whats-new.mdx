@@ -12,9 +12,21 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
-## 0.6.2-beta.61
+## 0.6.2-beta.62
 
 Not released yet
+
+- **Changing the material thickness shows the Working panel.** In 454 Design, a new thickness in Job setup works
+  out the toolpaths that follow it again, one at a time, with the panel showing which, instead of looking frozen.
+- **Fixed: with Z zero at the bottom of the material, a new thickness left most toolpaths at their old heights.**
+  Only through cuts were worked out again, and Save G-code would have written the others for the old top of the
+  material. Every toolpath now follows the thickness when Z zero is at the bottom. **(cutting)**
+- **The Z nudge buttons say which way they go.** In 454 Control's Adjust panel, pointing at a Z button says
+  "Cut 0.1 mm deeper (Z down)" or "shallower (Z up)".
+
+## 0.6.2-beta.61
+
+22 October 2026
 
 - **Fixed: a toolpath ran very slowly after left-out toolpaths or a tool change.** A toolpath at the same feed as
   the one before has no feed of its own in the file, and the BitSetter's slow touch left the machine at 40 mm/min.

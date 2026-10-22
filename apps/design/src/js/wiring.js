@@ -10,21 +10,32 @@ function wire(){
   keysWire();
   fit();
 
+  // A new thickness puts toolpaths that follow it out of date (through cuts; all of them with Z zero at the bottom),
+  // and they're worked out again here, which can take a while: the Working panel shows, one toolpath at a time.
   document.getElementById('stkT').addEventListener('change', function(e){
-    var raw = e.target.value.trim(), pastBefore = tpPastIds();      // to name toolpaths a thinner material puts through it
-    if (!raw){ DOC.stock.t = 0; }
-    else {
-      var t = parseStockLen(raw, stockUnits());
+    var raw = e.target.value.trim(), t = 0;
+    if (raw){
+      t = parseStockLen(raw, stockUnits());
       if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
-      // dimensions using "material" follow it (and Undo takes the reshaping back)
-      if ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; }) ||
-          tpList().some(function (tp){ return Object.keys(tpExprsUsed(tp)).length; })) pushUndo();
-      DOC.stock.t = t;
     }
-    paramsSayFailed(paramsApplyDims());
-    tpParamsApply();
-    tpPastNotice(pastBefore);
-    syncStockUI(); persist(); renderToolpathPanel(); draw();       // cut-through toolpaths follow it
+    var pastBefore = [];                                            // to name toolpaths a thinner material puts through it
+    var steps = [{label: 'Checking the toolpaths', fn: function () { pastBefore = tpPastIds(); }},
+                 {label: 'The new thickness', fn: function () {
+                   if (raw && ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; }) ||
+                       tpList().some(function (tp){ return Object.keys(tpExprsUsed(tp)).length; }))) pushUndo();   // dimensions using "material" follow it (and Undo takes the reshaping back)
+                   DOC.stock.t = t;
+                   paramsSayFailed(paramsApplyDims());
+                   tpParamsApply();
+                 }}];
+    tpList().forEach(function (tp) {
+      steps.push({label: tp.name, fn: function () { if (camReady() && tp.moves && tpStale(tp)) tpGenerate(tp); }});
+    });
+    steps.push({label: 'Done', fn: function () {
+      tpPastNotice(pastBefore);
+      syncStockUI(); persist(); renderToolpathPanel(); draw();
+    }});
+    busyRun('Working out the toolpaths for the new thickness…', steps)
+      .catch(function (err) { toast('err', 'Something went wrong', String((err && err.message) || err)); syncStockUI(); renderToolpathPanel(); draw(); });
   });
   document.getElementById('stkZ').addEventListener('change', function(e){
     DOC.stock.zero = e.target.value; persist(); renderToolpathPanel(); draw();

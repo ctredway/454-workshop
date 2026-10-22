@@ -117,14 +117,29 @@ test('a through cut with no thickness: Save G-code refuses, and its button opens
   assert.equal(el('jobModal').hidden, false, 'Job setup is open, where the thickness is');
   el('jobModal').hidden = true;
 });
-test('a thinner material in Job setup names the toolpaths it puts through', () => {
+test('a thinner material in Job setup names the toolpaths it puts through', async () => {
   drawing(); open(0, 'pocket', { depth: 10 }); create();
   const toasts = [];
   const real = D.toast; D.toast = (k, t, b) => { toasts.push(t + ' | ' + b); };
   try {
-    set('stkT', '9', 'change');
+    set('stkT', '9', 'change'); await D.busyIdle();
     assert.ok(toasts.some((t) => /Pocket now cuts past the material \| Pocket goes 10\.00 mm deep: through the 9\.00 mm material and 1\.00 mm/.test(t)), toasts.join(' / '));
-    toasts.length = 0; set('stkT', '8', 'change');
+    toasts.length = 0; set('stkT', '8', 'change'); await D.busyIdle();
     assert.ok(!toasts.some((t) => /now cuts past/.test(t)), 'only once: it was already past');
   } finally { D.toast = real; }
+});
+
+// Clint, 2026-10-22: changing the thickness looked hung while the toolpaths were worked out again, so it runs with the
+// Working panel up. And with Z zero at the bottom, the top of the material is the thickness, so every toolpath starts
+// there: all of them are worked out again, not only through cuts (they kept their old heights before).
+test('a new thickness with Z zero at the bottom: every toolpath follows it, with the Working panel up', async () => {
+  drawing(12, 'bottom'); open(0, 'pocket', { depth: 3 }); const tp = create();
+  const low = () => Math.min(...tp.moves.filter((m) => m.z !== undefined).map((m) => m.z));
+  near(low(), 9, 'a 3 mm pocket in 12 mm, measured from the bottom');
+  set('stkT', '15', 'change');
+  assert.equal(el('busy').hidden, false, 'the Working panel shows while it works');
+  await D.busyIdle();
+  assert.equal(el('busy').hidden, true);
+  assert.equal(D.tpStale(tp), false, 'worked out again');
+  near(low(), 12, '3 mm down from the new top, at 15');
 });

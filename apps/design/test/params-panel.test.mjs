@@ -92,10 +92,10 @@ test('typed in inches while the drawing shows inches: kept as inches', () => {
     assert.equal(D.run('DOC.params[0].unit'), 'in');
   } finally { D.run(`UICFG.stockUnits = 'mm'; 1`); }
 });
-test('the material’s thickness in Job setup: dimensions using material follow, as one Undo', () => {
+test('the material’s thickness in Job setup: dimensions using material follow, as one Undo', async () => {
   fresh();
   link('material + 2'); near(width(), 20);
-  typeInto(el('stkT'), '12');
+  typeInto(el('stkT'), '12'); await D.run('busyIdle()');
   near(width(), 14, 'followed the new thickness');
   D.run('doUndo(); 1');
   near(width(), 20, 'Undo puts it back');

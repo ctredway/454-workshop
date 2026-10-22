@@ -326,7 +326,8 @@ function tpChamferDepth(tp){
 function tpSurface(){ return DOC.stock.zero === 'bottom' ? (DOC.stock.t || 0) : 0; }
 function tpStockSig(tp){                              // what makes a through-cut (or a clean-up, or a V-carve with a clearing pocket) out of date
   var rs = tpRestSource(tp), vc = tp.side === 'vcarve' ? tpClearingOf(tp) : null;
-  return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top') +
+  // With Z zero at the bottom, the top of the material (where every toolpath starts) is the thickness: all of them follow it
+  return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top') + (DOC.stock.zero === 'bottom' ? (DOC.stock.t || 0) : '') +
          (tp.restFrom ? '|r' + (rs ? [rs.id, rs.dia, tpDepth(rs), rs.allowance || 0, !!rs.finishPass, tpStockSig(rs)].join(',') : 'none:' + tpRestProblem(tp)) : '') +
          (vc ? '|c' + [vc.id, vc.dia, vc.allowance || 0].join(',') : '');
 }
