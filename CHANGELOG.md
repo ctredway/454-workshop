@@ -33,6 +33,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.59 — dimensions can be dragged out of the way
+- Includes Design 0.148.0: with the Select tool, drag a dimension's value to move it. A distance's line moves out to
+  the side with extension lines back to the edges; a diameter or radius gets a leader. It follows the shapes.
+
 ### 0.6.2-beta.58 — handles as in VCarve, and midpoints you can see
 - Includes Design 0.146.0: selecting shows the scale handles straight away, and clicking a selected shape again
   switches to rotate handles (and back), as in VCarve.
