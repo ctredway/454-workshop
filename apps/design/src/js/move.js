@@ -78,7 +78,7 @@ var ICON = {
  recover:'<svg viewBox="0 0 18 18"><path d="M4 9 A5.5 5.5 0 1 0 5.6 5.1"/><path d="M5.6 2.2 V5.1 H2.7"/><path d="M9 6.2 V9.2 L11 10.6"/></svg>'
 };
 var PANEL_BTNS = {
- select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes', active:true},
+ select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes. Click a selected shape again to rotate it', active:true},
  line:  {tool:'line', icon:'line', title:'Line (L) \u2014 click points; type exact coords anytime'},
  rect:  {tool:'rect', icon:'rect', title:'Rectangle (R) \u2014 two corners, or click then type W,H'},
  ellipse:{tool:'ellipse', icon:'ellipse', title:'Ellipse — centre, then a corner of its box, or type W,H e.g. 120,60'},
@@ -88,7 +88,7 @@ var PANEL_BTNS = {
  arc:   {tool:'arc', icon:'arc', title:'Arc (A) \u2014 start point, end point, then bow it with the mouse (3-point) or type a radius; + bows left of start\u2192end, \u2212 right'},
  poly:  {tool:'poly', icon:'poly', title:'Polyline (P) \u2014 click points, Enter ends, click start to close'},
  measureT:{tool:'measure', icon:'measure', title:'Measure (I) \u2014 click two points for distance and angle; Shift-click two shapes for the gap between them'},
- textT: {tool:'text', icon:'text', title:'Text (K) \u2014 click where the text starts. To edit text later, click it with this tool, or double-click it twice with Select'},
+ textT: {tool:'text', icon:'text', title:'Text (K) \u2014 click where the text starts. To edit text later, click it with this tool, or double-click it with Select'},
  nestBtn:{id:'nestBtn', icon:'nest', title:'Nest parts \u2014 pack the selected parts (or everything, if nothing is selected) onto the material, with copies'},
  alMat:{id:'alMat', icon:'aMat', title:'Center in material (F9) \u2014 moves the selection, as a block, to the middle of the material'},
  alMatX:{id:'alMatX', icon:'aMatX', title:'Center left-right in material \u2014 moves the selection sideways only'},

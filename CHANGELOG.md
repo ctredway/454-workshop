@@ -1223,6 +1223,21 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.146.0 — handles as in VCarve: they show when you select, and a second click turns
+Clint: "when a vector is selected and the bounds box is showing, the corners need a second option, not only do they
+need to scale the vector but there needs to be a rotation option. VCarve has this and its very helpful." Design had
+rotate handles, but they were two steps in: a double-click for the handles, then a click for rotate. Now it works as
+VCarve does:
+- **Selecting shows the scale handles straight away** (one click, Shift-click or a box), not after a double-click.
+- **Click a selected shape again** (without moving it) for the rotate handles: curved arrows at the corners, and a
+  centre to turn about that can be dragged. Click it again for the scale handles. Shift while turning goes in 15°
+  steps, as before. A new selection always starts with the scale handles.
+- **A double-click on text** opens it for editing straight away (it took two double-clicks). Esc still puts the
+  handles away first; clicking the shape again brings them back.
+- Tested (`handles.test.mjs`, 5 tests; broken on purpose 4 ways, all caught, the old double-click behaviour among
+  them), and in a browser: click, click again (rotate), again (scale), a drag moves without switching, another
+  shape starts at scale, empty space clears them.
+
 ### 0.145.0 — a change made back in the history keeps the steps after it
 Clint: "I clicked a previous step in the history timeline and then made a change, and the history items that were
 after that change were removed. That shouldn't happen." The History bar was Undo's list, and a change after undoing

@@ -438,9 +438,7 @@ function draw(){
   }
 
   // ---- selection transform handles ----
-  if (HANDLES.sig !== selSig()){                   // selection changed: handles go away
-    HANDLES.sig = selSig(); HANDLES.active = false; HANDLES.mode = 'scale'; HANDLES.pivot = null;
-  }
+  handlesSync();
   if (TOOL === 'select' && SEL.length && HANDLES.active && !(DRAW && DRAW.stage === 'marq')){
     var hbx = selHandleBox();
     if (hbx){

@@ -1286,7 +1286,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.145.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.146.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3675,10 +3675,21 @@ function refreshFilletTypes(){
   box.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.ft === ft ? 'true' : 'false'); });
 }
 var DIMSEL = null; // index of the dimension under edit, if any
-// Transform handles around the selection (Select tool). Click a selected shape again to switch
-// between SCALE handles (corners proportional, sides one direction) and ROTATE handles.
-var HANDLES = {mode:'scale', pivot:null, sig:'', active:false};   // active: shown after a double-click
+// Transform handles around the selection (Select tool), as in VCarve: selecting shows SCALE handles (corners
+// proportional, sides one direction); click a selected shape again for ROTATE handles, and again for scale.
+var HANDLES = {mode:'scale', pivot:null, sig:'', active:false};   // active: shown (Esc puts them away)
 function selSig(){ return SEL.slice().sort(function(a,b){ return a-b; }).join(','); }
+// A new selection shows scale handles (none with nothing selected); drawing calls this.
+function handlesSync(){
+  if (HANDLES.sig === selSig()) return;
+  HANDLES.sig = selSig(); HANDLES.active = TOOL === 'select' && SEL.length > 0; HANDLES.mode = 'scale'; HANDLES.pivot = null;
+}
+// A click on a shape that was already selected, without moving it: scale and rotate handles take turns, and the
+// handles come back if Esc put them away.
+function handlesClickAgain(){
+  if (!HANDLES.active){ HANDLES.active = true; HANDLES.mode = 'scale'; }
+  else HANDLES.mode = HANDLES.mode === 'scale' ? 'rotate' : 'scale';
+}
 function selHandleBox(){
   var b = selBBox();
   if (!b) return null;
@@ -14304,9 +14315,7 @@ function draw(){
   }
 
   // ---- selection transform handles ----
-  if (HANDLES.sig !== selSig()){                   // selection changed: handles go away
-    HANDLES.sig = selSig(); HANDLES.active = false; HANDLES.mode = 'scale'; HANDLES.pivot = null;
-  }
+  handlesSync();
   if (TOOL === 'select' && SEL.length && HANDLES.active && !(DRAW && DRAW.stage === 'marq')){
     var hbx = selHandleBox();
     if (hbx){
@@ -18054,7 +18063,7 @@ var ICON = {
  recover:'<svg viewBox="0 0 18 18"><path d="M4 9 A5.5 5.5 0 1 0 5.6 5.1"/><path d="M5.6 2.2 V5.1 H2.7"/><path d="M9 6.2 V9.2 L11 10.6"/></svg>'
 };
 var PANEL_BTNS = {
- select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes', active:true},
+ select:{tool:'select', icon:'sel', title:'Select / move (V) \u2014 drag to move, arrows nudge 1mm (shift 0.1), Del deletes. Click a selected shape again to rotate it', active:true},
  line:  {tool:'line', icon:'line', title:'Line (L) \u2014 click points; type exact coords anytime'},
  rect:  {tool:'rect', icon:'rect', title:'Rectangle (R) \u2014 two corners, or click then type W,H'},
  ellipse:{tool:'ellipse', icon:'ellipse', title:'Ellipse — centre, then a corner of its box, or type W,H e.g. 120,60'},
@@ -18064,7 +18073,7 @@ var PANEL_BTNS = {
  arc:   {tool:'arc', icon:'arc', title:'Arc (A) \u2014 start point, end point, then bow it with the mouse (3-point) or type a radius; + bows left of start\u2192end, \u2212 right'},
  poly:  {tool:'poly', icon:'poly', title:'Polyline (P) \u2014 click points, Enter ends, click start to close'},
  measureT:{tool:'measure', icon:'measure', title:'Measure (I) \u2014 click two points for distance and angle; Shift-click two shapes for the gap between them'},
- textT: {tool:'text', icon:'text', title:'Text (K) \u2014 click where the text starts. To edit text later, click it with this tool, or double-click it twice with Select'},
+ textT: {tool:'text', icon:'text', title:'Text (K) \u2014 click where the text starts. To edit text later, click it with this tool, or double-click it with Select'},
  nestBtn:{id:'nestBtn', icon:'nest', title:'Nest parts \u2014 pack the selected parts (or everything, if nothing is selected) onto the material, with copies'},
  alMat:{id:'alMat', icon:'aMat', title:'Center in material (F9) \u2014 moves the selection, as a block, to the middle of the material'},
  alMatX:{id:'alMatX', icon:'aMatX', title:'Center left-right in material \u2014 moves the selection sideways only'},
@@ -18875,8 +18884,9 @@ function wire(){
     var already = HANDLES.active && SEL.indexOf(h0) >= 0;
     if (already && DOC.ents[h0].t === 'text'){ openTextModal(h0); return; }
     if (SEL.indexOf(h0) < 0) SEL = [h0];          // double-clicking a member keeps a multi-selection
+    // The handles come with the first click now, and each click on a selected shape switches scale and rotate,
+    // however quickly it follows the last: a double-click is two clicks, and leaves the mode they made.
     HANDLES.sig = selSig(); HANDLES.active = true;
-    if (!already){ HANDLES.mode = 'scale'; HANDLES.pivot = null; }
     draw();
   });
 
@@ -19191,8 +19201,8 @@ function wire(){
       draw(); return;
     }
     if (TOOL==='select' && DRAW && DRAW.stage==='drag'){
-      // clicking a shape that was already selected, without moving, switches scale <-> rotate
-      if (!DRAW.moved && DRAW.wasSel && HANDLES.active) HANDLES.mode = HANDLES.mode === 'scale' ? 'rotate' : 'scale';
+      // clicking a shape that was already selected, without moving, switches scale <-> rotate, as in VCarve
+      if (!DRAW.moved && DRAW.wasSel) handlesClickAgain();
       else if (DRAW.moved) HANDLES.pivot = null;
       DRAW = null; draw();
     }

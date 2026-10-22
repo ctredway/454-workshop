@@ -416,8 +416,9 @@ function wire(){
     var already = HANDLES.active && SEL.indexOf(h0) >= 0;
     if (already && DOC.ents[h0].t === 'text'){ openTextModal(h0); return; }
     if (SEL.indexOf(h0) < 0) SEL = [h0];          // double-clicking a member keeps a multi-selection
+    // The handles come with the first click now, and each click on a selected shape switches scale and rotate,
+    // however quickly it follows the last: a double-click is two clicks, and leaves the mode they made.
     HANDLES.sig = selSig(); HANDLES.active = true;
-    if (!already){ HANDLES.mode = 'scale'; HANDLES.pivot = null; }
     draw();
   });
 
@@ -732,8 +733,8 @@ function wire(){
       draw(); return;
     }
     if (TOOL==='select' && DRAW && DRAW.stage==='drag'){
-      // clicking a shape that was already selected, without moving, switches scale <-> rotate
-      if (!DRAW.moved && DRAW.wasSel && HANDLES.active) HANDLES.mode = HANDLES.mode === 'scale' ? 'rotate' : 'scale';
+      // clicking a shape that was already selected, without moving, switches scale <-> rotate, as in VCarve
+      if (!DRAW.moved && DRAW.wasSel) handlesClickAgain();
       else if (DRAW.moved) HANDLES.pivot = null;
       DRAW = null; draw();
     }

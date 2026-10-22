@@ -184,7 +184,9 @@ Picks shapes so you can move them, change them, or use another tool on them.
 1. **Click** a shape to select it; **Shift-click** to add or remove shapes.
 2. **Drag a box** on empty space: left to right selects shapes entirely inside it; right to left also selects any shape it touches.
 3. **Drag** a selected shape to move it, or nudge it with the arrow keys: 1 mm a press, 0.1 mm with <kbd>Shift</kbd>.
-4. **Double-click** a selected shape for handles: corners scale in proportion, sides stretch one way. Click it again for rotate handles.
+4. **Handles** show round what's selected, as in VCarve: corners scale in proportion, sides stretch one way.
+   **Click a selected shape again** for rotate handles (curved arrows at the corners, and a centre to turn
+   about, which you can drag); click it again for the scale handles. <kbd>Shift</kbd> while turning goes in 15° steps.
 5. <kbd>Delete</kbd> removes what’s selected.
 6. <kbd>Ctrl</kbd>+<kbd>C</kbd> copies what’s selected, <kbd>Ctrl</kbd>+<kbd>X</kbd> cuts it, and <kbd>Ctrl</kbd>+<kbd>V</kbd>
    pastes it: see [Copy and paste](#copy-and-paste).
@@ -232,7 +234,7 @@ and **Paste** do the same.
 - What's copied stays available after you close 454 Design, and in another 454 Design window. In a text box,
   the keys copy and paste text as usual.
 
-<Shot src={selHandles} alt="A selected rectangle with square scale handles at its corners and sides, and its width and height shown; a circle beside it." caption="Double-click a selected shape for its handles: corners scale in proportion, sides stretch one way." />
+<Shot src={selHandles} alt="A selected rectangle with square scale handles at its corners and sides, and its width and height shown; a circle beside it." caption="A selected shape's handles: corners scale in proportion, sides stretch one way. Click it again to turn it." />
 
 ### Line
 
@@ -319,7 +321,7 @@ Adds text, in any of Design’s fonts or one from your computer.
 1. Click where the text should start: the bottom of the first letter.
 2. In the **Add text** panel, type the text, and choose the **Font** (or **Use font file…** for a `.ttf`, `.otf` or `.woff`), the **Letter height** and the **Align**ment.
 3. Press **Place text** to add it as text you can edit later, or **Convert to curves** to add it as ordinary shapes.
-4. To edit text later, click it with the Text tool, or double-click it twice with Select.
+4. To edit text later, click it with the Text tool, or double-click it with Select.
 
 :::tip
 For text you'll cut all the way through, choose a font from the **Stencil** group: they keep the middles of letters like O, A and R attached, so they don't fall out.
@@ -513,7 +515,7 @@ Turns the selection by an exact angle.
 3. Type the angle in degrees and press <kbd>Enter</kbd>: positive turns counter-clockwise, negative clockwise.
 
 :::tip
-To turn shapes by eye instead, double-click them twice with Select for rotate handles.
+To turn shapes by eye instead, select them, then click them again for rotate handles.
 :::
 
 ### Array

@@ -96,10 +96,21 @@ function refreshFilletTypes(){
   box.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.ft === ft ? 'true' : 'false'); });
 }
 var DIMSEL = null; // index of the dimension under edit, if any
-// Transform handles around the selection (Select tool). Click a selected shape again to switch
-// between SCALE handles (corners proportional, sides one direction) and ROTATE handles.
-var HANDLES = {mode:'scale', pivot:null, sig:'', active:false};   // active: shown after a double-click
+// Transform handles around the selection (Select tool), as in VCarve: selecting shows SCALE handles (corners
+// proportional, sides one direction); click a selected shape again for ROTATE handles, and again for scale.
+var HANDLES = {mode:'scale', pivot:null, sig:'', active:false};   // active: shown (Esc puts them away)
 function selSig(){ return SEL.slice().sort(function(a,b){ return a-b; }).join(','); }
+// A new selection shows scale handles (none with nothing selected); drawing calls this.
+function handlesSync(){
+  if (HANDLES.sig === selSig()) return;
+  HANDLES.sig = selSig(); HANDLES.active = TOOL === 'select' && SEL.length > 0; HANDLES.mode = 'scale'; HANDLES.pivot = null;
+}
+// A click on a shape that was already selected, without moving it: scale and rotate handles take turns, and the
+// handles come back if Esc put them away.
+function handlesClickAgain(){
+  if (!HANDLES.active){ HANDLES.active = true; HANDLES.mode = 'scale'; }
+  else HANDLES.mode = HANDLES.mode === 'scale' ? 'rotate' : 'scale';
+}
 function selHandleBox(){
   var b = selBBox();
   if (!b) return null;
