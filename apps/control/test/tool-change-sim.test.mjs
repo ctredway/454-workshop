@@ -85,6 +85,33 @@ test('no reference yet: spindle stopped, the bit that’s in measured, then park
   assert.deepEqual(R.log.filter((e) => e[0] === 'ask').map((e) => e[2]), ['Go', 'Measure the new bit']);
 });
 
+test('after a job in inches (the controller left in G20): the moves are still millimetres', async () => {
+  const R = rig(-60);
+  await homeAndWork(R);
+  R.C.sendLine('G20'); await R.run(() => false, 0.2);
+  R.C.toolChangeStart();
+  await R.run(() => R.log.some((e) => e[0] === 'jog' && e[1] === 'open') || R.log.some((e) => e[0] === 'err'), 300);
+  assert.deepEqual(R.log.filter((e) => e[0] === 'err' || e[0] === 'controller'), [], 'no failures');
+  const tl = R.sim.timeline;
+  const park = tl.find((e) => e.kind === 'move' && /G53/.test(e.line) && /X/.test(e.line) && Math.abs(e.to.x - SPOT.x) < 0.01);
+  assert.ok(park && Math.abs(park.to.y - SPOT.y) < 0.01, 'to the tool-change position in millimetres');
+  const probes = tl.filter((e) => e.kind === 'probe');
+  assert.ok(probes.length >= 2 && probes.every((e) => Math.abs(e.to.x - BS.x) < 0.01 && Math.abs(e.to.y - BS.y) < 0.01), 'touched off over the BitSetter');
+  for (const e of tl.filter((x) => x.kind === 'move' && /^G53 G0 Z/.test(x.line))) assert.ok(e.to.z >= -5.01, e.line + ' went to machine Z ' + e.to.z.toFixed(1));
+});
+
+test('the BitSetter on its own, with the controller left in inches: over the button, in millimetres', async () => {
+  const R = rig(-60);
+  await homeAndWork(R);
+  R.C.sendLine('M5'); R.C.sendLine('G20'); await R.run(() => R.sim.state === 'Idle' && !R.sim.spindle.on, 30);
+  let done = false;
+  R.C.probeStart('tool', () => { done = true; });
+  await R.run(() => done || R.log.some((e) => e[0] === 'err'), 300);
+  assert.ok(done, 'measured: ' + JSON.stringify(R.log.filter((e) => e[0] === 'err')));
+  const probes = R.sim.timeline.filter((e) => e.kind === 'probe');
+  assert.ok(probes.length >= 2 && probes.every((e) => Math.abs(e.to.x - BS.x) < 0.01 && Math.abs(e.to.y - BS.y) < 0.01), 'touched off over the BitSetter');
+});
+
 test('with a reference already: straight to the tool-change position, then the new bit measured', async () => {
   const R = rig(-60);
   await homeAndWork(R);

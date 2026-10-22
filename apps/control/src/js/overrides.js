@@ -142,6 +142,7 @@ function runPark(done){
   var sp = toolChangeSpot();
   if (!sp){ done(); return; }
   probeRun('Tool-change position', [
+    'G21 G90',                                 // Control's moves are in millimetres, whatever the file uses
     zHighCmd(topZ()),                          // right up, so there is room to work
     'G53 G0 X' + sp.x.toFixed(3) + ' Y' + sp.y.toFixed(3)
   ], function(){ done(); });
@@ -160,6 +161,7 @@ function rapidTo(fx, fy){
   var rx = axisRange('x'), ry = axisRange('y');
   var x = rx.min + m + (rx.max - rx.min - 2 * m) * fx;
   var y = ry.min + m + (ry.max - ry.min - 2 * m) * fy;
+  sendLine('G21 G90');                                 // millimetres: an inch job leaves the controller in inches
   sendLine(zHighCmd(travelZ()));
   sendLine('G53 G0 X' + x.toFixed(1) + ' Y' + y.toFixed(1));
 }

@@ -201,9 +201,55 @@ var JobBuilder = (function () {
   em.cmds.forEach(function (c) { list.push({text: c, ln: lines.length, syn: true}); });
   list.zeroed = em.zeroed; list.parked = em.parked;
   tail.forEach(function(it){ list.push(it); });
-  list.injected = injected;
-  list.retracts = retracts;
-  return list;
+  var out = inStep(list, m.clean);
+  out.zeroed = list.zeroed; out.parked = list.parked; out.dwellZ = list.dwellZ;
+  out.injected = injected;
+  out.retracts = retracts;
+  return out;
+  }
+  // Control's own moves (lifts, parking, the end, and at tool changes the BitSetter and the move back) are in
+  // millimetres. A file in inches has the controller in inches (G20), where "G53 G0 Z-2" lifts to 50.8 mm below the
+  // top and parking at X-419 means X-10642 mm. So around each of Control's moves in an inch file: G21 before, and the
+  // file's G20 again after (before the file's next line that moves). And after a tool change, where the BitSetter's
+  // measurement leaves the controller in millimetres, absolute, at a 40 mm/min feed and in G0: the file's own units,
+  // distance mode, motion mode and feed again, since its next lines may rely on them (a toolpath at the same feed as
+  // the one before has no F of its own; Clint, 2026-10-22: a toolpath "ran very very slowly"). The controller is
+  // left in millimetres at the end.
+  function inStep(list, clean){
+    var u = 'mm', abs = true, motion = null, feed = null, out = [], mmNow = false, afterChange = false;
+    var moves = /[XYZ]\s*[-+.\d]/i;
+    var laterMove = [];                                   // does the file move again after item i?
+    for (var j = list.length - 1, seen = false; j >= 0; j--){ laterMove[j] = seen; var lj = list[j]; if (!lj.syn && !lj.m6 && lj.text && moves.test(lj.text)) seen = true; }
+    for (var i = 0; i < list.length; i++){
+      var it = list[i];
+      if (it.m6){ out.push(it); afterChange = true; continue; }
+      if (it.syn){
+        if (u === 'in' && !mmNow && moves.test(it.text)){ out.push({text: 'G21', ln: it.ln, syn: true}); mmNow = true; }
+        out.push(it); continue;
+      }
+      // the file's own line: put back what it expects, if anything changed it, before the first line that could depend
+      // on it (anything but the spindle and tool words, so a file's own M3 still follows its tool change directly)
+      var depends = !/^\s*((N\d+|M0*\d+|S\s*[\d.]+|T\s*\d+)\s*)*$/i.test(it.text || '');
+      if ((mmNow || afterChange) && depends && laterMove[i] !== undefined && (moves.test(it.text) || laterMove[i])){
+        var back = [];
+        if (u === 'in') back.push('G20');
+        if (afterChange && !abs) back.push('G91');
+        if (afterChange && (motion === 0 || motion === 1)) back.push('G' + motion + (feed !== null ? ' F' + feed : ''));
+        else if (afterChange && feed !== null) back.push('F' + feed);
+        if (back.length) out.push({text: back.join(' '), ln: it.ln, syn: true});
+        mmNow = false; afterChange = false;
+      }
+      out.push(it);
+      var c = clean(it.text) || '', w, re = /([GF])\s*([-+]?(?:\d+\.?\d*|\.\d+))/gi;
+      while ((w = re.exec(c)) !== null){
+        var v = parseFloat(w[2]);
+        if (w[1].toUpperCase() === 'F') feed = w[2];
+        else if (v === 20) u = 'in'; else if (v === 21) u = 'mm';
+        else if (v === 90) abs = true; else if (v === 91) abs = false;
+        else if (v === 0 || v === 1 || v === 2 || v === 3) motion = v;
+      }
+    }
+    return out;
   }
   // "Start high": where to go, high up, before the job begins: the file's first XY point, so the file's first
   // move down lands on the work. Not when the file changes tools before it moves anywhere: the tool change

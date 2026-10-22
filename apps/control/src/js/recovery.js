@@ -74,7 +74,9 @@ function jobStartFrom(target){
     pre.push({text:'G1 Z' + u(st.z) + ' F' + pf, ln:0, syn:true});
   }
   if (!st.abs) pre.push({text:'G91', ln:0, syn:true});
-  if (st.motion === 1 && st.feedRaw !== null) pre.push({text:'G1 F' + st.feedRaw, ln:0, syn:true});
+  // the file's feed, whatever it was last doing: the next cut may have no F of its own, and the BitSetter measures
+  // first (its slow touch leaves the controller at F40)
+  if (st.feedRaw !== null) pre.push({text:(st.motion === 0 || st.motion === 1 ? 'G' + st.motion + ' ' : '') + 'F' + st.feedRaw, ln:0, syn:true});
   else if (st.motion === 0) pre.push({text:'G0', ln:0, syn:true});
 
   var bsErr = bitSetterReady();

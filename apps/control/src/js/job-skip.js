@@ -64,12 +64,13 @@ var JobSkip = (function () {
     var st = r.st, at = r.at || st, inch = st.units === 'in', ln = r.ln, out = [];
     function u(mm){ return inch ? (mm / 25.4).toFixed(4) : mm.toFixed(3); }
     function add(t){ out.push({text: t, ln: ln, syn: true}); }
+    add('G21 G90');                                                  // Control's moves are in millimetres
     add(mk.zHigh);                                                   // up out of the way first, every time
     if (r.tool !== null && r.tool !== undefined){                    // the left-out part loaded this tool: load it here
       add('M5');
       out.push({m6: true, ln: ln, tool: String(r.tool), next: {x: at.x, y: at.y}});
+      add('G21 G90');                                                // the tool change and BitSetter used millimetres too
     }
-    add('G21 G90');
     add('G0 X' + at.x.toFixed(3) + ' Y' + at.y.toFixed(3));
     if (st.spindle && (!r.ownSpin || r.tool !== null)){
       add(st.sVal !== null ? 'M3 S' + st.sVal : 'M3');
@@ -85,9 +86,11 @@ var JobSkip = (function () {
       add('G1 Z' + u(at.z) + ' F' + pf);
     }
     if (!st.abs) add('G91');
-    if (st.motion === 1 && st.feedRaw !== null) add('G1 F' + st.feedRaw);
+    // The file's feed, whatever it was last doing: a toolpath at the same feed as the one before has no F of its own
+    // (Design writes F only when it changes), and the BitSetter's slow touch leaves the controller at F40. Without
+    // this, a ticked toolpath after a left-out one cut at 40 mm/min (Clint, 2026-10-22).
+    if (st.feedRaw !== null) add((st.motion === 0 || st.motion === 1 ? 'G' + st.motion + ' ' : '') + 'F' + st.feedRaw);
     else if (st.motion === 0) add('G0');
-    else if (st.feedRaw !== null) add('F' + st.feedRaw);
     return out;
   }
   function apply(list, p, mk){

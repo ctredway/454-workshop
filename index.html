@@ -973,7 +973,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.37.0';
+var CONTROL_VERSION = '0.37.1';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -3282,6 +3282,7 @@ function bitSetterSeekRate(settings){
 function probeSteps(){ // BitSetter sequence (name kept: the preflight preview prints it)
   var down = Math.max(10, (SERIAL.settings[132] || 80) - travelZ() - 1);
   return [
+    'G21 G90',                                          // millimetres first: after an inch file, G53 Z-5 would be 127 mm down
     zHighCmd(travelZ()),
     'G53 G0 X' + PROFILE.bitSetter.x.toFixed(3) + ' Y' + PROFILE.bitSetter.y.toFixed(3),
     'G21 G91',
@@ -3453,7 +3454,7 @@ function bzStart(){
 function toolChangePlan(o){
   if (!o.homed) return {why: 'The machine hasn’t been homed since it was connected. Lifting to the top and going to the ' +
                              'tool-change position use the machine’s own coordinates, which mean nothing until it homes.\n\nHome it first.'};
-  var steps = [o.liftCmd, 'M5'];
+  var steps = ['G21 G90', o.liftCmd, 'M5'];               // millimetres first: an inch job leaves the controller in inches
   if (o.spot) steps.push('G53 G0 X' + o.spot.x.toFixed(3) + ' Y' + o.spot.y.toFixed(3));
   var refFirst = o.bsWhy === null && o.refZ === null && !o.toolSwapped;
   var measure = o.bsWhy === null && (o.refZ !== null || refFirst);
@@ -3485,7 +3486,7 @@ function toolChangeStart(){
     jogModalClose();                                     // releases keyboard jog; it opens again afterwards
     if (p.refFirst){                                     // lift and stop the spindle before touching off, then measure
       updateJobUI('Tool change: measuring the bit that’s in now…');
-      probeRun('Tool change', p.steps.slice(0, 2), function () { probeStart('ref', park); });
+      probeRun('Tool change', p.steps.slice(0, 3), function () { probeStart('ref', park); });
     }
     else park();
   });
@@ -3655,6 +3656,7 @@ function runPark(done){
   var sp = toolChangeSpot();
   if (!sp){ done(); return; }
   probeRun('Tool-change position', [
+    'G21 G90',                                 // Control's moves are in millimetres, whatever the file uses
     zHighCmd(topZ()),                          // right up, so there is room to work
     'G53 G0 X' + sp.x.toFixed(3) + ' Y' + sp.y.toFixed(3)
   ], function(){ done(); });
@@ -3673,6 +3675,7 @@ function rapidTo(fx, fy){
   var rx = axisRange('x'), ry = axisRange('y');
   var x = rx.min + m + (rx.max - rx.min - 2 * m) * fx;
   var y = ry.min + m + (ry.max - ry.min - 2 * m) * fy;
+  sendLine('G21 G90');                                 // millimetres: an inch job leaves the controller in inches
   sendLine(zHighCmd(travelZ()));
   sendLine('G53 G0 X' + x.toFixed(1) + ' Y' + y.toFixed(1));
 }
@@ -3693,9 +3696,9 @@ function toolContinueNow(){
   var wantHigh = (PROFILE.run.highStart || JOB.useBS || tw.zeroed) && SERIAL.homedSeen && tw.next;
   var resume = function(){
     if (wantHigh){
-      JOB.list.splice(JOB.idx, 0,
-        {text: zHighCmd(travelZ()), ln: 0, syn: true},
+      JOB.list.splice(JOB.idx, 0,                       // millimetres first; the job builder puts the file's units back after
         {text: 'G21 G90', ln: 0, syn: true},
+        {text: zHighCmd(travelZ()), ln: 0, syn: true},
         {text: 'G0 X' + tw.next.x.toFixed(3) + ' Y' + tw.next.y.toFixed(3), ln: 0, syn: true});
       JOB.total = JOB.list.length;
       logC('sys', 'traversing at top of travel to X' + tw.next.x.toFixed(1) +
@@ -5385,9 +5388,55 @@ var JobBuilder = (function () {
   em.cmds.forEach(function (c) { list.push({text: c, ln: lines.length, syn: true}); });
   list.zeroed = em.zeroed; list.parked = em.parked;
   tail.forEach(function(it){ list.push(it); });
-  list.injected = injected;
-  list.retracts = retracts;
-  return list;
+  var out = inStep(list, m.clean);
+  out.zeroed = list.zeroed; out.parked = list.parked; out.dwellZ = list.dwellZ;
+  out.injected = injected;
+  out.retracts = retracts;
+  return out;
+  }
+  // Control's own moves (lifts, parking, the end, and at tool changes the BitSetter and the move back) are in
+  // millimetres. A file in inches has the controller in inches (G20), where "G53 G0 Z-2" lifts to 50.8 mm below the
+  // top and parking at X-419 means X-10642 mm. So around each of Control's moves in an inch file: G21 before, and the
+  // file's G20 again after (before the file's next line that moves). And after a tool change, where the BitSetter's
+  // measurement leaves the controller in millimetres, absolute, at a 40 mm/min feed and in G0: the file's own units,
+  // distance mode, motion mode and feed again, since its next lines may rely on them (a toolpath at the same feed as
+  // the one before has no F of its own; Clint, 2026-10-22: a toolpath "ran very very slowly"). The controller is
+  // left in millimetres at the end.
+  function inStep(list, clean){
+    var u = 'mm', abs = true, motion = null, feed = null, out = [], mmNow = false, afterChange = false;
+    var moves = /[XYZ]\s*[-+.\d]/i;
+    var laterMove = [];                                   // does the file move again after item i?
+    for (var j = list.length - 1, seen = false; j >= 0; j--){ laterMove[j] = seen; var lj = list[j]; if (!lj.syn && !lj.m6 && lj.text && moves.test(lj.text)) seen = true; }
+    for (var i = 0; i < list.length; i++){
+      var it = list[i];
+      if (it.m6){ out.push(it); afterChange = true; continue; }
+      if (it.syn){
+        if (u === 'in' && !mmNow && moves.test(it.text)){ out.push({text: 'G21', ln: it.ln, syn: true}); mmNow = true; }
+        out.push(it); continue;
+      }
+      // the file's own line: put back what it expects, if anything changed it, before the first line that could depend
+      // on it (anything but the spindle and tool words, so a file's own M3 still follows its tool change directly)
+      var depends = !/^\s*((N\d+|M0*\d+|S\s*[\d.]+|T\s*\d+)\s*)*$/i.test(it.text || '');
+      if ((mmNow || afterChange) && depends && laterMove[i] !== undefined && (moves.test(it.text) || laterMove[i])){
+        var back = [];
+        if (u === 'in') back.push('G20');
+        if (afterChange && !abs) back.push('G91');
+        if (afterChange && (motion === 0 || motion === 1)) back.push('G' + motion + (feed !== null ? ' F' + feed : ''));
+        else if (afterChange && feed !== null) back.push('F' + feed);
+        if (back.length) out.push({text: back.join(' '), ln: it.ln, syn: true});
+        mmNow = false; afterChange = false;
+      }
+      out.push(it);
+      var c = clean(it.text) || '', w, re = /([GF])\s*([-+]?(?:\d+\.?\d*|\.\d+))/gi;
+      while ((w = re.exec(c)) !== null){
+        var v = parseFloat(w[2]);
+        if (w[1].toUpperCase() === 'F') feed = w[2];
+        else if (v === 20) u = 'in'; else if (v === 21) u = 'mm';
+        else if (v === 90) abs = true; else if (v === 91) abs = false;
+        else if (v === 0 || v === 1 || v === 2 || v === 3) motion = v;
+      }
+    }
+    return out;
   }
   // "Start high": where to go, high up, before the job begins: the file's first XY point, so the file's first
   // move down lands on the work. Not when the file changes tools before it moves anywhere: the tool change
@@ -5492,12 +5541,13 @@ var JobSkip = (function () {
     var st = r.st, at = r.at || st, inch = st.units === 'in', ln = r.ln, out = [];
     function u(mm){ return inch ? (mm / 25.4).toFixed(4) : mm.toFixed(3); }
     function add(t){ out.push({text: t, ln: ln, syn: true}); }
+    add('G21 G90');                                                  // Control's moves are in millimetres
     add(mk.zHigh);                                                   // up out of the way first, every time
     if (r.tool !== null && r.tool !== undefined){                    // the left-out part loaded this tool: load it here
       add('M5');
       out.push({m6: true, ln: ln, tool: String(r.tool), next: {x: at.x, y: at.y}});
+      add('G21 G90');                                                // the tool change and BitSetter used millimetres too
     }
-    add('G21 G90');
     add('G0 X' + at.x.toFixed(3) + ' Y' + at.y.toFixed(3));
     if (st.spindle && (!r.ownSpin || r.tool !== null)){
       add(st.sVal !== null ? 'M3 S' + st.sVal : 'M3');
@@ -5513,9 +5563,11 @@ var JobSkip = (function () {
       add('G1 Z' + u(at.z) + ' F' + pf);
     }
     if (!st.abs) add('G91');
-    if (st.motion === 1 && st.feedRaw !== null) add('G1 F' + st.feedRaw);
+    // The file's feed, whatever it was last doing: a toolpath at the same feed as the one before has no F of its own
+    // (Design writes F only when it changes), and the BitSetter's slow touch leaves the controller at F40. Without
+    // this, a ticked toolpath after a left-out one cut at 40 mm/min (Clint, 2026-10-22).
+    if (st.feedRaw !== null) add((st.motion === 0 || st.motion === 1 ? 'G' + st.motion + ' ' : '') + 'F' + st.feedRaw);
     else if (st.motion === 0) add('G0');
-    else if (st.feedRaw !== null) add('F' + st.feedRaw);
     return out;
   }
   function apply(list, p, mk){
@@ -5704,8 +5756,8 @@ function jobStart(opts){
         highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.\n';
       if (p0){
         list.unshift({text: 'G0 X' + p0.x.toFixed(3) + ' Y' + p0.y.toFixed(3), ln: 0, syn: true});
-        list.unshift({text: 'G21 G90', ln: 0, syn: true});
         list.unshift({text: zHighCmd(travelZ()), ln: 0, syn: true});
+        list.unshift({text: 'G21 G90', ln: 0, syn: true});   // millimetres first: the last job may have left inches
         highStartNote = 'Start high: traverse ' + travelZ().toFixed(0) + ' mm below Z top to X' + p0.x.toFixed(1) +
                         ' Y' + p0.y.toFixed(1) + ', then the file plunges there. Also applies after each tool change.\n';
       }
@@ -6034,7 +6086,9 @@ function jobStartFrom(target){
     pre.push({text:'G1 Z' + u(st.z) + ' F' + pf, ln:0, syn:true});
   }
   if (!st.abs) pre.push({text:'G91', ln:0, syn:true});
-  if (st.motion === 1 && st.feedRaw !== null) pre.push({text:'G1 F' + st.feedRaw, ln:0, syn:true});
+  // the file's feed, whatever it was last doing: the next cut may have no F of its own, and the BitSetter measures
+  // first (its slow touch leaves the controller at F40)
+  if (st.feedRaw !== null) pre.push({text:(st.motion === 0 || st.motion === 1 ? 'G' + st.motion + ' ' : '') + 'F' + st.feedRaw, ln:0, syn:true});
   else if (st.motion === 0) pre.push({text:'G0', ln:0, syn:true});
 
   var bsErr = bitSetterReady();

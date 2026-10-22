@@ -160,6 +160,34 @@ test('a toolpath that starts by plunging where the last one ended: run alone, it
   assert.ok(cuts.every((m) => m.spindleOn && m.rpm === 12000), 'with the spindle on at Slot’s speed');
 });
 
+// Clint, 2026-10-22: the toolpath that ran "ran very very slowly". Design writes F only when it changes, so a toolpath
+// at the same feed as the one before has none of its own; and the BitSetter's slow touch leaves the controller at F40.
+test('a toolpath with no feed of its own, after the BitSetter: it cuts at the file’s feed, not the probe’s', () => {
+  const lines = ['G21 G90', ';Tools used in this file:', ';1 = 6.35 mm end mill',
+    ';Toolpath: Rough', 'M6 T1', 'M3 S18000', 'G0 Z5', 'G0 X10 Y10', 'G1 Z-3 F1000', 'G1 X40', 'Y40', 'G0 Z5',
+    ';Toolpath: Finish', 'G0 X60 Y10', 'G1 Z-3', 'G1 X90', 'Y40', 'G0 Z5', 'M5', 'M30'];
+  const M = C.parseGcode(lines.join('\n')); C.MODEL = M;
+  const sum = C.jobSummary(M), sections = sum.list.map((r) => ({ from: r.from, to: r.to, name: r.name }));
+  const p = C.JobSkip.plan({ lines: M.lines, sections, skip: [true, false], segs: M.segs, stateAt: C.stateAtLine, clean: C.cleanForSend });
+  const list = C.JobBuilder.build(p.lines, { homed: true, wcoZ: WCO.z, stopHigh: true, spinup: 1, zMax: 0, travelZ: 5, topZ: 2,
+    clean: C.cleanForSend, endingMoves, segs: p.segs });
+  C.JobSkip.apply(list, p, { zHigh: 'G53 G0 Z-5.0', spinup: 1 });
+  // the tool change measures on the BitSetter, whose last, slow touch is at F40: the controller is left there
+  const withProbe = [];
+  for (const it of list) { withProbe.push(it); if (it.m6) withProbe.push({ text: 'G91 G1 Z-0.001 F40', syn: true }, { text: 'G90', syn: true }); }
+  const { sim, moves } = runOnSim(withProbe);
+  assert.deepEqual(sim.errors, []);
+  const tl = sim.timeline, cuts = [];
+  tl.forEach((e, i) => {
+    if (e.kind !== 'move' || e.rapid || !tl[i + 1]) return;
+    const d = Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y, e.to.z - e.from.z);
+    if (d > 1 && Math.abs(e.to.z - e.from.z) < 1e-6) cuts.push(Math.round(d / (tl[i + 1].t - e.t) * 60));
+  });
+  assert.ok(cuts.length >= 2, 'Finish’s cuts ran');
+  for (const f of cuts) assert.ok(Math.abs(f - 1000) < 60, 'cut at ' + f + ' mm/min, not 1000');
+  assert.ok(moves.length);
+});
+
 test('everything left out: refused', () => {
   assert.match(jobFor(['Pocket', 'Profile A', 'Profile B']).why, /nothing to run/);
 });

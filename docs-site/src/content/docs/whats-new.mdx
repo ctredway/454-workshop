@@ -12,6 +12,20 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.6.2-beta.61
+
+Not released yet
+
+- **Fixed: a toolpath ran very slowly after left-out toolpaths or a tool change.** A toolpath at the same feed as
+  the one before has no feed of its own in the file, and the BitSetter's slow touch left the machine at 40 mm/min.
+  454 Control now always sets the file's feed again. **(cutting)**
+- **Fixed: files in inches.** 454 Control's own moves (lifting, parking, the tool-change position, the BitSetter)
+  are in millimetres, but in or after a file in inches the machine read them as inches: a lift stopped far short
+  of the top, and parking could ask for a spot far past the end of the machine. They now always run in
+  millimetres, and the file's own units, feed and modes are put back after them and after every tool change.
+  **(cutting)** Air-cut your next inch job.
+- **The Windows icon shows the whole logo**, not just the 5, on the taskbar and the desktop.
+
 ## 0.6.2-beta.60
 
 22 October 2026

@@ -198,10 +198,10 @@ Web Serial stand-in first. Every substitution is checked: if a page changes an a
    to load in either window.
 3. `npm run test:e2e:packaged`: the same, through the built AppImage.
 
-**The icon** (`build/icon.svg`, rendered by `build/`): 454 drawn as a single-stroke toolpath in the
-apps' amber on their dark slate. Numerals spaced so they read down to 16 px; at 32 px and below a
-bolder version without the grid. `icon.ico` carries seven sizes for Windows; `icon.png` (512 px) for
-Linux and the window.
+**The icon** (`build/icon.svg`): the whole 454 logo on a dark rounded tile. `icon.ico` carries seven sizes
+for Windows (16 to 256 px), every one the whole logo, made by `node apps/desktop/build/make-icon.cjs` (it
+uses sharp from the docs' packages); `icon.png` (512 px) is for Linux and the window. The small sizes used to
+be a close-up of the 5, so Windows showed only the 5 on the taskbar and the desktop.
 
 **Windows builds on Linux** need Wine (64-bit is enough for the app and its icon; the NSIS installer
 also needs 32-bit Wine). The release pipeline builds Windows on a real Windows runner instead, so

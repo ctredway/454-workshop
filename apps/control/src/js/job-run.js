@@ -148,8 +148,8 @@ function jobStart(opts){
         highStartNote = 'Start high: the file changes tools before it moves, so the machine goes to the tool change first; after it, it traverses at the top to the first cut.\n';
       if (p0){
         list.unshift({text: 'G0 X' + p0.x.toFixed(3) + ' Y' + p0.y.toFixed(3), ln: 0, syn: true});
-        list.unshift({text: 'G21 G90', ln: 0, syn: true});
         list.unshift({text: zHighCmd(travelZ()), ln: 0, syn: true});
+        list.unshift({text: 'G21 G90', ln: 0, syn: true});   // millimetres first: the last job may have left inches
         highStartNote = 'Start high: traverse ' + travelZ().toFixed(0) + ' mm below Z top to X' + p0.x.toFixed(1) +
                         ' Y' + p0.y.toFixed(1) + ', then the file plunges there. Also applies after each tool change.\n';
       }

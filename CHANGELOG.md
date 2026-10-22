@@ -33,6 +33,14 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.61 — the right feed after the BitSetter, inch files, and the Windows icon
+- Includes Control 0.37.1: a toolpath run after left-out ones, or after a tool change, cuts at the file's feed, not
+  the BitSetter's 40 mm/min; and Control's own moves stay in millimetres in and after files in inches.
+- Clint: "the app icon for windows only shows the 5 of the logo but the app icon on linux shows the whole logo."
+  The Windows icon's 16, 24 and 32 px sizes, the ones on the taskbar, in title bars and small desktop icons, were
+  drawn from a close-up of the 5 (`build/icon-small.svg`, now removed). Every size is now the whole logo, made from
+  `build/icon.svg` by `build/make-icon.cjs`. Checked by reading each size back out of the new `icon.ico`.
+
 ### 0.6.2-beta.60 — run only some of a file's toolpaths
 - Includes Control 0.37.0: the Toolpaths tab has a Run tick box on each toolpath, and Start runs only the ticked
   ones, putting the machine back in step (lift, tool change if needed, to the start, spindle on) before each one
@@ -726,6 +734,31 @@ into the PC; and with a long list, Cancel scrolled away.
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.37.1 — the right feed after the BitSetter, and inch files kept in inches around Control's own moves
+Clint: "I ran a job and skipped some tool paths and the one that ran, ran very very slowly." Design writes F only
+when it changes, so a toolpath at the same feed as the one before has no F of its own; and the BitSetter's slow touch
+leaves the controller at F40. Before a ticked toolpath after a left-out one, Control put the file's feed back only if
+the file had been mid-G1 there; between toolpaths it has usually just made a G0, so the cuts ran at 40 mm/min.
+Recover had the same gap. Both now always send the file's feed (with its motion mode).
+Looking at the same path found a worse one, there all along: Control's own moves (lifts, parking, the tool-change
+position, the BitSetter, the move back after a tool change, Change tool, the rapid-position buttons) are written in
+millimetres but were sent without G21. In a file in inches (G20), or after one, since an inch job left the controller
+in inches, they were read as inches: on the simulated machine "G53 G0 Z-2" lifted only to 50.8 mm below the top, and
+parking at X-419 asked for X-10642 mm (refused there by soft limits; without them, into the end of the rails). And
+after a tool change, the BitSetter left an inch file running in millimetres, at F40.
+- The job builder (`inStep` in `job-builder.js`) now puts G21 before Control's moves in an inch file and the file's
+  G20 back before its next line that could depend on it; after each tool change it puts back the file's units,
+  distance mode, motion mode and feed; and a job leaves the controller in millimetres.
+- Every move Control makes on its own starts with G21 G90: the BitSetter, parking at a tool change, the move back
+  after one, Start high, Change tool, the rapid-position buttons, and the skip preamble. (End job already did.)
+- Tested on the simulated machine (`tool-change-resume.test.mjs`, `tool-change-sim.test.mjs`, `job-skip.test.mjs`):
+  an inch file with a tool change cuts at the right inch positions with every lift in millimetres; a cut with no F
+  of its own after a tool change, or after a left-out toolpath, runs at the file's 1000 mm/min, not 40; Change tool
+  and the BitSetter on their own, with the controller left in inches, go to the right places. Broken on purpose 5
+  ways (no units or feed put back, no G21 around Control's moves, feed not put back after a tool change, the
+  BitSetter without G21, the skip without its feed), all caught. Recover's matching fix is the same lines as the
+  skip's, not tested on its own. Not yet run on a real machine.
 
 ### 0.37.0 — run only some of a file's toolpaths
 Clint: "say I need to re-run a job but I only want to run a certain tool path ... I don't want to re-export a job if

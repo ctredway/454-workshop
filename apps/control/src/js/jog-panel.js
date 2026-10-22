@@ -14,9 +14,9 @@ function toolContinueNow(){
   var wantHigh = (PROFILE.run.highStart || JOB.useBS || tw.zeroed) && SERIAL.homedSeen && tw.next;
   var resume = function(){
     if (wantHigh){
-      JOB.list.splice(JOB.idx, 0,
-        {text: zHighCmd(travelZ()), ln: 0, syn: true},
+      JOB.list.splice(JOB.idx, 0,                       // millimetres first; the job builder puts the file's units back after
         {text: 'G21 G90', ln: 0, syn: true},
+        {text: zHighCmd(travelZ()), ln: 0, syn: true},
         {text: 'G0 X' + tw.next.x.toFixed(3) + ' Y' + tw.next.y.toFixed(3), ln: 0, syn: true});
       JOB.total = JOB.list.length;
       logC('sys', 'traversing at top of travel to X' + tw.next.x.toFixed(1) +

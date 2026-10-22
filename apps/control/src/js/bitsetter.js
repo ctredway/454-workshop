@@ -89,6 +89,7 @@ function bitSetterSeekRate(settings){
 function probeSteps(){ // BitSetter sequence (name kept: the preflight preview prints it)
   var down = Math.max(10, (SERIAL.settings[132] || 80) - travelZ() - 1);
   return [
+    'G21 G90',                                          // millimetres first: after an inch file, G53 Z-5 would be 127 mm down
     zHighCmd(travelZ()),
     'G53 G0 X' + PROFILE.bitSetter.x.toFixed(3) + ' Y' + PROFILE.bitSetter.y.toFixed(3),
     'G21 G91',

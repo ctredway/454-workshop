@@ -45,7 +45,7 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 test('the plan: lift first, then stop the spindle, then go to the tool-change position', () => {
   const C = control();
   const p = plain(C.toolChangePlan(base));
-  assert.deepEqual(p.steps, [LIFT, 'M5', 'G53 G0 X-650.000 Y-1200.000'], 'never stops the spindle before lifting');
+  assert.deepEqual(p.steps, ['G21 G90', LIFT, 'M5', 'G53 G0 X-650.000 Y-1200.000'], 'never stops the spindle before lifting');
   assert.equal(p.measure, true);
   assert.match(p.intro, /front centre, X-650\.0 Y-1200\.0/);
   assert.match(p.intro, /measured on the BitSetter/);
@@ -54,7 +54,7 @@ test('the plan: lift first, then stop the spindle, then go to the tool-change po
 
 test('the plan: no tool-change position set, so it lifts, stops the spindle and stays', () => {
   const p = plain(control().toolChangePlan({ ...base, spot: null }));
-  assert.deepEqual(p.steps, [LIFT, 'M5']);
+  assert.deepEqual(p.steps, ['G21 G90', LIFT, 'M5']);
   assert.match(p.intro, /stay where it is/);
 });
 
@@ -97,7 +97,7 @@ test('with the BitSetter: moves, waits for the change, measures the new bit agai
   assert.deepEqual(plain(C.log.filter((e) => e[0] !== 'status')), [
     ['ask', 'Change the tool?', 'Go'],
     ['jog', 'close'],
-    ['moves', 'Tool change', [LIFT, 'M5', 'G53 G0 X-650.000 Y-1200.000']],
+    ['moves', 'Tool change', ['G21 G90', LIFT, 'M5', 'G53 G0 X-650.000 Y-1200.000']],
     ['ask', 'Change the bit now', 'Measure the new bit'],
     ['measure', 'tool'],
     ['jog', 'open'],
@@ -114,9 +114,9 @@ test('no reference yet: lifts and stops the spindle, measures the bit that’s i
   assert.deepEqual(plain(C.log.filter((e) => e[0] !== 'status')), [
     ['ask', 'Change the tool?', 'Go'],
     ['jog', 'close'],
-    ['moves', 'Tool change', [LIFT, 'M5']],
+    ['moves', 'Tool change', ['G21 G90', LIFT, 'M5']],
     ['measure', 'ref'],
-    ['moves', 'Tool change', [LIFT, 'M5', 'G53 G0 X-650.000 Y-1200.000']],
+    ['moves', 'Tool change', ['G21 G90', LIFT, 'M5', 'G53 G0 X-650.000 Y-1200.000']],
     ['ask', 'Change the bit now', 'Measure the new bit'],
     ['measure', 'tool'],
     ['jog', 'open'],

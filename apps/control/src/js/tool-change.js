@@ -14,7 +14,7 @@
 function toolChangePlan(o){
   if (!o.homed) return {why: 'The machine hasn’t been homed since it was connected. Lifting to the top and going to the ' +
                              'tool-change position use the machine’s own coordinates, which mean nothing until it homes.\n\nHome it first.'};
-  var steps = [o.liftCmd, 'M5'];
+  var steps = ['G21 G90', o.liftCmd, 'M5'];               // millimetres first: an inch job leaves the controller in inches
   if (o.spot) steps.push('G53 G0 X' + o.spot.x.toFixed(3) + ' Y' + o.spot.y.toFixed(3));
   var refFirst = o.bsWhy === null && o.refZ === null && !o.toolSwapped;
   var measure = o.bsWhy === null && (o.refZ !== null || refFirst);
@@ -46,7 +46,7 @@ function toolChangeStart(){
     jogModalClose();                                     // releases keyboard jog; it opens again afterwards
     if (p.refFirst){                                     // lift and stop the spindle before touching off, then measure
       updateJobUI('Tool change: measuring the bit that’s in now…');
-      probeRun('Tool change', p.steps.slice(0, 2), function () { probeStart('ref', park); });
+      probeRun('Tool change', p.steps.slice(0, 3), function () { probeStart('ref', park); });
     }
     else park();
   });
