@@ -1223,6 +1223,15 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.147.0 — the middle of a side shows as "Midpoint"
+Clint: "can we tell when the cursor is at the mid point of a line?" Design snapped to the middle of a lone line only,
+and marked it with the same small square as an end, so it couldn't be told apart. Now:
+- **Every side has a midpoint to snap to**: lines, each side of a rectangle, each segment of a polyline or outline
+  (on a curved one, the middle of the curve, as drawn) and arcs.
+- **A midpoint shows as a triangle with the word Midpoint** beside it; ends, corners and centres keep the square.
+- Tested (`midpoints.test.mjs`, 4 tests; broken on purpose 2 ways, the curve's side flipped and midpoints on lone
+  lines only, both caught).
+
 ### 0.146.0 — handles as in VCarve: they show when you select, and a second click turns
 Clint: "when a vector is selected and the bounds box is showing, the corners need a second option, not only do they
 need to scale the vector but there needs to be a rotation option. VCarve has this and its very helpful." Design had

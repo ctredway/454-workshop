@@ -601,7 +601,14 @@ function draw(){
     var sm = w2s(MOUSE.snap.x, MOUSE.snap.y);
     ctx.strokeStyle = MOUSE.snap.k==='guideX' ? '#7fb069' : THEME.accent;
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(sm.x-4, sm.y-4, 8, 8);
+    if (MOUSE.snap.k === 'mid'){                      // a midpoint: a triangle, and named, so it isn't taken for an end
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(sm.x, sm.y-6); ctx.lineTo(sm.x+6, sm.y+4); ctx.lineTo(sm.x-6, sm.y+4); ctx.closePath(); ctx.stroke();
+      ctx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; ctx.fillStyle = THEME.accent;
+      ctx.fillText('Midpoint', sm.x + 10, sm.y - 8);
+      ctx.restore();
+    }
+    else ctx.strokeRect(sm.x-4, sm.y-4, 8, 8);
   }
   // edit-tool hover feedback: check (can act) / X (cannot), VCarve-style, at the cursor
   var hd = TOOLS[TOOL];

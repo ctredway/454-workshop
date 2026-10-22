@@ -6,8 +6,7 @@ function snapPoints(){
            {x:sr.x1,y:sr.y1,k:'corner'},{x:sr.x0,y:sr.y1,k:'corner'});
   DOC.ents.forEach(function(e){
     if (DOC.layers && !entVisible(e)) return;         // nothing on a hidden layer to snap to
-    if (e.t==='line'){ pts.push({x:e.x1,y:e.y1,k:'end'},{x:e.x2,y:e.y2,k:'end'},
-                                {x:(e.x1+e.x2)/2,y:(e.y1+e.y2)/2,k:'mid'}); }
+    if (e.t==='line'){ pts.push({x:e.x1,y:e.y1,k:'end'},{x:e.x2,y:e.y2,k:'end'}); }
     else if (e.t==='circle'){ pts.push({x:e.cx,y:e.cy,k:'center'}); }
     else if (e.t==='text'){ pts.push({x:e.x,y:e.y,k:'end'}); }
     else if (e.t==='rect'){
@@ -21,6 +20,7 @@ function snapPoints(){
       pts.push({x:ae[0].x,y:ae[0].y,k:'end'},{x:ae[1].x,y:ae[1].y,k:'end'},{x:e.cx,y:e.cy,k:'center'});
     }
     else if (e.t==='path'){ e.pts.forEach(function(p){ pts.push({x:p[0],y:p[1],k:'end'}); }); }
+    snapMids(e).forEach(function(p){ pts.push(p); });
   });
   // guide-guide intersections
   for (var i=0;i<DOC.guides.length;i++)
@@ -29,6 +29,28 @@ function snapPoints(){
       if (p) pts.push({x:p.x,y:p.y,k:'guideX'});
     }
   return pts;
+}
+// the middle of every side: a lone line, a rectangle's sides, a polyline's or outline's segments (the middle of the
+// curve for a curved one) and an arc. Shown as a triangle and "Midpoint" at the cursor.
+function snapMids(e){
+  var out = [];
+  function seg(a, b, bulge){
+    var mx = (a[0]+b[0])/2, my = (a[1]+b[1])/2, ch = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    if (ch < 1e-9) return;
+    var s = (bulge || 0) * ch / 2;                  // the curve's height above the chord (DXF bulge, signed)
+    out.push({x: mx + (b[1]-a[1])/ch*s, y: my - (b[0]-a[0])/ch*s, k: 'mid'});
+  }
+  if (e.t==='line') seg([e.x1,e.y1], [e.x2,e.y2]);
+  else if (e.t==='rect'){
+    seg([e.x,e.y], [e.x+e.w,e.y]); seg([e.x+e.w,e.y], [e.x+e.w,e.y+e.h]);
+    seg([e.x+e.w,e.y+e.h], [e.x,e.y+e.h]); seg([e.x,e.y+e.h], [e.x,e.y]);
+  }
+  else if ((e.t==='poly' || e.t==='path') && e.pts && e.pts.length > 1){
+    var m = e.pts.length, last = e.closed && m > 2 ? m : m - 1;
+    for (var k = 0; k < last; k++) seg(e.pts[k], e.pts[(k+1) % m], e.t==='path' ? e.pts[k][2] : 0);
+  }
+  else if (e.t==='arc' && arcSweep(e) > 1e-9){ var am = e0mid(e); out.push({x: am.x, y: am.y, k: 'mid'}); }
+  return out;
 }
 function guideX(g1,g2){
   var d = g1.a*g2.b - g2.a*g1.b;
