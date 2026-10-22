@@ -33,6 +33,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.58 — handles as in VCarve, and midpoints you can see
+- Includes Design 0.146.0: selecting shows the scale handles straight away, and clicking a selected shape again
+  switches to rotate handles (and back), as in VCarve.
+- Includes Design 0.147.0: every side of a shape has a midpoint to snap to, shown as a triangle and the word Midpoint.
+
 ### 0.6.2-beta.57 — a change made back in the history keeps the steps after it
 - Includes Design 0.145.0: going back on the History bar and changing something puts the change in there, as in
   Fusion; the steps after it stay, and are done again on top of it going forward (red if one can't be).
