@@ -93,8 +93,9 @@ the material.
   where it is, as in Carbide Motion. **Probe…** opens the BitZero panel.
 - **Change tool…** changes the bit outside a job, as Carbide Motion's Change tool does. The machine lifts Z right
   up, stops the spindle, goes to the tool-change position (Settings → Machine → Parking) and waits. Change the bit,
-  then press **Measure the new bit**: with the BitSetter set up and a reference taken when you set Z zero, the new
-  bit is measured and its length applied, so your Z zero is kept. Without a BitSetter, set Z zero again for the
+  then press **Measure the new bit**: with the BitSetter set up, the new bit is measured and its length applied, so
+  your Z zero is kept. If the bit that set Z zero wasn't measured then (you answered **Later**, or reconnected
+  since), it's measured first, before the machine goes to the tool-change position. Without a BitSetter, set Z zero again for the
   new bit before cutting; until you do, Start warns you. It needs a homed machine, and isn't offered during a
   job, whose tool changes have their own prompt.
 

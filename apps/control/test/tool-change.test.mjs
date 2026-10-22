@@ -64,18 +64,30 @@ test('the plan: nothing moves on a machine that hasn’t homed', () => {
   assert.equal(p.steps, undefined);
 });
 
-test('the plan: the bit is measured only with a BitSetter that works and a reference to compare with', () => {
+test('the plan: no reference yet, so the bit in the spindle is measured first, then the new one against it', () => {
   const C = control();
   const noRef = plain(C.toolChangePlan({ ...base, refZ: null }));
-  assert.equal(noRef.measure, false, 'measuring with no reference would make the new bit the reference, at the old bit’s zero');
-  assert.match(noRef.intro, /no reference yet/);
+  assert.equal(noRef.refFirst, true);
+  assert.equal(noRef.measure, true);
+  assert.match(noRef.intro, /^First the bit that’s in now is measured on the BitSetter/);
+  assert.match(noRef.swap, /Measure the new bit/);
+  // with a reference already, nothing extra
+  assert.equal(plain(C.toolChangePlan(base)).refFirst, false);
+});
+
+test('the plan: the bit is measured only with a BitSetter that works and a reference it can take or has', () => {
+  const C = control();
+  const swapped = plain(C.toolChangePlan({ ...base, refZ: null, toolSwapped: true }));
+  assert.equal(swapped.refFirst, false, 'the bit in the spindle didn’t set Z zero: measuring it as the reference would keep the wrong zero');
+  assert.equal(swapped.measure, false);
+  assert.match(swapped.intro, /changed before without being measured/);
   const broken = plain(C.toolChangePlan({ ...base, bsWhy: 'machine has not homed this session' }));
   assert.equal(broken.measure, false);
   assert.match(broken.intro, /switched on but can’t be used: machine has not homed this session/);
   const none = plain(C.toolChangePlan({ ...base, bsOn: false, bsWhy: 'disabled in Machine profile' }));
   assert.equal(none.measure, false);
   assert.match(none.intro, /set Z zero again with the new one/);
-  for (const p of [noRef, broken, none]) assert.match(p.swap, /set Z zero for the new bit/);
+  for (const p of [swapped, broken, none]) assert.match(p.swap, /set Z zero for the new bit/);
 });
 
 test('with the BitSetter: moves, waits for the change, measures the new bit against the reference', async () => {
@@ -91,6 +103,24 @@ test('with the BitSetter: moves, waits for the change, measures the new bit agai
     ['jog', 'open'],
   ]);
   assert.equal(C.PROBE.toolSwapped, false);
+});
+
+test('no reference yet: lifts and stops the spindle, measures the bit that’s in, then parks, then measures the new bit', async () => {
+  const C = control();
+  C.PROBE.refZ = null;
+  C.probeStart = (kind, done) => { C.log.push(['measure', kind]); if (kind === 'ref') C.PROBE.refZ = -60; done(); };
+  C.answers = [true, true];
+  C.toolChangeStart(); await settle(); await settle();
+  assert.deepEqual(plain(C.log.filter((e) => e[0] !== 'status')), [
+    ['ask', 'Change the tool?', 'Go'],
+    ['jog', 'close'],
+    ['moves', 'Tool change', [LIFT, 'M5']],
+    ['measure', 'ref'],
+    ['moves', 'Tool change', [LIFT, 'M5', 'G53 G0 X-650.000 Y-1200.000']],
+    ['ask', 'Change the bit now', 'Measure the new bit'],
+    ['measure', 'tool'],
+    ['jog', 'open'],
+  ]);
 });
 
 test('not measured: Start is warned until Z zero is set again, by any route', async () => {

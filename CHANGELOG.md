@@ -33,7 +33,9 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.59 — dimensions can be dragged out of the way
+### 0.6.2-beta.59 — Change tool measures the new bit; dimensions can be dragged out of the way
+- Includes Control 0.36.1: Change tool in the jog panel measures the new bit even when no BitSetter reference was
+  taken, by measuring the bit that's in first. (The first beta.59 draft, without this, was deleted unpublished.)
 - Includes Design 0.148.0: with the Select tool, drag a dimension's value to move it. A distance's line moves out to
   the side with extension lines back to the edges; a diameter or radius gets a leader. It follows the shapes.
 
@@ -719,6 +721,20 @@ into the PC; and with a long list, Cancel scrolled away.
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.36.1 — Change tool measures the new bit even when no reference was taken
+Clint: "from the jog panel I clicked change tool, the machine moved to the change position and then when I click
+done, the machine does not move." His BitSetter was set up, but no reference had been taken: that only happened when
+Measure now was answered after setting Z zero, and reconnecting clears it. Without one, Change tool quietly offered
+Done instead of measuring. Now, with no reference, it first lifts, stops the spindle and measures the bit that's in
+(the one Z zero was set with) as the reference, then goes to the tool-change position, waits, and measures the new
+bit against it, so Z zero is kept. If a bit was already changed without being measured, the bit in the spindle
+didn't set Z zero, so it isn't used as the reference: Control still says to set Z zero again.
+- Tested (`tool-change.test.mjs`, 10 tests; broken on purpose 3 ways: the old rule, the unmeasured swap ignored, and
+  measuring without stopping the spindle first, all caught), and against the simulated GRBL machine
+  (`tool-change-sim.test.mjs`: Control's real Change tool, BitSetter and probing code; the spindle is off for every
+  touch-off, the reference is the bit that was in, and a bit 2 mm longer gets G43.1 Z2.000; the old rule fails it).
+  Not yet tried on a real machine.
 
 ### 0.36.0 — jog with a game controller
 From comparing ncSender (Clint's list of gaps worth having, #4): an Xbox-style game controller, USB or Bluetooth,
