@@ -1411,6 +1411,11 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.156.1 — no note on the History bar when you’ve gone back
+Clint, 2026-10-23: the label shown while the marker is behind the newest step isn’t needed. “Back 2 steps. A change goes
+in here; the 2 after it are redone on top” is gone: the marker shows where you are, and the faded steps after it are
+the ones redone. (history.test.mjs updated.)
+
 ### 0.156.0 — the file that’s open, and whether it’s saved
 Clint, 2026-10-23: “I have no way to know what file I have open and if its been changed.”
 - **The header shows the drawing’s file** beside Design’s name, and **Saved** or **● Changed, not saved** (in amber);

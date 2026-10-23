@@ -465,9 +465,9 @@ function histRender(){
   var fold = document.getElementById('histFold');
   fold.setAttribute('aria-expanded', open ? 'true' : 'false');
   fold.title = open ? 'History: hide the steps' : 'History: show the steps, every change, to go back to';
-  var list = document.getElementById('histSteps'), note = document.getElementById('histNote');
+  var list = document.getElementById('histSteps');
   list.textContent = '';
-  if (!open){ note.textContent = ''; return; }
+  if (!open) return;
   histTipHide();
   var steps = histSteps(), done = UNDO.length;
   // each step is its tool's icon; its name shows on hover, or when it has the keyboard's focus (histTip)
@@ -505,9 +505,7 @@ function histRender(){
   var chips = list.querySelectorAll('.hStep');
   var mark = histMarker(done, steps.length);
   if (chips[done] && chips[done].nextSibling) list.insertBefore(mark, chips[done].nextSibling); else list.appendChild(mark);
-  var ahead = REDO.length;
-  note.textContent = ahead ? 'Back ' + ahead + (ahead === 1 ? ' step. A change goes in here; the step after it is redone on top.' :
-    ' steps. A change goes in here; the ' + ahead + ' after it are redone on top.') : '';
+  // (no note saying how many steps back: the marker shows it; Clint, 2026-10-23)
   var now = list.querySelector('.now');
   if (now && now.scrollIntoView) now.scrollIntoView({block: 'nearest', inline: 'center'});
 }

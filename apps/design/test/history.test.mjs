@@ -102,7 +102,8 @@ test('a change made after going back goes in there; the steps after it stay, and
   step(`DOC.ents.push({t: 'circle', cx: 120, cy: 40, r: 15})`);
   step(`DOC.ents.push({t: 'line', x1: 0, y1: 0, x2: 9, y2: 9})`);
   D.run('histGoTo(1); histRender(); 1');
-  assert.match(D.document.getElementById('histNote').textContent, /Back 2 steps\. A change goes in here; the 2 after it are redone on top\./);
+  assert.equal(D.document.getElementById('histNote'), null, 'no note saying how far back: the marker shows it');
+  assert.equal(D.run('REDO.length'), 2, 'back two steps');
   step(`DOC.ents[0].h = 99`, 'Taller');
   assert.deepEqual(names(), ['Rectangle', 'Taller', 'Circle', 'Line'], 'the steps after it are still there');
   assert.equal(D.run('UNDO.length'), 2, 'and still undone: the drawing is as it is just after the change');
