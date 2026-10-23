@@ -110,6 +110,9 @@ function paramRename(p, to){
   paramsArr().forEach(function (q) { if (q !== p) q.expr = swap(q.expr); });
   (DOC.dims || []).forEach(function (d) { if (d.expr) d.expr = swap(d.expr); });
   tpList().forEach(function (tp) { Object.keys(tp.exprs || {}).forEach(function (k) { tp.exprs[k].e = swap(tp.exprs[k].e); }); });
+  paramStepsList().forEach(function (st) {                   // history steps (a new object: copies of the line share the old)
+    var ex = {}; Object.keys(st.exprs).forEach(function (k) { ex[k] = {e: swap(st.exprs[k].e), u: st.exprs[k].u}; }); st.exprs = ex;
+  });
   p.name = to;
 }
 // Why a name can't be used for a parameter (or '' if it can): other than the given one
@@ -121,15 +124,21 @@ function paramNameProblem(name, except){
   if (p && p !== except) return 'There’s already a parameter called “' + p.name + '”.';
   return '';
 }
-// Where a parameter is used: other parameters' names, and how many dimensions
+// The History bar's steps that remember parameters (history-replay.js), done and undone
+function paramStepsList(){
+  return (typeof UNDO !== 'undefined' ? UNDO.concat(REDO) : []).filter(function (st) { return st && st.exprs && Object.keys(st.exprs).length; });
+}
+// Where a parameter is used: other parameters' names, how many dimensions and history steps, and which toolpaths
 function paramUsers(p){
   var n = p.name.toLowerCase();
   return {params: paramsArr().filter(function (q) { return q !== p && paramNamesIn(q.expr).indexOf(n) >= 0; }).map(function (q) { return q.name; }),
           dims: (DOC.dims || []).filter(function (d) { return d.expr && paramNamesIn(d.expr).indexOf(n) >= 0; }).length,
-          tps: tpList().filter(function (tp) { return Object.keys(tp.exprs || {}).some(function (k) { return paramNamesIn(tp.exprs[k].e).indexOf(n) >= 0; }); }).map(function (tp) { return tp.name; })};
+          tps: tpList().filter(function (tp) { return Object.keys(tp.exprs || {}).some(function (k) { return paramNamesIn(tp.exprs[k].e).indexOf(n) >= 0; }); }).map(function (tp) { return tp.name; }),
+          steps: paramStepsList().filter(function (st) { return Object.keys(st.exprs).some(function (k) { return paramNamesIn(st.exprs[k].e).indexOf(n) >= 0; }); }).length};
 }
-// "2 dimensions, dado and the toolpath Pocket"
+// "2 dimensions, 3 steps on the History bar, dado and the toolpath Pocket"
 function paramUsersSay(u){
-  return [u.dims ? u.dims + (u.dims === 1 ? ' dimension' : ' dimensions') : '', u.params.join(', '),
+  return [u.dims ? u.dims + (u.dims === 1 ? ' dimension' : ' dimensions') : '',
+          u.steps ? u.steps + (u.steps === 1 ? ' step' : ' steps') + ' on the History bar' : '', u.params.join(', '),
           (u.tps || []).length ? ((u.tps.length === 1 ? 'the toolpath ' : 'the toolpaths ') + u.tps.join(', ')) : ''].filter(Boolean).join(' and ');
 }

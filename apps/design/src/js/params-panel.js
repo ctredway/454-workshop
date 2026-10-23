@@ -70,9 +70,14 @@ function paramPanelSetExpr(p, expr, input){
   var why = paramExprProblem(p, expr);
   if (why){ paramPanelSay(why + ' Nothing changed.', true); input.value = p.expr; return; }
   var pastBefore = tpPastIds();
+  var before = typeof histLineCopy === 'function' ? histLineCopy() : null;   // to take back steps done again, with it
   pushUndo();
   p.expr = expr; p.unit = stockUnits();                     // typed in the units shown now
-  paramPanelApplied(p.name + ' is now ' + expr + '.', pastBefore);
+  // steps on the History bar using it take its new value, and the steps after them are done again; then dimensions
+  // and toolpaths follow the drawing that makes
+  var done = function (r) { paramPanelApplied(p.name + ' is now ' + expr + '.', pastBefore); histParamsSay(r); };
+  var r = typeof histParamsApply === 'function' ? histParamsApply(before) : null;
+  if (r && typeof r.then === 'function') r.then(done); else done(r);
 }
 function paramPanelRename(p, to, input){
   if (to === p.name) return;
@@ -86,7 +91,7 @@ function paramPanelRename(p, to, input){
 }
 function paramPanelDelete(p){
   var u = paramUsers(p);
-  if (u.dims || u.params.length || u.tps.length){
+  if (u.dims || u.params.length || u.tps.length || u.steps){
     paramPanelSay(p.name + ' is used by ' + paramUsersSay(u) + '. Change those first, then delete it.', true);
     return;
   }

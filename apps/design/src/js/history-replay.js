@@ -304,7 +304,82 @@ function histReplay(L, from, to){
 }
 
 /* ---- changing a step */
-// What step i lets you change: {title, fields: [{k, label, kind, min, value}], change(step, values)}, or null.
+/* ---- parameters in a step (Design 0.149.0): a length can be typed as a parameter or arithmetic with one (wall,
+   bit / 2, material - 3), and the step remembers it (step.exprs: {field: {e, u}}, as toolpaths do). Change the
+   parameter (or the material's thickness) and every step using it takes the new value, and the steps after it are
+   done again, as when a step is changed by hand (histParamsApply). A plain number unlinks it. */
+// The lengths of step i that use parameters, worked out now: {values (all its fields), changed, why: [...]}
+function histStepParams(L, i, info){
+  var st = L.steps[i], vals = {}, changed = false, why = [];
+  info.fields.forEach(function (f) {
+    var x = st.exprs && st.exprs[f.k];
+    vals[f.k] = f.value;
+    if (!x) return;
+    var r = paramTry(x.e, x.u);
+    if (r.why){ why.push(info.title + ', ' + f.label + ' (' + x.e + '): ' + r.why); return; }
+    if (f.min !== null && f.min !== undefined && !(r.v > f.min)){ why.push(info.title + ', ' + f.label + ' (' + x.e + ') comes to ' + fmtDisp(r.v) + ' ' + unitTag() + ', and it has to be more than 0.'); return; }
+    vals[f.k] = r.v;
+    if (Math.abs(r.v - f.value) > 1e-9) changed = true;
+  });
+  return {values: vals, changed: changed, why: why};
+}
+// Steps of this drawing that use parameters (not another drawing's, before it was opened or started)
+function histParamSteps(L){
+  var first = 0, out = [];
+  for (var k = L.n - 1; k >= 0; k--) if (L.steps[k].kind){ first = k + 1; break; }
+  for (var i = first; i < L.steps.length; i++){
+    if (L.steps[i].kind) break;
+    if (L.steps[i].exprs && Object.keys(L.steps[i].exprs).length) out.push(i);
+  }
+  return out;
+}
+// After parameters or the material change: steps using them take the new values and the steps after them are done
+// again. before: histLineCopy() from before the change, so Undo takes it all back at once. opts.sync: no Working
+// panel of its own (already up). Returns {changed, failed, why}, or a promise of it when done in parts.
+function histParamsApply(before, opts){
+  opts = opts || {};
+  var none = {changed: 0, failed: 0, why: []};
+  if (typeof histLine !== 'function' || !histParamSteps(histLine()).length) return none;
+  histFresh();
+  var L = histLine(), edits = [], why = [];
+  histParamSteps(L).forEach(function (i) {
+    var info = histEditInfo(L, i);
+    if (!info) return;
+    var r = histStepParams(L, i, info);
+    why = why.concat(r.why);
+    if (r.changed) edits.push({i: i, info: info, values: r.values});
+  });
+  if (!edits.length) return {changed: 0, failed: 0, why: why};
+  histKeepOrig(L, edits[0].i);
+  edits.forEach(function (ed) { ed.info.change(L.steps[ed.i], ed.values); });
+  L.edited = edits[0].i;
+  var finish = function (failed) {
+    histSetLine(L); SEL = []; draw(); persist(); histChanged();
+    if (before){
+      HIST_EDITS.push({before: before, after: histLineCopy(), name: 'the parameters', seq: ++HIST_SEQ});
+      if (HIST_EDITS.length > HIST_EDITS_MAX) HIST_EDITS.shift();
+      HIST_EDITS_UNDONE = [];
+    }
+    return {changed: edits.length, failed: failed, why: why};
+  };
+  var from = edits[0].i;
+  if (opts.sync || L.steps.length - from <= HIST_BUSY_STEPS || typeof busyRun !== 'function') return finish(histReplay(L, from));
+  var failed = 0, parts = [];
+  for (var a = from; a < L.steps.length; a += HIST_BUSY_PART) (function (a) {
+    parts.push({label: 'Steps ' + (a + 1) + ' to ' + Math.min(a + HIST_BUSY_PART, L.steps.length) + ' of ' + L.steps.length,
+                fn: function () { failed += histReplay(L, a, a + HIST_BUSY_PART); }});
+  })(a);
+  return busyRun('Doing the steps that use it again…', parts).then(function () { return finish(failed); });
+}
+// What it did, said: the steps that couldn't be done, and the parameters that couldn't be worked out
+function histParamsSay(r){
+  if (!r) return;
+  if (r.failed > 0) toast('warn', r.failed + (r.failed === 1 ? ' step couldn’t be done again' : ' steps couldn’t be done again'),
+                          'They’re red on the History bar, and skipped. Hover over a red step to see why.');
+  if (r.why && r.why.length) toast('err', 'A step’s parameters can’t be worked out', r.why.slice(0, 3).join(' ') + ' It keeps its last value.');
+}
+
+// What step i lets you change: {title, fields: [{k, label, kind, min, value, expr}], change(step, values)}, or null.
 function histEditInfo(L, i){
   var st = L.steps[i];
   if (!st || st.kind) return null;
@@ -312,7 +387,7 @@ function histEditInfo(L, i){
     var op = HIST_OPS[st.recipe.op];
     if (!op.fields(st.recipe).length) return null;
     return {title: st.name || op.name(st.recipe),
-            fields: op.fields(st.recipe).map(function (f) { return Object.assign({value: st.recipe[f.k]}, f); }),
+            fields: op.fields(st.recipe).map(function (f) { return Object.assign({value: st.recipe[f.k], expr: st.exprs && st.exprs[f.k]}, f); }),
             change: function (s, v) {
               var r = Object.assign({}, s.recipe, v);
               s.recipe = r; s.name = op.name(r);
@@ -328,7 +403,7 @@ function histEditInfo(L, i){
   if (!fields) return null;
   var piece = d.added[0];
   return {title: st.name || histShapeName(shape),
-          fields: fields.map(function (f) { return Object.assign({value: f.k === 'd' ? shape.r * 2 : shape[f.k]}, f); }),
+          fields: fields.map(function (f) { return Object.assign({value: f.k === 'd' ? shape.r * 2 : shape[f.k], expr: st.exprs && st.exprs[f.k]}, f); }),
           change: function (s, v) {
             var e = histParse(piece);
             for (var f in v){ if (f === 'd') e.r = v.d / 2; else e[f] = v[f]; }
@@ -378,7 +453,8 @@ function histSweepEdits(re){
 // Change step i (values: {field: value}), and do the steps after it again. Returns how many turned red; or, when
 // there are more than HIST_BUSY_STEPS to do again, a promise of it, done in parts with the Working panel up.
 var HIST_BUSY_STEPS = 40, HIST_BUSY_PART = 25;
-function histEdit(i, values){
+// exprs: the lengths typed as parameters ({field: {e, u}}); the other fields are plain numbers, unlinked.
+function histEdit(i, values, exprs){
   if (!histEditInfo(histLine(), i)) return -1;
   var before = histLineCopy();                                      // (before anything changes: to take it back)
   histFresh();                                                      // steps after a change made in the middle: up to date first
@@ -386,6 +462,11 @@ function histEdit(i, values){
   if (!info){ histLinePut(before); return -1; }
   histKeepOrig(L, i);
   info.change(L.steps[i], values);
+  if (exprs !== undefined){
+    var keep = {};
+    info.fields.forEach(function (f) { if (exprs && exprs[f.k]) keep[f.k] = exprs[f.k]; });
+    if (Object.keys(keep).length) L.steps[i].exprs = keep; else delete L.steps[i].exprs;
+  }
   L.edited = i;
   var finish = function (failed) {
     histSetLine(L); SEL = []; draw(); persist(); histChanged();
@@ -427,11 +508,15 @@ function histEditOpen(i, chip){
     var t = document.createElement('span'); t.textContent = f.label; row.appendChild(t);
     var inp = document.createElement('input'); inp.type = 'text'; inp.autocomplete = 'off';
     if (f.kind !== 'text') inp.inputMode = 'decimal';
-    inp.value = f.kind === 'len' ? fmtDisp(f.value) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) :
+    inp.value = f.kind === 'len' ? (f.expr ? f.expr.e : fmtDisp(f.value)) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) :
                 f.kind === 'pct' ? String(parseFloat((f.value * 100).toFixed(2))) : String(f.value == null ? '' : f.value);
     row.appendChild(inp);
     var u = document.createElement('span'); u.className = 'heUnit'; u.textContent = f.kind === 'len' ? unitTag() : f.kind === 'deg' ? '\u00b0' : f.kind === 'pct' ? '%' : '';
     row.appendChild(u);
+    if (f.kind === 'len'){
+      inp.title = 'A length, or a parameter or arithmetic with one (wall, bit / 2, material - 3): the step remembers it and follows the parameter';
+      if (f.expr){ u.textContent = '= ' + fmtDisp(f.value) + ' ' + unitTag(); u.style.whiteSpace = 'nowrap'; }
+    }
     box.appendChild(row);
     inputs.push({f: f, inp: inp});
   });
@@ -443,16 +528,26 @@ function histEditOpen(i, chip){
   var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'primary'; ok.textContent = 'Change';
   btns.appendChild(cancel); btns.appendChild(ok); box.appendChild(btns);
   var apply = function () {
-    var v = {}, bad = null;
+    var v = {}, ex = {}, bad = null, badWhy = '';
     inputs.forEach(function (x) {
       if (x.f.kind === 'text'){ v[x.f.k] = x.inp.value; return; }
-      var n = x.f.kind === 'len' ? lenIn(x.inp.value) : x.f.kind === 'pct' ? parseFloat(x.inp.value) / 100 : parseFloat(x.inp.value);
+      var raw = x.inp.value.trim(), n;
+      if (x.f.kind === 'len'){
+        // a measurement (unlinked); arithmetic without names (worked out once); or with parameters (remembered)
+        n = lenInPlain(raw);
+        if (isNaN(n) && raw){
+          var r = paramTry(raw, stockUnits());
+          if (r.why){ if (!bad){ bad = x; badWhy = x.f.label + ': ' + r.why; } return; }
+          n = r.v;
+          if (paramUsesNames(raw)) ex[x.f.k] = {e: raw, u: stockUnits()};
+        }
+      } else n = x.f.kind === 'pct' ? parseFloat(raw) / 100 : parseFloat(raw);
       if (!isFinite(n) || (x.f.min !== null && x.f.min !== undefined && !(n > x.f.min))){ if (!bad) bad = x; return; }
       v[x.f.k] = n;
     });
-    if (bad){ toast('warn', 'That isn’t a number it can use', bad.f.label + (bad.f.min === 0 ? ' must be more than 0.' : ': type a number, such as 50 or 12.5.')); bad.inp.focus(); return; }
+    if (bad){ toast('warn', 'That isn’t a number it can use', badWhy || bad.f.label + (bad.f.min === 0 ? ' must be more than 0.' : ': type a number, such as 50 or 12.5, or a parameter.')); bad.inp.focus(); return; }
     histEditClose();
-    Promise.resolve(histEdit(i, v)).then(function (failed) {
+    Promise.resolve(histEdit(i, v, ex)).then(function (failed) {
     if (failed > 0) toast('warn', 'Changed: ' + failed + (failed === 1 ? ' step after it couldn’t be done again' : ' steps after it couldn’t be done again'),
                           (failed === 1 ? 'It’s red on the History bar, and skipped. ' : 'They’re red on the History bar, and skipped. ') + 'Hover over a red step to see why. Changing this step back brings it back.');
     });

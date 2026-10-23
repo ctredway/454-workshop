@@ -18,12 +18,16 @@ function wire(){
       t = parseStockLen(raw, stockUnits());
       if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
     }
-    var pastBefore = [];                                            // to name toolpaths a thinner material puts through it
+    var pastBefore = [], histSaid = null;                           // to name toolpaths a thinner material puts through it
+    var usesMaterial = function (e) { return paramNamesIn(e).indexOf(PARAM_BUILTIN) >= 0; };
     var steps = [{label: 'Checking the toolpaths', fn: function () { pastBefore = tpPastIds(); }},
                  {label: 'The new thickness', fn: function () {
-                   if (raw && ((DOC.dims || []).some(function (d){ return d.expr && paramNamesIn(d.expr).indexOf(PARAM_BUILTIN) >= 0; }) ||
-                       tpList().some(function (tp){ return Object.keys(tpExprsUsed(tp)).length; }))) pushUndo();   // dimensions using "material" follow it (and Undo takes the reshaping back)
+                   var hist = paramStepsList().some(function (st) { return Object.keys(st.exprs).some(function (k) { return usesMaterial(st.exprs[k].e); }); });
+                   var before = hist ? histLineCopy() : null;       // steps using "material" are done again: one Undo takes it all back
+                   if (raw && ((DOC.dims || []).some(function (d){ return d.expr && usesMaterial(d.expr); }) ||
+                       tpList().some(function (tp){ return Object.keys(tpExprsUsed(tp)).length; }) || hist)) pushUndo();   // dimensions using "material" follow it (and Undo takes the reshaping back)
                    DOC.stock.t = t;
+                   if (hist) histSaid = histParamsApply(before, {sync: true});   // (the Working panel is up already)
                    paramsSayFailed(paramsApplyDims());
                    tpParamsApply();
                  }}];
@@ -31,6 +35,7 @@ function wire(){
       steps.push({label: tp.name, fn: function () { if (camReady() && tp.moves && tpStale(tp)) tpGenerate(tp); }});
     });
     steps.push({label: 'Done', fn: function () {
+      histParamsSay(histSaid);
       tpPastNotice(pastBefore);
       syncStockUI(); persist(); renderToolpathPanel(); draw();
     }});

@@ -1340,6 +1340,24 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.149.0 — steps on the History bar can follow parameters
+Clint asked how close Design is to being parametric. Parameters already drove dimensions and toolpath depths, and a
+step on the History bar could be changed with the steps after it done again; but a step's numbers were plain values,
+so anything made from a shape (an offset, its fillets, a weld) stayed put when a parameter changed the shape. Now:
+- **A step's length can be a parameter or arithmetic with one** (`wall`, `bit / 2`, `material - 3`), typed in the
+  panel a double-click on the step opens. The step remembers it (`step.exprs`, as toolpaths do), the box shows it
+  with its value ("wall = 6.00 mm"), and a plain number unlinks it. Saved with the drawing.
+- **Changing the parameter** (the fx list) **or the material's thickness** (Job setup) gives every step using it the
+  new value, and the steps after it are done again (`histParamsApply`), with the Working panel for a long history.
+  Then dimensions and toolpaths follow, as before. One Undo takes back the parameter and every step it redid.
+- A value it can't use (a missing name, not more than 0) is said, and the step keeps its last value. Renaming a
+  parameter renames it in the steps; deleting one a step uses is refused, naming the steps.
+- Tested (`history-params.test.mjs`, 7 tests: a rectangle linked to `width` and an offset round it to `wall`, with
+  fillets on the offset; change either and the rectangle, the offset and its fillets follow; Undo, the step's box,
+  saving and opening, renaming and deleting, the material, and a value of 0); broken on purpose 7 ways, all caught.
+  In the real app: typed into the steps' boxes, then width changed to 160 in the fx list: the rectangle went to
+  160 mm and the filleted offset to 172 mm.
+
 ### 0.148.1 — a new material thickness: the Working panel, and every toolpath follows it with Z zero at the bottom
 Clint: "when the material thickness is changed in the job setup, we need to show the activity modal ... the UI is
 acting like its hung." A new thickness puts toolpaths that follow it out of date, and they were all worked out again

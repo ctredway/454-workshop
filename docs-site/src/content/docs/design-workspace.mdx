@@ -232,6 +232,14 @@ What can be changed:
 | Resize, Rotate, and moves typed into the selection box | the size, angle or position typed |
 | Scale, Stretch and Rotate by dragging the selection's handles | how much, across and up, or the angle |
 
+**Steps that follow parameters.** In the panel, a length can be a [parameter](design-tools.html#parameters), or
+arithmetic with one: `wall`, `bit / 2`, `material - 3`. The step remembers it, and the box shows it with its value
+(`wall = 6.00 mm`). Then change the parameter in the **fx** list, or the material's thickness in Job setup, and the
+step takes the new value: every step after it is done again, so what was made from it follows. Link a rectangle's
+width to `width` and an offset round it to `wall`, and changing either reshapes the rectangle, the offset, its
+rounded corners and the toolpaths on them, together. One Undo takes the whole change back. Typing a plain number
+unlinks it.
+
 How the steps after it are done again:
 
 - **Fillets, offsets, Mirror, Weld, Subtract and Intersect, moves, resizes and rotations are done again by the
