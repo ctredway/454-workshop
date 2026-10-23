@@ -111,6 +111,25 @@ function tpPastNotice(before){
 }
 // Toolpaths whose depth can't be checked: the material's thickness isn't set (through cuts already refuse)
 function tpDepthUnchecked(){ return !(DOC.stock && DOC.stock.t > 0); }
+// Thicker than this, the material's thickness is asked about (Job setup) and cuts this deep before saving G-code: more
+// than most machines' Z can reach, and nearly always a slip, such as 11.9 typed with Job setup in inches (302 mm:
+// Clint's bookstand, twice, 2026-10-22 and 23; through cuts 117 passes deep, and Design slowed to a crawl).
+var THICK_ASK_MM = 100;
+function thickSay(mm){ return (+mm.toFixed(2)) + ' mm (' + (+(mm / 25.4).toFixed(3)) + ' in)'; }
+// The cutting length of a toolpath's bit, in mm, from the tool library (0: not known)
+function tpFluteMM(tp){
+  var t = tp.toolId && typeof libTool === 'function' ? libTool(tp.toolId) : null, f = t ? +t.fluteLength : 0;
+  return f > 0 ? f * (t.units === 'in' ? 25.4 : 1) : 0;
+}
+// Why a toolpath goes deeper than it should be able to, or null: past its bit's cutting length (V-bits and chamfers
+// are left out: their depth is the cone's), or deeper than THICK_ASK_MM
+function tpTooDeep(tp){
+  var d = tpDepth(tp), fl = tpFluteMM(tp);
+  if (tp.side !== 'vcarve' && tp.side !== 'chamfer' && fl > 0 && d > fl + 0.01)
+    return 'goes ' + fmtDisp(d) + ' ' + unitTag() + ' deep, past its bit’s ' + fmtDisp(fl) + ' ' + unitTag() + ' cutting length';
+  if (d > THICK_ASK_MM) return 'goes ' + thickSay(d) + ' deep, more than most machines can reach';
+  return null;
+}
 function tpGenerateMoves(tp){
   if (!camReady()) return tp;
   if (tp.side === 'pocket'){

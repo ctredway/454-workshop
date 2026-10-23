@@ -18,6 +18,16 @@ function wire(){
       t = parseStockLen(raw, stockUnits());
       if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
     }
+    if (t > THICK_ASK_MM){                                          // nearly always a slip (toolpath-generate.js)
+      uiDialog({title: 'Is the material really that thick?',
+                body: 'You typed “' + raw + '” with Job setup in ' + (stockUnits() === 'in' ? 'inches' : 'millimetres') + ': that makes the material ' +
+                      thickSay(t) + ' thick. That’s more than most machines’ Z can reach, and through cuts would go all the way down it.\n\n' +
+                      'If you meant ' + raw + ' ' + (stockUnits() === 'in' ? 'mm' : 'in') + ', press Change it, switch the units beside the thickness, and type it again.',
+                ok: 'Use ' + thickSay(t), cancel: 'Change it'}).then(function (ok) { if (ok) apply(); else syncStockUI(); });
+      return;
+    }
+    apply();
+    function apply(){
     var pastBefore = [], histSaid = null;                           // to name toolpaths a thinner material puts through it
     var usesMaterial = function (e) { return paramNamesIn(e).indexOf(PARAM_BUILTIN) >= 0; };
     var steps = [{label: 'Checking the toolpaths', fn: function () { pastBefore = tpPastIds(); }},
@@ -41,6 +51,7 @@ function wire(){
     }});
     busyRun('Working out the toolpaths for the new thickness…', steps)
       .catch(function (err) { toast('err', 'Something went wrong', String((err && err.message) || err)); syncStockUI(); renderToolpathPanel(); draw(); });
+    }
   });
   document.getElementById('stkZ').addEventListener('change', function(e){
     DOC.stock.zero = e.target.value; persist(); renderToolpathPanel(); draw();

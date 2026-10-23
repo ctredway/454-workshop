@@ -1363,6 +1363,20 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.154.0 — a thickness or depth no machine could cut is asked about
+Clint’s bookstand, twice (2026-10-22 and 23): 11.9 typed with Job setup in inches made the material 302.26 mm thick.
+The through cuts went 117 passes deep (1.8 million moves), Design slowed to a crawl (68 ms a frame, 378 ms a step
+while dragging, measured on his drawing in the real app), and Save G-code would have written a 302 mm cut.
+- **Job setup asks** when a thickness over 100 mm (THICK_ASK_MM) is typed: what was typed, in which units, and what it
+  comes to (“302.26 mm (11.9 in)”), and how to fix it if the other units were meant. **Change it** keeps the
+  thickness it had; **Use** takes it.
+- **Save G-code and Preview in 454 Control ask** when a toolpath goes deeper than its bit’s cutting length (the tool
+  library’s flute length; not V-bits or chamfers) or deeper than 100 mm (`tpTooDeep`). Nothing is saved until it’s
+  confirmed.
+- **Opening a drawing** saved with such a thickness says so.
+- Fixed: a dialog’s Cancel button always said Cancel, whatever it was given (the vector check’s “Leave it”).
+- thick-check.test.mjs, 6 tests; broken on purpose 5 ways, all caught.
+
 ### 0.153.0 — dimensions show their value, and the parameters are listed as you type
 Clint, 2026-10-23: “when using a parameter, there is no need to show it on screen, if at all I would show it on mouse
 over”, and “when typing in a dimension box, can we show the parameter list? its easy to forget names”.

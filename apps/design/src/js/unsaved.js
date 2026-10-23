@@ -127,6 +127,8 @@ function openDrawing(d, name){
   // its toolpaths come saved as settings only: build them, and show them and its layers now (they used to
   // wait for the Toolpaths panel's refresh button)
   SEL.length = 0; CUTSEL = null;
+  if (DOC.stock && DOC.stock.t > THICK_ASK_MM)                    // a slip in a drawing saved before this was asked about
+    toast('warn', 'Check the material’s thickness', 'Job setup says ' + thickSay(DOC.stock.t) + ' thick, more than most machines can reach. Through cuts go all the way down it, and take a long time to work out.');
   tpRebuildAll(); renderToolpathPanel(); renderLayers();
   if (!asideKeep(aside)) toast('warn', 'The last drawing couldn\u2019t be kept for Recover', 'The browser\u2019s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
   else histStartAfresh();                             // its own history only (the one saved with it)

@@ -14,6 +14,9 @@ The full record, in more detail than most people want, is the
 
 ## Not released yet
 
+- **A material thickness no machine could cut is asked about.** In 454 Design, typing a thickness over 100 mm
+  in Job setup asks if it’s right, and says what it comes to (11.9 typed in inches is 302 mm). Save G-code asks
+  too when a toolpath goes deeper than its bit’s cutting length or 100 mm.
 - **Z to +6 mm goes to 6 mm above your Z zero.** In 454 Control’s jog panel, the button (was Z +6 mm) now takes
   Z up or down to 6 mm above the Z zero you set, as Carbide Motion does, so you can check the zero with a 6 mm
   block. It lifted 6 mm from wherever Z was. It needs the machine homed. **(cutting)**

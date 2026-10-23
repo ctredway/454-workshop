@@ -31,15 +31,26 @@ function tpDepthGate(anyway, go, only){
   }
   var past = chosen.filter(function (tp) { return tpPastNow(tp); });
   var unchecked = tpDepthUnchecked() ? chosen.filter(function (tp) { return !tp.through; }) : [];
-  if (!past.length && !unchecked.length){ go(); return; }
-  var body = past.length
+  var deep = chosen.filter(function (tp) { return tpTooDeep(tp); });
+  if (!past.length && !unchecked.length && !deep.length){ go(); return; }
+  var deepSaid = deep.length
+    ? (deep.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' deeper than the bit or the machine can:\n\n' +
+      deep.map(function (tp) { return '• ' + tp.name + ' ' + tpTooDeep(tp) + '.'; }).join('\n') +
+      '\n\nCheck the material’s thickness in Job setup (and the units beside it), and the depths.' +
+      (past.length || unchecked.length ? '\n\n' : '')
+    : '';
+  if (!past.length && !unchecked.length){
+    uiDialog({title: 'Too deep?', body: deepSaid, ok: anyway, danger: true}).then(function (ok) { if (ok) go(); });
+    return;
+  }
+  var body = deepSaid + (past.length
     ? (past.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' past the bottom of the material:\n\n' +
       past.map(function (tp) { return '• ' + tp.name + ' ' + tpPastSay(tp) + '.'; }).join('\n') +
       '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Job setup) first.'
     : 'The material’s thickness isn’t set, so these depths can’t be checked against it:\n\n' +
       unchecked.map(function (tp) { return '• ' + tp.name + ', ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' deep'; }).join('\n') +
-      '\n\nSet the thickness in Job setup to have them checked.';
-  uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!past.length})
+      '\n\nSet the thickness in Job setup to have them checked.');
+  uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!(past.length || deep.length)})
     .then(function (ok) { if (ok) go(); });
 }
 // The job split where the bit changes, in cutting order: a bit used again later gets another file, so nothing is

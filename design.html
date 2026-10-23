@@ -1301,7 +1301,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.153.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.154.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -5927,6 +5927,25 @@ function tpPastNotice(before){
 }
 // Toolpaths whose depth can't be checked: the material's thickness isn't set (through cuts already refuse)
 function tpDepthUnchecked(){ return !(DOC.stock && DOC.stock.t > 0); }
+// Thicker than this, the material's thickness is asked about (Job setup) and cuts this deep before saving G-code: more
+// than most machines' Z can reach, and nearly always a slip, such as 11.9 typed with Job setup in inches (302 mm:
+// Clint's bookstand, twice, 2026-10-22 and 23; through cuts 117 passes deep, and Design slowed to a crawl).
+var THICK_ASK_MM = 100;
+function thickSay(mm){ return (+mm.toFixed(2)) + ' mm (' + (+(mm / 25.4).toFixed(3)) + ' in)'; }
+// The cutting length of a toolpath's bit, in mm, from the tool library (0: not known)
+function tpFluteMM(tp){
+  var t = tp.toolId && typeof libTool === 'function' ? libTool(tp.toolId) : null, f = t ? +t.fluteLength : 0;
+  return f > 0 ? f * (t.units === 'in' ? 25.4 : 1) : 0;
+}
+// Why a toolpath goes deeper than it should be able to, or null: past its bit's cutting length (V-bits and chamfers
+// are left out: their depth is the cone's), or deeper than THICK_ASK_MM
+function tpTooDeep(tp){
+  var d = tpDepth(tp), fl = tpFluteMM(tp);
+  if (tp.side !== 'vcarve' && tp.side !== 'chamfer' && fl > 0 && d > fl + 0.01)
+    return 'goes ' + fmtDisp(d) + ' ' + unitTag() + ' deep, past its bit’s ' + fmtDisp(fl) + ' ' + unitTag() + ' cutting length';
+  if (d > THICK_ASK_MM) return 'goes ' + thickSay(d) + ' deep, more than most machines can reach';
+  return null;
+}
 function tpGenerateMoves(tp){
   if (!camReady()) return tp;
   if (tp.side === 'pocket'){
@@ -7535,15 +7554,26 @@ function tpDepthGate(anyway, go, only){
   }
   var past = chosen.filter(function (tp) { return tpPastNow(tp); });
   var unchecked = tpDepthUnchecked() ? chosen.filter(function (tp) { return !tp.through; }) : [];
-  if (!past.length && !unchecked.length){ go(); return; }
-  var body = past.length
+  var deep = chosen.filter(function (tp) { return tpTooDeep(tp); });
+  if (!past.length && !unchecked.length && !deep.length){ go(); return; }
+  var deepSaid = deep.length
+    ? (deep.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' deeper than the bit or the machine can:\n\n' +
+      deep.map(function (tp) { return '• ' + tp.name + ' ' + tpTooDeep(tp) + '.'; }).join('\n') +
+      '\n\nCheck the material’s thickness in Job setup (and the units beside it), and the depths.' +
+      (past.length || unchecked.length ? '\n\n' : '')
+    : '';
+  if (!past.length && !unchecked.length){
+    uiDialog({title: 'Too deep?', body: deepSaid, ok: anyway, danger: true}).then(function (ok) { if (ok) go(); });
+    return;
+  }
+  var body = deepSaid + (past.length
     ? (past.length === 1 ? 'This toolpath goes' : 'These toolpaths go') + ' past the bottom of the material:\n\n' +
       past.map(function (tp) { return '• ' + tp.name + ' ' + tpPastSay(tp) + '.'; }).join('\n') +
       '\n\nCutting into the spoilboard is sometimes meant. If it isn’t, change the depth (or the material’s thickness in Job setup) first.'
     : 'The material’s thickness isn’t set, so these depths can’t be checked against it:\n\n' +
       unchecked.map(function (tp) { return '• ' + tp.name + ', ' + fmtDisp(tpDepth(tp)) + ' ' + unitTag() + ' deep'; }).join('\n') +
-      '\n\nSet the thickness in Job setup to have them checked.';
-  uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!past.length})
+      '\n\nSet the thickness in Job setup to have them checked.');
+  uiDialog({title: past.length ? 'Cutting past the material' : 'Depths not checked', body: body, ok: anyway, danger: !!(past.length || deep.length)})
     .then(function (ok) { if (ok) go(); });
 }
 // The job split where the bit changes, in cutting order: a bit used again later gets another file, so nothing is
@@ -11827,6 +11857,7 @@ function uiDialog(o){
     ok.classList.toggle('danger', !!o.danger);
     ok.classList.toggle('primary', !o.danger);
     cancel.style.display = o.note ? 'none' : '';
+    cancel.textContent = o.cancel || 'Cancel';
     var alt = document.getElementById('dlgAlt');           // a second choice, besides OK: resolves 'alt'
     alt.hidden = !o.alt; alt.textContent = o.alt || '';
     document.getElementById('dlgModal').hidden = false;
@@ -13948,6 +13979,8 @@ function openDrawing(d, name){
   // its toolpaths come saved as settings only: build them, and show them and its layers now (they used to
   // wait for the Toolpaths panel's refresh button)
   SEL.length = 0; CUTSEL = null;
+  if (DOC.stock && DOC.stock.t > THICK_ASK_MM)                    // a slip in a drawing saved before this was asked about
+    toast('warn', 'Check the material’s thickness', 'Job setup says ' + thickSay(DOC.stock.t) + ' thick, more than most machines can reach. Through cuts go all the way down it, and take a long time to work out.');
   tpRebuildAll(); renderToolpathPanel(); renderLayers();
   if (!asideKeep(aside)) toast('warn', 'The last drawing couldn\u2019t be kept for Recover', 'The browser\u2019s storage is full. Undo (Ctrl+Z) brings it back until you close 454 Design.');
   else histStartAfresh();                             // its own history only (the one saved with it)
@@ -18994,6 +19027,16 @@ function wire(){
       t = parseStockLen(raw, stockUnits());
       if (!(t > 0)){ toast('warn', 'Check the thickness', 'Use a number greater than zero, like 3, 0.125 or 1/8.'); syncStockUI(); return; }
     }
+    if (t > THICK_ASK_MM){                                          // nearly always a slip (toolpath-generate.js)
+      uiDialog({title: 'Is the material really that thick?',
+                body: 'You typed “' + raw + '” with Job setup in ' + (stockUnits() === 'in' ? 'inches' : 'millimetres') + ': that makes the material ' +
+                      thickSay(t) + ' thick. That’s more than most machines’ Z can reach, and through cuts would go all the way down it.\n\n' +
+                      'If you meant ' + raw + ' ' + (stockUnits() === 'in' ? 'mm' : 'in') + ', press Change it, switch the units beside the thickness, and type it again.',
+                ok: 'Use ' + thickSay(t), cancel: 'Change it'}).then(function (ok) { if (ok) apply(); else syncStockUI(); });
+      return;
+    }
+    apply();
+    function apply(){
     var pastBefore = [], histSaid = null;                           // to name toolpaths a thinner material puts through it
     var usesMaterial = function (e) { return paramNamesIn(e).indexOf(PARAM_BUILTIN) >= 0; };
     var steps = [{label: 'Checking the toolpaths', fn: function () { pastBefore = tpPastIds(); }},
@@ -19017,6 +19060,7 @@ function wire(){
     }});
     busyRun('Working out the toolpaths for the new thickness…', steps)
       .catch(function (err) { toast('err', 'Something went wrong', String((err && err.message) || err)); syncStockUI(); renderToolpathPanel(); draw(); });
+    }
   });
   document.getElementById('stkZ').addEventListener('change', function(e){
     DOC.stock.zero = e.target.value; persist(); renderToolpathPanel(); draw();
