@@ -124,6 +124,18 @@ function buildRunList(){
   JobSkip.apply(list, p, {zHigh: zHighCmd(travelZ()), spinup: PROFILE.spindle.spinup});
   return {list: list, plan: p};
 }
+// Mark the moves of unticked toolpaths (seg.skip), so the 3D view shows them faint, and repaint it
+function jobSkipMark(){
+  if (!MODEL || !MODEL.segs) return;
+  var sum = TP_SKIP.some(Boolean) ? jobSummary(MODEL) : null, out = [];
+  if (sum) sum.list.forEach(function (r, i) { if (TP_SKIP[i]) out.push(r); });
+  MODEL.segs.forEach(function (g) {
+    var s = false;
+    for (var k = 0; k < out.length; k++) if (g.line >= out[k].from && g.line <= out[k].to){ s = true; break; }
+    g.skip = s;
+  });
+  if (typeof repaintToolpath === 'function') repaintToolpath();
+}
 function jobSkipLine(ln){                               // is this line in an unticked toolpath?
   if (!MODEL || !TP_SKIP.some(Boolean)) return false;
   var sum = jobSummary(MODEL);

@@ -741,6 +741,12 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.38.1 — left-out toolpaths show faint in the preview
+Untick a toolpath on the Toolpaths tab and its moves are drawn faint grey in the 3D view, and stay so as the preview
+plays, so what will and won't be cut shows at a glance (`jobSkipMark` marks each move; `segColor` colours it).
+Tested (`skip-preview.test.mjs`: faint when unticked, back when ticked, still faint when played past; broken on
+purpose 2 ways, both caught), and checked in the real app.
+
 ### 0.38.0 — Pause & lift that lifts, Z +6 mm that moves, and a clearer Adjust panel
 Clint, 2026-10-22: "in the jog dialog, the Z + 6mm button does nothing", "the pause and raise stops the movement and
 spins down the spindle but it does not raise the spindle", and the run toolbar's Adjust panel wasn't clear.

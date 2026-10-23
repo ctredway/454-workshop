@@ -5,18 +5,24 @@ var scene, camera, renderer3, viewportEl;
 var cutLine=null, rapidLine=null, marker=null, gridObj=null, axesObj=null, envObj=null, originObj=null;
 var cutColors=null, rapidColors=null;
 var C_CUT=[0.722,0.498,0.180], C_CUT_D=[1.0,0.788,0.42], C_RAP=[0.275,0.345,0.42], C_RAP_D=[0.498,0.639,0.769];
+var C_SKIP=[0.20,0.22,0.25];   // a toolpath left out on the Toolpaths tab (job-skip.js): faint, played or not
 // Colours for the 3D view, per theme. On dark, what's been cut turns brighter; on light it turns
 // darker and stronger instead, so it stands out against the background either way.
 function viewPal(){
   return UITHEME && UITHEME.theme === 'light'
     ? {gridMinor: 0xdde3e9, gridMajor: 0xc6cfd8, cut: [0.851,0.600,0.310], cutDone: [0.620,0.310,0.000],
-       rap: [0.690,0.745,0.800], rapDone: [0.255,0.420,0.600]}
+       rap: [0.690,0.745,0.800], rapDone: [0.255,0.420,0.600], skip: [0.86,0.88,0.90]}
     : {gridMinor: 0x20262e, gridMajor: 0x2e3742, cut: [0.722,0.498,0.180], cutDone: [1.0,0.788,0.42],
-       rap: [0.275,0.345,0.42], rapDone: [0.498,0.639,0.769]};
+       rap: [0.275,0.345,0.42], rapDone: [0.498,0.639,0.769], skip: [0.20,0.22,0.25]};
 }
 function applyViewPal(){
   var v = viewPal();
-  C_CUT = v.cut; C_CUT_D = v.cutDone; C_RAP = v.rap; C_RAP_D = v.rapDone;
+  C_CUT = v.cut; C_CUT_D = v.cutDone; C_RAP = v.rap; C_RAP_D = v.rapDone; C_SKIP = v.skip;
+}
+// A move's colour: left out (faint), else cut or rapid, done or not
+function segColor(sg, done){
+  if (sg.skip) return C_SKIP;
+  return sg.g === 0 ? (done ? C_CUT_D : C_CUT) : (done ? C_RAP_D : C_RAP);
 }
 var orbit = {theta: -Math.PI/4, phi: Math.PI/3.2, radius: 400, target: new THREE.Vector3(0,0,0)};
 
@@ -370,6 +376,8 @@ function buildToolpath(model){
   rapidColors = new Float32Array(rapPos.length);
   for (var c=0;c<cutColors.length;c+=3){ cutColors[c]=C_CUT[0]; cutColors[c+1]=C_CUT[1]; cutColors[c+2]=C_CUT[2]; }
   for (var r=0;r<rapidColors.length;r+=3){ rapidColors[r]=C_RAP[0]; rapidColors[r+1]=C_RAP[1]; rapidColors[r+2]=C_RAP[2]; }
+  model.segs.forEach(function (sg) { if (sg.skip){ var arr = sg.g === 0 ? cutColors : rapidColors, o = sg.v * 3;
+    arr[o] = arr[o+3] = C_SKIP[0]; arr[o+1] = arr[o+4] = C_SKIP[1]; arr[o+2] = arr[o+5] = C_SKIP[2]; } });
 
   var cg = new THREE.BufferGeometry();
   cg.setAttribute('position', new THREE.Float32BufferAttribute(cutPos, 3));

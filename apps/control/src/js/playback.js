@@ -8,7 +8,7 @@ function repaintToolpath(){
   if (typeof MODEL === 'undefined' || !MODEL || !cutColors || !rapidColors) return;
   for (var i = 0; i < MODEL.segs.length; i++){
     var sg = MODEL.segs[i], done = i < doneCount;
-    var col = sg.g === 0 ? (done ? C_CUT_D : C_CUT) : (done ? C_RAP_D : C_RAP);
+    var col = segColor(sg, done);
     var arr = sg.g === 0 ? cutColors : rapidColors, o = sg.v * 3;
     if (o === undefined || isNaN(o)) continue;
     arr[o] = col[0]; arr[o+1] = col[1]; arr[o+2] = col[2]; arr[o+3] = col[0]; arr[o+4] = col[1]; arr[o+5] = col[2];
@@ -22,7 +22,7 @@ function setProgressColors(newDone){
   var toDone = newDone > doneCount;
   for (var i=a; i<b; i++){
     var s = MODEL.segs[i];
-    var col = s.g === 0 ? (toDone ? C_CUT_D : C_CUT) : (toDone ? C_RAP_D : C_RAP);
+    var col = segColor(s, toDone);
     var arr = s.g === 0 ? cutColors : rapidColors;
     var o = s.v * 3;
     arr[o]=col[0];arr[o+1]=col[1];arr[o+2]=col[2];

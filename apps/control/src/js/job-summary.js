@@ -141,7 +141,7 @@ function renderToolpathSummary(){
           uiNote('A job is running', 'Which toolpaths run is set before Start. Stop the job first to change it.');
           return;
         }
-        TP_SKIP[i] = !cb.checked; renderToolpathSummary();
+        TP_SKIP[i] = !cb.checked; jobSkipMark(); renderToolpathSummary();
       });
       run.appendChild(cb); run.appendChild(document.createTextNode(' Run'));
       wrap.appendChild(run);
