@@ -27,14 +27,17 @@ function recoveryNote(why){
   try{ jumpToLine(line); }catch(e){}
 }
 
-function jobStartFrom(target){
+// opts.paused: carrying on after Pause & lift, so the job's own feed, spindle and Z adjustments carry on with it
+function jobStartFrom(target, opts){
+  opts = opts || {};
   if (!MODEL || !MODEL.segs.length){ uiNote('No file loaded', 'Open the G-code file you were running.'); return; }
   if (!SERIAL.connected){ uiNote('Not connected', 'Connect to the machine first.'); return; }
   if (JOB.active) return;
   if (SERIAL.state !== 'Idle'){ uiNote('Machine isn’t ready', 'Recovery can only start from Idle. The machine is ' + SERIAL.state + '.'); return; }
   if (!SERIAL.homedSeen){ uiNote('Home first', 'Recovery needs a homed machine. Your work zero is stored in the controller and survives homing, so you won\u2019t need to re-zero.'); return; }
-  if (!ADJ.keep) znRemove('before resuming');           // the Adjust panel starts at Z +0.00: the controller must too
-  else { znApply(); adjRestore(); }                     // kept: the controller drops both in a reset
+  var keep = ADJ.keep || !!opts.paused;
+  if (!keep) znRemove('before resuming');               // the Adjust panel starts at Z +0.00: the controller must too
+  else { znApply(); ADJ.tries = 0; ADJ.want = ADJ.ov ? ADJ.ov.slice(0, 3) : null; }   // kept: the controller drops both in a reset
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
   // Toolpaths left out on the Toolpaths tab stay left out for the rest of the job
@@ -108,10 +111,11 @@ function jobStartFrom(target){
             (st.spindle ? 'spindle + ' + PROFILE.spindle.spinup + 's dwell \u2192 ' : '') +
             (seg0.rapid || st.z >= -0.001 ? 'rapid to Z' : 'rapid to Z+2, feed-plunge to Z') + ' \u2192 stream.\n' +
             toolLine +
-            (adjKeptText() ? '⚠ Kept from before (Adjust panel): ' + adjKeptText() + '.\n' : '') +
+            (adjKeptText(keep) ? '⚠ Kept from before (Adjust panel): ' + adjKeptText(keep) + '.\n' : '') +
             (st.uncertain ? '\u26a0 The file uses machine-coordinate, offset or work-coordinate commands before this line \u2014 the computed position may be wrong. Air-check first.\n' : '') +
             '\nProceed?';
-  uiDialog({title:'Resume from line ' + snapped + '?', body:msg, ok:'Resume'}).then(function(go){
+  if (opts.paused) msg = 'Carry on after the pause: the spindle starts, the bit comes back down where it stopped, and the job goes on.\n\n' + msg;
+  uiDialog({title: opts.paused ? 'Carry on from line ' + snapped + '?' : 'Resume from line ' + snapped + '?', body:msg, ok: opts.paused ? 'Carry on' : 'Resume'}).then(function(go){
   if (!go){ logC('sys', 'recovery cancelled'); return; }
 
   JOB.active = true; JOB.held = false; JOB.toolWait = null; JOB.parkPending = false;
@@ -120,7 +124,8 @@ function jobStartFrom(target){
   JOB.inflight = []; JOB.startedAt = performance.now(); JOB.lastLn = snapped;
   JOB.useBS = useBS;
   JOB.segs = run.plan ? run.plan.segs : null;
-  adjBegin();
+  PAUSED = null;                                        // carrying on: the pause is over
+  adjBegin(keep);
   bzCloseModal(); jogModalClose();
   fitView(); animateView(0, 0.02);
   playing = false; updatePlayBtn();
@@ -147,11 +152,13 @@ function updateJobUI(statusText){
   // viewport run bar
   var rbEl = document.getElementById('runBar');
   rbEl.classList.toggle('on', JOB.active || SERIAL.connected);   // visible whenever there's a machine
-  rbEl.classList.toggle('job', JOB.active);                      // job-only controls appear with the job
+  rbEl.classList.toggle('job', JOB.active || !!PAUSED);          // job-only controls appear with the job (and while it's paused)
+  rbEl.classList.toggle('paused', !JOB.active && !!PAUSED);
   rbMenuRender();
   document.getElementById('rbFill').style.width = pct + '%';
   document.getElementById('rbTxt').textContent = txt;
-  document.getElementById('ovF').textContent = 'F ' + SERIAL.ov[0] + '%';
-  document.getElementById('ovS').textContent = 'S ' + SERIAL.ov[2] + '%';
+  document.getElementById('ovF').textContent = SERIAL.ov[0] + '%';
+  document.getElementById('ovS').textContent = SERIAL.ov[2] + '%';
+  document.getElementById('ovR').textContent = SERIAL.ov[1] + '%';
 }
 

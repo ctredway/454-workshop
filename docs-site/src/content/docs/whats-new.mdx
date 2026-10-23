@@ -21,8 +21,13 @@ Not released yet
 - **Fixed: with Z zero at the bottom of the material, a new thickness left most toolpaths at their old heights.**
   Only through cuts were worked out again, and Save G-code would have written the others for the old top of the
   material. Every toolpath now follows the thickness when Z zero is at the bottom. **(cutting)**
-- **The Z nudge buttons say which way they go.** In 454 Control's Adjust panel, pointing at a Z button says
-  "Cut 0.1 mm deeper (Z down)" or "shallower (Z up)".
+- **Fixed: Pause didn't lift.** In 454 Control's run bar, **Pause & lift** now stops the machine and the spindle and
+  lifts Z to the top, on any Shapeoko (the old button relied on a firmware feature stock Shapeokos don't have).
+  **Resume** brings the bit back down where it stopped and carries on, with the same adjustments; **End job**
+  finishes instead. **(cutting)** Try it with an air cut first.
+- **Fixed: Z +6 mm in the jog panel did nothing.** It now lifts 6 mm from where Z is (less near the top).
+- **A clearer Adjust panel.** Four labelled rows, each showing what it's at now: Feed rate, Spindle speed, Rapid
+  moves and Depth nudge (▼ deeper, ▲ shallower), with the units on every button.
 
 ## 0.6.2-beta.61
 

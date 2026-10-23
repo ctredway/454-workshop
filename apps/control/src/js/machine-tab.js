@@ -56,10 +56,7 @@ function wireMachine(){
   document.getElementById('rbHold').addEventListener('click', jobHold);
   document.getElementById('rbResume').addEventListener('click', jobResume);
   document.getElementById('rbStop').addEventListener('click', jobStop);
-  document.getElementById('rbDoor').addEventListener('click', function(){
-    if (!SERIAL.connected) return;
-    sendRT(0x84, 'safety-door pause (retract + spindle stop) \u2014 Resume restores');
-  });
+  document.getElementById('rbDoor').addEventListener('click', jobPauseLift);
   document.getElementById('rbAdjust').addEventListener('click', function(){
     document.getElementById('ovRow').classList.toggle('on');
   });

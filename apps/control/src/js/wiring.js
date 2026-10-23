@@ -57,6 +57,7 @@ function loadText(text, name){
   renderChecks();
   renderStats();
   TPSUM_SEL = null; TP_SKIP = []; renderToolpathSummary();   // a new file: every toolpath ticked
+  if (typeof PAUSED !== 'undefined' && PAUSED){ PAUSED = null; updateJobUI('no job running'); }   // a paused job's file is gone
   var ss = document.getElementById('sectionSel');
   if (MODEL.sections && MODEL.sections.length){
     var opts = '<option value="">jump to toolpath…</option>';

@@ -66,7 +66,7 @@ test('a nudge during a job goes to the controller as the tool’s offset plus th
   C.start(3);
   C.run('znAdjust(0.1); znAdjust(0.1)');
   assert.deepEqual(offsets(C), ['G43.1 Z0.600', 'G43.1 Z0.700']);
-  assert.equal(C.els.znLbl.textContent, 'Z +0.20');
+  assert.equal(C.els.znLbl.textContent, '+0.20 mm');
 });
 test('when the job finishes the nudge comes off, and the tool’s own offset stays', () => {
   const C = control();
@@ -77,14 +77,14 @@ test('when the job finishes the nudge comes off, and the tool’s own offset sta
   assert.equal(C.JOB.active, false, 'the job finished');
   assert.equal(C.sent[C.sent.length - 1], 'G43.1 Z0.500', 'the last thing sent puts the offset back to the tool’s alone');
   assert.equal(C.ZN.val, 0);
-  assert.equal(C.els.znLbl.textContent, 'Z +0.00');
+  assert.equal(C.els.znLbl.textContent, '+0.00 mm');
   assert.ok(C.log.some((t) => /Z nudge of \+0\.10 mm taken off/.test(t)), 'and the log says so');
 });
 test('a nudge up of 1 mm with no BitSetter: the controller is back at no offset for the next job', () => {
   const C = control();
   C.start(2);
   for (let i = 0; i < 10; i++) C.run('znAdjust(0.1)');
-  assert.equal(C.els.znLbl.textContent, 'Z +1.00');
+  assert.equal(C.els.znLbl.textContent, '+1.00 mm');
   C.answerAll();
   assert.deepEqual(Array.from(offsets(C)).slice(-2), ['G43.1 Z1.000', 'G43.1 Z0.000']);
   assert.equal(C.sent[C.sent.length - 1], 'G43.1 Z0.000');
@@ -223,7 +223,7 @@ test('ticked: a kept nudge is sent again before the job, with the tool’s offse
   assert.deepEqual(plain(C.sent.slice(n)), ['G43.1 Z0.400']);
   C.start(3);
   assert.equal(C.ZN.val, -0.1, 'and starting the job leaves it');
-  assert.equal(C.els.znLbl.textContent, 'Z -0.10');
+  assert.equal(C.els.znLbl.textContent, '-0.10 mm');
 });
 test('what was last heard may be out of date: only a report starts the putting back', () => {
   const C = control();
@@ -293,7 +293,7 @@ test('a nudge left in the panel with no connection to take it off: the next job 
   C.JOB.active = false;
   C.start(3);
   assert.equal(C.ZN.val, 0);
-  assert.equal(C.els.znLbl.textContent, 'Z +0.00');
+  assert.equal(C.els.znLbl.textContent, '+0.00 mm');
 });
 test('after giving up once, the next job tries afresh', () => {
   const C = control();
@@ -381,7 +381,7 @@ test('the wiring: reports, job start, resume and the tick box', () => {
   assert.ok(start.indexOf('Start with the last job') > 0 && start.indexOf('Start with the last job') < start.indexOf('Start this job?'));
   assert.ok(start.indexOf('adjBegin();') > start.indexOf('Start this job?'), 'jobStart, once Start is pressed');
   const rec = src('recovery.js'), from = rec.slice(rec.indexOf('function jobStartFrom('));
-  assert.ok(from.indexOf('adjBegin();') > from.indexOf('Resume from line'), 'resume, once Resume is pressed');
+  assert.ok(from.indexOf('adjBegin(keep);') > from.indexOf('Resume from line'), 'resume, once Resume is pressed (keeping the adjustments after Pause & lift)');
   assert.ok(!/sendRT\(0x90\)/.test(run + rec), 'and nothing else puts the percentages to 100% behind its back');
   assert.ok(src('machine-tab.js').includes("getElementById('ovKeep').addEventListener('change', function(){ adjKeepSet(this.checked); })"));
   assert.ok(fs.readFileSync(new URL('../src/control.html', import.meta.url), 'utf8').includes('id="ovKeep"'));

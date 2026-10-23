@@ -19,8 +19,8 @@ function adjKeepSet(on){
   if (el) el.checked = ADJ.keep;
 }
 // What a job would start with, in words; '' when everything is at normal or nothing is kept.
-function adjKeptText(){
-  if (!ADJ.keep) return '';
+function adjKeptText(force){                           // force: kept anyway (carrying on after Pause & lift)
+  if (!ADJ.keep && !force) return '';
   var o = ADJ.ov || [100, 100, 100], out = [];
   if (o[0] !== 100) out.push('feed ' + o[0] + '%');
   if (o[2] !== 100) out.push('spindle ' + o[2] + '%');
@@ -61,9 +61,9 @@ function adjRestore(){
   ADJ.tries = 0;
   ADJ.want = ADJ.keep && ADJ.ov ? ADJ.ov.slice(0, 3) : null;
 }
-// A job is starting (or resuming). Nothing kept: everything back to normal.
-function adjBegin(){
-  if (!ADJ.keep){
+// A job is starting (or resuming). Nothing kept: everything back to normal. keep: kept anyway (after Pause & lift).
+function adjBegin(keep){
+  if (!ADJ.keep && !keep){
     ADJ.want = null; ZN.val = 0;
     sendRT(0x90); sendRT(0x99); sendRT(0x95);          // feed, spindle, rapid: 100%
   }
@@ -72,7 +72,7 @@ function adjBegin(){
 var ZN = {val:0};
 function znDisplay(){
   var el = document.getElementById('znLbl');
-  if (el) el.textContent = 'Z ' + (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2);
+  if (el) el.textContent = (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm';
 }
 function znAdjust(d){
   if (!JOB.active){ logC('err', 'Z nudge applies during a running job'); return; }

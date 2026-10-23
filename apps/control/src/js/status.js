@@ -118,8 +118,9 @@ function uiStatus(){
     marker.position.copy(w3(SERIAL.wpos.x, SERIAL.wpos.y, SERIAL.wpos.z));
   }
   if (JOB.active){
-    document.getElementById('ovF').textContent = 'F ' + SERIAL.ov[0] + '%';
-    document.getElementById('ovS').textContent = 'S ' + SERIAL.ov[2] + '%';
+    document.getElementById('ovF').textContent = SERIAL.ov[0] + '%';
+    document.getElementById('ovS').textContent = SERIAL.ov[2] + '%';
+    document.getElementById('ovR').textContent = SERIAL.ov[1] + '%';
   }
   if (JOB.active && (st === 'Hold' || st === 'Door')){
     document.getElementById('jobStatus').textContent =

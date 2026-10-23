@@ -261,13 +261,18 @@
   #rbTxt{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
   #rbStop{font-size:12.5px}
   #runBar{flex-wrap:wrap;max-width:calc(100% - 240px)}
-  #ovRow{display:none;flex-basis:100%;align-items:center;gap:6px;padding-top:6px;border-top:1px solid var(--line);margin-top:2px;flex-wrap:wrap}
+  /* Adjust: a row each for feed, spindle, rapid and depth: the name (and what it does), what it's at now, its buttons */
+  #ovRow{display:none;flex-basis:100%;flex-direction:column;gap:9px;padding-top:8px;border-top:1px solid var(--line);margin-top:2px}
   #ovRow.on{display:flex}
-  #ovRow .ovLbl{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:52px;text-align:right}
-  #ovRow button{padding:3px 8px;font-family:var(--mono);font-size:11.5px}
-  #ovRow{column-gap:16px}
-  #ovRow .ovGrp{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}   /* a label never parts from its buttons */
-  #ovRow .ovKeep{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
+  #ovRow .ovHead{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+  #ovRow .ovName{font-size:12.5px;font-weight:600;color:var(--ink)}
+  #ovRow .ovHead small{font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #ovRow .ovNow{font-family:var(--mono);font-size:13px;color:var(--amber)}
+  #ovRow .ovBtns{display:flex;gap:5px}
+  #ovRow .ovBtns button{flex:1;padding:3px 6px;font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+  #ovRow button.ovReset{border-color:var(--faint)}
+  #ovRow .ovKeep{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);cursor:pointer}
+  #runBar > button, #rbJobOnly > button{white-space:nowrap}
   .iconBtn{padding:6px 8px;line-height:0}
   .iconBtn svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .iconBtn.primary svg{stroke:#1a1407}
@@ -394,22 +399,24 @@
       <span id="rbJobOnly">
       <button id="rbHold" class="danger iconBtn" title="Feed hold — pause motion now"><svg viewBox="0 0 16 16"><line x1="6" y1="3.5" x2="6" y2="12.5"/><line x1="10" y1="3.5" x2="10" y2="12.5"/></svg></button>
       <button id="rbResume" class="iconBtn" title="Cycle start / resume"><svg viewBox="0 0 16 16"><path d="M5.5 3.5 L12 8 L5.5 12.5 Z"/></svg></button>
-      <button id="rbDoor" title="Pause with retract — Z lifts and the spindle stops (firmware safety-door); Resume restores">Pause ⏏</button>
+      <button id="rbDoor" title="Pause and lift: the machine stops, the spindle stops and Z lifts to the top. Resume brings the bit back down where it stopped and carries on; End job finishes.">Pause &amp; lift</button>
       <button id="rbStop" title="End the job: slow to a stop, then lift clear and move off the part. STOP is the instant halt.">End job</button>
       <div id="rbProg"><div id="rbFill"></div></div>
       <span id="rbTxt">—</span>
       <button id="rbAdjust" title="Feed / spindle / Z adjustments">Adjust</button>
       </span>
-      <div id="ovRow">
-        <span class="ovGrp"><span class="ovLbl" id="ovF">F 100%</span>
-        <button data-ov="f-10">−10</button><button data-ov="f-1">−1</button><button data-ov="f0">100</button><button data-ov="f+1">+1</button><button data-ov="f+10">+10</button></span>
-        <span class="ovGrp"><span class="ovLbl" id="ovS">S 100%</span>
-        <button data-ov="s-10">−10</button><button data-ov="s-1">−1</button><button data-ov="s0">100</button><button data-ov="s+1">+1</button><button data-ov="s+10">+10</button></span>
-        <span class="ovGrp"><span class="ovLbl">rapid</span>
-        <button data-ov="r25">25</button><button data-ov="r50">50</button><button data-ov="r100">100</button></span>
-        <span class="ovGrp"><span class="ovLbl" id="znLbl">Z +0.00</span>
-        <button data-zn="-0.1" title="Cut 0.1 mm deeper (Z down), for the rest of this job">−0.1</button><button data-zn="-0.02" title="Cut 0.02 mm deeper (Z down), for the rest of this job">−0.02</button><button data-zn="0" title="Back to the depth Z zero set: no nudge">0</button><button data-zn="0.02" title="Cut 0.02 mm shallower (Z up), for the rest of this job">+0.02</button><button data-zn="0.1" title="Cut 0.1 mm shallower (Z up), for the rest of this job">+0.1</button></span>
-        <label class="ovKeep" title="Unticked: every job starts with feed, spindle and rapid at 100% and no Z nudge. Ticked: the next job starts with these as they are when this one ends, after asking. Setting Z zero always clears the Z nudge."><input type="checkbox" id="ovKeep"> Keep for the next job</label>
+      <!-- Adjust: what the job runs at, changed while it runs. Each row says what it changes, what it's at now, and
+           buttons with their units. (Clint, 2026-10-22: the bare F/S/rapid/Z numbers weren't clear.) -->
+      <div id="ovRow" role="group" aria-label="Adjust the running job">
+        <div class="ovItem"><div class="ovHead"><span class="ovName">Feed rate</span><small>how fast it cuts</small><b class="ovNow" id="ovF">100%</b></div>
+        <div class="ovBtns"><button data-ov="f-10" title="10% slower">−10%</button><button data-ov="f-1" title="1% slower">−1%</button><button data-ov="f0" class="ovReset" title="Back to the file’s own feed rates">100%</button><button data-ov="f+1" title="1% faster">+1%</button><button data-ov="f+10" title="10% faster">+10%</button></div></div>
+        <div class="ovItem"><div class="ovHead"><span class="ovName">Spindle speed</span><small>VFD only; a router’s is on its dial</small><b class="ovNow" id="ovS">100%</b></div>
+        <div class="ovBtns"><button data-ov="s-10" title="10% slower">−10%</button><button data-ov="s-1" title="1% slower">−1%</button><button data-ov="s0" class="ovReset" title="Back to the file’s own spindle speed">100%</button><button data-ov="s+1" title="1% faster">+1%</button><button data-ov="s+10" title="10% faster">+10%</button></div></div>
+        <div class="ovItem"><div class="ovHead"><span class="ovName">Rapid moves</span><small>in the air, between cuts</small><b class="ovNow" id="ovR">100%</b></div>
+        <div class="ovBtns"><button data-ov="r25" title="Rapid moves at a quarter speed">25%</button><button data-ov="r50" title="Rapid moves at half speed">50%</button><button data-ov="r100" class="ovReset" title="Rapid moves at full speed">100%</button></div></div>
+        <div class="ovItem"><div class="ovHead"><span class="ovName">Depth nudge</span><small>▼ deeper · ▲ shallower</small><b class="ovNow" id="znLbl">+0.00 mm</b></div>
+        <div class="ovBtns"><button data-zn="-0.1" title="Cut 0.1 mm deeper (Z down), for the rest of this job">▼ 0.1</button><button data-zn="-0.02" title="Cut 0.02 mm deeper (Z down), for the rest of this job">▼ 0.02</button><button data-zn="0" class="ovReset" title="Back to the depth Z zero set: no nudge">No nudge</button><button data-zn="0.02" title="Cut 0.02 mm shallower (Z up), for the rest of this job">▲ 0.02</button><button data-zn="0.1" title="Cut 0.1 mm shallower (Z up), for the rest of this job">▲ 0.1</button></div></div>
+        <label class="ovKeep" title="Unticked: every job starts with feed, spindle and rapid at 100% and no depth nudge. Ticked: the next job starts with these as they are when this one ends, after asking. Setting Z zero always clears the depth nudge."><input type="checkbox" id="ovKeep"> Keep these for the next job</label>
       </div>
     </div>
     <div id="legend">
@@ -973,7 +980,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.37.2';
+var CONTROL_VERSION = '0.38.0';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -2751,6 +2758,7 @@ function loadText(text, name){
   renderChecks();
   renderStats();
   TPSUM_SEL = null; TP_SKIP = []; renderToolpathSummary();   // a new file: every toolpath ticked
+  if (typeof PAUSED !== 'undefined' && PAUSED){ PAUSED = null; updateJobUI('no job running'); }   // a paused job's file is gone
   var ss = document.getElementById('sectionSel');
   if (MODEL.sections && MODEL.sections.length){
     var opts = '<option value="">jump to toolpath…</option>';
@@ -3024,6 +3032,9 @@ function jogCmd(p, dist, feed){
 // travel is closer than that, so it can't run into the limit switch.
 function jogLiftZ6(){
   if (!requireIdle('lift')) return;
+  // The room above is measured from where Z is now. The clamp keeps the position a held jog started from; used as it
+  // was, it said "already at the top" and nothing moved (Clint, 2026-10-22: "the Z + 6mm button does nothing").
+  if (!JOGC.active) JOGC.pred = {x: SERIAL.mpos.x, y: SERIAL.mpos.y, z: SERIAL.mpos.z};
   var d = clampJogDist([0, 0, 1], 6);
   if (!(d > 0.05)){ logC('sys', 'Z is already at the top of its travel'); return; }
   sendLine(jogCmd([0, 0, 1], d, PROFILE.jog.fastZ));
@@ -3533,8 +3544,8 @@ function adjKeepSet(on){
   if (el) el.checked = ADJ.keep;
 }
 // What a job would start with, in words; '' when everything is at normal or nothing is kept.
-function adjKeptText(){
-  if (!ADJ.keep) return '';
+function adjKeptText(force){                           // force: kept anyway (carrying on after Pause & lift)
+  if (!ADJ.keep && !force) return '';
   var o = ADJ.ov || [100, 100, 100], out = [];
   if (o[0] !== 100) out.push('feed ' + o[0] + '%');
   if (o[2] !== 100) out.push('spindle ' + o[2] + '%');
@@ -3575,9 +3586,9 @@ function adjRestore(){
   ADJ.tries = 0;
   ADJ.want = ADJ.keep && ADJ.ov ? ADJ.ov.slice(0, 3) : null;
 }
-// A job is starting (or resuming). Nothing kept: everything back to normal.
-function adjBegin(){
-  if (!ADJ.keep){
+// A job is starting (or resuming). Nothing kept: everything back to normal. keep: kept anyway (after Pause & lift).
+function adjBegin(keep){
+  if (!ADJ.keep && !keep){
     ADJ.want = null; ZN.val = 0;
     sendRT(0x90); sendRT(0x99); sendRT(0x95);          // feed, spindle, rapid: 100%
   }
@@ -3586,7 +3597,7 @@ function adjBegin(){
 var ZN = {val:0};
 function znDisplay(){
   var el = document.getElementById('znLbl');
-  if (el) el.textContent = 'Z ' + (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2);
+  if (el) el.textContent = (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm';
 }
 function znAdjust(d){
   if (!JOB.active){ logC('err', 'Z nudge applies during a running job'); return; }
@@ -4328,8 +4339,9 @@ function uiStatus(){
     marker.position.copy(w3(SERIAL.wpos.x, SERIAL.wpos.y, SERIAL.wpos.z));
   }
   if (JOB.active){
-    document.getElementById('ovF').textContent = 'F ' + SERIAL.ov[0] + '%';
-    document.getElementById('ovS').textContent = 'S ' + SERIAL.ov[2] + '%';
+    document.getElementById('ovF').textContent = SERIAL.ov[0] + '%';
+    document.getElementById('ovS').textContent = SERIAL.ov[2] + '%';
+    document.getElementById('ovR').textContent = SERIAL.ov[1] + '%';
   }
   if (JOB.active && (st === 'Hold' || st === 'Door')){
     document.getElementById('jobStatus').textContent =
@@ -5879,6 +5891,7 @@ function jobStart(opts){
   if (!go){ logC('sys', 'job not started'); return; }
 
   jogModalClose();
+  PAUSED = null;                             // a new job: a paused one is over
   JOB.active = true; JOB.held = false; JOB.toolWait = null;
   JOB.list = list; JOB.total = list.length;
   JOB.idx = 0; JOB.acked = 0; JOB.lastLn = 0; JOB.inflight = [];
@@ -5914,8 +5927,26 @@ function jobHold(){
 }
 function jobResume(){
   if (!SERIAL.connected) return;
+  if (PAUSED && !JOB.active && !ENDING){ jobStartFrom(PAUSED.line, {paused: true}); return; }   // after Pause & lift
   sendRT(0x7e, '~ (resume)');
   if (JOB.active){ JOB.held = false; jobFill(); }
+}
+// PAUSE & LIFT. The firmware's own pause with a lift (the safety door's "parking") isn't built into stock Shapeoko
+// firmware: there the old Pause button stopped the spindle but never lifted (Clint, 2026-10-22). So Control does it:
+// as End job, hold, wait until still, reset to clear what's queued (the position is kept), then lift Z to the top and
+// stay above the spot. Resume carries on from where it stopped, as Recover does (the spindle on, down carefully), with
+// the job's own feed, spindle and Z adjustments. PAUSED: {line} while paused like this.
+var PAUSED = null;
+function jobPauseLift(){
+  if (!SERIAL.connected || !JOB.active || ENDING) return;
+  if (JOB.toolWait || PROBE.active){ uiNote('Not now', 'The machine is at a tool change or measuring a tool. Pause & lift works while it’s cutting.'); return; }
+  recoveryNote('paused');
+  JOB.ending = true;                                   // send nothing more from the file
+  ENDING = {stage: 'holding', since: performance.now(), pause: true};
+  sendRT(0x21, '! (feed hold)');
+  updateJobUI('pausing — slowing to a stop…');
+  logC('sys', 'pausing: holding, then lifting clear');
+  ENDING.timer = setInterval(endingTick, 100);
 }
 // END JOB, done properly. GRBL can only cancel moves it has already queued by resetting, and a
 // reset while moving loses the machine's position. So: hold, wait until the machine has actually
@@ -5925,6 +5956,15 @@ var ENDING = null;
 function jobStop(){
   if (!SERIAL.connected) return;
   if (ENDING) return;                                  // already ending
+  if (PAUSED && !JOB.active){                          // paused and lifted already: finish off as a job does
+    PAUSED = null;
+    var wp = SERIAL.wpos ? {x: SERIAL.wpos.x, y: SERIAL.wpos.y} : null;
+    var fin = ['G90', 'G21'].concat(SERIAL.homedSeen ? endingMoves(wp).cmds : []);
+    fin.forEach(function (c) { sendLine(c); });
+    updateJobUI('ended. Recover can resume from where it stopped.');
+    logC('sys', 'job ended while paused');
+    return;
+  }
   recoveryNote('stopped');
   PROBE.active = false; PROBE.onDone = null;
   JOB.ending = true;                                   // send nothing more from the file
@@ -5945,7 +5985,7 @@ function endingTick(){
     sendRT(0x18, 'ctrl-x (soft reset: clears the queued moves)');
     JOB.active = false; JOB.held = false; JOB.toolWait = null; JOB.inflight = [];
     maybeToolPrompt();
-    updateJobUI('ending \u2014 queue cleared, lifting clear\u2026');
+    updateJobUI((ENDING.pause ? 'pausing' : 'ending') + ' \u2014 queue cleared, lifting clear\u2026');
     return;
   }
   if (ENDING.stage === 'reset'){
@@ -5953,14 +5993,21 @@ function endingTick(){
     clearInterval(ENDING.timer);
     var done = ENDING; ENDING = null; JOB.ending = false;
     if (SERIAL.state === 'Alarm'){
-      updateJobUI('ended, but the controller is in alarm \u2014 home it before moving');
-      logC('err', 'job ended; controller reports ALARM after the reset, so nothing was moved');
+      updateJobUI((done.pause ? 'paused' : 'ended') + ', but the controller is in alarm \u2014 home it before moving');
+      logC('err', 'job ' + (done.pause ? 'paused' : 'ended') + '; controller reports ALARM after the reset, so nothing was moved');
       return;
     }
     // lift and park exactly as the end of a finished job does
     var cmds = ['G90', 'G21'];
     if (SERIAL.homedSeen) cmds.push(zHighCmd(topZ()));
     else { cmds.push('G91 G0 Z' + travelZ().toFixed(1)); cmds.push('G90'); }
+    if (done.pause){                                   // paused: lifted, and staying above the spot
+      cmds.forEach(function (c) { sendLine(c); });
+      PAUSED = {line: JOB.stopInfo ? JOB.stopInfo.line : 1};
+      updateJobUI('paused and lifted at line ' + PAUSED.line + ' \u2014 Resume carries on from there; End job finishes.');
+      logC('sys', 'paused: spindle off, lifted clear. Resume carries on from line ' + PAUSED.line);
+      return;
+    }
     if (SERIAL.homedSeen){
       var wp = SERIAL.wpos ? {x: SERIAL.wpos.x, y: SERIAL.wpos.y} : null;
       endingMoves(wp).cmds.forEach(function (c) { cmds.push(c); });
@@ -6039,14 +6086,17 @@ function recoveryNote(why){
   try{ jumpToLine(line); }catch(e){}
 }
 
-function jobStartFrom(target){
+// opts.paused: carrying on after Pause & lift, so the job's own feed, spindle and Z adjustments carry on with it
+function jobStartFrom(target, opts){
+  opts = opts || {};
   if (!MODEL || !MODEL.segs.length){ uiNote('No file loaded', 'Open the G-code file you were running.'); return; }
   if (!SERIAL.connected){ uiNote('Not connected', 'Connect to the machine first.'); return; }
   if (JOB.active) return;
   if (SERIAL.state !== 'Idle'){ uiNote('Machine isn’t ready', 'Recovery can only start from Idle. The machine is ' + SERIAL.state + '.'); return; }
   if (!SERIAL.homedSeen){ uiNote('Home first', 'Recovery needs a homed machine. Your work zero is stored in the controller and survives homing, so you won\u2019t need to re-zero.'); return; }
-  if (!ADJ.keep) znRemove('before resuming');           // the Adjust panel starts at Z +0.00: the controller must too
-  else { znApply(); adjRestore(); }                     // kept: the controller drops both in a reset
+  var keep = ADJ.keep || !!opts.paused;
+  if (!keep) znRemove('before resuming');               // the Adjust panel starts at Z +0.00: the controller must too
+  else { znApply(); ADJ.tries = 0; ADJ.want = ADJ.ov ? ADJ.ov.slice(0, 3) : null; }   // kept: the controller drops both in a reset
   var snapped = recoverySnap(target);
   if (snapped === null){ uiNote('Nothing to resume there', 'No motion line at or before line ' + target + '.'); return; }
   // Toolpaths left out on the Toolpaths tab stay left out for the rest of the job
@@ -6120,10 +6170,11 @@ function jobStartFrom(target){
             (st.spindle ? 'spindle + ' + PROFILE.spindle.spinup + 's dwell \u2192 ' : '') +
             (seg0.rapid || st.z >= -0.001 ? 'rapid to Z' : 'rapid to Z+2, feed-plunge to Z') + ' \u2192 stream.\n' +
             toolLine +
-            (adjKeptText() ? '⚠ Kept from before (Adjust panel): ' + adjKeptText() + '.\n' : '') +
+            (adjKeptText(keep) ? '⚠ Kept from before (Adjust panel): ' + adjKeptText(keep) + '.\n' : '') +
             (st.uncertain ? '\u26a0 The file uses machine-coordinate, offset or work-coordinate commands before this line \u2014 the computed position may be wrong. Air-check first.\n' : '') +
             '\nProceed?';
-  uiDialog({title:'Resume from line ' + snapped + '?', body:msg, ok:'Resume'}).then(function(go){
+  if (opts.paused) msg = 'Carry on after the pause: the spindle starts, the bit comes back down where it stopped, and the job goes on.\n\n' + msg;
+  uiDialog({title: opts.paused ? 'Carry on from line ' + snapped + '?' : 'Resume from line ' + snapped + '?', body:msg, ok: opts.paused ? 'Carry on' : 'Resume'}).then(function(go){
   if (!go){ logC('sys', 'recovery cancelled'); return; }
 
   JOB.active = true; JOB.held = false; JOB.toolWait = null; JOB.parkPending = false;
@@ -6132,7 +6183,8 @@ function jobStartFrom(target){
   JOB.inflight = []; JOB.startedAt = performance.now(); JOB.lastLn = snapped;
   JOB.useBS = useBS;
   JOB.segs = run.plan ? run.plan.segs : null;
-  adjBegin();
+  PAUSED = null;                                        // carrying on: the pause is over
+  adjBegin(keep);
   bzCloseModal(); jogModalClose();
   fitView(); animateView(0, 0.02);
   playing = false; updatePlayBtn();
@@ -6159,12 +6211,14 @@ function updateJobUI(statusText){
   // viewport run bar
   var rbEl = document.getElementById('runBar');
   rbEl.classList.toggle('on', JOB.active || SERIAL.connected);   // visible whenever there's a machine
-  rbEl.classList.toggle('job', JOB.active);                      // job-only controls appear with the job
+  rbEl.classList.toggle('job', JOB.active || !!PAUSED);          // job-only controls appear with the job (and while it's paused)
+  rbEl.classList.toggle('paused', !JOB.active && !!PAUSED);
   rbMenuRender();
   document.getElementById('rbFill').style.width = pct + '%';
   document.getElementById('rbTxt').textContent = txt;
-  document.getElementById('ovF').textContent = 'F ' + SERIAL.ov[0] + '%';
-  document.getElementById('ovS').textContent = 'S ' + SERIAL.ov[2] + '%';
+  document.getElementById('ovF').textContent = SERIAL.ov[0] + '%';
+  document.getElementById('ovS').textContent = SERIAL.ov[2] + '%';
+  document.getElementById('ovR').textContent = SERIAL.ov[1] + '%';
 }
 
 // ---- jobs handed over from 454 Design ("Preview in 454 Control") ----
@@ -6255,10 +6309,7 @@ function wireMachine(){
   document.getElementById('rbHold').addEventListener('click', jobHold);
   document.getElementById('rbResume').addEventListener('click', jobResume);
   document.getElementById('rbStop').addEventListener('click', jobStop);
-  document.getElementById('rbDoor').addEventListener('click', function(){
-    if (!SERIAL.connected) return;
-    sendRT(0x84, 'safety-door pause (retract + spindle stop) \u2014 Resume restores');
-  });
+  document.getElementById('rbDoor').addEventListener('click', jobPauseLift);
   document.getElementById('rbAdjust').addEventListener('click', function(){
     document.getElementById('ovRow').classList.toggle('on');
   });

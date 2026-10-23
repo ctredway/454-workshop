@@ -11,6 +11,9 @@ function jogCmd(p, dist, feed){
 // travel is closer than that, so it can't run into the limit switch.
 function jogLiftZ6(){
   if (!requireIdle('lift')) return;
+  // The room above is measured from where Z is now. The clamp keeps the position a held jog started from; used as it
+  // was, it said "already at the top" and nothing moved (Clint, 2026-10-22: "the Z + 6mm button does nothing").
+  if (!JOGC.active) JOGC.pred = {x: SERIAL.mpos.x, y: SERIAL.mpos.y, z: SERIAL.mpos.z};
   var d = clampJogDist([0, 0, 1], 6);
   if (!(d > 0.05)){ logC('sys', 'Z is already at the top of its travel'); return; }
   sendLine(jogCmd([0, 0, 1], d, PROFILE.jog.fastZ));

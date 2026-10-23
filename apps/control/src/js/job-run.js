@@ -271,6 +271,7 @@ function jobStart(opts){
   if (!go){ logC('sys', 'job not started'); return; }
 
   jogModalClose();
+  PAUSED = null;                             // a new job: a paused one is over
   JOB.active = true; JOB.held = false; JOB.toolWait = null;
   JOB.list = list; JOB.total = list.length;
   JOB.idx = 0; JOB.acked = 0; JOB.lastLn = 0; JOB.inflight = [];
@@ -306,8 +307,26 @@ function jobHold(){
 }
 function jobResume(){
   if (!SERIAL.connected) return;
+  if (PAUSED && !JOB.active && !ENDING){ jobStartFrom(PAUSED.line, {paused: true}); return; }   // after Pause & lift
   sendRT(0x7e, '~ (resume)');
   if (JOB.active){ JOB.held = false; jobFill(); }
+}
+// PAUSE & LIFT. The firmware's own pause with a lift (the safety door's "parking") isn't built into stock Shapeoko
+// firmware: there the old Pause button stopped the spindle but never lifted (Clint, 2026-10-22). So Control does it:
+// as End job, hold, wait until still, reset to clear what's queued (the position is kept), then lift Z to the top and
+// stay above the spot. Resume carries on from where it stopped, as Recover does (the spindle on, down carefully), with
+// the job's own feed, spindle and Z adjustments. PAUSED: {line} while paused like this.
+var PAUSED = null;
+function jobPauseLift(){
+  if (!SERIAL.connected || !JOB.active || ENDING) return;
+  if (JOB.toolWait || PROBE.active){ uiNote('Not now', 'The machine is at a tool change or measuring a tool. Pause & lift works while it’s cutting.'); return; }
+  recoveryNote('paused');
+  JOB.ending = true;                                   // send nothing more from the file
+  ENDING = {stage: 'holding', since: performance.now(), pause: true};
+  sendRT(0x21, '! (feed hold)');
+  updateJobUI('pausing — slowing to a stop…');
+  logC('sys', 'pausing: holding, then lifting clear');
+  ENDING.timer = setInterval(endingTick, 100);
 }
 // END JOB, done properly. GRBL can only cancel moves it has already queued by resetting, and a
 // reset while moving loses the machine's position. So: hold, wait until the machine has actually
@@ -317,6 +336,15 @@ var ENDING = null;
 function jobStop(){
   if (!SERIAL.connected) return;
   if (ENDING) return;                                  // already ending
+  if (PAUSED && !JOB.active){                          // paused and lifted already: finish off as a job does
+    PAUSED = null;
+    var wp = SERIAL.wpos ? {x: SERIAL.wpos.x, y: SERIAL.wpos.y} : null;
+    var fin = ['G90', 'G21'].concat(SERIAL.homedSeen ? endingMoves(wp).cmds : []);
+    fin.forEach(function (c) { sendLine(c); });
+    updateJobUI('ended. Recover can resume from where it stopped.');
+    logC('sys', 'job ended while paused');
+    return;
+  }
   recoveryNote('stopped');
   PROBE.active = false; PROBE.onDone = null;
   JOB.ending = true;                                   // send nothing more from the file
@@ -337,7 +365,7 @@ function endingTick(){
     sendRT(0x18, 'ctrl-x (soft reset: clears the queued moves)');
     JOB.active = false; JOB.held = false; JOB.toolWait = null; JOB.inflight = [];
     maybeToolPrompt();
-    updateJobUI('ending \u2014 queue cleared, lifting clear\u2026');
+    updateJobUI((ENDING.pause ? 'pausing' : 'ending') + ' \u2014 queue cleared, lifting clear\u2026');
     return;
   }
   if (ENDING.stage === 'reset'){
@@ -345,14 +373,21 @@ function endingTick(){
     clearInterval(ENDING.timer);
     var done = ENDING; ENDING = null; JOB.ending = false;
     if (SERIAL.state === 'Alarm'){
-      updateJobUI('ended, but the controller is in alarm \u2014 home it before moving');
-      logC('err', 'job ended; controller reports ALARM after the reset, so nothing was moved');
+      updateJobUI((done.pause ? 'paused' : 'ended') + ', but the controller is in alarm \u2014 home it before moving');
+      logC('err', 'job ' + (done.pause ? 'paused' : 'ended') + '; controller reports ALARM after the reset, so nothing was moved');
       return;
     }
     // lift and park exactly as the end of a finished job does
     var cmds = ['G90', 'G21'];
     if (SERIAL.homedSeen) cmds.push(zHighCmd(topZ()));
     else { cmds.push('G91 G0 Z' + travelZ().toFixed(1)); cmds.push('G90'); }
+    if (done.pause){                                   // paused: lifted, and staying above the spot
+      cmds.forEach(function (c) { sendLine(c); });
+      PAUSED = {line: JOB.stopInfo ? JOB.stopInfo.line : 1};
+      updateJobUI('paused and lifted at line ' + PAUSED.line + ' \u2014 Resume carries on from there; End job finishes.');
+      logC('sys', 'paused: spindle off, lifted clear. Resume carries on from line ' + PAUSED.line);
+      return;
+    }
     if (SERIAL.homedSeen){
       var wp = SERIAL.wpos ? {x: SERIAL.wpos.x, y: SERIAL.wpos.y} : null;
       endingMoves(wp).cmds.forEach(function (c) { cmds.push(c); });

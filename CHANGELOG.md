@@ -33,10 +33,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### 0.6.2-beta.62 — the Working panel for a new thickness, and Z zero at the bottom
+### 0.6.2-beta.62 — Pause & lift, Z +6 mm, a clearer Adjust panel, and a new thickness done right
 - Includes Design 0.148.1: a new material thickness is worked out with the Working panel up, and with Z zero at the
   bottom every toolpath follows it (only through cuts did).
-- Includes Control 0.37.2: the Z nudge buttons say deeper or shallower.
+- Includes Control 0.37.2 and 0.38.0: Pause & lift lifts (Control does it, not the firmware), Z +6 mm moves, and the
+  Adjust panel is four labelled rows. (The first beta.62 draft, without 0.38.0, was deleted unpublished.)
 
 ### 0.6.2-beta.61 — the right feed after the BitSetter, inch files, and the Windows icon
 - Includes Control 0.37.1: a toolpath run after left-out ones, or after a tool change, cuts at the file's feed, not
@@ -739,6 +740,25 @@ into the PC; and with a long list, Cancel scrolled away.
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.38.0 — Pause & lift that lifts, Z +6 mm that moves, and a clearer Adjust panel
+Clint, 2026-10-22: "in the jog dialog, the Z + 6mm button does nothing", "the pause and raise stops the movement and
+spins down the spindle but it does not raise the spindle", and the run toolbar's Adjust panel wasn't clear.
+- **Z +6 mm** measured the room above the bit from the position a held jog last started from (the top of travel,
+  before any held jog), so it usually found none, said "already at the top" in the console, and didn't move. It now
+  measures from where Z is (`jog-lift.test.mjs`, 3 tests; all fail without the fix).
+- **Pause ⏏ is now Pause & lift, and lifts.** It sent the controller's safety-door signal, whose lift ("parking") isn't
+  built into stock Shapeoko firmware, so it stopped the spindle but never lifted. Control now does it, as End job
+  does: hold, wait until still, reset to clear what's queued (the position is kept), then lift Z to the top in
+  millimetres and stay above the spot. **Resume** carries on from where it stopped, Recover's way (the spindle on with
+  its spin-up wait, down carefully; with the BitSetter, the bit measured again, since the reset clears the
+  controller's tool length), keeping the job's feed, spindle and depth adjustments. **End job** while paused finishes
+  as a job does. Refused at a tool change or while measuring. (`pause-lift.test.mjs`, 5 tests; broken on purpose 4
+  ways, all caught. Not yet run on a real machine.)
+- **The Adjust panel** is four labelled rows, each with what it changes and what it's at now: Feed rate (how fast it
+  cuts), Spindle speed (VFD only), Rapid moves (in the air, between cuts), and Depth nudge (▼ deeper · ▲ shallower,
+  with No nudge to put it back). Buttons carry their units (−10%, ▼ 0.1); "Keep these for the next job" below.
+  Checked in the real app; the run bar's buttons no longer wrap onto two lines.
 
 ### 0.37.2 — the Z nudge buttons say which way they go
 Clint noticed that − in the Adjust panel's Z row cuts deeper and + shallower. That's meant (+Z is up, as everywhere
