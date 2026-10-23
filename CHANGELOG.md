@@ -764,6 +764,21 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.40.1 — the Z nudge moves Z, on any file **(machine)**
+Clint, 2026-10-23: “the numbers update in the panel but the Z doesn’t actually move”. The nudge is the controller’s
+tool length offset (G43.1), which GRBL takes only on a move that gives Z: one giving only X and Y keeps the height it’s
+at. Design’s pocket passes give Z at each depth, but a surfacing pass at one depth gives it once, so nothing moved until
+the lift at the end. (Shown on the simulated machine, which keeps the same rule.) Not new in the last betas.
+- **After the offset, Z goes to where the file has it** at the next line (znMoveNow), which the new offset makes the
+  nudged height: straight up or down, at most 400 mm/min. Then the file’s own units, distance mode, move and feed
+  again; in an arc, its G2 or G3 goes on the file’s next line (it can’t go on a line of its own).
+- **In an inch file the nudge is in millimetres**, as the panel says (G21 with the offset, inches again after). It
+  used to be read as inches: “0.1” was 2.54 mm.
+- It still lands after the moves already handed to the controller (its queue holds about 15): on long rows, that can
+  be a row or two.
+- nudge-sim.test.mjs, 3 tests (Control’s real files streaming to the simulated machine: a surfacing pass in mm and in
+  inches, nudged down then up, Z measured, the file’s feed back; an arc); broken on purpose 5 ways, all caught.
+
 ### 0.40.0 — only what can be done now can be pressed
 Clint, 2026-10-23: “when the machine is moving, like a pause and lift, any other movement buttons need to be
 disabled”, and the Adjust panel’s spindle speed hidden with a router: “I am very big on hiding or disabling UI elements

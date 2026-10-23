@@ -983,7 +983,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.40.0';
+var CONTROL_VERSION = '0.40.1';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -3628,13 +3628,41 @@ function znAdjust(d){
   // A nudge still waiting to be sent (the controller's buffer is full on long cuts) sits next in line:
   // this one replaces it. Adding another in front would send them newest first, and the oldest would
   // be the one left in force, with the panel showing the newest.
-  var next = JOB.list[JOB.idx];
-  if (next && next.zn) next.text = 'G43.1 Z' + tlo.toFixed(3);
-  else JOB.list.splice(JOB.idx, 0, {text: 'G43.1 Z' + tlo.toFixed(3), ln: 0, syn: true, zn: true});
+  while (JOB.list[JOB.idx] && JOB.list[JOB.idx].zn) JOB.list.splice(JOB.idx, 1);
+  var mv = znMoveNow();                                  // (in an inch file, the offset and the move in mm, then inches again)
+  var lines = [(mv.inch ? 'G21 ' : '') + 'G43.1 Z' + tlo.toFixed(3)].concat(mv.after);
+  JOB.list.splice.apply(JOB.list, [JOB.idx, 0].concat(lines.map(function (t) { return {text: t, ln: 0, syn: true, zn: true}; })));
   JOB.total = JOB.list.length;
   logC('sys', 'Z nudge ' + (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm (G43.1 queued, lands within buffered moves)');
   znDisplay();
   jobFill();
+}
+// The controller takes a new tool length offset (G43.1) only on a move that gives Z: one with only X and Y keeps the
+// height it's at. A surfacing pass, all at one depth, gives Z once, so the nudge changed the panel and nothing moved
+// until the lift at the end (Clint, 2026-10-23). So after it: Z to where the file has it at the next line, which the
+// new offset makes the nudged height (straight up or down, at most 400 mm/min), then the file's own units, distance
+// mode, move and feed again. Nothing to go on (no file line ahead, or the file moves in machine coordinates): just the
+// offset, as before. {inch: the file is in inches, so the offset goes with G21 and this puts G20 back; after: the lines}
+function znMoveNow(){
+  var none = {inch: false, after: []};
+  if (typeof stateAtLine !== 'function' || !MODEL || !MODEL.lines) return none;
+  var ln = 0, at = -1;
+  for (var i = JOB.idx; i < JOB.list.length && !ln; i++){ var it = JOB.list[i]; if (it && it.ln > 0 && !it.syn){ ln = it.ln; at = i; } }
+  if (!ln) return none;
+  var st = stateAtLine(ln), inch = st.units === 'in';
+  if (st.uncertain || st.motion === null) return {inch: inch, after: inch ? ['G20'] : []};
+  var fmm = st.feedRaw !== null ? st.feedRaw * (st.units === 'in' ? 25.4 : 1) : 400;
+  var out = ['G90 G1 Z' + st.z.toFixed(3) + ' F' + Math.round(Math.min(fmm, 400))];
+  if (st.units === 'in') out.push('G20');
+  if (!st.abs) out.push('G91');
+  var f = st.feedRaw !== null ? 'F' + st.feedRaw : '';
+  if (st.motion <= 1) out.push('G' + st.motion + (f ? ' ' + f : ''));
+  else {                                               // an arc can't be set up on a line of its own: on the next one
+    if (f) out.push(f);
+    var nx = JOB.list[at];
+    if (!/G\s*0*[0123](?![0-9.])/i.test(splitGcodeComments(nx.text).code)) JOB.list[at] = Object.assign({}, nx, {text: 'G' + st.motion + ' ' + nx.text});
+  }
+  return {inch: inch, after: out};
 }
 // A Z nudge lasts for the job it was made in. Left in the controller it shifts the next job by the same
 // amount with nothing on screen saying so: the Adjust panel starts every job at Z +0.00. So it comes off

@@ -157,7 +157,7 @@ with what it's at now beside its name:
 | **Feed rate** | How fast it cuts, as a percentage of what the file asks for: 10% or 1% at a time, or back to 100%. |
 | **Spindle speed** | The bit's RPM, the same way. Only for a VFD spindle: with a router (Settings → Spindle type) this row isn't shown, as its speed is on its dial. |
 | **Rapid moves** | How fast the machine travels in the air between cuts: 25%, 50% or 100%. |
-| **Depth nudge** | Moves every cut down (**▼ deeper**) or up (**▲ shallower**), 0.02 or 0.1 mm at a time, for a cut that is a little too deep or not quite through; **No nudge** puts it back. It takes effect a few moves later, once the moves already handed to the machine are done. |
+| **Depth nudge** | Moves every cut down (**▼ deeper**) or up (**▲ shallower**), 0.02 or 0.1 mm at a time, for a cut that is a little too deep or not quite through; **No nudge** puts it back. It takes effect a few moves later, once the moves already handed to the machine are done: then Z moves straight up or down by the nudge, even partway along a cut. |
 
 Every job starts with all four at normal: 100% and no nudge. What you adjust in one job ends with that job.
 To carry it into the next job, tick **Keep these for the next job**. The next job then asks before it starts,
