@@ -98,7 +98,7 @@ function cutToForm(){
   cutRestFill();
   document.getElementById('cutDir').value = CUT.climb === false ? 'conv' : 'climb';
   document.getElementById('cutLead').value = CUT.leadType || 'none';
-  document.getElementById('cutRamp').value = CUT.rampOff ? 'off' : 'on';
+  document.getElementById('cutRamp').value = CUT.rampOff ? 'off' : CUT.rampSlow ? 'slow' : 'on';
   document.getElementById('cutRampLen').value = CUT.rampLen > 0 ? fmtDisp(CUT.rampLen) : '';
   document.getElementById('cutLeadSize').value = fmtDisp(CUT.leadSize > 0 ? CUT.leadSize : (CUT.dia > 0 ? CUT.dia : 3));
   document.getElementById('cutAllow').value = CUT.allowance > 0 ? fmtDisp(CUT.allowance) : '';
@@ -144,6 +144,8 @@ function cutFromForm(){
   CUT.climb = document.getElementById('cutDir').value !== 'conv';
   CUT.leadType = document.getElementById('cutLead').value;
   CUT.rampOff = document.getElementById('cutRamp').value === 'off';
+  CUT.rampSlow = document.getElementById('cutRamp').value === 'slow' || undefined;   // the plunge rate all the way down
+  if (!CUT.rampSlow) delete CUT.rampSlow;
   var rl = document.getElementById('cutRampLen').value.trim();       // empty: automatic, following the cutter
   CUT.rampLen = rl === '' ? null : (lenIn(rl) > 0 ? lenIn(rl) : CUT.rampLen);
   var lsz = lenIn(document.getElementById('cutLeadSize').value); if (lsz > 0) CUT.leadSize = lsz;
@@ -258,7 +260,7 @@ function cutRenderInner(){
   if (CUT.climb === false && !drilling && !vcarving) cutRender.extra += ' Conventional milling.';
   if (pocketing || CUT.side === 'inside' || CUT.side === 'outside' || CUT.side === 'on')
     cutRender.extra += CUT.rampOff ? ' Each pass plunges straight down, at the plunge rate.'
-      : ' Each pass ramps in over ' + fmtDisp(tpRamp(CUT)) + ' ' + unitTag() + ', at the plunge rate.';
+      : ' Each pass ramps in over ' + fmtDisp(tpRamp(CUT)) + ' ' + unitTag() + (CUT.rampSlow ? ', at the plunge rate.' : ', as fast as the feed allows with the bit coming down no faster than the plunge rate.');
   if ((CUT.side === 'inside' || CUT.side === 'outside') && CUT.leadType && CUT.leadType !== 'none')
     cutRender.extra += (CUT.allowance > 0 && CUT.finishPass)
       ? ' The finishing pass leads onto and off the line (' + (CUT.leadType === 'arc' ? 'arc' : 'line') + ')' + (CUT.rampOff ? '; the roughing passes too.' : '; roughing passes ramp in and lead off.')
@@ -675,7 +677,7 @@ function cutApply(){
     vcMax: CUT.vcMax || 0, vTip: CUT.vBall ? 0 : CUT.vTip || 0, vBall: CUT.vBall && CUT.vTipR > 0 ? true : undefined, vTipR: CUT.vBall && CUT.vTipR > 0 ? CUT.vTipR : undefined,
     chamW: CUT.chamW || 1, vAngle: CUT.vAngle || 90, chamMode: CUT.chamMode || 'edge', toolChosen: !!CUT.toolChosen,
     pocketClear: CUT.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: CUT.rasterAngle || 0,
-    rampLen: CUT.rampLen > 0 ? CUT.rampLen : null, rampOff: !!CUT.rampOff, allowance: CUT.allowance || 0, climb: CUT.climb !== false, finishPass: !!(CUT.allowance > 0 && CUT.finishPass),
+    rampLen: CUT.rampLen > 0 ? CUT.rampLen : null, rampOff: !!CUT.rampOff, rampSlow: CUT.rampSlow ? true : undefined, allowance: CUT.allowance || 0, climb: CUT.climb !== false, finishPass: !!(CUT.allowance > 0 && CUT.finishPass),
     leadType: CUT.leadType || 'none', leadSize: CUT.leadSize || 0,
     vcFrom: CUT.vcFrom, side: CUT.side, ents: CUT.ents.slice(), peck: CUT.peck || 0,
     through: CUT.side === 'chamfer' || CUT.side === 'vcarve' ? false : !!CUT.through, over: CUT.over === undefined ? 0.2 : CUT.over,

@@ -265,13 +265,16 @@ going round it, so check the thickness suits the wood before you cut. **Preview 
 
 Profiles and pockets: **Ramp in** sets how each pass goes down into the material.
 
-- **Ramp** (the default): the cutter slopes down along the cut, at the plunge rate, over the length in the box
-  beside it. Leave the box empty for four cutter diameters (at least 4 mm), which follows the cutter if you
+- **Ramp** (the default): the cutter slopes down along the cut over the length in the box beside it, as fast
+  as the cutting feed allows with the bit coming down no faster than the plunge rate. On a long, gentle ramp
+  that’s the cutting feed; on a short, steep one it’s slower. Leave the box empty for four cutter diameters (at least 4 mm), which follows the cutter if you
   change it; type a length to set your own. On a profile the passes run into each other without stopping:
   each lap ends back at the start and the cutter carries straight on, ramping down to the next depth as it
   goes. After the last pass it carries on past the start and cuts the ramped stretch again at full depth, so
   a through-cut never leaves a sloping web holding the part. Pockets ramp along their rings, or back and forth
   along a line when rastering. Converted VCarve toolpaths keep VCarve’s ramp length.
+- **Ramp, slowly**: the same ramp, at the plunge rate all the way down, as before Design 0.152.0. For a
+  cutter or wood that needs it gentler.
 - **Plunge**: the cutter goes straight down at the plunge rate, then cuts. Use it with a cutter that can
   plunge (a centre-cutting end mill), and a plunge rate to suit.
 
@@ -279,6 +282,9 @@ Ramping is easier on the cutter and the machine than plunging, especially in har
 cutters. On a profile, a ramp is different from a [lead](#lead-inout): a ramp comes down along the line; a
 lead comes onto the line from the side, at depth. The toolpath's card and the job sheet show which it does
 (**Entry**), and the hint under the settings says how far it ramps.
+
+Any cut that slopes down, such as down the side of a [3D tab](#tabs), comes down no faster than the plunge
+rate either.
 
 ## Tools and materials
 

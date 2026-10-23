@@ -125,7 +125,7 @@ function tpGenerateMoves(tp){
                            strategy: tp.pocketClear === 'raster' ? 'raster' : 'offset', rasterAngle: tp.rasterAngle || 0,
                            allowance: tp.allowance || 0, finishPass: !!tp.finishPass,
                            z0: zs, safeZ: zs + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
-                           climb: tp.climb !== false, ramp: {length: tpRamp(tp)}, rest: rest});
+                           climb: tp.climb !== false, ramp: {length: tpRamp(tp), slow: !!tp.rampSlow}, rest: rest});
       if (pr.warning) warnP = pr.warning;
       restRuns += pr.restRuns || 0;
       rings += pr.rings || 0; tp.rasterLines = (tp.rasterLines || 0) + (pr.rasterLines || 0);
@@ -172,7 +172,7 @@ function tpGenerateMoves(tp){
       if (cmode === 'edge'){
         var cr = Cam.profile({outline: o.loop, side: 'on', toolDia: tp.dia, depth: cd, passDepth: tp.step, z0: cz,
                               safeZ: cz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
-                              climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, cd * 3)}});
+                              climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, cd * 3), slow: !!tp.rampSlow}});
         cr.moves.forEach(function (m) { cm.push(m); });
         return;
       }
@@ -185,7 +185,7 @@ function tpGenerateMoves(tp){
         loops.forEach(function (lp) {
           var cr2 = Cam.profile({outline: lp, side: 'on', toolDia: tp.dia, depth: zk, passDepth: zk, z0: cz,
                                  safeZ: cz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
-                                 climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, zk * 3)}});
+                                 climb: tp.climb !== false, ramp: {length: tp.rampLen || Math.max(4, zk * 3), slow: !!tp.rampSlow}});
           cr2.moves.forEach(function (m) { cm.push(m); });
         });
       }
@@ -221,7 +221,7 @@ function tpGenerateMoves(tp){
       lead: tp.leadType && tp.leadType !== 'none' ? {type: tp.leadType, size: tp.leadSize > 0 ? tp.leadSize : tp.dia} : null,
       feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2), climb: tp.climb !== false, safeZ: tpSurface() + (tp.safeZ || 6),
       tabs: tp.tabsOn && pts && pts.length ? {length: tp.tabLen || 4, thickness: tpTabHeight(tp), shape: tp.tabStyle === '3d' ? '3d' : 'flat', at: pts} : null,
-      ramp: {length: tpRamp(tp)},
+      ramp: {length: tpRamp(tp), slow: !!tp.rampSlow},
       startAt: starts[li] || null
     });
     if (res.warning) warn = res.warning;

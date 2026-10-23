@@ -17,7 +17,7 @@ function tpRows(tp){
   // (after the line above, not in it: an if here split that chain, and drillings and V-carves got a Shapes line too)
   if (tp.side === 'vcarve' && tp.vcFloor > 0 && tpClearingOf(tp)) row('Floor', 'also flattens what \u201c' + tpClearingOf(tp).name + '\u201d can\u2019t reach: its corners and narrow parts');
   if (tp.side === 'pocket' || tp.side === 'inside' || tp.side === 'outside' || tp.side === 'on')
-    row('Entry', tp.rampOff ? 'straight plunge' : 'ramps in over ' + fmtDisp(tpRamp(tp)) + ' ' + unitTag());
+    row('Entry', tp.rampOff ? 'straight plunge' : 'ramps in over ' + fmtDisp(tpRamp(tp)) + ' ' + unitTag() + (tp.rampSlow ? ', at the plunge rate' : ''));
   if (tp.warning) row('Note', tp.warning);
   if (tpExprProblem(tp)) row('⚠ Parameters', tpExprProblem(tp) + '. It can’t be saved as G-code until that’s put right');
   if (tpPastNow(tp)) row('⚠ Depth', tpPastSay(tp));

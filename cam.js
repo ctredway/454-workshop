@@ -142,6 +142,29 @@
     for (var p = 1, n = passCount(depth, passDepth); p <= n; p++) out.push(Math.min(depth, passDepth * p));
     return out;
   }
+  // RAMPS AT THE CUTTING FEED: a ramp's moves are made at the plunge rate, then sped up here, each move as fast as
+  // the cutting feed allows while the bit still comes down no faster than the plunge rate (GRBL's F is the speed
+  // along the move, so its downward part is F times the drop over the move's length). A ramp move that doesn't go
+  // down goes at the feed; one straight down stays at the plunge rate; never slower than the plunge rate.
+  // ramp.slow keeps the plunge rate throughout. Any other move that slopes down (down a 3D tab's side) is held
+  // to the same limit. Whole mm/min, rounded down.
+  function rampFeeds(moves, o){
+    if (!(o.plunge > 0)) return moves;
+    var fast = !!(o.ramp && o.ramp.length > 0 && !o.ramp.slow && o.feed > o.plunge), x, y, z;
+    moves.forEach(function (m) {
+      var nx = m.x !== undefined ? m.x : x, ny = m.y !== undefined ? m.y : y, nz = m.z !== undefined ? m.z : z;
+      if (m.g === 1 && m.f !== undefined && (m.x !== undefined || m.y !== undefined) && x !== undefined && z !== undefined){
+        var dxy = Math.hypot(nx - x, ny - y), dz = z - nz;
+        if (dxy > 1e-9){
+          var cap = dz > 1e-9 ? Math.max(o.plunge, Math.floor(o.plunge * Math.hypot(dxy, dz) / dz)) : Infinity;
+          if (fast && m.f === o.plunge) m.f = Math.min(o.feed, cap);
+          else if (m.f > cap) m.f = cap;
+        }
+      }
+      x = nx; y = ny; z = nz;
+    });
+    return moves;
+  }
   function profile(opts){
     var o = Object.assign({
       side: 'outside', toolDia: 3.175, depth: 3, z0: 0, passDepth: 1,
@@ -349,7 +372,7 @@
     });
 
     return {
-      moves: moves, loops: loops.length, passes: passes, leadsDropped: leadsDropped,
+      moves: rampFeeds(moves, o), loops: loops.length, passes: passes, leadsDropped: leadsDropped,
       depth: o.depth, tabs: o.tabs ? (o.tabs.at ? o.tabs.at.length : o.tabs.count * loops.length) : 0
     };
   }
@@ -699,7 +722,7 @@
       moves.push({g: 0, z: clear});
     }
     moves.push({g: 0, z: o.safeZ});
-    return {moves: moves, rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD, middles: midRuns.length,
+    return {moves: rampFeeds(moves, o), rings: raster ? ringsByLevel[0].length : ringCount, rasterLines: rasterSegs.length, passes: passes, depth: o.depth, levels: levels.length, maxDepthInside: maxD, middles: midRuns.length,
             restRuns: restRuns ? restRuns.reduce(function (s3, a3) { return s3 + a3.length; }, 0) : undefined, restLeft: restRuns ? restLeft * res * res : undefined};
   }
 

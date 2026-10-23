@@ -116,7 +116,8 @@ without a published release looks to them like a newest release with nothing in 
   `tpPassCount` in Design's `toolpath-passes.js` must agree, and a test holds them together). A division a
   hair over a whole number (19.05 / 6.35) doesn't add a pass. The editor's Passes row shows every depth.
 - **Profiles and pockets ramp in by default** (4× the cutter's diameter, at least 4 mm, or a set length);
-  **Ramp in: Plunge** goes straight down. A profile that ramps uses only its lead-out. (`tpRamp` in
+  A ramp runs as fast as the feed allows with the bit coming down no faster than the plunge rate (`rampFeeds` in
+  `cam.js`; **Ramp, slowly** keeps the plunge rate), and every sloping move down is held to that. **Ramp in: Plunge** goes straight down. A profile that ramps uses only its lead-out. (`tpRamp` in
   `toolpath-generate.js`; the CAM engine takes ramp length 0 as a plunge.)
 - **Copy and paste bring dimensions** (`clipboard.js`): a dimension whose shapes were all copied is pasted
   measuring the copies; one to a shape left behind stays. Ctrl+V pastes at the pointer, Ctrl+Shift+V in place.

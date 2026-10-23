@@ -1352,6 +1352,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.152.0 — ramps at the cutting feed **(machine)**
+Clint, 2026-10-23, after measuring where his jobs spend their time (cutting, 75–98%): ramp in faster by default.
+- **A ramp goes as fast as the cutting feed allows, with the bit coming down no faster than the plunge rate.** It
+  went at the plunge rate all the way. GRBL’s F is the speed along the move, so each ramp move gets the fastest feed
+  (up to the cutting feed) whose downward part is the plunge rate or less; a long, gentle ramp runs at the feed, a
+  short, steep one slower. Only the speeds change: the path is the same (`rampFeeds` in `cam.js`, for profiles
+  and pockets). Typical saving 1–3% of a toolpath’s time.
+- **Ramp in: Ramp, slowly** keeps the plunge rate, as before (`tp.rampSlow`).
+- **Down the side of a 3D tab,** the cutter came down at the full cutting feed (over 1,000 mm/min on a steep tab
+  side with a 1,500 mm/min feed). Every sloping move down is now held to the plunge rate, whatever the setting.
+- `ramp-feed.test.mjs`, 12 tests: profiles, pockets (offset and raster), steep and gentle ramps, both kinds of
+  tab, the path unchanged, and the setting saved. Broken on purpose 4 ways, all caught.
+
 ### 0.151.0 — the History bar: an icon, a marker to drag, and right-click to delete
 Clint asked for four changes, as in Fusion's timeline:
 - **An icon instead of the word History** (a clock with a turning arrow), still showing and hiding the steps, named
