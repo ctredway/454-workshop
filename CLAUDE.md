@@ -42,7 +42,8 @@ part. Correctness beats speed. Prove changes; don't assume them.
 | `apps/gadgets/` | the website's gadgets (`/gadgets/`): makers that run in the browser and download a file. The parts bin (`parts-bin/`) makes a 3MF with Manifold (`vendor/manifold-3d`, copied in: Cloudflare installs only the docs' packages) |
 | `docs-site/` | the docs (Astro Starlight): `src/content/docs/*.mdx`, screenshots in `src/assets/shots` |
 | `site/` | the website's landing page and `build.js` |
-| `.github/workflows/` | `test.yml` (every push), `windows.yml` ("desktop build": Windows and Linux builds, one draft release) |
+| `.github/workflows/` | `test.yml` (every push; the desktop app's tests in a Linux job of their own, for socat), `windows.yml` ("desktop build": Windows and Linux builds, one draft release), `codeql.yml` (code scanning, results under the Security tab) |
+| `.github/dependabot.yml` | security fixes only, for the libraries in `/`, `apps/desktop` and `docs-site` (routine bumps off) |
 
 ## Rules
 

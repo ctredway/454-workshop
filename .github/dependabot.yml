@@ -1,0 +1,13 @@
+# Dependabot: GitHub watches the libraries the project uses and, when one has a known security hole, opens a pull
+# request with the fix. Routine version bumps are turned off (open-pull-requests-limit: 0), so only security fixes
+# come through; the check for them runs weekly. Each pull request runs the tests before it can be merged.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories: ['/', '/apps/desktop', '/docs-site']
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 0
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 0

@@ -1,0 +1,19 @@
+name: code scanning
+# GitHub's CodeQL reads the code for common security mistakes (unsafe handling of what a file or page supplies,
+# and the like) and lists what it finds under the repository's Security tab. It changes nothing in the code.
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+  schedule: [{ cron: '23 6 * * 1' }]   # weekly too, as CodeQL's checks are updated
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions: { security-events: write, contents: read, actions: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          config-file: ./.github/codeql/codeql-config.yml
+      - uses: github/codeql-action/analyze@v3

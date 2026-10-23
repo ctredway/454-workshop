@@ -1,0 +1,10 @@
+name: 454 Workshop
+# The two pages are built from apps/control/src and apps/design/src, which are scanned: scanning the built copies
+# too would report everything twice. Libraries copied in from elsewhere, and build output, are left out.
+paths-ignore:
+  - index.html
+  - design.html
+  - '**/vendor/**'
+  - '**/dist/**'
+  - site-dist
+  - '**/node_modules/**'

@@ -22,3 +22,22 @@ jobs:
         run: node --test 'apps/gadgets/test/*.test.mjs'
       - name: The website builds, with every internal link checked (the same build Cloudflare runs)
         run: npm ci --prefix docs-site && node site/build.js
+  desktop:
+    # the desktop app's own tests: the updater, the serial port (against the simulated GRBL machine, through socat's
+    # pretend serial ports, which is why this runs on Linux), the menus, recent files and the update notice
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/desktop/package-lock.json
+      - run: sudo apt-get update && sudo apt-get install -y socat
+      - run: npm ci && npm run build
+      - name: The desktop app's tests
+        working-directory: apps/desktop
+        env: { ELECTRON_SKIP_BINARY_DOWNLOAD: 1 }
+        run: npm ci && npx vitest run
