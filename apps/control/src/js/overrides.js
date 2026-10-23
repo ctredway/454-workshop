@@ -69,7 +69,12 @@ function adjBegin(keep){
   }
   znDisplay();
 }
-var ZN = {val:0};
+// val: the nudge asked for; inCtl: the one the controller has taken (it took the line), shown in the Z readout. The
+// controller reports its work position without its tool length offset, the nudge being part of it, so the readout
+// said Z hadn't moved when the bit had (Clint, 2026-10-23: “the numbers update in the panel but the Z doesn't
+// actually move”). zShown() adds it back: the bit's height from Z zero.
+var ZN = {val:0, inCtl:0};
+function zShown(){ return SERIAL.wpos.z + (ZN.inCtl || 0); }
 function znDisplay(){
   var el = document.getElementById('znLbl');
   if (el) el.textContent = (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm';
@@ -84,7 +89,7 @@ function znAdjust(d){
   while (JOB.list[JOB.idx] && JOB.list[JOB.idx].zn) JOB.list.splice(JOB.idx, 1);
   var mv = znMoveNow();                                  // (in an inch file, the offset and the move in mm, then inches again)
   var lines = [(mv.inch ? 'G21 ' : '') + 'G43.1 Z' + tlo.toFixed(3)].concat(mv.after);
-  JOB.list.splice.apply(JOB.list, [JOB.idx, 0].concat(lines.map(function (t) { return {text: t, ln: 0, syn: true, zn: true}; })));
+  JOB.list.splice.apply(JOB.list, [JOB.idx, 0].concat(lines.map(function (t, k) { return {text: t, ln: 0, syn: true, zn: true, nudge: k === 0 ? ZN.val : undefined}; })));
   JOB.total = JOB.list.length;
   logC('sys', 'Z nudge ' + (ZN.val >= 0 ? '+' : '') + ZN.val.toFixed(2) + ' mm (G43.1 queued, lands within buffered moves)');
   znDisplay();
@@ -127,6 +132,7 @@ function znRemove(when){
   ZN.val = 0; znDisplay();
   if (!SERIAL.connected) return;
   sendLine('G43.1 Z' + (PROBE.tlo || 0).toFixed(3));
+  ZN.inCtl = 0;
   logC('sys', 'Z nudge of ' + (was >= 0 ? '+' : '') + was.toFixed(2) + ' mm taken off ' + when +
        ': the next job cuts at the depths in its file. Nudge again in that job if it needs it.');
 }
@@ -134,6 +140,7 @@ function znRemove(when){
 function znApply(){
   if (!ZN.val || !SERIAL.connected) return;
   sendLine('G43.1 Z' + ((PROBE.tlo || 0) + ZN.val).toFixed(3));
+  ZN.inCtl = ZN.val;
 }
 
 function tcAutoNote(){

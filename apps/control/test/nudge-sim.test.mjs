@@ -78,3 +78,78 @@ test('in an arc: its G2 goes on the file’s next line (it can’t go on a line 
   const sent = C.JOB.list.slice(4).map((it) => it.text);
   assert.deepEqual(sent.slice(0, 4), ['G43.1 Z-0.100', 'G90 G1 Z-1.000 F400', 'F800', 'G2 X0 Y0 I-5 J0']);
 });
+
+// How far ahead the job is sent (job-run.js JOB_AHEAD_MS): with the file's times known (as Control parses every file),
+// a few seconds of it, so a nudge lands in seconds on long rows; and the machine never waits for a line.
+function timed(lines) {
+  const sim = new GrblSim({ start: { x: -500, y: -500, z: -50 } }), clock = { now: 0 };
+  const C = vm.createContext({});
+  vm.runInContext(read('../../../packages/gcode/src/parser.cjs'), C, { filename: 'parser.cjs' });
+  for (const f of ['recovery-state.js', 'overrides.js', 'job-streaming.js', 'job-run.js']) vm.runInContext(read('../src/js/' + f), C, { filename: f });
+  const el = () => ({ style: {}, textContent: '', hidden: false, classList: { toggle() {} }, focus() {} });
+  Object.assign(C, {
+    SERIAL: { connected: true, state: 'Idle', ov: [100, 100, 100], wpos: { x: 0, y: 0, z: 0 } }, PROBE: { active: false, tlo: 0 }, JOB: {},
+    RX_CAP: 100, PROFILE: { run: { tc: {}, park: {} } },
+    document: { getElementById: el, querySelectorAll: () => [] }, performance: { now: () => clock.now }, localStorage: { getItem: () => null, setItem() {} },
+    sendRT() {}, logC() {}, updateJobUI() {}, fmtTime: (s) => s, setTime() {}, qaBusy: () => false, sendLine: (s) => sim.write(s + '\n'),
+  });
+  C.MODEL = vm.runInContext('parseGcode', C)(lines.join('\n'), { rapidRate: 5000 });
+  C.MODEL.lines = lines;
+  const send = (l) => sim.write(l + '\n');
+  send('$X'); send('G21 G90'); send('G10 L20 P1 X0 Y0 Z0');
+  for (let t = 0; t < 1; t += 0.01) sim.step(0.01);
+  sim.out.length = 0;
+  Object.assign(C.JOB, { active: true, held: false, toolWait: null, idx: 0, acked: 0, inflight: [], startedAt: 0, clock: null, qEnd: 0, aheadAt: 0, lineMs: null,
+    list: lines.map((text, i) => ({ text, ln: i + 1 })), total: lines.length });
+  vm.runInContext('jobFill()', C);
+  let seen = 0, t = 0, tick = 0;
+  const R = { C, sim, stalled: 0, t: () => t };
+  R.step = (secs) => {
+    for (let s = 0; s < secs; s += 0.01) {
+      sim.step(0.01); t += 0.01; clock.now = t * 1000;
+      while (seen < sim.out.length) if (sim.out[seen++] === 'ok') vm.runInContext('onAck(true)', C);
+      if (C.JOB.active && C.JOB.idx < C.JOB.total && sim.state === 'Idle') R.stalled += 0.01;
+      if (t - tick >= 0.25) { tick = t; C.SERIAL.state = sim.state; vm.runInContext('jobAheadTick()', C); }   // a status report
+    }
+  };
+  R.machineZ = () => +/MPos:[-\d.]+,[-\d.]+,([-\d.]+)/.exec(sim.status())[1] + 50;
+  return R;
+}
+// the wasteboard: one depth, rows 300 mm long at 1000 mm/min, 18 s each
+const wasteboard = () => { const L = ['G21', 'G90', 'G0 Z5', 'G0 X0 Y0', 'G1 Z-0.1 F500', 'G1 X300 F1000'];
+  for (let i = 1; i <= 25; i++) { L.push('Y' + i * 8); L.push('X' + (i % 2 ? 0 : 300)); } return L.concat(['G0 Z5', 'M30']); };
+test('long rows: only a few seconds of the job is sent ahead, so a nudge lands in seconds, not minutes', () => {
+  const R = timed(wasteboard());
+  R.step(60);
+  assert.ok(Math.abs(R.machineZ() + 0.1) < 1e-6, 'cutting at 0.1 mm');
+  assert.ok(R.sim.planner.length <= 3, 'a couple of lines queued at the machine, not 15: ' + R.sim.planner.length);
+  vm.runInContext('znAdjust(-0.1)', R.C);
+  const t0 = R.t();
+  while (R.machineZ() > -0.199 && R.t() - t0 < 300) R.step(0.25);
+  assert.ok(R.t() - t0 < 25, 'Z went down ' + (R.t() - t0).toFixed(1) + ' s after the press (it was 4 minutes 22 seconds)');
+});
+test('and the machine never waits for a line: the job takes as long as the file says', () => {
+  const R = timed(wasteboard());
+  const est = R.C.MODEL.segs.reduce((a, s) => Math.max(a, s.t1), 0);
+  while (R.C.JOB.active && R.t() < 2000) R.step(1);
+  assert.equal(R.C.JOB.active, false, 'the job finished');
+  assert.ok(R.stalled < 0.05, 'stood still mid-job for ' + R.stalled.toFixed(2) + ' s');
+  assert.ok(R.t() < est + 15, 'took ' + R.t().toFixed(0) + ' s against the file’s ' + est.toFixed(0) + ' s');
+  assert.deepEqual(R.sim.errors, []);
+});
+test('held: the time held isn’t counted, so it doesn’t send the rest of the job when it resumes', () => {
+  const R = timed(wasteboard());
+  R.step(30);
+  R.sim.write('!'); R.step(60);                              // a hold for a minute
+  R.sim.write('~'); R.step(1);
+  assert.ok(R.sim.planner.length <= 3, 'still only a few lines queued after the hold: ' + R.sim.planner.length);
+});
+test('the Z readout shows the nudge once the controller has taken it', () => {
+  const R = timed(wasteboard());
+  R.step(60);
+  R.C.SERIAL.wpos.z = -0.1;                                  // what the controller reports: its offset left out
+  vm.runInContext('znAdjust(-0.1)', R.C);
+  assert.equal(vm.runInContext('zShown()', R.C), -0.1, 'pressed, not taken yet: the readout doesn’t jump ahead');
+  R.step(20);
+  assert.ok(Math.abs(vm.runInContext('zShown()', R.C) + 0.2) < 1e-9, 'taken: the bit’s height, 0.2 mm down');
+});

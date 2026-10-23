@@ -158,6 +158,10 @@ without a published release looks to them like a newest release with nothing in 
   M4** (default 7 s; a saved setting is never lowered), a lift before a spindle stop (never downwards), at a
   tool change a lift, a stop, and a restart if the file assumes the spindle is running, and at the end lift,
   stop, back to XY zero, park, with the file's M2 or M30 last.
+- **Only about 4 s of a job is queued at the machine** (`JOB_AHEAD_MS` in `job-run.js`, from the parser's times,
+  topped up on each status report), so a Z nudge or anything Control puts in the job lands in seconds; sent as fast as
+  the controller took it, a nudge on 19-second surfacing rows landed 4 minutes later. The Z readout adds the nudge
+  the controller has taken (`zShown`): the controller reports its work position without its tool length offset.
 - **Every job starts with feed, spindle and rapid at 100% and no Z nudge** (`overrides.js`). The nudge lives in
   the controller's tool length offset (G43.1), so it's taken off when the job finishes; left on, it shifts the
   next job with the panel reading Z +0.00 (a square cut 1 mm shallow that way). **Keep for the next job**

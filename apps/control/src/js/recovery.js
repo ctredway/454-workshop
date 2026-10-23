@@ -138,6 +138,7 @@ function jobStartFrom(target, opts){
   JOB.active = true; JOB.held = false; JOB.toolWait = null; JOB.parkPending = false;
   JOB.list = pre.concat(slice);
   JOB.total = JOB.list.length; JOB.idx = 0; JOB.acked = 0;
+  JOB.qEnd = 0; JOB.aheadAt = 0; JOB.lineMs = null;        // how far ahead: from nothing (job-run.js jobFill)
   JOB.inflight = []; JOB.startedAt = performance.now(); JOB.lastLn = snapped;
   JOB.useBS = useBS;
   JOB.segs = run.plan ? run.plan.segs : null;

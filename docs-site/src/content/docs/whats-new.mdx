@@ -12,6 +12,13 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## Not released yet
+
+- **Fixed: the Z nudge took minutes, and the readout didn’t show it.** In 454 Control, on a file with long
+  rows (a surfacing pass), the nudge waited behind minutes of the job already sent to the machine. Control now
+  sends only a few seconds ahead, so the nudge lands within seconds, and the Z readout includes it: it shows where
+  the bit is. **(cutting)**
+
 ## 0.6.2-beta.65
 
 23 October 2026

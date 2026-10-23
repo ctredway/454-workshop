@@ -768,6 +768,25 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.41.0 — the Z nudge lands in seconds, and the readout shows it **(machine)**
+Clint, 2026-10-23, on beta.65: “the Z nudge still doesn’t work”. On his wasteboard file, on the simulated machine with
+the real app and the real ▼ button, two things:
+- **It landed minutes after the press.** Control sent the job as fast as the controller would take it, and with rows
+  of 19 s the controller held 27 lines (15 planned, 12 waiting): the nudge took effect 4 minutes 22 seconds later.
+  Now only about 4 s of the job’s own motion is queued (JOB_AHEAD_MS, from the parser’s times at the feed override
+  now; topped up on every status report; a hold or a tool change doesn’t count). The next line is always there seconds
+  before it’s needed, so the machine doesn’t wait: the whole job took 8:57 against an estimate of 8:58. The nudge
+  went down 13 s after the press. This changes every job: it was the controller’s buffer that set how far ahead.
+- **The Z readout didn’t show it.** The controller reports its work position without its tool length offset, which
+  the nudge is part of, so the readout said nothing had moved when the bit had. The readout (run bar, jog panel, the
+  3D view’s marker) now adds the nudge the controller has taken (when it answers the line; a reset clears it): the
+  bit’s height from Z zero. It read -0.200 with the bit nudged 0.1 mm below a 0.1 mm cut.
+- Nothing in the history changed the nudge, how far ahead Control sends, or the readout before 0.40.1: on files
+  with short rows the nudge lands soon enough to see; on long rows it never did.
+- nudge-sim.test.mjs, 4 more tests (a nudge in seconds on 18-second rows; the job as long as the file says, the
+  machine never waiting; a hold not counted; the readout); broken on purpose 5 ways, all caught. The readout’s reset
+  is not covered by a test.
+
 ### 0.40.1 — the Z nudge moves Z, on any file **(machine)**
 Clint, 2026-10-23: “the numbers update in the panel but the Z doesn’t actually move”. The nudge is the controller’s
 tool length offset (G43.1), which GRBL takes only on a move that gives Z: one giving only X and Y keeps the height it’s

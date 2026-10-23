@@ -33,6 +33,7 @@ function sendLine(s, quiet){
 }
 function sendRT(byte, label){
   if (!SERIAL.connected) return;
+  if (byte === 0x18 && typeof ZN !== 'undefined') ZN.inCtl = 0;   // a reset clears the controller's offset, the nudge with it
   if (label) logC('tx', label);
   rawWrite(new Uint8Array([byte]));
 }

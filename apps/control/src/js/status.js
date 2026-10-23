@@ -81,10 +81,10 @@ function uiStatus(){
   ab.style.display = (st === 'Alarm') ? 'block' : 'none';
   document.getElementById('droX').textContent = SERIAL.wpos.x.toFixed(3);
   document.getElementById('droY').textContent = SERIAL.wpos.y.toFixed(3);
-  document.getElementById('droZ').textContent = SERIAL.wpos.z.toFixed(3);
+  document.getElementById('droZ').textContent = zShown().toFixed(3);
   document.getElementById('rbX').textContent = SERIAL.wpos.x.toFixed(3);
   document.getElementById('rbY').textContent = SERIAL.wpos.y.toFixed(3);
-  document.getElementById('rbZ').textContent = SERIAL.wpos.z.toFixed(3);
+  document.getElementById('rbZ').textContent = zShown().toFixed(3);
   var rbS = document.getElementById('rbState');
   rbS.textContent = chipTop.textContent; rbS.dataset.s = st;
   document.getElementById('droF').textContent =
@@ -104,7 +104,7 @@ function uiStatus(){
   // jog modal mirrors
   document.getElementById('jmX').textContent = SERIAL.wpos.x.toFixed(3);
   document.getElementById('jmY').textContent = SERIAL.wpos.y.toFixed(3);
-  document.getElementById('jmZ').textContent = SERIAL.wpos.z.toFixed(3);
+  document.getElementById('jmZ').textContent = zShown().toFixed(3);
   var jm = document.getElementById('jmState');
   jm.textContent = st; jm.dataset.s = st;
   if (JOB.active && !atToolChange() && !document.getElementById('jogModal').hidden) jogModalClose();
@@ -112,7 +112,7 @@ function uiStatus(){
   bzUpdateCircuit();
   // live marker while a job (or manual motion during one) is happening
   if (JOB.active && marker){
-    marker.position.copy(w3(SERIAL.wpos.x, SERIAL.wpos.y, SERIAL.wpos.z));
+    marker.position.copy(w3(SERIAL.wpos.x, SERIAL.wpos.y, zShown()));
   }
   if (JOB.active){
     document.getElementById('ovF').textContent = SERIAL.ov[0] + '%';
@@ -124,6 +124,7 @@ function uiStatus(){
       'held (' + st + ') at line ' + JOB.lastLn + ' — Resume to continue';
   }
   keepAwakeCheck();
+  if (typeof jobAheadTick === 'function') jobAheadTick();   // more of the job as the queued time runs down
   moveLockUI();                                         // what can be pressed now (move-lock.js)
 }
 

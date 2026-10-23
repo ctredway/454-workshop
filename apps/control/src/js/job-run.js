@@ -1,3 +1,32 @@
+// HOW FAR AHEAD. The controller holds what it has been sent and runs it in order: a nudge, or anything Control puts
+// in the job, waits behind it. Sent as fast as it would take them, a surfacing pass's 19-second rows queued 27 lines
+// ahead and a Z nudge landed 4 minutes 22 seconds after it was pressed (Clint's wasteboard, 2026-10-23, on the
+// simulated machine). So no more than JOB_AHEAD_MS of the job's own motion is queued, by the file's times (the
+// parser's, at the feed override now), which the machine takes no less than: it never runs short, as the next line's
+// there seconds before it's needed. A hold, or waiting at a tool change, doesn't count (jobAheadTick). Lines without
+// times (Control's own, comments) cost nothing; short lines are held back by the controller's buffer as before.
+var JOB_AHEAD_MS = 4000;
+function jobLineMs(it){
+  if (!it || it.syn || !(it.ln > 0) || !MODEL || !MODEL.segs || !MODEL.lineFirstSeg) return 0;
+  if (!JOB.lineMs) JOB.lineMs = {};
+  var c = JOB.lineMs[it.ln];
+  if (c === undefined){
+    c = 0;
+    for (var j = MODEL.lineFirstSeg[it.ln]; j !== undefined && j < MODEL.segs.length && MODEL.segs[j].line === it.ln; j++) c += (MODEL.segs[j].t1 - MODEL.segs[j].t0) * 1000;
+    JOB.lineMs[it.ln] = c;
+  }
+  var ov = SERIAL.ov && SERIAL.ov[0] > 0 ? SERIAL.ov[0] : 100;
+  return c * 100 / ov;
+}
+// Every status report during a job: a hold, or a tool change, puts the queue's end back by as long; and more is sent
+// as the queued time runs down (no answer comes to prompt it once the controller has taken everything sent)
+function jobAheadTick(){
+  if (!JOB.active) return;
+  var now = performance.now(), dt = JOB.aheadAt ? now - JOB.aheadAt : 0;
+  JOB.aheadAt = now;
+  if (JOB.qEnd && (/^(Hold|Door)/.test(SERIAL.state || '') || JOB.toolWait || PROBE.active)) JOB.qEnd += dt;
+  if (!JOB.held) jobFill();
+}
 function jobFill(){
   if (PROBE.active) return; // probe sequence owns the wire
   if (JOB.ending) return;   // End job pressed: nothing more from the file
@@ -15,8 +44,12 @@ function jobFill(){
     }
     var bytes = it.text.length + 1;
     if (inflightBytes() + bytes > RX_CAP) break;
-    JOB.inflight.push({len: bytes, ln: it.ln, syn: it.syn});
+    var now = performance.now();
+    if (!(JOB.qEnd > now)) JOB.qEnd = now;
+    if (JOB.qEnd - now > JOB_AHEAD_MS) break;            // enough of the job queued: the rest as it runs down
+    JOB.inflight.push({len: bytes, ln: it.ln, syn: it.syn, nudge: it.nudge});
     sendLine(it.text, !SERIAL.verbose);
+    JOB.qEnd += jobLineMs(it);
     JOB.idx++;
   }
   maybeToolPrompt();
@@ -70,6 +103,7 @@ function maybeToolPrompt(){
 function onAck(ok, code){
   if (!JOB.active || !JOB.inflight.length) return;
   var e = JOB.inflight.shift();
+  if (e.nudge !== undefined && ok) ZN.inCtl = e.nudge;   // the controller has taken the nudge: the readout shows it
   JOB.acked++;
   if (e.ln > 0){
     JOB.lastLn = e.ln;
@@ -275,6 +309,7 @@ function jobStart(opts){
   JOB.active = true; JOB.held = false; JOB.toolWait = null;
   JOB.list = list; JOB.total = list.length;
   JOB.idx = 0; JOB.acked = 0; JOB.lastLn = 0; JOB.inflight = [];
+  JOB.qEnd = 0; JOB.aheadAt = 0; JOB.lineMs = null;        // how far ahead: from nothing (jobFill)
   JOB.startedAt = performance.now();
   JOB.clock = {last: JOB.startedAt, machine: 0, tool: 0, hold: 0, probe: 0};
   JOB.spinupAdded = (list.injected || 0) * (PROFILE.spindle.spinup || 0);   // waits Control inserted
