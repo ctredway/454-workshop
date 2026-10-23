@@ -1014,5 +1014,5 @@ function wire(){
 document.addEventListener('DOMContentLoaded', function(){
   wire();
   document.getElementById('verSub').textContent = 'precision 2D sketcher — v' + DESIGN_VERSION;
-  document.title = '454 Design v' + DESIGN_VERSION;
+  fileStateShow();                                      // the file open, and whether it has changed, in the title too
 });

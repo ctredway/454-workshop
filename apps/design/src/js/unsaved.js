@@ -43,11 +43,29 @@ function drawingUnsaved(){
   var u = UNSAVED !== null ? UNSAVED : lsGet(UNSAVED_KEY) === '1';
   return u && docHasWork();
 }
-function markUnsaved(){ UNSAVED = true; lsSet(UNSAVED_KEY, '1'); }
+function markUnsaved(){ UNSAVED = true; lsSet(UNSAVED_KEY, '1'); fileStateShow(); }
 // Saved to a file (name: the file's), or nothing left to save (no name: the drawing's file is forgotten).
 function markSaved(name){
   UNSAVED = false; lsDel(UNSAVED_KEY);
   if (name) lsSet(NAME_KEY, name); else lsDel(NAME_KEY);
+  fileStateShow();
+}
+// Which file is open, and whether it has changed since it was saved (Clint, 2026-10-23: “I have no way to know what
+// file I have open and if its been changed”): in the header, beside Design’s name, and in the window’s title (with a
+// • while changed). Pointing at the name shows where the file is, in the desktop app.
+function fileStateShow(){
+  var nameEl = document.getElementById('docName'), stEl = document.getElementById('docDirty');
+  if (!nameEl || !stEl) return;
+  var name = lsGet(NAME_KEY), changed = drawingUnsaved(), key = name + '|' + changed;
+  if (fileStateShow.key === key) return;                // (every change calls this)
+  fileStateShow.key = key;
+  nameEl.textContent = name || 'Untitled drawing';
+  stEl.textContent = changed ? (name ? '● Changed, not saved' : '● Not saved to a file') : (name ? 'Saved' : '');
+  stEl.classList.toggle('changed', changed);
+  var path = lsGet(PATH_KEY);
+  document.getElementById('docState').title = (path || name || 'A new drawing, not saved to a file yet') +
+    (changed ? '\nChanged since it was last saved. Ctrl+S saves it.' : '');
+  document.title = (changed ? '• ' : '') + (name || 'Untitled drawing') + ' — 454 Design v' + DESIGN_VERSION;
 }
 function drawingFileName(){ return lsGet(NAME_KEY) || 'design.454.json'; }
 

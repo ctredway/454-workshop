@@ -1363,6 +1363,17 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.156.0 — the file that’s open, and whether it’s saved
+Clint, 2026-10-23: “I have no way to know what file I have open and if its been changed.”
+- **The header shows the drawing’s file** beside Design’s name, and **Saved** or **● Changed, not saved** (in amber);
+  a new drawing is **Untitled drawing**, **● Not saved to a file** once there’s something in it. Pointing at the name
+  shows where the file is (the desktop app keeps its path) and, while changed, that Ctrl+S saves it.
+- **The window’s title** is the file’s name, with a • in front while it has changed (“• bookstand.json — 454 Design
+  v0.156.0”), so it shows on the taskbar too.
+- From what Design already tracked for asking before closing (unsaved.js): fileStateShow, on every change and save.
+- file-state.test.mjs, 3 tests; broken on purpose 3 ways, all caught. In the real app: opened, it read bookstand.json,
+  Saved; moved a shape, ● Changed, not saved, and the window’s title had the •.
+
 ### 0.155.0 — dimensions survive Fillet, Trim, Join and Explode
 Clint, 2026-10-23: “X dimensions lost its reference”, and “adding a fillet shouldn’t negate a dimension”. His
 bookstand had five: three from a Trim on a rectangle (it became an outline, with a new id), two from a Join of lines.
