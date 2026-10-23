@@ -463,7 +463,7 @@ function histRender(){
   bar.classList.toggle('folded', !open);
   var fold = document.getElementById('histFold');
   fold.setAttribute('aria-expanded', open ? 'true' : 'false');
-  fold.title = open ? 'Hide the history' : 'Show the history: every change, to go back to';
+  fold.title = open ? 'History: hide the steps' : 'History: show the steps, every change, to go back to';
   var list = document.getElementById('histSteps'), note = document.getElementById('histNote');
   list.textContent = '';
   if (!open){ note.textContent = ''; return; }
@@ -476,6 +476,7 @@ function histRender(){
   start.setAttribute('aria-label', 'Start');
   histTipOn(start, function () { return {name: 'Start', more: steps.length ? 'The drawing before the first step kept here.' : 'Every change you make shows here, to go back to.'}; });
   start.addEventListener('click', function () { histGoTo(0); });
+  start.addEventListener('contextmenu', function (e) { e.preventDefault(); histMenu(e, null); });
   list.appendChild(start);
   steps.forEach(function (s) {
     var b = document.createElement('button');
@@ -492,16 +493,97 @@ function histRender(){
     b.addEventListener('click', function () {
       var t = Date.now(), again = HIST_CLICK.i === s.i && t - HIST_CLICK.t < 500;
       HIST_CLICK = again ? {i: -1, t: 0} : {i: s.i, t: t};
-      if (again){ histRender(); histEditOpen(s.i, document.getElementById('histSteps').children[s.i + 1] || null); }
+      if (again){ histRender(); histEditOpen(s.i, histChip(s.i)); }
       else histGoTo(s.n);
     });
+    b.addEventListener('contextmenu', function (e) { e.preventDefault(); histMenu(e, s); });
+    b.dataset.n = s.n;
     list.appendChild(b);
   });
+  // the marker, just after the step the drawing is at (or after Start)
+  var chips = list.querySelectorAll('.hStep');
+  var mark = histMarker(done, steps.length);
+  if (chips[done] && chips[done].nextSibling) list.insertBefore(mark, chips[done].nextSibling); else list.appendChild(mark);
   var ahead = REDO.length;
   note.textContent = ahead ? 'Back ' + ahead + (ahead === 1 ? ' step. A change goes in here; the step after it is redone on top.' :
     ' steps. A change goes in here; the ' + ahead + ' after it are redone on top.') : '';
   var now = list.querySelector('.now');
   if (now && now.scrollIntoView) now.scrollIntoView({block: 'nearest', inline: 'center'});
+}
+// A step's button on the bar (by its place in the line)
+function histChip(i){ return document.querySelectorAll('#histSteps .hStep')[i + 1] || null; }
+// Right-click a step (s), or Start (null): go there, change it, delete it, or remove everything after the marker
+function histMenu(e, s){
+  var ahead = REDO.length, items = [];
+  if (s){
+    var L = histLine(), editable = !s.kind && typeof histEditInfo === 'function' && !!histEditInfo(L, s.i);
+    items.push({label: 'Go to just after it', disabled: s.n === UNDO.length, fn: function () { histGoTo(s.n); }});
+    items.push({label: 'Change…', disabled: !editable, fn: function () { histEditOpen(s.i, histChip(s.i)); }});
+    items.push(null);
+    items.push({label: 'Delete this step', danger: true, disabled: !!s.kind, fn: function () {
+      var r = histDelete(s.i);
+      if (typeof r === 'string'){ toast('warn', 'This step can’t be deleted', r); return; }
+      Promise.resolve(r).then(function (failed) {
+        toast(failed > 0 ? 'warn' : 'ok', 'Deleted “' + s.name + '”',
+              (failed > 0 ? failed + (failed === 1 ? ' step after it needed it and is' : ' steps after it needed it and are') + ' red now, and skipped. ' : 'The steps after it were done again without it. ') +
+              'Undo (Ctrl+Z) puts it back.');
+      });
+    }});
+  } else items.push({label: 'Go to the start', disabled: UNDO.length === 0, fn: function () { histGoTo(0); }});
+  if (ahead){
+    items.push(null);
+    items.push({label: 'Remove all ' + ahead + (ahead === 1 ? ' step' : ' steps') + ' after the marker', danger: true, fn: function () {
+      var n = histDropAfter();
+      toast('ok', 'Removed ' + n + (n === 1 ? ' step' : ' steps') + ' after the marker', 'Undo (Ctrl+Z) puts them back.');
+    }});
+  }
+  ctxMenuOpen(e.clientX, e.clientY, items);
+}
+// The marker: drag it along the bar to go back or forward (it lands in the gap nearest the pointer, and the drawing goes
+// there when it's let go), or give it the keyboard's focus and use the arrow keys, Home and End.
+function histMarker(done, total){
+  var m = document.createElement('div');
+  m.className = 'hMark'; m.tabIndex = 0;
+  m.setAttribute('role', 'slider'); m.setAttribute('aria-label', 'History marker: drag to go back or forward');
+  m.setAttribute('aria-valuemin', '0'); m.setAttribute('aria-valuemax', String(total)); m.setAttribute('aria-valuenow', String(done));
+  m.title = 'Drag to go back or forward through the steps (or use the arrow keys)';
+  var list = function () { return document.getElementById('histSteps'); };
+  // how many steps are before the pointer: the gap it's nearest, among the steps' middles
+  var gapAt = function (x) {
+    var chips = list().querySelectorAll('.hStep'), n = 0;
+    for (var k = 1; k < chips.length; k++){ var r = chips[k].getBoundingClientRect(); if (x > r.left + r.width / 2) n = k; }
+    return n;
+  };
+  var to = done;
+  m.addEventListener('pointerdown', function (e) {
+    e.preventDefault(); m.focus();
+    if (m.setPointerCapture) m.setPointerCapture(e.pointerId);
+    m.classList.add('drag'); histTipHide();
+  });
+  m.addEventListener('pointermove', function (e) {
+    if (!m.classList.contains('drag')) return;
+    var n = gapAt(e.clientX), chips = list().querySelectorAll('.hStep');
+    if (n === to || !chips[n]) return;
+    to = n;
+    if (chips[n].nextSibling !== m) list().insertBefore(m, chips[n].nextSibling);   // shown where it'll go
+    m.setAttribute('aria-valuenow', String(n));
+  });
+  var drop = function () {
+    if (!m.classList.contains('drag')) return;
+    m.classList.remove('drag');
+    if (to !== UNDO.length) histGoTo(to);
+  };
+  m.addEventListener('pointerup', drop);
+  m.addEventListener('pointercancel', drop);
+  m.addEventListener('keydown', function (e) {
+    var n = e.key === 'ArrowLeft' ? UNDO.length - 1 : e.key === 'ArrowRight' ? UNDO.length + 1 : e.key === 'Home' ? 0 : e.key === 'End' ? total : null;
+    if (n === null) return;
+    e.preventDefault(); e.stopPropagation();
+    n = Math.max(0, Math.min(total, n));
+    if (n !== UNDO.length){ histGoTo(n); histRender(); var nm = document.querySelector('#histSteps .hMark'); if (nm) nm.focus(); }   // (drawn now, to keep the focus on it)
+  });
+  m.addEventListener('contextmenu', function (e) { e.preventDefault(); histMenu(e, null); });
+  return m;
 }
 // The label over the History bar naming the step under the pointer (or with the keyboard's focus): shown at once,
 // where a browser's own tooltip would wait.

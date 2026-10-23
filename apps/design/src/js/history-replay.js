@@ -529,6 +529,56 @@ function histEdit(i, values, exprs){
   return busyRun('Doing the steps after it again…', parts).then(function () { return finish(failed); });
 }
 
+/* ---- deleting a step, as in Fusion: it's taken out of the line, and the steps after it are done again without it.
+   One that needed it (its shape is gone now) turns red. Undo (Ctrl+Z) puts it back. A step that opened or started a
+   drawing can't be deleted: the steps after it are another drawing's. Returns how many turned red (or a promise of
+   it, done in parts with the Working panel up), or a string saying why it can't be deleted. */
+function histDelete(i){
+  var L0 = histLine(), st0 = L0.steps[i];
+  if (!st0) return 'There’s no such step.';
+  if (st0.kind) return 'This step opened or started a drawing. Delete the steps after it instead.';
+  var name = (histSteps()[i] || {}).name || 'the step';
+  var before = histLineCopy();                                      // (before anything changes: to take it back)
+  histFresh();
+  var L = histLine();
+  histKeepOrig(L, i);                                               // each later step keeps what it first did
+  L.steps.splice(i, 1); L.s.splice(i + 1, 1);                       // the step, and the drawing just after it
+  if (i < L.n) L.n--;
+  L.edited = i;
+  return histReplayRecord(L, i, before, 'Delete ' + name);
+}
+// Remove every step after the marker (the steps undone, still kept to go forward to). Undo puts them back.
+function histDropAfter(){
+  var n = REDO.length;
+  if (!n) return 0;
+  var before = histLineCopy();
+  REDO = []; HIST_STALE_FROM = null;
+  persist(); histChanged();
+  HIST_EDITS.push({before: before, after: histLineCopy(), name: 'Remove ' + n + (n === 1 ? ' step' : ' steps') + ' after the marker', seq: ++HIST_SEQ});
+  if (HIST_EDITS.length > HIST_EDITS_MAX) HIST_EDITS.shift();
+  HIST_EDITS_UNDONE = [];
+  return n;
+}
+// Do the steps from 'from' again, put the line back, and keep the change for Undo (as one): how many turned red, or a
+// promise of it for a long line (done in parts, with the Working panel up)
+function histReplayRecord(L, from, before, name){
+  var finish = function (failed) {
+    histSetLine(L); SEL = []; draw(); persist(); histChanged();
+    HIST_EDITS.push({before: before, after: histLineCopy(), name: name, seq: ++HIST_SEQ});
+    if (HIST_EDITS.length > HIST_EDITS_MAX) HIST_EDITS.shift();
+    HIST_EDITS_UNDONE = [];
+    return failed;
+  };
+  if (from >= L.steps.length) return finish(0);
+  if (L.steps.length - from <= HIST_BUSY_STEPS || typeof busyRun !== 'function') return finish(histReplay(L, from));
+  var failed = 0, parts = [];
+  for (var a = from; a < L.steps.length; a += HIST_BUSY_PART) (function (a) {
+    parts.push({label: 'Steps ' + (a + 1) + ' to ' + Math.min(a + HIST_BUSY_PART, L.steps.length) + ' of ' + L.steps.length,
+                fn: function () { failed += histReplay(L, a, a + HIST_BUSY_PART); }});
+  })(a);
+  return busyRun('Doing the steps after it again…', parts).then(function () { return finish(failed); });
+}
+
 /* ---- the panel for it: double-click a step */
 var HIST_EDITING = null;
 function histEditOpen(i, chip){

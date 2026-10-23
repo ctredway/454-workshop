@@ -191,8 +191,16 @@ step is its tool's icon (a rectangle, a fillet, an offset, a toolpath); point at
 list Undo goes back through, but you can see it and jump straight to any step.
 
 - **Click a step** to see the drawing as it was just after it, toolpaths and all. The steps after it stay on the
-  bar, faded, and the step you're on is underlined. Click a later step to come forward again; nothing is lost
+  bar, faded, and the step you're on is outlined. Click a later step to come forward again; nothing is lost
   by looking. The first button, **Start**, is the drawing before the first step.
+- **The marker**, the amber line with a handle just after the step you're on, works as Fusion's does: drag it
+  along the bar and let go to go back or forward to there. Click it and the arrow keys move it a step at a time;
+  <kbd>Home</kbd> and <kbd>End</kbd> go to the start and the end.
+- **Right-click a step** to go to it, change it, or **Delete this step**: it's taken out, and the steps after it are
+  done again without it. One that needed it (an offset of a shape that's gone) turns red. Undo puts it back. A step
+  that opened or started a drawing can't be deleted.
+- **Remove all steps after the marker**, in the same menu when you've gone back, throws away the faded steps for
+  good (Undo still brings them back).
 - **Undo** (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) and **Redo** (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) move one step along the same line.
 - **Changing something while you're back at an earlier step** puts the change in there, as in Fusion. The faded
   steps after it stay on the bar, and when you come forward to them (click a later step, or Redo) they're done
@@ -203,8 +211,8 @@ list Undo goes back through, but you can see it and jump straight to any step.
   back, so you can go back to how a project was last week. It's kept between visits too, with the drawing.
 - **A new drawing starts a new history,** and an opened one has its own, saved with it. The drawing that was open
   is in its file, or put aside for **File → Recover last drawing**.
-- Scroll the mouse wheel over the bar to move along a long history, and click **History** to fold the bar away,
-  or open it again.
+- Scroll the mouse wheel over the bar to move along a long history, and click the **History** button (the clock
+  at its left end) to fold the bar away, or open it again.
 
 The last 500 steps are kept.
 

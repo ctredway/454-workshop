@@ -1346,6 +1346,21 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.151.0 — the History bar: an icon, a marker to drag, and right-click to delete
+Clint asked for four changes, as in Fusion's timeline:
+- **An icon instead of the word History** (a clock with a turning arrow), still showing and hiding the steps, named
+  "History" for screen readers.
+- **Right-click a step**: Go to just after it, Change…, and **Delete this step**. Deleting takes the step out and does
+  the steps after it again without it (`histDelete`); one that needed it turns red. One Undo puts it back. A step that
+  opened or started a drawing can't be deleted.
+- **A marker** just after the step the drawing is at: drag it along the bar and let go to go there (it shows where
+  it'll land as it's dragged, nothing moves until it's let go), or use the arrow keys, Home and End.
+- **Remove all steps after the marker**, in the menu when there are any (`histDropAfter`). Undo puts them back.
+- Found on the way: the History bar's styles used a colour Design doesn't have (`--accent`; it's `--amber`), so the
+  step you're on was outlined in white rather than amber. Both it and the marker are amber now.
+- Tested (`history-bar.test.mjs`, 6 tests); broken on purpose 5 ways, 4 caught (the fifth, the arrow keys past the
+  start, is stopped again by `histGoTo` itself). Checked in the real app, with the menu open and the marker shown.
+
 ### 0.150.0 — Array on the History bar, and counts and angles that follow parameters
 - **Array is a step that can be changed**: a row's how many and how far apart, or how many around a centre, the angle
   between and the centre. The tool and the History bar make the copies the same way (`arrayMake`), so done again
