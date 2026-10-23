@@ -125,6 +125,7 @@ var HIST_STALE_FROM = null;
 function pushUndo(name, kind){
   if (typeof DRY !== 'undefined' && DRY) return;
   FALL_MARKS = null;
+  if (typeof dimGeoKeep === 'function') (DOC.dims || []).forEach(function (d){ if (dimRefOk(d)) dimValue(d); });   // what each measures, before the change
   var p = histPack();
   var keep = REDO.length && !kind ? REDO : null;        // (a new or opened drawing starts afresh: histStartAfresh)
   if (keep){

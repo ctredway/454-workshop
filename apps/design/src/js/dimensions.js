@@ -14,7 +14,7 @@ function hintOf(e, pt){
     Object.keys(sides).forEach(function (k){ var q = sides[k], d = distToSeg(pt.x, pt.y, q[0], q[1], q[2], q[3]); if (d < bd){ bd = d; best = k; } });
     return {side:best, t:alongSeg(pt, sides[best])};
   }
-  if (e.t === 'poly' && e.pts.length >= 2){
+  if ((e.t === 'poly' || e.t === 'path') && e.pts.length >= 2){   // an outline: which edge, and how far along it (a path's arcs by their chords)
     var n = e.pts.length, last = e.closed ? n : n - 1, bk = 0, bd2 = Infinity;
     for (var k = 0; k < last; k++){ var a = e.pts[k], b = e.pts[(k+1) % n], d2 = distToSeg(pt.x, pt.y, a[0], a[1], b[0], b[1]); if (d2 < bd2){ bd2 = d2; bk = k; } }
     var A = e.pts[bk], B = e.pts[(bk+1) % n];
@@ -28,7 +28,7 @@ function resolveHint(e, h){
   if (!h || !e) return null;
   if (h.x !== undefined) return h;
   if (h.side && e.t === 'rect'){ var q = rectSides(e)[h.side]; if (q) return {x:q[0] + (q[2]-q[0])*h.t, y:q[1] + (q[3]-q[1])*h.t}; }
-  if (h.seg !== undefined && e.t === 'poly' && e.pts.length >= 2){
+  if (h.seg !== undefined && (e.t === 'poly' || e.t === 'path') && e.pts.length >= 2){
     var n = e.pts.length, A = e.pts[h.seg % n], B = e.pts[(h.seg+1) % n];
     if (A && B) return {x:A[0] + (B[0]-A[0])*h.t, y:A[1] + (B[1]-A[1])*h.t};
   }
@@ -53,6 +53,11 @@ function sameDistance(d, ea, eb, ha, hb){
 }
 // current measured value of a dimension, or null if its references are gone
 function dimValue(d){
+  var v = dimValueNow(d);
+  if (v !== null) dimGeoKeep(d);                       // what it measures, to follow it when its shape is remade (dimension-follow.js)
+  return v;
+}
+function dimValueNow(d){
   dimHints(d);
   if (d.kind === 'pair'){
     var a = entById(d.a), b = entById(d.b);
@@ -69,6 +74,7 @@ function dimValue(d){
   if (d.kind === 'len'  && e.t === 'line')   return Math.hypot(e.x2-e.x1, e.y2-e.y1);
   if (d.kind === 'dia'  && e.t === 'circle') return e.r*2;
   if (d.kind === 'rad'  && (e.t === 'circle' || e.t === 'arc')) return e.r;
+  if (d.kind === 'seg'){ var sg = dimSegEdge(d); return sg ? Math.hypot(sg[2]-sg[0], sg[3]-sg[1]) : null; }
   return null;
 }
 // where to draw it: midpoint between the two references (or the entity's own middle)
@@ -99,6 +105,7 @@ function dimAnchor(d){
     var ln = nearestEdgeOf(e, resolveHint(e, d.at) || repPoint(e));
     if (ln) return {x:(ln.x1 + ln.x2)/2, y:(ln.y1 + ln.y2)/2, a:{x:ln.x1, y:ln.y1}, b:{x:ln.x2, y:ln.y2}};
   }
+  if (d.kind === 'seg'){ var se = dimSegEdge(d); if (se) return {x:(se[0] + se[2])/2, y:(se[1] + se[3])/2, a:{x:se[0], y:se[1]}, b:{x:se[2], y:se[3]}}; }
   var pt = repPoint(e);
   return {x:pt.x, y:pt.y, a:pt, b:pt};
 }
@@ -108,7 +115,7 @@ function dimAnchor(d){
 function dimPlaced(d){
   var an = dimAnchor(d); if (!an) return null;
   var pl = d.place || null, L = Math.hypot(an.b.x - an.a.x, an.b.y - an.a.y);
-  if ((d.kind === 'pair' || d.kind === 'side') && L > 1e-9){
+  if ((d.kind === 'pair' || d.kind === 'side' || d.kind === 'seg') && L > 1e-9){
     var ux = (an.b.x - an.a.x)/L, uy = (an.b.y - an.a.y)/L, nx = -uy, ny = ux;
     var N = pl && pl.n || 0, S = pl && pl.s || 0;
     return {line:true, placed:!!pl, ea:an.a, eb:an.b, mid:{x:an.x, y:an.y}, u:{x:ux, y:uy}, n:{x:nx, y:ny},
@@ -175,10 +182,12 @@ function dimApply(d, v){
   if (d.kind === 'pair'){
     var a = entById(d.a), b = entById(d.b);
     if (!a || !b) return false;
+    if (a === b) return dimSpanApply(d, v);              // two edges of one outline: it stretches (dimension-follow.js)
     return relApply(a, b, v, d.edge, d.aAt, d.bAt, d);
   }
   var e = entById(d.a);
   if (!e) return false;
+  if (d.kind === 'seg') return dimSegApply(d, v);
   if (d.kind === 'len' && e.t === 'line'){
     var L = Math.hypot(e.x2-e.x1, e.y2-e.y1);
     if (L < 1e-9) return false;

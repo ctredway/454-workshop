@@ -119,7 +119,9 @@ function openDrawing(d, name){
   var h = d.history; delete d.history;
   pushUndo('Opened ' + name, 'open');
   DOC = d; histTake(h);
-  syncStockUI(); persist(); markSaved(name);
+  dimsFollow.opening = true;                                       // stranded dimensions it was saved with: said as such
+  try { syncStockUI(); persist(); } finally { dimsFollow.opening = false; }
+  markSaved(name);
   SAVE_HANDLE = OPEN_HANDLE && OPEN_HANDLE.name === name ? OPEN_HANDLE : null;   // opened through Open: Save writes it back
   OPEN_HANDLE = null;
   if (OPEN_PATH && baseName(OPEN_PATH) === name) lsSet(PATH_KEY, OPEN_PATH); else lsDel(PATH_KEY);   // the desktop app: by path

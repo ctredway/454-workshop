@@ -427,6 +427,13 @@ Sets exact distances and sizes, and keeps a dimension on the drawing that update
 
 **Dimensions follow their edges.** A dimension remembers which edges it measures, so it keeps measuring them when shapes are moved or stretched. A rectangle's size keeps any side held by a distance where it is; if both sides are held, it says so rather than breaking one of them.
 
+**Dimensions survive the tools that remake shapes.** Fillet corners, Trim, Join and Explode make new shapes out of old ones, and
+the dimensions move onto them: a rectangle’s width or height stays its width or height once its corners are rounded
+(measured between its sides, out to where the corners were; type a new size and the outline stretches, its rounded
+corners kept), and a line’s length becomes the length of that edge of the outline it joined. A dimension whose shape is
+really gone is removed, with a note, and Undo brings it back. A toolpath that cut a shape that’s gone says so: edit it
+and pick the new shape, or that part won’t be cut.
+
 :::tip
 Selecting two shapes and pressing <kbd>D</kbd> works the same way: click each shape on the edge you mean when you select it.
 :::

@@ -484,7 +484,7 @@ function draw(){
       ctx.lineWidth = 1;
       ctx.setLineDash([]);
       var lp = w2s(anc.x, anc.y);
-      if (d.kind === 'pair' || d.kind === 'side'){
+      if (d.kind === 'pair' || d.kind === 'side' || d.kind === 'seg'){
         // witness line between the two referenced points, with end ticks
         var pa = w2s(anc.a.x, anc.a.y), pb = w2s(anc.b.x, anc.b.y);
         ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();

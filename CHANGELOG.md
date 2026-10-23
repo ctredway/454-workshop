@@ -1363,6 +1363,27 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.155.0 — dimensions survive Fillet, Trim, Join and Explode
+Clint, 2026-10-23: “X dimensions lost its reference”, and “adding a fillet shouldn’t negate a dimension”. His
+bookstand had five: three from a Trim on a rectangle (it became an outline, with a new id), two from a Join of lines.
+Fillet corners did the same to a rectangle’s width or height (a side dimension measures rectangles only).
+- **Each dimension remembers what it measures as places in the drawing** (dimension-follow.js: the two sides a width
+  spans, a line, a circle, the two things a distance is between), kept before every change (pushUndo) and whenever it’s
+  worked out. After a change (persist), one whose shape is gone, or no longer the kind it measures, moves onto what’s
+  there now: the same straight edge (on the same line, overlapping it) or the same circle.
+- **A rectangle’s width or height** becomes the distance between its two sides, on the outline they’re part of now
+  (a pair with a === b), drawn where it was, out to where the corners were. Typing a new value stretches the outline:
+  everything past the middle moves, so rounded corners keep their shape.
+- **A line’s length,** once Join has made it part of an outline, becomes that edge’s length (a new kind, seg; typed, a
+  polyline’s corner moves along it). Outlines’ hints now name the edge for paths too, as for polylines.
+- **A dimension whose shape is really gone is removed,** with a note; Undo brings it back. Opening a drawing removes
+  those it was saved with (the bookstand’s five), saying they’re left over.
+- **A toolpath that cut a shape that’s gone drops it and says so** (its tabs and start points on it too): pick the new
+  shape, or that part isn’t cut. (Legs Outside still listed the trimmed rectangle.)
+- dim-follow.test.mjs, 7 tests (the real Fillet corners and Join; Clint’s drawing opened: 29 dimensions, 24 left, none
+  lost); broken on purpose 6 ways, all caught. In the real app: a 160 x 90 rectangle, dimensioned, filleted at 12 mm,
+  still read 160.00 and 90.00, along its sides, with no warning.
+
 ### 0.154.0 — a thickness or depth no machine could cut is asked about
 Clint’s bookstand, twice (2026-10-22 and 23): 11.9 typed with Job setup in inches made the material 302.26 mm thick.
 The through cuts went 117 passes deep (1.8 million moves), Design slowed to a crawl (68 ms a frame, 378 ms a step

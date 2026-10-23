@@ -14,6 +14,9 @@ The full record, in more detail than most people want, is the
 
 ## Not released yet
 
+- **Dimensions survive Fillet, Trim, Join and Explode.** In 454 Design, a rectangle’s width and height stay
+  when you round its corners, and a line’s length stays when you join it into an outline. One whose shape is really
+  gone is removed, with a note, instead of “lost its reference”. A toolpath that cut a shape that’s gone says so.
 - **A material thickness no machine could cut is asked about.** In 454 Design, typing a thickness over 100 mm
   in Job setup asks if it’s right, and says what it comes to (11.9 typed in inches is 302 mm). Save G-code asks
   too when a toolpath goes deeper than its bit’s cutting length or 100 mm.

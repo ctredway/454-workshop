@@ -8,6 +8,7 @@ function persist(){
   // every shape has its id from the change that made it, so a tool that works out its result before recording its
   // step (Fillet corners) keeps it on the shapes it makes: the history knows them by it (history.js)
   if (typeof histGiveIds === 'function') histGiveIds();
+  if (typeof dimsFollow === 'function') dimsFollow();   // dimensions onto shapes a tool remade, or removed (dimension-follow.js)
   markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
   histChanged();                                        // the History bar's last step, and the history kept
   try{ localStorage.setItem('d454Design', docForStorage()); }
