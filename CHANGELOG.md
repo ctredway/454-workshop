@@ -747,6 +747,17 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.39.0 — Z to +6 mm goes to 6 mm above Z zero **(machine)**
+Clint, 2026-10-23, on the Shapeoko 5 Pro: from near the top it lifted 4.5 mm. “The correct thing is to go down to the
+current Z for the material, not the machine travel. This is so the Z is at a measurable spot to make sure its correct.”
+- **Z +6 mm is now Z to +6 mm:** Z goes to 6 mm above the work’s Z zero, up or down, as in Carbide Motion, so the zero
+  can be checked with a 6 mm block or a rule. X and Y stay. It’s a jog in the work’s coordinates (the tool length
+  offset included), so Stop works and soft limits apply. It lifted 6 mm from where Z was, cut short at the top.
+- Refused until the machine has been homed this session (until then the zero can’t be trusted), and with Z zero at
+  or above the top of travel. A Z zero closer than 6 mm to the top: as high as travel allows, and it says so.
+- jog-lift.test.mjs rewritten, 5 tests, the last on the simulated GRBL machine (from near the top and from below, Z
+  ends at work Z 6, X and Y untouched); broken on purpose 4 ways, all caught. Not yet tried on a real machine.
+
 ### 0.38.1 — left-out toolpaths show faint in the preview
 Untick a toolpath on the Toolpaths tab and its moves are drawn faint grey in the 3D view, and stay so as the preview
 plays, so what will and won't be cut shows at a glance (`jobSkipMark` marks each move; `segColor` colours it).

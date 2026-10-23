@@ -7,17 +7,26 @@ function jogCmd(p, dist, feed){
   if (p[2]) cmd += 'Z' + (p[2] * dist).toFixed(3);
   return cmd + 'F' + Math.round(feed);
 }
-// Lift 6 mm from wherever Z is, as a jog: cancellable like any other, and cut short if the top of
-// travel is closer than that, so it can't run into the limit switch.
+// Z to 6 mm above the work's Z zero (the top of the material, or wherever Z was zeroed), as in Carbide Motion: X and Y
+// stay, and Z goes up or down to there, so the zero can be checked with a 6 mm block or a rule. Clint, 2026-10-23: it
+// lifted 6 mm from where Z was ("the correct thing is to go down to the current Z for the material, not the machine
+// travel"). A jog, in the work's coordinates (the tool length offset included), so Stop and soft limits apply. Needs a
+// homed machine: until then the zero can't be trusted. If 6 mm above zero is past the top of travel, as near as that.
+var ZCHECK_MM = 6;
 function jogLiftZ6(){
   if (!requireIdle('lift')) return;
-  // The room above is measured from where Z is now. The clamp keeps the position a held jog started from; used as it
-  // was, it said "already at the top" and nothing moved (Clint, 2026-10-22: "the Z + 6mm button does nothing").
-  if (!JOGC.active) JOGC.pred = {x: SERIAL.mpos.x, y: SERIAL.mpos.y, z: SERIAL.mpos.z};
-  var d = clampJogDist([0, 0, 1], 6);
-  if (!(d > 0.05)){ logC('sys', 'Z is already at the top of its travel'); return; }
-  sendLine(jogCmd([0, 0, 1], d, PROFILE.jog.fastZ));
-  if (d < 5.95) logC('sys', 'Z lifted ' + d.toFixed(1) + ' mm: that\u2019s as far as the top of travel allows');
+  if (!SERIAL.homedSeen){ logC('err', 'Z to +6 mm needs the machine homed first, so your Z zero can be trusted. Home, then try again.'); return; }
+  var wz = ZCHECK_MM, rg = axisRange('z');
+  if (rg){
+    var topW = (rg.max - 0.5) - SERIAL.wco.z;                   // the top of travel, less 0.5 mm, above work zero
+    if (wz > topW){
+      if (!(topW > 0)){ logC('err', 'Z zero is at the top of travel or above it, so there’s nowhere 6 mm above it to go. Set Z zero again.'); return; }
+      wz = topW;
+    }
+  }
+  sendLine('$J=G21G90Z' + wz.toFixed(3) + 'F' + Math.round(PROFILE.jog.fastZ));
+  if (wz < ZCHECK_MM - 0.005) logC('sys', 'Z zero is only ' + (wz + 0.5).toFixed(1) + ' mm below the top of travel: Z went to ' + wz.toFixed(1) + ' mm above zero, as high as it can.');
+  else logC('sys', 'Z going to 6 mm above Z zero: check it with a 6 mm block or a rule.');
 }
 // one step of the size chosen in the jog panel, or of inc (the game controller's, when the panel says Fast)
 function jogStepOnce(p, inc){
