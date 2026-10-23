@@ -95,6 +95,19 @@ function paramTry(src, unit){
   try { return {v: paramEval(src, unit, function (n) { return paramValue(n, []); })}; }
   catch (e) { return {why: e.message}; }
 }
+// A plain number from an expression (a count, an angle, a percentage): each parameter is its number as typed, in its
+// own units ("count = 5" is 5, "angle = 30" is 30, whether it was typed in mm or inches); the material, its thickness
+// in the units Job setup shows. {v} or {why}
+function paramTryNumber(src){
+  var plainOf = function (n) {
+    var mm = paramValue(n, []);
+    if (String(n).toLowerCase() === PARAM_BUILTIN) return stockUnits() === 'in' ? mm / 25.4 : mm;
+    var p = paramByName(n);
+    return p && p.unit === 'in' ? mm / 25.4 : mm;
+  };
+  try { return {v: paramEval(src, 'mm', plainOf)}; }
+  catch (e) { return {why: e.message}; }
+}
 // Does this text use a parameter (a name), rather than just being a number?
 function paramUsesNames(src){ var t = paramTokens(src); return !!(t && t.some(function (x) { return x.t === 'name'; })); }
 // The names an expression uses, in lower case

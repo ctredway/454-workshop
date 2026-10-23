@@ -399,7 +399,7 @@ function histTake(h){
     if (Array.isArray(s.made) && s.made.every(function (id) { return typeof id === 'string'; })) o.made = s.made;
     if (s.exprs && typeof s.exprs === 'object'){
       var ex = {};
-      Object.keys(s.exprs).forEach(function (k) { var x = s.exprs[k]; if (x && typeof x.e === 'string' && (x.u === 'mm' || x.u === 'in')) ex[k] = {e: x.e, u: x.u}; });
+      Object.keys(s.exprs).forEach(function (k) { var x = s.exprs[k]; if (x && typeof x.e === 'string' && (x.u === 'mm' || x.u === 'in' || x.u === 'num')) ex[k] = {e: x.e, u: x.u}; });
       if (Object.keys(ex).length) o.exprs = ex;
     }
     if (Array.isArray(s.orig) && extra[s.orig[0]] && extra[s.orig[1]]) o.orig = {b: extra[s.orig[0]], a: extra[s.orig[1]]};

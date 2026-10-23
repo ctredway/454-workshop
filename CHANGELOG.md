@@ -1346,6 +1346,19 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.150.0 — Array on the History bar, and counts and angles that follow parameters
+- **Array is a step that can be changed**: a row's how many and how far apart, or how many around a centre, the angle
+  between and the centre. The tool and the History bar make the copies the same way (`arrayMake`), so done again
+  with nothing changed it gives exactly what the tool gave (proven, row and around a centre).
+- **Counts, angles and percentages can follow parameters**, as lengths do. Parameters are lengths, kept in mm, so for
+  these each parameter is taken as the number it was typed as (`paramTryNumber`): `count = 5` typed while working in
+  inches makes 5 copies, not 127; `angle = 30` turns 30°. A count must come to a whole number from 2 to 500;
+  anything else is refused with the reason.
+- Tested (`history-array.test.mjs`, 5 tests: change a row's count and spacing; done again unchanged; count and pitch
+  as parameters, the row growing and shrinking, and Undo; count and angle typed in inches; the step's box refusing a
+  count of count / 3); broken on purpose 4 ways (no recipe, a count taken as a length, any count allowed, one copy
+  too many), all caught.
+
 ### 0.149.0 — steps on the History bar can follow parameters
 Clint asked how close Design is to being parametric. Parameters already drove dimensions and toolpath depths, and a
 step on the History bar could be changed with the steps after it done again; but a step's numbers were plain values,

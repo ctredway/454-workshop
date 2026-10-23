@@ -227,6 +227,7 @@ What can be changed:
 | Text | the text, its height |
 | Fillet (one corner), Fillet corners | the radius |
 | Offset | the distance |
+| Array | how many, and how far apart (a row) or the angle between and the centre (around a point) |
 | Move (dragging shapes, the arrow keys) | how far across and up |
 | Move point (dragging a point with the Node tool) | how far across and up |
 | Resize, Rotate, and moves typed into the selection box | the size, angle or position typed |
@@ -239,6 +240,10 @@ step takes the new value: every step after it is done again, so what was made fr
 width to `width` and an offset round it to `wall`, and changing either reshapes the rectangle, the offset, its
 rounded corners and the toolpaths on them, together. One Undo takes the whole change back. Typing a plain number
 unlinks it.
+
+Counts, angles and percentages can follow parameters too: an array's **How many** can be `count`, a rotation `angle`.
+For those, a parameter is the number it was typed as, whether your drawing is in millimetres or inches: `count = 5`
+makes 5 copies and `angle = 30` turns 30°. A count must come to a whole number from 2 to 500.
 
 How the steps after it are done again:
 

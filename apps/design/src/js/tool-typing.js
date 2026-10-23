@@ -147,6 +147,8 @@ function toolCommitText(txt){
     return;
   }
   if (TOOL === 'array'){
+    // (arrayMake, below, makes the copies: for the tool and for the History bar doing it again)
+    // Array: "N@dx,dy" a row of N (the shapes, then copies dx, dy apart); "N<step" after clicking a centre, N around it
     if (!SEL.length){ stagePrompt('selFirst'); return; }
     var at = txt.trim();
     var mLin = at.match(/^(\d+)\s*@\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)$/);
@@ -155,30 +157,20 @@ function toolCommitText(txt){
       var nL = parseInt(mLin[1],10), ddx = lenIn(mLin[2]), ddy = lenIn(mLin[3]);
       if (nL >= 2 && nL <= 500){
         pushUndo();
-        var srcL = SEL.slice();
-        for (var kL = 1; kL < nL; kL++){
-          srcL.forEach(function(i2){
-            var cL = cloneEnt(DOC.ents[i2]);
-            moveEntity(cL, ddx*kL, ddy*kL);
-            DOC.ents.push(cL);
-          });
-        }
+        var rL = {op: 'array', kind: 'lin', ids: histIdsOf(SEL), n: nL, dx: ddx, dy: ddy};
+        arrayMake(rL, SEL.slice());
+        histRecipe(rL);                                   // done again by the History bar, with its numbers changed or not
         stagePrompt('array0'); persist(); draw();
       }
       return;
     }
     if (mCirc && DRAW){
-      var nC = parseInt(mCirc[1],10), step = parseFloat(mCirc[2])*Math.PI/180;
-      if (nC >= 2 && nC <= 500 && Math.abs(step) > 1e-9){
+      var nC = parseInt(mCirc[1],10), stepDeg = parseFloat(mCirc[2]);
+      if (nC >= 2 && nC <= 500 && Math.abs(stepDeg) > 1e-9){
         pushUndo();
-        var srcC = SEL.slice();
-        for (var kC = 1; kC < nC; kC++){
-          srcC.forEach(function(i3){
-            var cC = cloneEnt(DOC.ents[i3]);
-            rotateEnt(cC, DRAW.cx, DRAW.cy, step*kC);
-            DOC.ents.push(cC);
-          });
-        }
+        var rC = {op: 'array', kind: 'circ', ids: histIdsOf(SEL), n: nC, step: stepDeg, cx: DRAW.cx, cy: DRAW.cy};
+        arrayMake(rC, SEL.slice());
+        histRecipe(rC);
         DRAW = null; stagePrompt('array0'); persist(); draw();
       }
       return;
@@ -306,3 +298,18 @@ function toolCommitText(txt){
   }
 }
 
+
+// Array's copies: r {kind: 'lin', n, dx, dy} (a row: copy k is k steps along) or {kind: 'circ', n, step (degrees), cx,
+// cy} (copy k turned k steps about the centre), of the shapes at idx, added to the drawing. The tool and the History
+// bar both make them here, so a step done again gives exactly what the tool gave.
+function arrayMake(r, idx){
+  var stepRad = r.step * Math.PI / 180;                 // (as the tool always worked it out: the same copies to the bit)
+  for (var k = 1; k < r.n; k++){
+    idx.forEach(function (i){
+      var c = cloneEnt(DOC.ents[i]);
+      if (r.kind === 'circ') rotateEnt(c, r.cx, r.cy, stepRad * k);
+      else moveEntity(c, r.dx * k, r.dy * k);
+      DOC.ents.push(c);
+    });
+  }
+}

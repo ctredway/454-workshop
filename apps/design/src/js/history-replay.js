@@ -173,6 +173,16 @@ var HIST_OPS = {
       return b && doExtend(histFromFrac(b, r.at), idx[0]) ? true : 'There\u2019s nothing for it to reach now.';
     }
   },
+  array: {                      // the Array tool (tool-typing.js): a row, or copies around a centre
+    name: function (r) { return 'Array ' + r.n + (r.kind === 'circ' ? ' around' : ''); },
+    fields: function (r) {
+      return r.kind === 'circ'
+        ? [{k: 'n', label: 'How many', kind: 'count'}, {k: 'step', label: 'Angle between', kind: 'deg'},
+           {k: 'cx', label: 'Centre X', kind: 'len'}, {k: 'cy', label: 'Centre Y', kind: 'len'}]
+        : [{k: 'n', label: 'How many', kind: 'count'}, {k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}];
+    },
+    run: function (r, idx) { arrayMake(r, idx); return true; }
+  },
   filletAll: {
     name: function (r) { return (r.kind === 'dogbone' ? 'Dog-bone corners ' : r.kind === 'tbone' ? 'T-bone corners ' : 'Fillet corners ') + histLen(r.r); },
     fields: function () { return [{k: 'r', label: 'Radius', kind: 'len', min: 0}]; },
@@ -308,16 +318,51 @@ function histReplay(L, from, to){
    bit / 2, material - 3), and the step remembers it (step.exprs: {field: {e, u}}, as toolpaths do). Change the
    parameter (or the material's thickness) and every step using it takes the new value, and the steps after it are
    done again, as when a step is changed by hand (histParamsApply). A plain number unlinks it. */
-// The lengths of step i that use parameters, worked out now: {values (all its fields), changed, why: [...]}
+// A field's value from what's typed (or remembered): {v, expr} or {why}. A length is a measurement, or arithmetic
+// with parameters worked out in the units shown; a count, an angle or a percentage is a number, or arithmetic with
+// parameters each taken as the number it was typed as (paramTryNumber). With a parameter in it, it's remembered (expr).
+var HIST_COUNT_MAX = 500;
+function histFieldRead(f, raw){
+  raw = String(raw).trim();
+  if (f.kind === 'text') return {v: raw};
+  var v, names = false, r;
+  if (f.kind === 'len'){
+    v = lenInPlain(raw);
+    if (isNaN(v) && raw){ r = paramTry(raw, stockUnits()); if (r.why) return {why: r.why}; v = r.v; names = paramUsesNames(raw); }
+  } else {
+    if (/^[+-]?(\d+\.?\d*|\.\d+)$/.test(raw)) v = parseFloat(raw);
+    else if (raw){ r = paramTryNumber(raw); if (r.why) return {why: r.why}; v = r.v; names = paramUsesNames(raw); }
+    if (f.kind === 'pct') v = v / 100;
+  }
+  var bad = histFieldBad(f, v);
+  if (bad) return {why: bad};
+  return {v: v, expr: names ? {e: raw, u: f.kind === 'len' ? stockUnits() : 'num'} : null};
+}
+// Why a value can't be used for a field ('' if it can)
+function histFieldBad(f, v){
+  if (!isFinite(v)) return 'type a number, such as 50 or 12.5, or a parameter.';
+  if (f.kind === 'count' && (Math.abs(v - Math.round(v)) > 1e-9 || v < 2 || v > HIST_COUNT_MAX))
+    return 'it comes to ' + parseFloat(v.toFixed(4)) + ', and it has to be a whole number from 2 to ' + HIST_COUNT_MAX + '.';
+  if (f.min !== null && f.min !== undefined && !(v > f.min))
+    return 'it comes to ' + (f.kind === 'len' ? fmtDisp(v) + ' ' + unitTag() : f.kind === 'pct' ? parseFloat((v * 100).toFixed(3)) + '%' : parseFloat(v.toFixed(4))) + ', and it has to be more than 0.';
+  return '';
+}
+// A remembered expression worked out now: {v} or {why}
+function histFieldEval(f, x){
+  var r = x.u === 'num' ? paramTryNumber(x.e) : paramTry(x.e, x.u);
+  if (r.why) return r;
+  var v = f.kind === 'pct' ? r.v / 100 : r.v, bad = histFieldBad(f, v);
+  return bad ? {why: bad.charAt(0).toUpperCase() + bad.slice(1)} : {v: f.kind === 'count' ? Math.round(v) : v};
+}
+// The fields of step i that use parameters, worked out now: {values (all its fields), changed, why: [...]}
 function histStepParams(L, i, info){
   var st = L.steps[i], vals = {}, changed = false, why = [];
   info.fields.forEach(function (f) {
     var x = st.exprs && st.exprs[f.k];
     vals[f.k] = f.value;
     if (!x) return;
-    var r = paramTry(x.e, x.u);
+    var r = histFieldEval(f, x);
     if (r.why){ why.push(info.title + ', ' + f.label + ' (' + x.e + '): ' + r.why); return; }
-    if (f.min !== null && f.min !== undefined && !(r.v > f.min)){ why.push(info.title + ', ' + f.label + ' (' + x.e + ') comes to ' + fmtDisp(r.v) + ' ' + unitTag() + ', and it has to be more than 0.'); return; }
     vals[f.k] = r.v;
     if (Math.abs(r.v - f.value) > 1e-9) changed = true;
   });
@@ -492,7 +537,7 @@ function histEditOpen(i, chip){
     if (st && st.recipe && HIST_OPS[st.recipe.op])
       toast('info', 'Nothing to change in this step', 'It has no numbers of its own. When you change a step before it, it\u2019s done again on its shapes as they are then.');
     else
-      toast('info', 'This step can\u2019t be changed', 'Steps that drew a rectangle, circle, line or text, and fillets, offsets, moves, resizes, rotations, stretches and points moved, can be changed. Others can be gone back to, not changed (yet).');
+      toast('info', 'This step can\u2019t be changed', 'Steps that drew a rectangle, circle, line or text, and fillets, offsets, arrays, moves, resizes, rotations, stretches and points moved, can be changed. Others can be gone back to, not changed (yet).');
     return;
   }
   histEditClose();
@@ -508,14 +553,17 @@ function histEditOpen(i, chip){
     var t = document.createElement('span'); t.textContent = f.label; row.appendChild(t);
     var inp = document.createElement('input'); inp.type = 'text'; inp.autocomplete = 'off';
     if (f.kind !== 'text') inp.inputMode = 'decimal';
-    inp.value = f.kind === 'len' ? (f.expr ? f.expr.e : fmtDisp(f.value)) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) :
+    var shown = f.kind === 'len' ? fmtDisp(f.value) : f.kind === 'deg' ? String(parseFloat((+f.value).toFixed(3))) :
                 f.kind === 'pct' ? String(parseFloat((f.value * 100).toFixed(2))) : String(f.value == null ? '' : f.value);
+    inp.value = f.expr && f.kind !== 'text' ? f.expr.e : shown;
     row.appendChild(inp);
-    var u = document.createElement('span'); u.className = 'heUnit'; u.textContent = f.kind === 'len' ? unitTag() : f.kind === 'deg' ? '\u00b0' : f.kind === 'pct' ? '%' : '';
+    var tag = f.kind === 'len' ? unitTag() : f.kind === 'deg' ? '\u00b0' : f.kind === 'pct' ? '%' : f.kind === 'count' ? 'copies' : '';
+    var u = document.createElement('span'); u.className = 'heUnit'; u.textContent = tag;
     row.appendChild(u);
-    if (f.kind === 'len'){
-      inp.title = 'A length, or a parameter or arithmetic with one (wall, bit / 2, material - 3): the step remembers it and follows the parameter';
-      if (f.expr){ u.textContent = '= ' + fmtDisp(f.value) + ' ' + unitTag(); u.style.whiteSpace = 'nowrap'; }
+    if (f.kind !== 'text'){
+      inp.title = f.kind === 'len' ? 'A length, or a parameter or arithmetic with one (wall, bit / 2, material - 3): the step remembers it and follows the parameter'
+                                   : 'A number, or a parameter or arithmetic with one (count, angle / 2): each parameter counts as the number it was typed as';
+      if (f.expr){ u.textContent = '= ' + shown + (tag ? (f.kind === 'deg' || f.kind === 'pct' ? '' : ' ') + tag : ''); u.style.whiteSpace = 'nowrap'; }
     }
     box.appendChild(row);
     inputs.push({f: f, inp: inp});
@@ -530,22 +578,13 @@ function histEditOpen(i, chip){
   var apply = function () {
     var v = {}, ex = {}, bad = null, badWhy = '';
     inputs.forEach(function (x) {
-      if (x.f.kind === 'text'){ v[x.f.k] = x.inp.value; return; }
-      var raw = x.inp.value.trim(), n;
-      if (x.f.kind === 'len'){
-        // a measurement (unlinked); arithmetic without names (worked out once); or with parameters (remembered)
-        n = lenInPlain(raw);
-        if (isNaN(n) && raw){
-          var r = paramTry(raw, stockUnits());
-          if (r.why){ if (!bad){ bad = x; badWhy = x.f.label + ': ' + r.why; } return; }
-          n = r.v;
-          if (paramUsesNames(raw)) ex[x.f.k] = {e: raw, u: stockUnits()};
-        }
-      } else n = x.f.kind === 'pct' ? parseFloat(raw) / 100 : parseFloat(raw);
-      if (!isFinite(n) || (x.f.min !== null && x.f.min !== undefined && !(n > x.f.min))){ if (!bad) bad = x; return; }
-      v[x.f.k] = n;
+      // a measurement or number (unlinked); arithmetic without names (worked out once); or with parameters (remembered)
+      var r = histFieldRead(x.f, x.inp.value);
+      if (r.why){ if (!bad){ bad = x; badWhy = x.f.label + ': ' + r.why; } return; }
+      v[x.f.k] = r.v;
+      if (r.expr) ex[x.f.k] = r.expr;
     });
-    if (bad){ toast('warn', 'That isn’t a number it can use', badWhy || bad.f.label + (bad.f.min === 0 ? ' must be more than 0.' : ': type a number, such as 50 or 12.5, or a parameter.')); bad.inp.focus(); return; }
+    if (bad){ toast('warn', 'That isn’t a number it can use', badWhy); bad.inp.focus(); return; }
     histEditClose();
     Promise.resolve(histEdit(i, v, ex)).then(function (failed) {
     if (failed > 0) toast('warn', 'Changed: ' + failed + (failed === 1 ? ' step after it couldn’t be done again' : ' steps after it couldn’t be done again'),
