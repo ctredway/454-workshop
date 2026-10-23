@@ -476,7 +476,7 @@ function draw(){
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     DOC.dims.forEach(function(d, di){
       if (!dimOnSheet(d)){ d._hit = null; return; }   // on another sheet
-      var lab = dimLabel(d), anc = dimPlaced(d);
+      var lab = dimLabel(d, di === DIMHOVER), anc = dimPlaced(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);
       ctx.strokeStyle = isSelD ? THEME.accentLight : dispCol('dim');

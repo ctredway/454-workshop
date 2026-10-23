@@ -32,7 +32,8 @@ function type(i, txt) { D.run(`DRAW = {stage:'dimValue', di:${i}}; DIMSEL = ${i}
 const ents = () => plain(D.run('DOC.ents'));
 const dims = () => plain(D.run('DOC.dims'));
 const value = (i) => D.run(`dimValue(DOC.dims[${i}])`);
-const label = (i) => D.run(`dimLabel(DOC.dims[${i}])`);
+const label = (i) => D.run(`dimLabel(DOC.dims[${i}], true)`);   // as shown while pointed at, with its parameter
+const shown = (i) => D.run(`dimLabel(DOC.dims[${i}])`);        // as shown otherwise
 function setParam(name, expr) { D.run(`paramByName(${JSON.stringify(name)}).expr = ${JSON.stringify(expr)}; paramsApplyDims().length`); }
 
 test('type a parameter into a dimension: it’s applied, and remembered', () => {
@@ -41,6 +42,7 @@ test('type a parameter into a dimension: it’s applied, and remembered', () => 
   near(ents()[0].w, 19, 'the left side is 19 wide');
   assert.equal(dims()[0].expr, 'thickness + 1'); assert.equal(dims()[0].exprUnit, 'mm');
   assert.equal(label(0), '19.00 = thickness + 1');
+  assert.equal(shown(0), '19.00', 'on the drawing, just the value');
   type(0, '18');
   assert.equal(dims()[0].expr, undefined, 'a plain number unlinks it');
   assert.equal(label(0), '18.00');
@@ -76,6 +78,7 @@ test('something moved by hand: marked ⚠ until the parameters are applied again
   type(0, 'thickness');
   D.run('DOC.ents[0].w = 25; 1');
   assert.equal(label(0), '25.00 = thickness ⚠');
+  assert.equal(shown(0), '25.00 ⚠', 'the warning shows without pointing at it');
   D.run('paramsApplyDims(); 1');
   assert.equal(label(0), '18.00 = thickness');
 });

@@ -1352,6 +1352,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.153.0 — dimensions show their value, and the parameters are listed as you type
+Clint, 2026-10-23: “when using a parameter, there is no need to show it on screen, if at all I would show it on mouse
+over”, and “when typing in a dimension box, can we show the parameter list? its easy to forget names”.
+- **A dimension shows just its value** on the drawing (160.00, not 160.00 = width). Pointing at the value shows
+  the parameter it follows. The ⚠ for one that isn’t what its parameters say still shows without pointing.
+- **Typing in the value box lists the parameters** under it (above it, low on the screen), with what each comes to,
+  and the material’s thickness; narrowed to the name being typed (not a unit after a number, as in 18mm). Click one,
+  or Tab for the top one, or ↓ ↑ then Enter. Enter alone still sets the value. Shown wherever letters are typed as
+  part of a value (a dimension, a size mid-drawing), not where a letter picks a tool.
+- Tested (param-pick.test.mjs, 4 tests; dim-params.test.mjs updated); broken on purpose 5 ways, all caught. In the
+  real app: the pointed-at dimension read 160.00 = width, the other 40.00, and typing w listed width and wall.
+
 ### 0.152.0 — ramps at the cutting feed **(machine)**
 Clint, 2026-10-23, after measuring where his jobs spend their time (cutting, 75–98%): ramp in faster by default.
 - **A ramp goes as fast as the cutting feed allows, with the bit coming down no faster than the plunge rate.** It

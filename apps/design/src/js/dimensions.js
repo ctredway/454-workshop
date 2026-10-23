@@ -146,14 +146,26 @@ function dimLabelWorld(d){
 }
 // a rectangle's side: its top or bottom measures the width, its left or right the height
 function rectSideIsWidth(e, at){ var ln = nearestEdgeOf(e, resolveHint(e, at) || repPoint(e)); return !ln || Math.abs(ln.b) > Math.abs(ln.a); }
-function dimLabel(d){
+// The dimension whose value the pointer is over (-1: none): it shows its parameter while pointed at
+var DIMHOVER = -1;
+function dimLabelHit(sx, sy){
+  if (!UICFG.showDims || !DOC.dims) return -1;
+  for (var i = 0; i < DOC.dims.length; i++){
+    var hh = DOC.dims[i]._hit;
+    if (hh && Math.abs(sx - hh.x) < hh.w/2 && Math.abs(sy - hh.y) < hh.h/2) return i;
+  }
+  return -1;
+}
+// full: with the parameter it follows ("160.00 = width"), shown while it's pointed at; otherwise just the value,
+// and a ⚠ if it isn't what its parameters say
+function dimLabel(d, full){
   var v = dimValue(d);
   if (v === null) return null;
   var t = fmtDisp(v) + (dispIn() ? '\u2033' : '');
   if (d.kind === 'dia') t = '\u00d8' + t;
   if (d.kind === 'rad') t = 'R' + t;
   if (d.kind === 'pair' && d.edge) t += ' (edge)';
-  if (d.expr) t += ' = ' + d.expr + (dimExprHolds(d) ? '' : ' ⚠');   // driven by parameters; ⚠ if it isn't what they say
+  if (d.expr) t += (full ? ' = ' + d.expr : '') + (dimExprHolds(d) ? '' : ' ⚠');   // driven by parameters; ⚠ if it isn't what they say
   return t;
 }
 // apply a typed value: drives the geometry

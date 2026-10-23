@@ -671,6 +671,7 @@ function wire(){
   cv.addEventListener('pointermove', function(e){
     var r = cv.getBoundingClientRect();
     MOUSE.mx = e.clientX - r.left; MOUSE.my = e.clientY - r.top;
+    DIMHOVER = (e.buttons & 1) ? -1 : dimLabelHit(MOUSE.mx, MOUSE.my);   // pointed at: show its parameter
     if (!FLOAT_AT && document.activeElement !== document.getElementById('promptIn')) placeFloatIn();
     if (pan){
       VIEW.ox += e.clientX - pan.x; VIEW.oy += e.clientY - pan.y;
@@ -734,6 +735,7 @@ function wire(){
     }
     updateReadout(); draw();
   });
+  cv.addEventListener('pointerleave', function(){ if (DIMHOVER >= 0){ DIMHOVER = -1; draw(); } });
   cv.addEventListener('pointerup', function(){
     pan = null;
     if (TOOL === 'node' && NODE && NODE.drag !== null && NODE.drag !== undefined){
@@ -801,6 +803,9 @@ function wire(){
   // Fillet radius arms live as you type — no Enter needed. Other tools still commit on Enter
   // (they need a completed value: coordinates, counts, sweeps). For fillet the field is just the
   // standing radius, so every keystroke that parses to a positive number updates it immediately.
+  pin.addEventListener('input', paramPickRender);
+  pin.addEventListener('focus', paramPickRender);
+  pin.addEventListener('blur', paramPickHide);
   pin.addEventListener('input', function(){
     if (TOOL !== 'fillet') return;
     var v = lenIn(pin.value);                 // document units, or whatever unit is typed
@@ -825,6 +830,7 @@ function wire(){
   });
   frIn.addEventListener('blur', filletRShow);
   pin.addEventListener('keydown', function(e){
+    if (paramPickKey(e)){ e.preventDefault(); e.stopPropagation(); return; }   // the parameter list under the box
     // A tool-hotkey letter typed while the field is focused switches tools (letters are never part
     // of a numeric entry). This lets you go fillet -> type radius -> press T for trim without
     // having to click away from the field first. Only when the field holds no partial number.

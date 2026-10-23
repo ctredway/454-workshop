@@ -437,12 +437,14 @@ The **fx** button, beside Dimension. Parameters are named sizes, saved with the 
 `dado`, `shelf_gap`. Use one in a dimension, and when you change the parameter, every dimension using it
 follows, so a change of plywood is one edit instead of a dozen.
 
-<Shot src={parameters} alt="A cabinet side with a dado across it, and a shelf beside it. The dado's dimension reads 18.00 = thickness and the shelf's reads 564.00 = shelf. The Parameters list beside them holds thickness 18, width 600, shelf as width - 2 * thickness, and dado_depth as thickness / 3." caption="A cabinet side with its dado, and the shelf. The dado is as wide as thickness, and the shelf is width - 2 * thickness long. Change thickness to 17.5 and the dado narrows and the shelf grows to 565." />
+<Shot src={parameters} alt="A cabinet side with a dado across it, and a shelf beside it. The dado's dimension reads 18.00 and the shelf's 564.00. The Parameters list beside them holds thickness 18, width 600, shelf as width - 2 * thickness, and dado_depth as thickness / 3." caption="A cabinet side with its dado, and the shelf. The dado is as wide as thickness, and the shelf is width - 2 * thickness long. Change thickness to 17.5 and the dado narrows and the shelf grows to 565." />
 
 1. Press **fx**, type a name and a value, and press **Add**. A value can be a number (`18.3`, `3/4`), or
    arithmetic using other parameters: `thickness + 0.2`, `(height - 3 * thickness) / 2`.
-2. In a dimension, type the parameter's name, or arithmetic with it (`dado * 2`), instead of a number. The
-   dimension shows it, like **18.50 = dado**.
+2. In a dimension, type the parameter's name, or arithmetic with it (`dado * 2`), instead of a number. While
+   you type, your parameters are listed under the box with what each comes to, narrowed to the name you've
+   started: click one, or press <kbd>Tab</kbd> for the top one (or <kbd>↓</kbd> <kbd>↑</kbd> and
+   <kbd>Enter</kbd>). The dimension shows its value; point at it to see the parameter, like **18.50 = dado**.
 3. Change a value in the list, and every dimension using it, and the shapes they drive, follow. One
    <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes the whole change back.
 

@@ -564,6 +564,14 @@
   #floatDel:hover{color:#e06c5a}
   #floatDel[hidden]{display:none}
   #floatTag:empty{display:none}
+  #paramPick{position:absolute;left:-1px;top:calc(100% + 4px);min-width:100%;max-height:200px;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:5px;box-shadow:0 4px 18px rgba(0,0,0,.45);padding:3px 0;font-size:12px}
+  #paramPick.up{top:auto;bottom:calc(100% + 4px)}
+  #paramPick[hidden]{display:none}
+  #paramPick .pp{display:flex;gap:14px;justify-content:space-between;padding:3px 9px;cursor:pointer;white-space:nowrap}
+  #paramPick .pp b{font-weight:500;font-family:var(--mono);color:var(--ink)}
+  #paramPick .pp span{color:var(--muted);font-family:var(--mono)}
+  #paramPick .pp.on, #paramPick .pp:hover{background:color-mix(in srgb, var(--amber) 18%, transparent)}
+  #paramPick .ppHead{padding:2px 9px 4px;color:var(--muted);font-size:11px;white-space:nowrap}
   #promptBar{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:none;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--amber);border-radius:6px;padding:8px 12px;z-index:5}
   #promptBar.on{display:flex}
   #promptBar label{color:var(--muted);font-size:12.5px}
@@ -1215,7 +1223,7 @@
       <p class="mirHint" id="mirHint"></p>
       <div class="mirBtns"><button id="mirCancel">Cancel</button><button id="mirOk" class="primary">OK</button></div>
     </div>
-    <div id="floatIn" hidden><span id="floatTag"></span><input id="promptIn" autocomplete="off" spellcheck="false"><button id="floatDel" hidden title="Delete this dimension">✕</button></div>
+    <div id="floatIn" hidden><span id="floatTag"></span><input id="promptIn" autocomplete="off" spellcheck="false"><button id="floatDel" hidden title="Delete this dimension">✕</button><div id="paramPick" hidden role="listbox" aria-label="Parameters"></div></div>
     <div id="promptBar">
       <label id="promptLbl">value</label>
       <label id="filletRBox" hidden title="The fillet radius. Type a new one here, or just start typing a number while the Fillet tool is active">Radius
@@ -1293,7 +1301,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.152.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.153.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1951,14 +1959,26 @@ function dimLabelWorld(d){
 }
 // a rectangle's side: its top or bottom measures the width, its left or right the height
 function rectSideIsWidth(e, at){ var ln = nearestEdgeOf(e, resolveHint(e, at) || repPoint(e)); return !ln || Math.abs(ln.b) > Math.abs(ln.a); }
-function dimLabel(d){
+// The dimension whose value the pointer is over (-1: none): it shows its parameter while pointed at
+var DIMHOVER = -1;
+function dimLabelHit(sx, sy){
+  if (!UICFG.showDims || !DOC.dims) return -1;
+  for (var i = 0; i < DOC.dims.length; i++){
+    var hh = DOC.dims[i]._hit;
+    if (hh && Math.abs(sx - hh.x) < hh.w/2 && Math.abs(sy - hh.y) < hh.h/2) return i;
+  }
+  return -1;
+}
+// full: with the parameter it follows ("160.00 = width"), shown while it's pointed at; otherwise just the value,
+// and a ⚠ if it isn't what its parameters say
+function dimLabel(d, full){
   var v = dimValue(d);
   if (v === null) return null;
   var t = fmtDisp(v) + (dispIn() ? '\u2033' : '');
   if (d.kind === 'dia') t = '\u00d8' + t;
   if (d.kind === 'rad') t = 'R' + t;
   if (d.kind === 'pair' && d.edge) t += ' (edge)';
-  if (d.expr) t += ' = ' + d.expr + (dimExprHolds(d) ? '' : ' ⚠');   // driven by parameters; ⚠ if it isn't what they say
+  if (d.expr) t += (full ? ' = ' + d.expr : '') + (dimExprHolds(d) ? '' : ' ⚠');   // driven by parameters; ⚠ if it isn't what they say
   return t;
 }
 // apply a typed value: drives the geometry
@@ -5156,12 +5176,14 @@ function showPrompt(label, val, selectAll, tag){
   // Do NOT auto-focus: focusing here steals the first canvas click from click-based tools
   // (trim, extend, fillet corners). The field receives focus when the user starts typing.
   if (selectAll){ i.focus(); i.select(); }
+  paramPickRender();
 }
 function hidePrompt(){
   document.getElementById('promptBar').classList.remove('on');
   document.getElementById('promptHint').classList.remove('on');
   document.getElementById('promptIn').blur();
   document.getElementById('floatIn').hidden = true;
+  paramPickHide();
   FLOAT_AT = null;
 }
 function showHint(t){
@@ -5169,6 +5191,84 @@ function showHint(t){
   h.textContent = t; h.classList.add('on');
 }
 
+
+// ---- the parameter list under the value box ----
+// While a value is typed (a dimension, a size mid-drawing), the drawing's parameters are listed under the box with
+// what each comes to, narrowed to those starting with the name being typed. A click, or Tab (or ↓ ↑ then Enter),
+// puts the name in. Not where a typed letter picks a tool instead (nothing being drawn, or the Select tool).
+var PPICK = {items: [], on: -1, word: null};
+function paramPickWanted(){
+  var box = document.getElementById('floatIn');
+  return !!(box && !box.hidden && DRAW && TOOL !== 'select' && document.activeElement === document.getElementById('promptIn'));
+}
+function paramPickCaret(input){ return typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length; }
+// The name being typed, just before the cursor: {start, text}, or null (a unit after a number, as in 18mm, isn't one)
+function paramPickWord(input){
+  var upto = input.value.slice(0, paramPickCaret(input));
+  var m = /[A-Za-z_][A-Za-z0-9_]*$/.exec(upto);
+  if (!m) return null;
+  if (m.index > 0 && /[0-9.]/.test(upto.charAt(m.index - 1))) return null;
+  return {start: m.index, text: m[0]};
+}
+function paramPickAll(){
+  var out = paramsArr().map(function (p) { return p.name; });
+  if (DOC.stock && DOC.stock.t > 0) out.push(PARAM_BUILTIN);
+  return out;
+}
+function paramPickRender(){
+  var list = document.getElementById('paramPick'), input = document.getElementById('promptIn');
+  if (!list) return;
+  var names = paramPickWanted() ? paramPickAll() : [];
+  var w = names.length ? paramPickWord(input) : null, lw = w ? w.text.toLowerCase() : '';
+  var items = names.filter(function (n) { return !lw || n.toLowerCase().indexOf(lw) === 0; });
+  if (!items.length || (items.length === 1 && w && items[0].toLowerCase() === lw)){ paramPickHide(); return; }   // nothing to offer, or already typed
+  if (PPICK.items.join() !== items.join()) PPICK.on = -1;
+  PPICK.items = items; PPICK.word = w;
+  list.innerHTML = '';
+  var head = document.createElement('div'); head.className = 'ppHead'; head.textContent = 'Parameters: click or Tab to use';
+  list.appendChild(head);
+  items.forEach(function (n, k) {
+    var row = document.createElement('div'), r;
+    row.className = 'pp' + (k === PPICK.on ? ' on' : ''); row.setAttribute('role', 'option');
+    try { r = fmtDisp(paramValue(n, [])) + ' ' + unitTag(); } catch (e) { r = '?'; }
+    var b = document.createElement('b'); b.textContent = n;
+    var s = document.createElement('span'); s.textContent = n === PARAM_BUILTIN ? r + ' (thickness)' : r;
+    row.appendChild(b); row.appendChild(s);
+    row.addEventListener('mousedown', function (e) { e.preventDefault(); paramPickUse(n); });   // keep the typing in the box
+    list.appendChild(row);
+  });
+  var box = document.getElementById('floatIn'), cvEl = document.getElementById('cv');
+  list.classList.toggle('up', !!(cvEl && box.offsetTop > (cvEl.clientHeight || 600) / 2));      // low down: above the box
+  list.hidden = false;
+}
+function paramPickHide(){
+  var list = document.getElementById('paramPick');
+  if (list) list.hidden = true;
+  PPICK.items = []; PPICK.on = -1; PPICK.word = null;
+}
+// Put a name in place of the one being typed (or at the cursor)
+function paramPickUse(name){
+  var input = document.getElementById('promptIn'), w = paramPickWord(input);
+  var at = paramPickCaret(input), from = w ? w.start : at;
+  input.value = input.value.slice(0, from) + name + input.value.slice(at);
+  if (input.setSelectionRange) input.setSelectionRange(from + name.length, from + name.length);
+  input.focus();
+  paramPickHide();
+}
+// Keys for the list, before the box's own: true if the list took the key
+function paramPickKey(e){
+  var list = document.getElementById('paramPick');
+  if (!list || list.hidden || !PPICK.items.length) return false;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    var n = PPICK.items.length;
+    PPICK.on = e.key === 'ArrowDown' ? (PPICK.on + 1) % n : (PPICK.on <= 0 ? n - 1 : PPICK.on - 1);
+    paramPickRender(); return true;
+  }
+  if (e.key === 'Tab'){ paramPickUse(PPICK.items[PPICK.on >= 0 ? PPICK.on : 0]); return true; }
+  if (e.key === 'Enter' && PPICK.on >= 0){ paramPickUse(PPICK.items[PPICK.on]); return true; }   // chosen with the arrows
+  if (e.key === 'Escape'){ paramPickHide(); return true; }
+  return false;
+}
 /* ---------------- VCarve .crv import ----------------
    .crv = OLE compound document; vectors live uncompressed in the
    VectorData/2dDataV2 stream as span lists: records of
@@ -14730,7 +14830,7 @@ function draw(){
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     DOC.dims.forEach(function(d, di){
       if (!dimOnSheet(d)){ d._hit = null; return; }   // on another sheet
-      var lab = dimLabel(d), anc = dimPlaced(d);
+      var lab = dimLabel(d, di === DIMHOVER), anc = dimPlaced(d);
       if (lab === null || !anc) return;           // broken reference: skip (flagged below)
       var isSelD = (DIMSEL === di);
       ctx.strokeStyle = isSelD ? THEME.accentLight : dispCol('dim');
@@ -19547,6 +19647,7 @@ function wire(){
   cv.addEventListener('pointermove', function(e){
     var r = cv.getBoundingClientRect();
     MOUSE.mx = e.clientX - r.left; MOUSE.my = e.clientY - r.top;
+    DIMHOVER = (e.buttons & 1) ? -1 : dimLabelHit(MOUSE.mx, MOUSE.my);   // pointed at: show its parameter
     if (!FLOAT_AT && document.activeElement !== document.getElementById('promptIn')) placeFloatIn();
     if (pan){
       VIEW.ox += e.clientX - pan.x; VIEW.oy += e.clientY - pan.y;
@@ -19610,6 +19711,7 @@ function wire(){
     }
     updateReadout(); draw();
   });
+  cv.addEventListener('pointerleave', function(){ if (DIMHOVER >= 0){ DIMHOVER = -1; draw(); } });
   cv.addEventListener('pointerup', function(){
     pan = null;
     if (TOOL === 'node' && NODE && NODE.drag !== null && NODE.drag !== undefined){
@@ -19677,6 +19779,9 @@ function wire(){
   // Fillet radius arms live as you type — no Enter needed. Other tools still commit on Enter
   // (they need a completed value: coordinates, counts, sweeps). For fillet the field is just the
   // standing radius, so every keystroke that parses to a positive number updates it immediately.
+  pin.addEventListener('input', paramPickRender);
+  pin.addEventListener('focus', paramPickRender);
+  pin.addEventListener('blur', paramPickHide);
   pin.addEventListener('input', function(){
     if (TOOL !== 'fillet') return;
     var v = lenIn(pin.value);                 // document units, or whatever unit is typed
@@ -19701,6 +19806,7 @@ function wire(){
   });
   frIn.addEventListener('blur', filletRShow);
   pin.addEventListener('keydown', function(e){
+    if (paramPickKey(e)){ e.preventDefault(); e.stopPropagation(); return; }   // the parameter list under the box
     // A tool-hotkey letter typed while the field is focused switches tools (letters are never part
     // of a numeric entry). This lets you go fillet -> type radius -> press T for trim without
     // having to click away from the field first. Only when the field holds no partial number.
