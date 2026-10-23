@@ -33,6 +33,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### Not released yet
+- **Window → Open at start** chooses which app opens when 454 Workshop starts, on each computer (start-with.json in
+  the app’s data folder): Clint, 2026-10-23, Design on his laptop, Control in the garage. Design until one is chosen,
+  as before. (start-with.test.mjs, 3 tests; app-menu.test.mjs; in the real app, Control chosen opened Control, and
+  Design or nothing chosen opened Design.)
+- **Tests get a data folder of their own** (P454_USER_DATA): Electron takes no notice of APPDATA, so in-app test runs
+  pointed at a scratch folder used the real one. With 454 Workshop open, as it was, they worked on a copy in memory and
+  nothing was changed (checked: the saved settings are Clint’s own); closed, they would have used the real settings.
+
 ### 0.6.2-beta.63 — History steps that follow parameters, an easier History bar, and left-out toolpaths shown faint
 - Includes Design 0.149.0, 0.150.0 and 0.151.0: steps on the History bar (offsets, fillets, arrays) can follow
   parameters, Array is on the History bar, and the bar has an icon, a marker to drag, and right-click to delete a

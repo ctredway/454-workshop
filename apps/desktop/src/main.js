@@ -22,6 +22,9 @@ function isAppPage(u) { return u.protocol === 'app:' && PAGE_HOSTS.indexOf(u.hos
 // folder named "454", and Electron names that folder after the app. Keep using it, so renaming the app
 // doesn't make everything seem to vanish.
 app.setPath('userData', path.join(app.getPath('appData'), '454'));
+// tests only (never set in normal use): a data folder of their own. Electron takes no notice of APPDATA, and a test run
+// against the real folder works on the real settings and drawings (or, with the app open, on a copy in memory).
+if (process.env.P454_USER_DATA) app.setPath('userData', process.env.P454_USER_DATA);
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 
 let control = null, design = null, machine = null;
@@ -262,6 +265,9 @@ function updateMenu() {
   ];
 }
 const { menuTemplate, windowKind } = require('./app-menu');
+// which app opens at start, on this computer (start-with.js), read when first needed
+let START_WITH = null;
+function startWith() { return START_WITH || (START_WITH = require('./start-with').createStartWith({ file: path.join(app.getPath('userData'), 'start-with.json'), fs })); }
 // the Edit items a text box does for itself (each is a webContents method of the same name)
 const TEXT_EDITS = ['cut', 'copy', 'paste', 'delete', 'selectAll'];
 // The menu bar (app-menu.js): File, Edit, View, Window, Help. File follows the window in front, so the menu is
@@ -270,7 +276,7 @@ function menu() {
   const focused = () => BrowserWindow.getFocusedWindow();
   const front = focused();
   const kind = front && !front.isDestroyed() ? (front === design ? 'design' : front === control ? 'control' : windowKind(front.webContents.getURL())) : 'other';
-  return Menu.buildFromTemplate(menuTemplate({ kind, updates: updateMenu(), recent: kind === 'design' ? files().recent() : [], act: {
+  return Menu.buildFromTemplate(menuTemplate({ kind, updates: updateMenu(), recent: kind === 'design' ? files().recent() : [], startWith: startWith().app, act: {
     // the page does it, through its own menuDo: the same thing its button or its keys do
     // An Edit item with the focus in a text box comes back 'text': the box's own cut, copy, paste, delete or select all
     page: (name) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo(' + JSON.stringify(name) + ')', true)
@@ -279,6 +285,7 @@ function menu() {
     openRecent: (p) => { const w = focused(); if (w && !w.isDestroyed()) w.webContents.executeJavaScript('typeof menuDo === "function" && menuDo("recent", ' + JSON.stringify(p) + ')', true).catch(() => {}); },
     clearRecent: () => files().clearRecent(),
     showDesign, showControl,
+    startWith: (v) => { startWith().set(v); Menu.setApplicationMenu(menu()); },
     docs: () => openDocs(ORIGIN + '/docs/index.html'),
     report: () => shell.openExternal(reportUrl({ version: app.getVersion(), os: osName(process.platform, require('os').release()) })),
     about: openAbout,
@@ -358,7 +365,8 @@ app.whenReady().then(() => {
   });
   const testing = testHook();                      // starts any test jobs: call it once
   if (!testing || process.env.P454_UPDATE_FEED) setupUpdates();
-  if (!testing) showDesign();                  // Design first; Control opens from the menu (Ctrl+1) or its header button
+  // the one chosen for this computer (Window → Open at start; Design until one is), the other from the menu or its header button
+  if (!testing) (startWith().app === 'control' ? showControl : showDesign)();
   if (process.env.P454_LIST_WINDOWS) setTimeout(() => {          // tests only: which windows opened at launch
     fs.writeFileSync(process.env.P454_LIST_WINDOWS, JSON.stringify(BrowserWindow.getAllWindows().map((w) => w.getTitle())));
     app.isQuitting = true; app.exit(0);

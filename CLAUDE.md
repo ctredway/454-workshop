@@ -89,6 +89,9 @@ node site/build.js && node site/serve.js          # the whole website on this co
 - **The end-to-end tests** (`apps/desktop/test/e2e.sh`, and the BitSetter and tool-offset variants in
   `DEVELOPING.md`) drive the real app against the simulated GRBL machine. They use `socat` and `xvfb-run`,
   which are Linux tools: on Windows they need WSL or adapting.
+- **Running the real app in a test: always give it its own data folder** with `P454_USER_DATA=<folder>`. Electron
+  ignores APPDATA, so without it a test run uses the real settings and drawings in %APPDATA%\454 (with the app open,
+  a copy in memory; closed, the real ones). `P454_LIST_WINDOWS=<file>` records which windows opened at start.
 - **Pause & lift and Resume, end to end, on any computer:** `node apps/desktop/test/e2e-pause.mjs` runs the real app
   with the simulated machine inside Control's page (`e2e-pause-page.js`), no virtual serial port needed. The same
   way can drive other jobs on Windows.

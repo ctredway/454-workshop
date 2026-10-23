@@ -20,7 +20,7 @@ function recentLabel(r) {
   const dir = r.dir && r.dir.length > 46 ? '…' + r.dir.slice(-45) : (r.dir || '');
   return (r.name + (dir ? '   (' + dir + ')' : '')).replace(/&/g, '&&');
 }
-function menuTemplate({ kind, act, updates = [], recent = [] }) {
+function menuTemplate({ kind, act, updates = [], recent = [], startWith = 'design' }) {
   // An action the page also has a key for. The key is shown, not taken: the page's own handler does the work,
   // so the menu and the key do one thing, and neither works while one of the page's dialogs has the screen.
   const page = (label, name, key) => Object.assign({ label, click: () => act.page(name) }, key ? { accelerator: key, registerAccelerator: false } : {});
@@ -124,6 +124,12 @@ function menuTemplate({ kind, act, updates = [], recent = [] }) {
     { label: 'Window', submenu: [
       { label: '454 Design', accelerator: 'CmdOrCtrl+2', click: act.showDesign, type: 'checkbox', checked: kind === 'design' },
       { label: '454 Control', accelerator: 'CmdOrCtrl+1', click: act.showControl, type: 'checkbox', checked: kind === 'control' },
+      sep,
+      // which opens when 454 Workshop starts, on this computer (start-with.js)
+      { label: 'Open at start', submenu: [
+        { label: '454 Design', type: 'radio', checked: startWith !== 'control', click: () => act.startWith('design') },
+        { label: '454 Control', type: 'radio', checked: startWith === 'control', click: () => act.startWith('control') },
+      ] },
     ] },
     { label: 'Help', submenu: [
       ...(inApp ? [page('Help', 'help', 'F1')] : []),

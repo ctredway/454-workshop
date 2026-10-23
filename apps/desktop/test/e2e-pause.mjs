@@ -23,7 +23,7 @@ const script = path.join(tmp, 'run.js'), out = path.join(tmp, 'out.json');
 fs.writeFileSync(script, sim + '\nvar GCODE = ' + JSON.stringify(gcode) + ';\n' + fs.readFileSync(path.join(here, 'e2e-pause-page.js'), 'utf8'));
 
 spawnSync(process.execPath, ['scripts/build-app.js'], { cwd: app, stdio: 'ignore' });
-const env = Object.assign({}, process.env, { APPDATA: path.join(tmp, 'appdata'), P454_E2E: script, P454_E2E_OUT: out });
+const env = Object.assign({}, process.env, { P454_USER_DATA: path.join(tmp, 'data'), P454_E2E: script, P454_E2E_OUT: out });   // never the real settings
 delete env.ELECTRON_RUN_AS_NODE;
 const electron = path.join(app, 'node_modules', '.bin', process.platform === 'win32' ? 'electron.cmd' : 'electron');
 spawnSync(electron, ['.'].concat(process.platform === 'linux' ? ['--no-sandbox'] : []), { cwd: app, env, stdio: 'ignore', timeout: 300000, shell: process.platform === 'win32' });

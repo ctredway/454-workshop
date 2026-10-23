@@ -5,11 +5,12 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { menuTemplate, windowKind, recentLabel } = require('../src/app-menu.js');
 
-function build(kind, updates, recent) {
+function build(kind, updates, recent, startWith) {
   const did = [];
   const act = { page: (n) => did.push('page:' + n), openRecent: (p) => did.push('recent:' + p), clearRecent: () => did.push('clearRecent') };
   for (const k of ['showDesign', 'showControl', 'docs', 'report', 'about', 'closeWindow', 'devTools']) act[k] = () => did.push(k);
-  return { menu: menuTemplate({ kind, act, updates, recent }), did };
+  act.startWith = (v) => did.push('startWith:' + v);
+  return { menu: menuTemplate({ kind, act, updates, recent, startWith }), did };
 }
 const labels = (items) => items.map((i) => i.type === 'separator' ? '-' : i.label || i.role);
 const sub = (menu, name) => menu.find((m) => m.label === name).submenu;
@@ -60,7 +61,7 @@ describe('the menu bar', () => {
   });
   it('Window switches between the two apps, with the same keys as before, and ticks the one in front', () => {
     const { menu, did } = build('design');
-    expect(labels(sub(menu, 'Window'))).toEqual(['454 Design', '454 Control']);
+    expect(labels(sub(menu, 'Window'))).toEqual(['454 Design', '454 Control', '-', 'Open at start']);
     expect(item(menu, 'Window', '454 Design').accelerator).toBe('CmdOrCtrl+2');
     expect(item(menu, 'Window', '454 Control').accelerator).toBe('CmdOrCtrl+1');
     item(menu, 'Window', '454 Control').click(); item(menu, 'Window', '454 Design').click();
@@ -152,5 +153,17 @@ describe('which window is in front', () => {
     expect(windowKind('app://0.0.1.198/docs/index.html')).toBe('other');
     expect(windowKind('app://0.0.1.198/about.html')).toBe('other');
     expect(windowKind('not an address')).toBe('other');
+  });
+});
+
+describe('Window → Open at start: which app opens when 454 Workshop starts, on this computer', () => {
+  it('ticks the one chosen (Design until one is), and choosing tells main.js', () => {
+    const open = (m) => sub(m, 'Window').find((i) => i.label === 'Open at start').submenu;
+    const ticks = (m) => open(m).map((i) => i.label + (i.checked ? ' ✓' : ''));
+    expect(ticks(build('design').menu)).toEqual(['454 Design ✓', '454 Control']);
+    expect(ticks(build('control', [], [], 'control').menu)).toEqual(['454 Design', '454 Control ✓']);
+    const { menu, did } = build('other', [], [], 'design');
+    open(menu).find((i) => i.label === '454 Control').click();
+    expect(did).toEqual(['startWith:control']);
   });
 });
