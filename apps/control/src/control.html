@@ -64,7 +64,7 @@
       <div id="ovRow" role="group" aria-label="Adjust the running job">
         <div class="ovItem"><div class="ovHead"><span class="ovName">Feed rate</span><small>how fast it cuts</small><b class="ovNow" id="ovF">100%</b></div>
         <div class="ovBtns"><button data-ov="f-10" title="10% slower">−10%</button><button data-ov="f-1" title="1% slower">−1%</button><button data-ov="f0" class="ovReset" title="Back to the file’s own feed rates">100%</button><button data-ov="f+1" title="1% faster">+1%</button><button data-ov="f+10" title="10% faster">+10%</button></div></div>
-        <div class="ovItem"><div class="ovHead"><span class="ovName">Spindle speed</span><small>VFD only; a router’s is on its dial</small><b class="ovNow" id="ovS">100%</b></div>
+        <div class="ovItem" id="ovSpItem"><div class="ovHead"><span class="ovName">Spindle speed</span><small>how fast the bit spins</small><b class="ovNow" id="ovS">100%</b></div>
         <div class="ovBtns"><button data-ov="s-10" title="10% slower">−10%</button><button data-ov="s-1" title="1% slower">−1%</button><button data-ov="s0" class="ovReset" title="Back to the file’s own spindle speed">100%</button><button data-ov="s+1" title="1% faster">+1%</button><button data-ov="s+10" title="10% faster">+10%</button></div></div>
         <div class="ovItem"><div class="ovHead"><span class="ovName">Rapid moves</span><small>in the air, between cuts</small><b class="ovNow" id="ovR">100%</b></div>
         <div class="ovBtns"><button data-ov="r25" title="Rapid moves at a quarter speed">25%</button><button data-ov="r50" title="Rapid moves at half speed">50%</button><button data-ov="r100" class="ovReset" title="Rapid moves at full speed">100%</button></div></div>
@@ -635,6 +635,7 @@
 @@include js/recovery.js
 @@include js/handoff.js
 @@include js/machine-tab.js
+@@include js/move-lock.js
 </script>
 <!-- the desktop app's update notice (only in the app: in a browser it shows nothing) -->
 <script>

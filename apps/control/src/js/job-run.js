@@ -309,7 +309,7 @@ function jobResume(){
   if (!SERIAL.connected) return;
   if (PAUSED && !JOB.active && !ENDING){                 // after Pause & lift
     // still lifting: carry on once it's there (it said "Machine isn't ready" and did nothing, Clint, 2026-10-23)
-    if (SERIAL.state !== 'Idle'){ jobResumeWhenStill(); return; }
+    if (SERIAL.state !== 'Idle' || (typeof pausedLifting === 'function' && pausedLifting())){ jobResumeWhenStill(); return; }
     jobStartFrom(PAUSED.line, {paused: true}); return;
   }
   if (!JOB.active && SERIAL.state !== 'Hold' && SERIAL.state !== 'Door'){   // nothing held to go on with: say so
@@ -324,7 +324,7 @@ function jobResumeWhenStill(){
   var since = performance.now();
   updateJobUI('resuming once Z has finished lifting…');
   jobResumeWhenStill.timer = setInterval(function () {
-    var done = SERIAL.state === 'Idle', gaveUp = performance.now() - since > 20000;
+    var done = SERIAL.state === 'Idle' && !(typeof pausedLifting === 'function' && pausedLifting()), gaveUp = performance.now() - since > 20000;
     if (!done && !gaveUp && PAUSED && SERIAL.connected) return;
     clearInterval(jobResumeWhenStill.timer); jobResumeWhenStill.timer = null;
     if (!PAUSED || !SERIAL.connected) return;
@@ -404,7 +404,8 @@ function endingTick(){
     else { cmds.push('G91 G0 Z' + travelZ().toFixed(1)); cmds.push('G90'); }
     if (done.pause){                                   // paused: lifted, and staying above the spot
       cmds.forEach(function (c) { sendLine(c); });
-      PAUSED = {line: JOB.stopInfo ? JOB.stopInfo.line : 1};
+      // lifting until Z is at the top and still: the controller says Idle for a moment after the lift is sent
+      PAUSED = {line: JOB.stopInfo ? JOB.stopInfo.line : 1, lifting: true, since: performance.now(), liftZ: SERIAL.homedSeen && typeof zBelowTop === 'function' ? zBelowTop(topZ()) : null};
       updateJobUI('paused and lifted at line ' + PAUSED.line + ' \u2014 Resume carries on from there; End job finishes.');
       logC('sys', 'paused: spindle off, lifted clear. Resume carries on from line ' + PAUSED.line);
       return;

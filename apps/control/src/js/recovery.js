@@ -177,5 +177,6 @@ function updateJobUI(statusText){
   document.getElementById('ovF').textContent = SERIAL.ov[0] + '%';
   document.getElementById('ovS').textContent = SERIAL.ov[2] + '%';
   document.getElementById('ovR').textContent = SERIAL.ov[1] + '%';
+  if (typeof moveLockUI === 'function') moveLockUI();   // what can be pressed now (move-lock.js)
 }
 

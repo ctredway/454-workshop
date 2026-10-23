@@ -44,6 +44,9 @@
     jobPauseLift();
     await until(() => PAUSED, 30000, 'paused');                      // Resume pressed at once, while Z is still rising
     const liftingAt = SERIAL.mpos.z;
+    const off = (id) => document.getElementById(id).disabled;
+    log.push('while lifting: Go to XY zero ' + (off('gotoZero') ? 'greyed' : 'PRESSABLE') + ', jog ' + (off('rbJog') ? 'greyed' : 'PRESSABLE') +
+             ', Resume ' + (off('rbResume') ? 'greyed' : 'PRESSABLE') + ', STOP ' + (off('rbEstop') ? 'GREYED' : 'pressable'));
     log.push('paused: PAUSED.line ' + PAUSED.line + ' = "' + MODEL.lines[PAUSED.line - 1] + '"; Resume pressed with machine Z at ' + liftingAt.toFixed(2));
     jobResume();
     await until(() => JOB.active, 15000, 'carrying on (1)');

@@ -107,10 +107,7 @@ function uiStatus(){
   document.getElementById('jmZ').textContent = SERIAL.wpos.z.toFixed(3);
   var jm = document.getElementById('jmState');
   jm.textContent = st; jm.dataset.s = st;
-  document.getElementById('jogOpen').disabled = JOB.active && !atToolChange();
   if (JOB.active && !atToolChange() && !document.getElementById('jogModal').hidden) jogModalClose();
-  document.getElementById('bzOpen').disabled = JOB.active && !atToolChange();
-  document.getElementById('jogTool').disabled = JOB.active;   // a job's changes are its tool-change prompt's
   if (JOB.active && !atToolChange() && !document.getElementById('bzModal').hidden) bzCloseModal();
   bzUpdateCircuit();
   // live marker while a job (or manual motion during one) is happening
@@ -127,6 +124,7 @@ function uiStatus(){
       'held (' + st + ') at line ' + JOB.lastLn + ' — Resume to continue';
   }
   keepAwakeCheck();
+  moveLockUI();                                         // what can be pressed now (move-lock.js)
 }
 
 function uiConn(on){
@@ -137,6 +135,7 @@ function uiConn(on){
   document.getElementById('mControls').classList.toggle('disabledArea', !on);
   document.getElementById('spBody').classList.toggle('disabledArea', !on);
   document.getElementById('consoleIn').disabled = !on;    // the log stays readable
+  if (typeof moveLockUI === 'function') moveLockUI();
   document.getElementById('hdrMachine').classList.toggle('on', on);
   if (!on){
     var chipTop = document.getElementById('hdrState');

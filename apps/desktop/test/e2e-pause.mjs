@@ -39,5 +39,6 @@ const away = line(/^distance from where it stopped: ([\d.]+)/);
 if (!(away < 40)) fail.push('cutting again ' + away + ' mm from where it stopped');
 if (!/Carry on from line \d+\?/.test(r.asked[2] || '')) fail.push('the second Resume asked ' + r.asked[2]);
 if (r.asked[3] !== 'Nothing to resume') fail.push('Resume after End job asked ' + r.asked[3]);
+if (!r.log.some((l) => l === 'while lifting: Go to XY zero greyed, jog greyed, Resume greyed, STOP pressable')) fail.push('the buttons while lifting: ' + r.log.find((l) => /^while lifting/.test(l)));
 if (fail.length){ console.log('FAILED:\n  ' + fail.join('\n  ')); process.exit(1); }
 console.log('ok: paused at line ' + paused + ', carried on from it; waited for the lift; paused and resumed again; said Nothing to resume after End job');

@@ -27,6 +27,8 @@ var JOG_KEYS = {ArrowLeft:[-1,0,0], ArrowRight:[1,0,0], ArrowUp:[0,1,0], ArrowDo
 // and starting the spindle need it stopped; jogs may also follow a jog already under way, which
 // GRBL allows. During a job, only the moment it waits at a tool change counts as stopped.
 function requireIdle(what){
+  var lockWhy = typeof moveLockWhy === 'function' ? moveLockWhy() : null;   // pausing, ending, or lifting after a pause
+  if (lockWhy){ logC('err', what + ' blocked — ' + lockWhy + '.'); return false; }
   if (SERIAL.state === 'Alarm'){
     logC('err', what + ' blocked \u2014 machine is locked. Home ($H) first.');
     return false;

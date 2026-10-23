@@ -155,7 +155,7 @@ with what it's at now beside its name:
 | Row | What it changes |
 | --- | --- |
 | **Feed rate** | How fast it cuts, as a percentage of what the file asks for: 10% or 1% at a time, or back to 100%. |
-| **Spindle speed** | The bit's RPM, the same way (VFD spindles only; a router's speed is on its dial). |
+| **Spindle speed** | The bit's RPM, the same way. Only for a VFD spindle: with a router (Settings → Spindle type) this row isn't shown, as its speed is on its dial. |
 | **Rapid moves** | How fast the machine travels in the air between cuts: 25%, 50% or 100%. |
 | **Depth nudge** | Moves every cut down (**▼ deeper**) or up (**▲ shallower**), 0.02 or 0.1 mm at a time, for a cut that is a little too deep or not quite through; **No nudge** puts it back. It takes effect a few moves later, once the moves already handed to the machine are done. |
 
@@ -167,6 +167,12 @@ listing what it would keep, and **Back to normal** there clears it. Setting Z ze
 then brings the bit back down where it stopped and carries on, with the same adjustments (with the BitSetter, the
 bit is measured again first); **End job** finishes instead. It works on any Shapeoko: Control does the lift
 itself, rather than relying on the controller's own "parking", which stock Shapeoko firmware doesn't have.
+
+**Only what can be done now can be pressed.** While the machine is moving on its own (pausing, lifting, ending a
+job, going to XY zero, homing, probing), every other button that moves it, or sets a zero, is greyed out, and so are
+the keys and the game controller; **STOP** never is. While a job cuts, only its own controls can be pressed (Hold,
+Pause & lift, End job, Adjust), and the jog panel only at a tool change. **Resume** can be pressed only when there’s
+something to resume: a hold, or a pause once Z is at the top.
 
 **Recover** restarts a stopped job from a line, for example after a broken bit: type the line in **from
 line**, or scrub the preview to the spot. Control rebuilds the job's state up to that line, moves back

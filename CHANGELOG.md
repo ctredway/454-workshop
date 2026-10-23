@@ -747,6 +747,25 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.40.0 — only what can be done now can be pressed
+Clint, 2026-10-23: “when the machine is moving, like a pause and lift, any other movement buttons need to be
+disabled”, and the Adjust panel’s spindle speed hidden with a router: “I am very big on hiding or disabling UI elements
+so its very clear what can or cannot be done.”
+- **move-lock.js sets every button that moves the machine or sets a zero** from what it’s doing, on every status
+  report and job change, and greys it out (a disabled button now looks it everywhere in Control). STOP never is.
+  - Moving on its own (pausing, ending, lifting after a pause, probing, a quick action; outside a job, Run or Home):
+    nothing else that moves; Hold stays to stop it, except while pausing.
+  - A job cutting: only its own controls (Hold, Pause & lift, End job, Adjust); the jog panel at a tool change.
+  - Jogging: the jog buttons, nothing else. Paused, at the top and still: Resume and End job, and jogging to look.
+  - Resume only when there’s something to resume; Pause & lift only while a job cuts.
+- **The keys and the game controller are refused the same way** (requireIdle, gpadMayJog), so a greyed button isn’t
+  the only guard.
+- **After a pause, it’s lifting until Z is at the top and still** (PAUSED.lifting): the controller says Idle for a
+  moment after the lift is sent, and the buttons came back for that moment (caught by the end-to-end test).
+- **The Adjust panel’s Spindle speed row is hidden for a router** (Settings → Spindle type).
+- move-lock.test.mjs, 11 tests on Control’s real page; broken on purpose 8 ways, all caught. e2e-pause.mjs checks,
+  in the real app, that Go to XY zero, the jog panel and Resume are greyed while Z lifts, and STOP isn’t.
+
 ### 0.39.1 — Resume after Pause & lift carries on from where it stopped **(machine)**
 Clint, 2026-10-23, on the 5 Pro: “I got the carry on message but it skipped to the next tool path and then subsequent
 tries, resume did nothing.” Reproduced in the real app against the simulated machine (paused at line 593, “Carry on

@@ -46,7 +46,8 @@ test('Pause & lift: hold, then clear the queue, then lift to the top and stay ov
   assert.equal(C.JOB.active, false);
   C.SERIAL.state = 'Idle'; C.advance(1300);
   assert.deepEqual([...C.lines], ['G90', 'G21', 'G53 G0 Z-2.0'], 'lifted to the top in millimetres, and no move off the spot');
-  assert.deepEqual(JSON.parse(JSON.stringify(C.PAUSED)), { line: 117 });
+  assert.equal(C.PAUSED.line, 117);
+  assert.equal(C.PAUSED.lifting, true, 'lifting until Z is at the top (move-lock.js)');
   assert.match(C.said.at(-1), /paused and lifted at line 117/);
 });
 

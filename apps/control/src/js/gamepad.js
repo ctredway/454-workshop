@@ -43,6 +43,7 @@ function gpadMayJog(){
   if (SERIAL.state !== 'Idle' && SERIAL.state !== 'Jog') return false;
   if (JOB.active && !atToolChange()) return false;
   if (PROBE.active || QA.active) return false;
+  if (typeof moveLockWhy === 'function' && moveLockWhy()) return false;   // pausing, ending, or lifting after a pause
   return true;
 }
 // A held jog from the sticks: {p: direction, slow} or null. The left stick's eight directions, or the right

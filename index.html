@@ -31,6 +31,9 @@
   body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px}
   button{font-family:var(--sans);cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:6px 12px;font-size:13px}
   button:hover{border-color:var(--faint)}
+  /* can't be pressed now (move-lock.js): clearly greyed, so what can and can't be done is plain to see */
+  button:disabled{opacity:.38;cursor:not-allowed}
+  button:disabled:hover{border-color:var(--line)}
   button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
   button.primary{background:var(--amber);border-color:var(--amber);color:var(--on-accent);font-weight:600}
   button.primary:hover{background:#f2b04a}
@@ -410,7 +413,7 @@
       <div id="ovRow" role="group" aria-label="Adjust the running job">
         <div class="ovItem"><div class="ovHead"><span class="ovName">Feed rate</span><small>how fast it cuts</small><b class="ovNow" id="ovF">100%</b></div>
         <div class="ovBtns"><button data-ov="f-10" title="10% slower">−10%</button><button data-ov="f-1" title="1% slower">−1%</button><button data-ov="f0" class="ovReset" title="Back to the file’s own feed rates">100%</button><button data-ov="f+1" title="1% faster">+1%</button><button data-ov="f+10" title="10% faster">+10%</button></div></div>
-        <div class="ovItem"><div class="ovHead"><span class="ovName">Spindle speed</span><small>VFD only; a router’s is on its dial</small><b class="ovNow" id="ovS">100%</b></div>
+        <div class="ovItem" id="ovSpItem"><div class="ovHead"><span class="ovName">Spindle speed</span><small>how fast the bit spins</small><b class="ovNow" id="ovS">100%</b></div>
         <div class="ovBtns"><button data-ov="s-10" title="10% slower">−10%</button><button data-ov="s-1" title="1% slower">−1%</button><button data-ov="s0" class="ovReset" title="Back to the file’s own spindle speed">100%</button><button data-ov="s+1" title="1% faster">+1%</button><button data-ov="s+10" title="10% faster">+10%</button></div></div>
         <div class="ovItem"><div class="ovHead"><span class="ovName">Rapid moves</span><small>in the air, between cuts</small><b class="ovNow" id="ovR">100%</b></div>
         <div class="ovBtns"><button data-ov="r25" title="Rapid moves at a quarter speed">25%</button><button data-ov="r50" title="Rapid moves at half speed">50%</button><button data-ov="r100" class="ovReset" title="Rapid moves at full speed">100%</button></div></div>
@@ -980,7 +983,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.39.1';
+var CONTROL_VERSION = '0.40.0';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -3012,6 +3015,8 @@ var JOG_KEYS = {ArrowLeft:[-1,0,0], ArrowRight:[1,0,0], ArrowUp:[0,1,0], ArrowDo
 // and starting the spindle need it stopped; jogs may also follow a jog already under way, which
 // GRBL allows. During a job, only the moment it waits at a tool change counts as stopped.
 function requireIdle(what){
+  var lockWhy = typeof moveLockWhy === 'function' ? moveLockWhy() : null;   // pausing, ending, or lifting after a pause
+  if (lockWhy){ logC('err', what + ' blocked — ' + lockWhy + '.'); return false; }
   if (SERIAL.state === 'Alarm'){
     logC('err', what + ' blocked \u2014 machine is locked. Home ($H) first.');
     return false;
@@ -3868,6 +3873,7 @@ function gpadMayJog(){
   if (SERIAL.state !== 'Idle' && SERIAL.state !== 'Jog') return false;
   if (JOB.active && !atToolChange()) return false;
   if (PROBE.active || QA.active) return false;
+  if (typeof moveLockWhy === 'function' && moveLockWhy()) return false;   // pausing, ending, or lifting after a pause
   return true;
 }
 // A held jog from the sticks: {p: direction, slow} or null. The left stick's eight directions, or the right
@@ -4345,10 +4351,7 @@ function uiStatus(){
   document.getElementById('jmZ').textContent = SERIAL.wpos.z.toFixed(3);
   var jm = document.getElementById('jmState');
   jm.textContent = st; jm.dataset.s = st;
-  document.getElementById('jogOpen').disabled = JOB.active && !atToolChange();
   if (JOB.active && !atToolChange() && !document.getElementById('jogModal').hidden) jogModalClose();
-  document.getElementById('bzOpen').disabled = JOB.active && !atToolChange();
-  document.getElementById('jogTool').disabled = JOB.active;   // a job's changes are its tool-change prompt's
   if (JOB.active && !atToolChange() && !document.getElementById('bzModal').hidden) bzCloseModal();
   bzUpdateCircuit();
   // live marker while a job (or manual motion during one) is happening
@@ -4365,6 +4368,7 @@ function uiStatus(){
       'held (' + st + ') at line ' + JOB.lastLn + ' — Resume to continue';
   }
   keepAwakeCheck();
+  moveLockUI();                                         // what can be pressed now (move-lock.js)
 }
 
 function uiConn(on){
@@ -4375,6 +4379,7 @@ function uiConn(on){
   document.getElementById('mControls').classList.toggle('disabledArea', !on);
   document.getElementById('spBody').classList.toggle('disabledArea', !on);
   document.getElementById('consoleIn').disabled = !on;    // the log stays readable
+  if (typeof moveLockUI === 'function') moveLockUI();
   document.getElementById('hdrMachine').classList.toggle('on', on);
   if (!on){
     var chipTop = document.getElementById('hdrState');
@@ -5957,7 +5962,7 @@ function jobResume(){
   if (!SERIAL.connected) return;
   if (PAUSED && !JOB.active && !ENDING){                 // after Pause & lift
     // still lifting: carry on once it's there (it said "Machine isn't ready" and did nothing, Clint, 2026-10-23)
-    if (SERIAL.state !== 'Idle'){ jobResumeWhenStill(); return; }
+    if (SERIAL.state !== 'Idle' || (typeof pausedLifting === 'function' && pausedLifting())){ jobResumeWhenStill(); return; }
     jobStartFrom(PAUSED.line, {paused: true}); return;
   }
   if (!JOB.active && SERIAL.state !== 'Hold' && SERIAL.state !== 'Door'){   // nothing held to go on with: say so
@@ -5972,7 +5977,7 @@ function jobResumeWhenStill(){
   var since = performance.now();
   updateJobUI('resuming once Z has finished lifting…');
   jobResumeWhenStill.timer = setInterval(function () {
-    var done = SERIAL.state === 'Idle', gaveUp = performance.now() - since > 20000;
+    var done = SERIAL.state === 'Idle' && !(typeof pausedLifting === 'function' && pausedLifting()), gaveUp = performance.now() - since > 20000;
     if (!done && !gaveUp && PAUSED && SERIAL.connected) return;
     clearInterval(jobResumeWhenStill.timer); jobResumeWhenStill.timer = null;
     if (!PAUSED || !SERIAL.connected) return;
@@ -6052,7 +6057,8 @@ function endingTick(){
     else { cmds.push('G91 G0 Z' + travelZ().toFixed(1)); cmds.push('G90'); }
     if (done.pause){                                   // paused: lifted, and staying above the spot
       cmds.forEach(function (c) { sendLine(c); });
-      PAUSED = {line: JOB.stopInfo ? JOB.stopInfo.line : 1};
+      // lifting until Z is at the top and still: the controller says Idle for a moment after the lift is sent
+      PAUSED = {line: JOB.stopInfo ? JOB.stopInfo.line : 1, lifting: true, since: performance.now(), liftZ: SERIAL.homedSeen && typeof zBelowTop === 'function' ? zBelowTop(topZ()) : null};
       updateJobUI('paused and lifted at line ' + PAUSED.line + ' \u2014 Resume carries on from there; End job finishes.');
       logC('sys', 'paused: spindle off, lifted clear. Resume carries on from line ' + PAUSED.line);
       return;
@@ -6285,6 +6291,7 @@ function updateJobUI(statusText){
   document.getElementById('ovF').textContent = SERIAL.ov[0] + '%';
   document.getElementById('ovS').textContent = SERIAL.ov[2] + '%';
   document.getElementById('ovR').textContent = SERIAL.ov[1] + '%';
+  if (typeof moveLockUI === 'function') moveLockUI();   // what can be pressed now (move-lock.js)
 }
 
 // ---- jobs handed over from 454 Design ("Preview in 454 Control") ----
@@ -6702,6 +6709,67 @@ document.addEventListener('DOMContentLoaded', function(){
   document.title = '454 Control v' + CONTROL_VERSION;
   handoffStart();                                        // jobs from 454 Design's "Preview in 454 Control"
 });
+/* ---------------- what can be pressed now ----------------
+   Clint, 2026-10-23: "when the machine is moving, like a pause and lift, any other movement buttons need to be
+   disabled", and "I am very big on hiding or disabling UI elements so its very clear what can or cannot be done".
+   moveLockUI() sets every button that moves the machine (or changes where its zero is) from what the machine is doing,
+   on every status report and job change. STOP is never disabled. requireIdle() refuses the same moves from the keys
+   and the game controller, so a disabled button isn't the only guard.
+     moving on its own: pausing or ending (ENDING), lifting after a pause, probing, a quick action, or (outside a job)
+       Run or Home: nothing else that moves; Hold stays, to stop it
+     a job running: only its own controls (Hold, Pause & lift, End job, Adjust); at a tool change, jogging too
+     jogging: the jog buttons, nothing else
+     paused and lifted, still: Resume and End job; jogging, to look */
+// Paused and still lifting? Done once the controller is Idle with Z at the top (or, lifted by a set amount, unhomed,
+// Idle a little after the lift was sent)
+function pausedLifting(){
+  if (typeof PAUSED === 'undefined' || !PAUSED || !PAUSED.lifting) return false;
+  var at = PAUSED.liftZ === null || PAUSED.liftZ === undefined || (SERIAL.mpos && SERIAL.mpos.z >= PAUSED.liftZ - 0.05);
+  if (SERIAL.state === 'Idle' && at && performance.now() - (PAUSED.since || 0) > 400) PAUSED.lifting = false;
+  return !!PAUSED.lifting;
+}
+function moveLockState(){
+  var st = SERIAL.state || '', on = !!SERIAL.connected;
+  var ending = typeof ENDING !== 'undefined' && !!ENDING;
+  var paused = typeof PAUSED !== 'undefined' && !!PAUSED;
+  var still = (st === 'Idle' || st === 'Alarm') && !pausedLifting();
+  var tool = JOB.active && typeof atToolChange === 'function' && atToolChange();
+  var moving = ending || (paused && !still) || PROBE.active || (typeof QA !== 'undefined' && QA.active) ||
+               (!JOB.active && /^(Run|Home)/.test(st));
+  return {on: on, st: st, ending: ending, paused: paused, still: still, tool: tool, moving: moving,
+          jogging: st === 'Jog', job: JOB.active};
+}
+// Why a move asked for from the keys, the game controller or a button can't happen now (null: it can)
+function moveLockWhy(){
+  var s = moveLockState();
+  if (s.ending) return 'the job is pausing or ending: wait until it has stopped and lifted';
+  if (s.paused && !s.still) return 'Z is still lifting after the pause: wait until it’s at the top';
+  return null;
+}
+function moveLockUI(){
+  var s = moveLockState(), el = function (id){ return document.getElementById(id); };
+  var set = function (id, off){ var b = el(id); if (b) b.disabled = !!off; };
+  // moves of its own (and zeroing): not while anything else is moving, nor during a job (but at its tool change)
+  var free = !s.on || s.moving || s.jogging || (s.job && !s.tool);
+  ['homeBtn', 'gotoZero', 'jogZ6', 'jogProbe', 'zeroX', 'zeroY', 'zeroZ', 'zeroAll', 'rbActions', 'bsTest', 'bzStart'].forEach(function (id){ set(id, free); });
+  document.querySelectorAll('[data-rp]').forEach(function (b){ b.disabled = free; });
+  set('jogTool', free || s.job);                        // a job's bit changes are its own tool-change prompts
+  set('jobRun', !s.on || s.moving || s.jogging || s.job || s.paused);
+  set('jobRecover', !s.on || s.moving || s.jogging || s.job || s.paused);
+  // jogging: the jog buttons themselves stay while jogging; not while anything else moves, or a job cuts
+  var jogOff = !s.on || s.moving || (s.job && !s.tool);
+  document.querySelectorAll('#jogGrid button').forEach(function (b){ b.disabled = jogOff; });
+  set('rbJog', jogOff); set('jogOpen', jogOff); set('bzOpen', jogOff);
+  // the job's own controls
+  var cutting = s.job && !s.ending && /^(Run|Hold|Door)/.test(s.st);
+  ['rbHold', 'jobHold', 'hdrHold'].forEach(function (id){ set(id, !s.on || s.ending || !/^(Run|Jog|Home)/.test(s.st)); });
+  var canResume = s.on && !s.ending && ((s.paused && s.still && !s.job) || /^(Hold|Door)/.test(s.st));
+  ['rbResume', 'jobResume', 'hdrResume'].forEach(function (id){ set(id, !canResume); });
+  set('rbDoor', !(cutting && !JOB.toolWait && !PROBE.active));
+  ['rbStop', 'jobStop'].forEach(function (id){ set(id, !(s.on && !s.ending && (s.job || (s.paused && s.still)))); });
+  // the Adjust panel's spindle speed: only a VFD's can be changed from here (a router's is on its dial)
+  var sp = el('ovSpItem'); if (sp) sp.hidden = !(PROFILE.spindle && PROFILE.spindle.type === 'vfd');
+}
 </script>
 <!-- the desktop app's update notice (only in the app: in a browser it shows nothing) -->
 <script>
