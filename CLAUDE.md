@@ -59,6 +59,14 @@ part. Correctness beats speed. Prove changes; don't assume them.
    the desktop app's in `apps/desktop/package.json`. Bump the right one for any change in behaviour, and add a
    `CHANGELOG.md` entry that says what changed and why, in plain words.
 5. **Confirm before anything leaves the machine**: pushing, publishing a release, deleting tags or releases.
+   **After every push, check what GitHub made of it** (Clint, 2026-10-23: he doesn't watch the runs himself):
+   wait for the runs (`gh run list`, `gh run watch`): `test` (with its `desktop` job), `code scanning`, and for a
+   version bump `desktop build`. Tell him plainly whether they passed; a failure is fixed before anything else.
+   Then look for code-scanning alerts that push added (`gh api repos/ctredway/454-workshop/code-scanning/alerts?state=open`;
+   38 were open on 2026-10-23, from before, untriaged) and Dependabot alerts or pull requests
+   (`.../dependabot/alerts?state=open`, `gh pr list`), and say what each means for him. A Dependabot fix is merged
+   only after reading it, running the tests on it, and his OK. Ask him about GitHub emails on failed runs or alerts
+   since the last session.
 6. **Write for woodworkers.** On-screen text and docs are plain and specific: say what happens and what to do.
    Don't blame the connection for errors that aren't connection errors.
 
