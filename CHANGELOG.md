@@ -33,6 +33,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.65 — the Z nudge moves Z
+- Includes Control 0.40.1: the Z nudge moves Z on a file that gives the depth once (a surfacing pass), and is in
+  millimetres in inch files.
+
 ### 0.6.2-beta.64 — Resume that carries on where it stopped, greyed-out moves, Z to +6 mm, and dimensions that survive
 - Includes Control 0.39.0, 0.39.1 and 0.40.0: Z to +6 mm goes to 6 mm above Z zero; Resume after Pause & lift
   carries on from the line it stopped at (it went back to the start of the cut), waits for the lift, and says when
