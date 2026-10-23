@@ -307,9 +307,30 @@ function jobHold(){
 }
 function jobResume(){
   if (!SERIAL.connected) return;
-  if (PAUSED && !JOB.active && !ENDING){ jobStartFrom(PAUSED.line, {paused: true}); return; }   // after Pause & lift
+  if (PAUSED && !JOB.active && !ENDING){                 // after Pause & lift
+    // still lifting: carry on once it's there (it said "Machine isn't ready" and did nothing, Clint, 2026-10-23)
+    if (SERIAL.state !== 'Idle'){ jobResumeWhenStill(); return; }
+    jobStartFrom(PAUSED.line, {paused: true}); return;
+  }
+  if (!JOB.active && SERIAL.state !== 'Hold' && SERIAL.state !== 'Door'){   // nothing held to go on with: say so
+    uiNote('Nothing to resume', 'No job is paused or held. To carry on a job that was stopped from where it stopped, use Recover on the Job tab.');
+    return;
+  }
   sendRT(0x7e, '~ (resume)');
   if (JOB.active){ JOB.held = false; jobFill(); }
+}
+function jobResumeWhenStill(){
+  if (jobResumeWhenStill.timer) return;                  // pressed again while waiting
+  var since = performance.now();
+  updateJobUI('resuming once Z has finished lifting…');
+  jobResumeWhenStill.timer = setInterval(function () {
+    var done = SERIAL.state === 'Idle', gaveUp = performance.now() - since > 20000;
+    if (!done && !gaveUp && PAUSED && SERIAL.connected) return;
+    clearInterval(jobResumeWhenStill.timer); jobResumeWhenStill.timer = null;
+    if (!PAUSED || !SERIAL.connected) return;
+    if (done) jobStartFrom(PAUSED.line, {paused: true});
+    else uiNote('The machine hasn’t stopped', 'It’s ' + SERIAL.state + ', not still, so the job can’t carry on yet. Wait for it to stop, then press Resume again.');
+  }, 150);
 }
 // PAUSE & LIFT. The firmware's own pause with a lift (the safety door's "parking") isn't built into stock Shapeoko
 // firmware: there the old Pause button stopped the spindle but never lifted (Clint, 2026-10-22). So Control does it:

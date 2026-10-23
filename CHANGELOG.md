@@ -747,6 +747,26 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.39.1 — Resume after Pause & lift carries on from where it stopped **(machine)**
+Clint, 2026-10-23, on the 5 Pro: “I got the carry on message but it skipped to the next tool path and then subsequent
+tries, resume did nothing.” Reproduced in the real app against the simulated machine (paused at line 593, “Carry on
+from line 12”).
+- **It carried on from the wrong line.** Recover and Resume went back to the last line that said G0, G1, G2 or G3,
+  as if a line with only coordinates couldn’t be started from. Design writes G1 once and only coordinates after, so
+  it went back to the start of the cut, or before it. Now it carries on from the line itself (recoverySnap), with its
+  move put on it (an arc’s G2 or G3 can’t go on a line of its own).
+- **Resume pressed while Z was still lifting** said “Machine isn’t ready” and did nothing. It now waits for the
+  lift to finish (up to 20 s), then asks to carry on.
+- **Resume with nothing paused or held** (after End job, or once it had carried on) sent a resume the controller
+  ignores, and said nothing. It now says so, and points to Recover.
+- **Where it stopped is looked for among the lines the machine could be on** (from a little before the last line the
+  controller took, or the line a Resume is carrying on from), not everything before: stopped while coming back down,
+  it found an earlier pass along the same edge, and would have cut every pass since again, in the air.
+- Tests: recovery-line.test.mjs (4), pause-lift.test.mjs (2 more); broken on purpose 4 ways, all caught. And
+  apps/desktop/test/e2e-pause.mjs, the real app with the simulated machine inside the page (runs on Windows): a
+  two-toolpath job, paused, Resume pressed while lifting, carried on from the line it stopped at, paused and resumed
+  again, then ended, and Resume said Nothing to resume.
+
 ### 0.39.0 — Z to +6 mm goes to 6 mm above Z zero **(machine)**
 Clint, 2026-10-23, on the Shapeoko 5 Pro: from near the top it lifted 4.5 mm. “The correct thing is to go down to the
 current Z for the material, not the machine travel. This is so the Z is at a measurable spot to make sure its correct.”

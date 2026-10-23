@@ -59,15 +59,14 @@ function stateAtLine(target){
   return st;
 }
 
-/* snap backward over bare-coordinate continuation lines to one that carries
-   an explicit motion word (a G2/G3 modal chain cannot be entered mid-way) */
+/* The line to carry on from: the nearest at or before target that moves. It used to go back further, to a line that
+   says G0, G1, G2 or G3, as if a move that only gives coordinates (its mode carried on from an earlier line) couldn't
+   be started from; but the mode is worked out (stateAtLine) and put on it (jobStartFrom). Design writes G1 once and
+   only coordinates after, so Resume after Pause & lift went back to the start of the cut, or before it, and carried
+   on from there (Clint, 2026-10-23: it "skipped to the next tool path"). */
 function recoverySnap(target){
-  var ln = target;
-  while (ln > 1){
-    if (MODEL.lineFirstSeg[ln] === undefined){ ln--; continue; } // no motion on this line
-    var code = splitGcodeComments(MODEL.lines[ln - 1]).code;
-    if (/G\s*0*[0123](?![0-9.])/i.test(code)) return ln;
-    ln--;
-  }
+  for (var ln = Math.min(target, MODEL.lines.length); ln >= 1; ln--) if (MODEL.lineFirstSeg[ln] !== undefined) return ln;
   return null;
 }
+// Does this line say its own move (G0 to G3)?
+function lineHasMotionWord(ln){ return /G\s*0*[0123](?![0-9.])/i.test(splitGcodeComments(MODEL.lines[ln - 1] || '').code); }

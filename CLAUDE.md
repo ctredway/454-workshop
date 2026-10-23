@@ -89,6 +89,9 @@ node site/build.js && node site/serve.js          # the whole website on this co
 - **The end-to-end tests** (`apps/desktop/test/e2e.sh`, and the BitSetter and tool-offset variants in
   `DEVELOPING.md`) drive the real app against the simulated GRBL machine. They use `socat` and `xvfb-run`,
   which are Linux tools: on Windows they need WSL or adapting.
+- **Pause & lift and Resume, end to end, on any computer:** `node apps/desktop/test/e2e-pause.mjs` runs the real app
+  with the simulated machine inside Control's page (`e2e-pause-page.js`), no virtual serial port needed. The same
+  way can drive other jobs on Windows.
 - **Screenshots for the docs**: `cd docs-site && npm run shots` retakes all of them (`SHOTS_ONLY=name` for one).
 - **Check that tests can fail.** After writing a test, break the code it covers on purpose and confirm the
   test fails, then restore the code. Several tests here passed for the wrong reason until checked this way.

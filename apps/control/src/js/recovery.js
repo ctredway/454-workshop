@@ -5,17 +5,31 @@
 function recoveryNote(why){
   if (!JOB.active || !MODEL || !MODEL.segs || !MODEL.segs.length) return;
   var last = JOB.lastLn || 0, P = SERIAL.wpos;
-  var best = null;
-  if (P && last > 0){
+  // The machine is on a line the controller has taken, and not one long before: its queue holds a few dozen at most.
+  // So the nearest place is looked for from a little before the last line it took (or, still coming back down after
+  // a Resume, from the line it's carrying on from). Searching everything before, a stop as it came down found an earlier
+  // pass along the same edge, and Resume would have cut every pass since again, in the air (2026-10-23).
+  var from = 0;
+  if (JOB.list && JOB.acked > 0){
+    for (var k = Math.max(0, JOB.acked - 60); k < JOB.list.length && !from; k++){ var it = JOB.list[k]; if (it && it.ln > 0 && !it.syn) from = it.ln; }
+  }
+  function nearest(lo){
+    var best = null;
     for (var i = 0; i < MODEL.segs.length; i++){
       var g = MODEL.segs[i];
       if (g.line > last) break;
-      if (g.line < last - 3000) continue;
+      if (g.line < lo || g.line < last - 3000) continue;
       var dx = g.x1 - g.x0, dy = g.y1 - g.y0, dz = g.z1 - g.z0, L2 = dx*dx + dy*dy + dz*dz;
       var t = L2 < 1e-18 ? 0 : Math.max(0, Math.min(1, ((P.x-g.x0)*dx + (P.y-g.y0)*dy + (P.z-g.z0)*dz) / L2));
       var d = Math.hypot(g.x0 + t*dx - P.x, g.y0 + t*dy - P.y, g.z0 + t*dz - P.z);
       if (!best || d < best.d - 0.05) best = {d:d, line:g.line};
     }
+    return best;
+  }
+  var best = null;
+  if (P && last > 0){
+    best = from ? nearest(from) : null;
+    if (!best || best.d >= 5) best = nearest(0);          // not near those: anywhere before, as before
   }
   var line = best && best.d < 5 ? best.line : Math.max(1, last - 20);
   JOB.stopInfo = {why:why, lastSent:last, line:line, near: best ? best.d : null};
@@ -51,6 +65,9 @@ function jobStartFrom(target, opts){
   for (var i = 0; i < full.length; i++){ if (full[i].ln === snapped && !full[i].m6 && !full[i].syn){ si = i; break; } }   // the line itself, not what Control put before it
   if (si < 0){ uiNote('Nothing to resume there', 'Line ' + snapped + ' isn\u2019t a sendable command.'); return; }
   var slice = full.slice(si);
+  // a line that only gives coordinates carries on the move before it: say which move on it (an arc can't be set up on
+  // a line of its own, without its coordinates)
+  if (st.motion !== null && !lineHasMotionWord(snapped)) slice[0] = Object.assign({}, slice[0], {text: 'G' + st.motion + ' ' + slice[0].text});
   // strip a leading m6 marker chain remnant is unnecessary: slice starts at the motion line
 
   var inch = st.units === 'in';
@@ -101,7 +118,7 @@ function jobStartFrom(target, opts){
     toolLine = 'VERIFY: tool T' + (st.tool === null ? '?' : st.tool) + ' is loaded and Z zero is valid for it.\n';
 
   var msg = 'RECOVERY \u2014 resume at line ' + snapped +
-            (snapped !== target ? ' (snapped back from ' + target + ': that line continues a modal move)' : '') + '\n\n' +
+            (snapped !== target ? ' (line ' + target + ' doesn’t move: the nearest before it that does)' : '') + '\n\n' +
             'Computed state there:\n' +
             '  position X' + u(st.x) + ' Y' + u(st.y) + ' Z' + u(st.z) + (inch ? ' (in)' : ' (mm)') + '\n' +
             '  tool T' + (st.tool === null ? '?' : st.tool) +

@@ -86,3 +86,25 @@ test('carrying on after a pause keeps the job’s feed, spindle and Z adjustment
   C.adjBegin(false);
   assert.ok(C.rt.includes(0x90) && C.ZN.val === 0, 'a new job, nothing kept: back to normal');
 });
+
+test('Resume pressed while Z is still lifting: it waits until still, then carries on (it said "Machine isn’t ready")', () => {
+  const C = control();
+  C.jobPauseLift(); C.SERIAL.state = 'Hold'; C.SERIAL.subState = '0'; C.advance(100); C.SERIAL.state = 'Idle'; C.advance(1300);
+  C.SERIAL.state = 'Run';                                  // the lift to the top, still going
+  C.jobResume();
+  assert.equal(C.resumed, null, 'not while it’s moving');
+  C.jobResume();                                           // pressed again: still the one wait
+  C.advance(150); assert.equal(C.resumed, null);
+  C.SERIAL.state = 'Idle'; C.advance(150);
+  assert.deepEqual(JSON.parse(JSON.stringify(C.resumed)), { ln: 117, paused: true }, 'at the top: carries on');
+});
+test('Resume with nothing paused or held: it says so (it sent ~ and nothing happened)', () => {
+  const C = control();
+  C.JOB.active = false; C.SERIAL.state = 'Idle';
+  C.jobResume();
+  assert.deepEqual([...C.rt], [], 'nothing sent');
+  assert.match(C.said.at(-1), /^note: Nothing to resume/);
+  C.SERIAL.state = 'Hold';                                 // a hold outside a job (a move typed in the console): ~ resumes it
+  C.jobResume();
+  assert.deepEqual([...C.rt], [0x7e]);
+});

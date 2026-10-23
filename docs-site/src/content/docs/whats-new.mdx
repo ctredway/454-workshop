@@ -14,6 +14,10 @@ The full record, in more detail than most people want, is the
 
 ## Not released yet
 
+- **Fixed: Resume after Pause & lift carried on from the wrong place.** In 454 Control, it went back to the start of
+  the cut (or the next toolpath) instead of where it stopped, and pressed while Z was still lifting, or a second
+  time, it did nothing. It now carries on from where it stopped, waits for the lift to finish, and says when
+  there’s nothing to resume. **(cutting)** Try it with an air cut first.
 - **You can see which file is open, and whether it’s saved.** 454 Design’s header shows the drawing’s file and
   **Saved** or **● Changed, not saved**, and the window’s title shows it too, with a • while it has changed.
 - **Dimensions survive Fillet, Trim, Join and Explode.** In 454 Design, a rectangle’s width and height stay
