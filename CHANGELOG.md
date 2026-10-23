@@ -33,7 +33,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
-### Not released yet
+### 0.6.2-beta.64 — Resume that carries on where it stopped, greyed-out moves, Z to +6 mm, and dimensions that survive
+- Includes Control 0.39.0, 0.39.1 and 0.40.0: Z to +6 mm goes to 6 mm above Z zero; Resume after Pause & lift
+  carries on from the line it stopped at (it went back to the start of the cut), waits for the lift, and says when
+  there’s nothing to resume; every move is greyed out while the machine moves on its own; no spindle speed in Adjust
+  for a router.
+- Includes Design 0.152.0 to 0.156.1: ramps at the cutting feed; dimensions show their value and the parameters are
+  listed as you type; a thickness or depth no machine could cut is asked about; dimensions survive Fillet, Trim, Join
+  and Explode; the open file and whether it’s saved in the header; no note on the History bar when you’ve gone back.
+- Code scanning (CodeQL), Dependabot security fixes, and the desktop app’s tests on every push.
 - **Window → Open at start** chooses which app opens when 454 Workshop starts, on each computer (start-with.json in
   the app’s data folder): Clint, 2026-10-23, Design on his laptop, Control in the garage. Design until one is chosen,
   as before. (start-with.test.mjs, 3 tests; app-menu.test.mjs; in the real app, Control chosen opened Control, and
