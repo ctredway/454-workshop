@@ -191,6 +191,10 @@
         </select>
       </div>
       <p class="snote">Used whenever something cuts right through the material, so measure it rather than trusting the label. Z zero must match where you zero the tool in 454 Control.</p>
+      <div class="srow">
+        <label for="stkHop">Lift inside a part</label><input type="text" inputmode="decimal" id="stkHop" autocomplete="off" placeholder="not set: 6 mm" style="width:150px">
+      </div>
+      <p class="snote">Between holes, slots and chamfers inside a part an Outside profile cuts out, the bit lifts only this far above the material instead of 6 mm. On a part with many holes that saves a lot of time. Leave it empty to lift 6 mm everywhere. Moves onto, off and between parts always lift 6 mm. Use it only when nothing stands on your parts: no screws or clamps on them. 1 mm or more.</p>
       <h4 style="margin:16px 0 6px">Machine</h4>
       <div class="srow"><label>Cutting area</label>
         <select id="jobMach">
@@ -645,6 +649,7 @@
 @@include js/toolpaths.js
 @@include js/vector-check.js
 @@include js/toolpath-generate.js
+@@include js/toolpath-hops.js
 @@include js/toolpath-editor.js
 @@include js/toolpath-help.js
 @@include js/toolpath-passes.js

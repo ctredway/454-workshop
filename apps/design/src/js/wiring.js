@@ -10,6 +10,23 @@ function wire(){
   keysWire();
   fit();
 
+  // Lift inside a part (toolpath-hops.js): empty for 6 mm everywhere; the toolpaths it changes are worked out again
+  document.getElementById('stkHop').addEventListener('change', function(e){
+    var raw = e.target.value.trim(), h = 0;
+    if (raw){
+      h = parseStockLen(raw, stockUnits());
+      if (!(h >= HOP_MIN && h < 6)){
+        toast('warn', 'Check the lift inside a part', 'Use at least ' + fmtStockLen(HOP_MIN, stockUnits()) + ' and less than ' + fmtStockLen(6, stockUnits()) +
+              ' ' + (stockUnits() === 'in' ? 'in' : 'mm') + ', or leave it empty to lift 6 mm everywhere.');
+        syncStockUI(); return;
+      }
+    }
+    if ((DOC.stock.hop || 0) === h) return;
+    pushUndo(h ? 'Lift inside a part ' + fmtStockLen(h, stockUnits()) + ' ' + (stockUnits() === 'in' ? 'in' : 'mm') : 'Lift inside a part: 6 mm');
+    if (h) DOC.stock.hop = h; else delete DOC.stock.hop;
+    persist(); syncStockUI();
+    tpRebuildAll().then(function () { draw(); });
+  });
   // A new thickness puts toolpaths that follow it out of date (through cuts; all of them with Z zero at the bottom),
   // and they're worked out again here, which can take a while: the Working panel shows, one toolpath at a time.
   document.getElementById('stkT').addEventListener('change', function(e){

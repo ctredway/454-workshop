@@ -862,6 +862,10 @@
         </select>
       </div>
       <p class="snote">Used whenever something cuts right through the material, so measure it rather than trusting the label. Z zero must match where you zero the tool in 454 Control.</p>
+      <div class="srow">
+        <label for="stkHop">Lift inside a part</label><input type="text" inputmode="decimal" id="stkHop" autocomplete="off" placeholder="not set: 6 mm" style="width:150px">
+      </div>
+      <p class="snote">Between holes, slots and chamfers inside a part an Outside profile cuts out, the bit lifts only this far above the material instead of 6 mm. On a part with many holes that saves a lot of time. Leave it empty to lift 6 mm everywhere. Moves onto, off and between parts always lift 6 mm. Use it only when nothing stands on your parts: no screws or clamps on them. 1 mm or more.</p>
       <h4 style="margin:16px 0 6px">Machine</h4>
       <div class="srow"><label>Cutting area</label>
         <select id="jobMach">
@@ -1304,7 +1308,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.158.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.159.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -6016,7 +6020,7 @@ function tpGenerateMoves(tp){
   if (tp.side === 'chamfer'){
     var cz = tpSurface(), cm = [], cd = tpChamferDepth(tp), tanH = Math.tan((tp.vAngle || 90) / 2 * Math.PI / 180);
     var cmode = tp.chamMode || 'edge';
-    tpOutlinesById(tp.ents).forEach(function (o) {
+    tpOrderLoops(tpOutlinesById(tp.ents)).forEach(function (o) {
       if (cmode === 'edge'){
         var cr = Cam.profile({outline: o.loop, side: 'on', toolDia: tp.dia, depth: cd, passDepth: tp.step, z0: cz,
                               safeZ: cz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
@@ -6038,7 +6042,7 @@ function tpGenerateMoves(tp){
         });
       }
     });
-    tp.moves = cm;
+    tp.moves = tpHops(tp, cm);                            // a lower lift inside a part, if it's set (toolpath-hops.js)
     var reach = tp.dia / 2;                               // the widest bevel the bit's cone can make
     tp.warning = !cm.length ? 'nothing to chamfer: pick closed shapes'
                : (tp.chamW > reach + 1e-6 ? 'the bevel is wider than this bit can cut (' + fmtDisp(reach) + ' ' + unitTag() + ' at most)' : null);
@@ -6050,13 +6054,13 @@ function tpGenerateMoves(tp){
     var z0d = tpSurface();
     var dr = Cam.drill({points: holes.map(function (h) { return h.p; }), depth: tpDepth(tp), z0: z0d,
                         peck: tp.peck || 0, feed: tp.plunge || tp.feed, safeZ: z0d + (tp.safeZ || 6), retract: 1});
-    tp.moves = dr.moves;
+    tp.moves = tpHops(tp, dr.moves);
     tp.holes = holes.map(function (h) { return h.p; });
     tp.warning = holes.length ? null : 'nothing to drill: pick circles or closed shapes';
     tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
     return tp;
   }
-  var loops = tpOutlinesById(tp.ents);
+  var loops = tpOrderLoops(tpOutlinesById(tp.ents));
   var moves = [], warn = null;
   if (tp.tabsOn === undefined) tp.tabsOn = tp.tabCount > 0;         // older toolpaths
   tpEnsureTabs(tp);
@@ -6075,10 +6079,33 @@ function tpGenerateMoves(tp){
     if (res.warning) warn = res.warning;
     res.moves.forEach(function (m) { moves.push(m); });
   });
-  tp.moves = moves;
+  tp.moves = tpHops(tp, moves);
   tp.warning = loops.length ? warn : 'nothing to cut: pick closed shapes';
   tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
   return tp;
+}
+// A toolpath's outlines in the order to cut them: a short way round them from X0 Y0 (Cam.routeOrder), each one inside
+// another cut before it, so a part isn't freed before its holes and slots are cut. They used to go in the order they
+// were picked in: 5.1 m between the chamfers of Clint's 90 arm-insert holes, where 1.9 m will do (2026-10-23).
+function tpOrderLoops(loops){
+  if (loops.length < 2) return loops;
+  var box = loops.map(function (o) {
+    var b = {x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity};
+    o.loop.forEach(function (q) { b.x0 = Math.min(b.x0, q[0]); b.y0 = Math.min(b.y0, q[1]); b.x1 = Math.max(b.x1, q[0]); b.y1 = Math.max(b.y1, q[1]); });
+    return b;
+  });
+  var mid = box.map(function (b) { return [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2]; });
+  var before = loops.map(function (o, i) {                // the outlines inside outline i
+    var bi = box[i], ins = [];
+    loops.forEach(function (p, j) {
+      var bj = box[j];
+      if (j === i || bj.x0 < bi.x0 || bj.y0 < bi.y0 || bj.x1 > bi.x1 || bj.y1 > bi.y1) return;
+      if ((bj.x1 - bj.x0) * (bj.y1 - bj.y0) >= (bi.x1 - bi.x0) * (bi.y1 - bi.y0)) return;   // the same size: not inside
+      if (Geom.pointInLoop(p.loop[0][0], p.loop[0][1], o.loop)) ins.push(j);
+    });
+    return ins;
+  });
+  return Cam.routeOrder(mid, [0, 0], before).map(function (k) { return loops[k]; });
 }
 // Where each outline's cut starts, if one was chosen (tp.startPts: a point on a shape's outline, by the shape's
 // id). A shape with several outlines (text, a shape with holes) starts there only on the outline nearest it.
@@ -6177,9 +6204,94 @@ function tpStockSig(tp){                              // what makes a through-cu
   // With Z zero at the bottom, the top of the material (where every toolpath starts) is the thickness: all of them follow it
   return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top') + (DOC.stock.zero === 'bottom' ? (DOC.stock.t || 0) : '') +
          (tp.restFrom ? '|r' + (rs ? [rs.id, rs.dia, tpDepth(rs), rs.allowance || 0, !!rs.finishPass, tpStockSig(rs)].join(',') : 'none:' + tpRestProblem(tp)) : '') +
-         (vc ? '|c' + [vc.id, vc.dia, vc.allowance || 0].join(',') : '');
+         (vc ? '|c' + [vc.id, vc.dia, vc.allowance || 0].join(',') : '') + tpHopSig(tp);
 }
 
+/* ---------------- a lower lift between cuts inside a part ----------------
+   Between one hole or slot and the next, the bit lifts to the safe height, 6 mm above the material, so that it clears
+   clamps and screws. Inside a part, nothing stands on the material, and on Clint's arm inserts (90 holes in 1.2 mm
+   material, 2026-10-23) those lifts were most of the job. With Job setup's "Lift inside a part" set (DOC.stock.hop,
+   mm above the material; not set, as always, 6 mm), a move from one cut to the next that stays inside one part the
+   whole way lifts only that far. A part is a shape an Outside profile cuts out. Every other move, onto and off the
+   parts and between them, still lifts the full 6 mm. */
+var HOP_MIN = 1;                                        // mm: not below a drill's 1 mm start above the material
+var HOP_SIDES = {drill: 1, chamfer: 1, inside: 1, on: 1};   // the toolpaths it's for: holes, slots and lines inside parts
+
+// The lift inside a part, in mm above the material, or 0 when it isn't set (or wouldn't be lower than the safe height)
+function tpHopHeight(tp){
+  var h = DOC.stock && DOC.stock.hop;
+  if (!HOP_SIDES[tp.side]) return 0;
+  return h >= HOP_MIN && h < (tp.safeZ || 6) ? h : 0;
+}
+// The parts: outlines of the shapes Outside profiles cut out, on the sheet shown
+function tpHopParts(){
+  var ids = [];
+  tpList().forEach(function (t) {
+    if (t.side === 'outside') (t.ents || []).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
+  });
+  return tpOutlinesById(ids).map(function (o) {
+    var b = {x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity};
+    o.loop.forEach(function (q) { b.x0 = Math.min(b.x0, q[0]); b.y0 = Math.min(b.y0, q[1]); b.x1 = Math.max(b.x1, q[0]); b.y1 = Math.max(b.y1, q[1]); });
+    return {id: o.id, loop: o.loop, box: b};
+  });
+}
+// What the lift inside parts depends on, for a toolpath's signature: the height, and the parts' shapes
+function tpHopSig(tp){
+  if (!tpHopHeight(tp)) return '';
+  var ids = [];
+  tpList().forEach(function (t) { if (t.side === 'outside') ids = ids.concat(t.ents || []); });
+  return '|h' + DOC.stock.hop + ':' + tpSignature(ids);
+}
+// Does the straight move from a to b stay inside this part all the way?
+function tpHopInside(part, a, b){
+  var bx = part.box;
+  if (Math.min(a[0], b[0]) < bx.x0 || Math.max(a[0], b[0]) > bx.x1 || Math.min(a[1], b[1]) < bx.y0 || Math.max(a[1], b[1]) > bx.y1) return false;
+  if (!Geom.pointInLoop(a[0], a[1], part.loop) || !Geom.pointInLoop(b[0], b[1], part.loop)) return false;
+  var L = part.loop, n = L.length;
+  var side = function (p, q, r) { return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]); };
+  for (var k = 0; k < n; k++){                          // and doesn't cross its edge on the way (a bay in an L-shaped part)
+    var p = L[k], q = L[(k + 1) % n];
+    var d1 = side(a, b, p), d2 = side(a, b, q), d3 = side(p, q, a), d4 = side(p, q, b);
+    if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return false;
+  }
+  return true;
+}
+// A toolpath's moves with each lift between cuts lowered where the move after it stays inside one part. A lift is
+// a rapid straight up to the safe height (one or more), then rapids across, then the way down. Returns the moves.
+function tpHops(tp, moves){
+  var hop = tpHopHeight(tp);
+  if (!hop || !moves || !moves.length) return moves;
+  var safe = tpSurface() + (tp.safeZ || 6), low = tpSurface() + hop, parts = tpHopParts();
+  if (!parts.length) return moves;
+  var x = null, y = null, z = null;
+  var isLift = function (m) { return m && m.g === 0 && m.x === undefined && m.y === undefined && m.z !== undefined && Math.abs(m.z - safe) < 1e-6; };
+  for (var i = 0; i < moves.length; i++){
+    var m = moves[i];
+    if (isLift(m) && x !== null && z !== null && z < low){
+      var lifts = [i], j = i + 1;
+      while (isLift(moves[j])) lifts.push(j++);
+      var path = [[x, y]];
+      while (moves[j] && moves[j].g === 0 && moves[j].z === undefined && (moves[j].x !== undefined || moves[j].y !== undefined)){
+        var last = path[path.length - 1];
+        path.push([moves[j].x !== undefined ? moves[j].x : last[0], moves[j].y !== undefined ? moves[j].y : last[1]]);
+        j++;
+      }
+      var down = moves[j] && moves[j].z !== undefined && moves[j].z < safe;
+      if (down && path.length > 1){
+        var inside = parts.some(function (pt) {
+          for (var s = 1; s < path.length; s++) if (!tpHopInside(pt, path[s - 1], path[s])) return false;
+          return true;
+        });
+        if (inside) lifts.forEach(function (k) { moves[k] = Object.assign({}, moves[k], {z: low}); });
+      }
+    }
+    m = moves[i];
+    if (m.x !== undefined) x = m.x;
+    if (m.y !== undefined) y = m.y;
+    if (m.z !== undefined) z = m.z;
+  }
+  return moves;
+}
 // ---- the editor ----
 // A toolpath's tool was chosen if it says so, or if it names a library tool: picking from the
 // library is always deliberate. Only toolpaths with neither (the old silent 1/8" default) need one.
@@ -13850,6 +13962,7 @@ function syncStockUI(){
   document.getElementById('stkOriginName').textContent = ORIGIN_NAMES[ok0].charAt(0).toUpperCase() + ORIGIN_NAMES[ok0].slice(1);
   document.getElementById('stkT').value = DOC.stock.t > 0 ? fmtStockLen(DOC.stock.t, u) : '';
   document.getElementById('stkZ').value = DOC.stock.zero === 'bottom' ? 'bottom' : 'top';
+  document.getElementById('stkHop').value = DOC.stock.hop > 0 ? fmtStockLen(DOC.stock.hop, u) : '';
   var eq = document.getElementById('stkEq');
   eq.textContent = u === 'in'
     ? '= ' + DOC.stock.w.toFixed(2) + ' \u00d7 ' + DOC.stock.h.toFixed(2) + ' mm in the drawing. Fractions work: 12 1/2 or 3/4.'
@@ -19629,6 +19742,23 @@ function wire(){
   keysWire();
   fit();
 
+  // Lift inside a part (toolpath-hops.js): empty for 6 mm everywhere; the toolpaths it changes are worked out again
+  document.getElementById('stkHop').addEventListener('change', function(e){
+    var raw = e.target.value.trim(), h = 0;
+    if (raw){
+      h = parseStockLen(raw, stockUnits());
+      if (!(h >= HOP_MIN && h < 6)){
+        toast('warn', 'Check the lift inside a part', 'Use at least ' + fmtStockLen(HOP_MIN, stockUnits()) + ' and less than ' + fmtStockLen(6, stockUnits()) +
+              ' ' + (stockUnits() === 'in' ? 'in' : 'mm') + ', or leave it empty to lift 6 mm everywhere.');
+        syncStockUI(); return;
+      }
+    }
+    if ((DOC.stock.hop || 0) === h) return;
+    pushUndo(h ? 'Lift inside a part ' + fmtStockLen(h, stockUnits()) + ' ' + (stockUnits() === 'in' ? 'in' : 'mm') : 'Lift inside a part: 6 mm');
+    if (h) DOC.stock.hop = h; else delete DOC.stock.hop;
+    persist(); syncStockUI();
+    tpRebuildAll().then(function () { draw(); });
+  });
   // A new thickness puts toolpaths that follow it out of date (through cuts; all of them with Z zero at the bottom),
   // and they're worked out again here, which can take a while: the Working panel shows, one toolpath at a time.
   document.getElementById('stkT').addEventListener('change', function(e){

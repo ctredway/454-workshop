@@ -82,6 +82,7 @@ function syncStockUI(){
   document.getElementById('stkOriginName').textContent = ORIGIN_NAMES[ok0].charAt(0).toUpperCase() + ORIGIN_NAMES[ok0].slice(1);
   document.getElementById('stkT').value = DOC.stock.t > 0 ? fmtStockLen(DOC.stock.t, u) : '';
   document.getElementById('stkZ').value = DOC.stock.zero === 'bottom' ? 'bottom' : 'top';
+  document.getElementById('stkHop').value = DOC.stock.hop > 0 ? fmtStockLen(DOC.stock.hop, u) : '';
   var eq = document.getElementById('stkEq');
   eq.textContent = u === 'in'
     ? '= ' + DOC.stock.w.toFixed(2) + ' \u00d7 ' + DOC.stock.h.toFixed(2) + ' mm in the drawing. Fractions work: 12 1/2 or 3/4.'

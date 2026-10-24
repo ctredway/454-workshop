@@ -42,7 +42,7 @@ Toolpaths panel, checking the drawing, and Settings. For the drawing tools, see
 The material you're cutting, and where the machine's zero will be. Everything else is measured from
 these, so it's worth setting first. Open it from the header, or **Settings → Job setup…**.
 
-<Shot src={jobSetup} alt="The Job setup panel: width 320 and height 200 in millimetres; an XY zero picker with four corners and the centre, front-left chosen; thickness 12 mm with Z zero on top of the material; and the machine's cutting area, where the material sits on it, and how far in from that corner." />
+<Shot src={jobSetup} alt="The Job setup panel: width 320 and height 200 in millimetres; an XY zero picker with four corners and the centre, front-left chosen; thickness 12 mm with Z zero on top of the material; Lift inside a part, not set; and the machine's cutting area, where the material sits on it, and how far in from that corner." />
 
 - **Width, Height and units.** The units apply everywhere: the material, dimensions, typed values, the
   measure tool and the readout. A unit typed after a number always wins, so `25mm` works in an inch
@@ -53,6 +53,11 @@ these, so it's worth setting first. Open it from the header, or **Settings → J
 - **Thickness** and **Z zero:** the top of the material, or the spoilboard under it. The thickness is used
   whenever something cuts right through, so measure it rather than trusting the label. Z zero must match
   where you zero the tool in 454 Control.
+- **Lift inside a part:** between one hole, slot or chamfer and the next, the bit lifts 6 mm above the material, to
+  clear clamps and screws. Set this to lift less, 2 mm say, when moving within a part that an Outside profile cuts
+  out. On a part with many holes, that saves a lot of up and down. Moves onto, off and between parts still lift 6 mm,
+  and so does any move that would cross the edge of a part (an L-shaped part's corner). Leave it empty to lift 6 mm
+  everywhere. Use it only when nothing stands on your parts: no screws or clamps on them.
 - **Machine:** the machine's cutting area (from 454 Control, a Shapeoko or Nomad size, or your own), which
   corner the material sits against, and how far in. It's used to draw the cutting area (**Guides → Machine
   area**), so you can see how the material and parts sit on the bed.

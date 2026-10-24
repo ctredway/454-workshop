@@ -187,7 +187,7 @@ function tpGenerateMoves(tp){
   if (tp.side === 'chamfer'){
     var cz = tpSurface(), cm = [], cd = tpChamferDepth(tp), tanH = Math.tan((tp.vAngle || 90) / 2 * Math.PI / 180);
     var cmode = tp.chamMode || 'edge';
-    tpOutlinesById(tp.ents).forEach(function (o) {
+    tpOrderLoops(tpOutlinesById(tp.ents)).forEach(function (o) {
       if (cmode === 'edge'){
         var cr = Cam.profile({outline: o.loop, side: 'on', toolDia: tp.dia, depth: cd, passDepth: tp.step, z0: cz,
                               safeZ: cz + (tp.safeZ || 6), feed: tp.feed, plunge: tp.plunge || Math.round(tp.feed / 2),
@@ -209,7 +209,7 @@ function tpGenerateMoves(tp){
         });
       }
     });
-    tp.moves = cm;
+    tp.moves = tpHops(tp, cm);                            // a lower lift inside a part, if it's set (toolpath-hops.js)
     var reach = tp.dia / 2;                               // the widest bevel the bit's cone can make
     tp.warning = !cm.length ? 'nothing to chamfer: pick closed shapes'
                : (tp.chamW > reach + 1e-6 ? 'the bevel is wider than this bit can cut (' + fmtDisp(reach) + ' ' + unitTag() + ' at most)' : null);
@@ -221,13 +221,13 @@ function tpGenerateMoves(tp){
     var z0d = tpSurface();
     var dr = Cam.drill({points: holes.map(function (h) { return h.p; }), depth: tpDepth(tp), z0: z0d,
                         peck: tp.peck || 0, feed: tp.plunge || tp.feed, safeZ: z0d + (tp.safeZ || 6), retract: 1});
-    tp.moves = dr.moves;
+    tp.moves = tpHops(tp, dr.moves);
     tp.holes = holes.map(function (h) { return h.p; });
     tp.warning = holes.length ? null : 'nothing to drill: pick circles or closed shapes';
     tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
     return tp;
   }
-  var loops = tpOutlinesById(tp.ents);
+  var loops = tpOrderLoops(tpOutlinesById(tp.ents));
   var moves = [], warn = null;
   if (tp.tabsOn === undefined) tp.tabsOn = tp.tabCount > 0;         // older toolpaths
   tpEnsureTabs(tp);
@@ -246,10 +246,33 @@ function tpGenerateMoves(tp){
     if (res.warning) warn = res.warning;
     res.moves.forEach(function (m) { moves.push(m); });
   });
-  tp.moves = moves;
+  tp.moves = tpHops(tp, moves);
   tp.warning = loops.length ? warn : 'nothing to cut: pick closed shapes';
   tp.sig = tpSignature(tp.ents) + tpStockSig(tp);
   return tp;
+}
+// A toolpath's outlines in the order to cut them: a short way round them from X0 Y0 (Cam.routeOrder), each one inside
+// another cut before it, so a part isn't freed before its holes and slots are cut. They used to go in the order they
+// were picked in: 5.1 m between the chamfers of Clint's 90 arm-insert holes, where 1.9 m will do (2026-10-23).
+function tpOrderLoops(loops){
+  if (loops.length < 2) return loops;
+  var box = loops.map(function (o) {
+    var b = {x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity};
+    o.loop.forEach(function (q) { b.x0 = Math.min(b.x0, q[0]); b.y0 = Math.min(b.y0, q[1]); b.x1 = Math.max(b.x1, q[0]); b.y1 = Math.max(b.y1, q[1]); });
+    return b;
+  });
+  var mid = box.map(function (b) { return [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2]; });
+  var before = loops.map(function (o, i) {                // the outlines inside outline i
+    var bi = box[i], ins = [];
+    loops.forEach(function (p, j) {
+      var bj = box[j];
+      if (j === i || bj.x0 < bi.x0 || bj.y0 < bi.y0 || bj.x1 > bi.x1 || bj.y1 > bi.y1) return;
+      if ((bj.x1 - bj.x0) * (bj.y1 - bj.y0) >= (bi.x1 - bi.x0) * (bi.y1 - bi.y0)) return;   // the same size: not inside
+      if (Geom.pointInLoop(p.loop[0][0], p.loop[0][1], o.loop)) ins.push(j);
+    });
+    return ins;
+  });
+  return Cam.routeOrder(mid, [0, 0], before).map(function (k) { return loops[k]; });
 }
 // Where each outline's cut starts, if one was chosen (tp.startPts: a point on a shape's outline, by the shape's
 // id). A shape with several outlines (text, a shape with holes) starts there only on the outline nearest it.
@@ -348,6 +371,6 @@ function tpStockSig(tp){                              // what makes a through-cu
   // With Z zero at the bottom, the top of the material (where every toolpath starts) is the thickness: all of them follow it
   return '|' + (tp.through ? 'thr' + (DOC.stock.t || 0) : '') + '|z' + (DOC.stock.zero || 'top') + (DOC.stock.zero === 'bottom' ? (DOC.stock.t || 0) : '') +
          (tp.restFrom ? '|r' + (rs ? [rs.id, rs.dia, tpDepth(rs), rs.allowance || 0, !!rs.finishPass, tpStockSig(rs)].join(',') : 'none:' + tpRestProblem(tp)) : '') +
-         (vc ? '|c' + [vc.id, vc.dia, vc.allowance || 0].join(',') : '');
+         (vc ? '|c' + [vc.id, vc.dia, vc.allowance || 0].join(',') : '') + tpHopSig(tp);
 }
 

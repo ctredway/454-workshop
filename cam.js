@@ -1024,7 +1024,7 @@
   //       bottom, 0 = none)
   function drill(opts){
     var o = Object.assign({depth: 3, z0: 0, safeZ: 5, retract: 1, peck: 0, feed: 200, dwell: 0}, opts);
-    var pts = orderNearest(o.points || [], [0, 0]);
+    var src = o.points || [], pts = routeOrder(src, [0, 0]).map(function (i) { return [src[i][0], src[i][1]]; });
     var bottom = o.z0 - o.depth, top = o.z0 + o.retract, moves = [];
     var clearance = 0.3;                                // stop this far above the last depth before feeding again
     moves.push({g: 0, z: o.safeZ});
@@ -1061,6 +1061,50 @@
       }
       cur = left.splice(bi, 1)[0];
       out.push(cur);
+    }
+    return out;
+  }
+
+  // The order to visit points in, as indexes into points: the nearest one next, from `from`, then any two legs that
+  // cross untangled (2-opt), which only ever shortens the route. Nearest-next alone left stragglers to come back for:
+  // 90 holes on Clint's arm inserts went 2.16 m between holes, 1.91 m untangled (2026-10-23).
+  // before[i] (optional): indexes that must be visited before i (shapes inside shape i, cut before it frees them).
+  // With any of those, or over 1500 points, the route isn't untangled (it could break the order; it's slow).
+  function routeOrder(points, from, before){
+    var n = points.length, done = [], out = [], cur = from || [0, 0], i;
+    var need = [], after = [];
+    for (i = 0; i < n; i++){ done.push(false); need.push(0); after.push([]); }
+    var nested = false;
+    if (before) before.forEach(function (b, k) {
+      (b || []).forEach(function (j) { if (j !== k && j >= 0 && j < n){ need[k]++; after[j].push(k); nested = true; } });
+    });
+    for (var s = 0; s < n; s++){
+      var bi = -1, bd = Infinity;
+      for (i = 0; i < n; i++){
+        if (done[i] || need[i] > 0) continue;
+        var d = G.dist(cur[0], cur[1], points[i][0], points[i][1]);
+        if (d < bd){ bd = d; bi = i; }
+      }
+      if (bi < 0) for (i = 0; i < n; i++) if (!done[i]){ bi = i; break; }   // (shapes each inside the other: any order)
+      done[bi] = true; out.push(bi); cur = points[bi];
+      after[bi].forEach(function (k) { need[k]--; });
+    }
+    if (nested || n < 3 || n > 1500) return out;
+    var P = function (k) { return k < 0 ? from || [0, 0] : points[out[k]]; };
+    var D = function (a, b) { return G.dist(a[0], a[1], b[0], b[1]); };
+    for (var sweep = 0, better = true; better && sweep < 60; sweep++){
+      better = false;
+      for (var a = 0; a < n - 1; a++){
+        for (var c = a + 1; c < n; c++){
+          // legs (a-1 → a) and (c → c+1) become (a-1 → c) and (a → c+1): the stretch a..c the other way round
+          var p0 = P(a - 1), pa = P(a), pc = P(c), last = c === n - 1;
+          var was = D(p0, pa) + (last ? 0 : D(pc, P(c + 1))), now = D(p0, pc) + (last ? 0 : D(pa, P(c + 1)));
+          if (now < was - 1e-9){
+            for (var l = a, r = c; l < r; l++, r--){ var t = out[l]; out[l] = out[r]; out[r] = t; }
+            better = true;
+          }
+        }
+      }
     }
     return out;
   }
@@ -1128,6 +1172,6 @@
     return out.join('\n') + '\n';
   }
 
-  return {profile: profile, pocket: pocket, vcarve: vcarve, vbitShape: vbitShape, drill: drill, orderNearest: orderNearest, toGcode: toGcode, toGcodeJob: toGcodeJob, loopLength: loopLength, orient: orient,
+  return {profile: profile, pocket: pocket, vcarve: vcarve, vbitShape: vbitShape, drill: drill, orderNearest: orderNearest, routeOrder: routeOrder, toGcode: toGcode, toGcodeJob: toGcodeJob, loopLength: loopLength, orient: orient,
           distanceAlong: distanceAlong, evenTabPoints: evenTabPoints, pointAt: pointAt, passCount: passCount, passDepths: passDepths};
 });

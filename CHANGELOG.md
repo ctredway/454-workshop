@@ -1466,6 +1466,26 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.159.0 — a shorter way round the holes, and a lower lift inside a part (cutting)
+Clint, 2026-10-23, on his arm inserts (90 holes and 18 slots in 1.2 mm material): "how the tool path chose the order in
+which the holes and the chamfers are completed in. IMO its very inefficient". Chamfers and profiles went in the
+order the shapes were picked (Make editable's order, back and forth across each part), and drilling nearest hole next.
+- **A short way round** (`Cam.routeOrder`, cam.js): nearest next from X0 Y0, then any two legs that cross untangled
+  (2-opt), which only shortens it. Drilling, chamfers and profiles (`tpOrderLoops`). In a profile, a shape inside
+  another is cut first, so a part isn't freed before its holes (it wasn't checked before: the order picked decided).
+- **Lift inside a part** (Job setup; `DOC.stock.hop`, toolpath-hops.js): between cuts that stay inside one part all the
+  way (a shape an Outside profile cuts out, and not across its edge), the bit lifts that far above the material
+  instead of 6 mm. Drilling, chamfers, and inside and on-the-line profiles. Empty (the default): 6 mm, as before. 1 mm
+  at least, for the drill's start 1 mm above the material. Changing it, or a part's shape, puts those toolpaths out of
+  date (tpStockSig), so they're worked out again.
+- **On his file** (Design's real sources, the job sheet's estimate at 5000 mm/min for every axis): the rapids went
+  from 9.13 m to 5.34 m (chamfers 5.08 to 1.92, drilling 2.15 to 1.89, slots 1.08 to 0.87, outsides 0.83 to 0.65).
+  With the lift at 2 mm, the Z rapids went from 2.29 m to 1.58 m. The estimate went from 36.0 to 34.4 min. Z is
+  slower than that and every hop starts and stops, so the real saving is larger. 26 min of it is the Outsides profile
+  (0.34 mm a pass with a 2 mm bit).
+- toolpath-order.test.mjs, 8 tests. Broken on purpose 8 ways (no untangling, the order picked, nothing inside first in
+  the engine or in Design, no edge check, no lower lift, not out of date), and each one caught.
+
 ### 0.158.0 — Concentric, and Same width, Same height, Same size
 The rest of stage 1 of constraints (Clint, 2026-10-23, "go ahead and do those"). Four buttons beside Align's that
 work the same way: on the other shapes, against the last one picked, once, or kept with Keep lined up on.

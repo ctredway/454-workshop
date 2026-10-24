@@ -177,6 +177,10 @@ without a published release looks to them like a newest release with nothing in 
 - **The gadgets follow their designs exactly** (`apps/gadgets`): the parts bin is Clint's SolidCraft TrayConfigurator
   (2026-10-17), feature for feature, checked against the volumes SolidCraft measured. A change to its shapes is a
   change to that design: ask Clint. Its tests also check that inserts drop in and trays stack and interlock.
+- **Shapes in a toolpath are cut a short way round** (`Cam.routeOrder`: nearest next from X0 Y0, then untangled),
+  shapes inside others first, for drilling, chamfers and profiles (`tpOrderLoops`); not in the order picked. **Lift inside a
+  part** (Job setup, `DOC.stock.hop`, `toolpath-hops.js`): moves that stay inside a part an Outside profile cuts out lift
+  only that far; everything else 6 mm. Off unless set.
 - **Dimensions remember which edge they measure** (a rectangle's side, an outline's segment), not a point.
 - **Keep lined up** (`keep-lined-up.js`, `DOC.keeps`): with it on, Align, Concentric and Same width / height / size also
   link each shape to the last one picked (or the material). A link is put back in line after every change (`persist`) and after every step the History bar does again,

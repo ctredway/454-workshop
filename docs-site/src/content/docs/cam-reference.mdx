@@ -138,9 +138,9 @@ This does what VCarve's larger clearance tool and rest machining do.
 
 ## Drill
 
-**Drill at centres** drills at the centre of each selected circle, nearest hole next.
+**Drill at centres** drills at the centre of each selected circle, taking a short way round them.
 
-<Shot src={camDrill} alt="Eight holes in two rows of four inside a plate, each marked with a ring and cross, joined by dashed rapid moves in drilling order." caption="Drilling: a ring at each hole, and the dashed rapids show the order, nearest hole next." />
+<Shot src={camDrill} alt="Eight holes in two rows of four inside a plate, each marked with a ring and cross, joined by dashed rapid moves in drilling order." caption="Drilling: a ring at each hole, and the dashed rapids show the order, a short way round them." />
 
 | Setting | What it does |
 | --- | --- |
@@ -301,6 +301,11 @@ Choosing a tool opens the **tool library**. Pick the machine and material in its
 ### Order
 
 A new toolpath slots into the usual cutting order: **holes, chamfers, pockets, V-carves, inside profiles, on-the-line profiles, outside profiles**, so the part is held until the end. Reorder with the arrows on each card; an order you’ve arranged is kept, and editing never moves a toolpath. A toolpath that would run after the outside profile has cut the part free gets a warning.
+
+**Within a toolpath,** the shapes are cut in a short way round them, starting from X0 Y0, not in the order you picked
+them. A shape inside another (a hole in a part, with both in one profile) is cut first, so the part isn't freed
+before its holes are cut. This goes for drilling, chamfers and profiles. Between them, the bit lifts 6 mm, or less
+inside a part if you set **Lift inside a part** in Job setup.
 
 ### Check
 
