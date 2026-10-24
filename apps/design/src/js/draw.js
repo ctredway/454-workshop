@@ -469,6 +469,8 @@ function draw(){
     }
   }
 
+  keepsDraw(ctx);                                 // links between shapes kept lined up, while one is selected
+
   // ---- dimension layer ----
   if (UICFG.showDims && DOC.dims && DOC.dims.length){
     ctx.save();

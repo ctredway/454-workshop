@@ -277,6 +277,17 @@ SHOTS.push({ name: 'design-parameters', page: 'design.html', size: [1700, 860],
     const sr = stockRect(); VIEW.scale = 0.85; VIEW.ox = 90 - sr.x0 * VIEW.scale; VIEW.oy = cvRect().height / 2 + (sr.y0 + sr.y1) / 2 * VIEW.scale; draw();
     document.getElementById('paramsBtn').click(); await wait(300);
     return union(region(sr.x0 - 85, sr.y0, sr.x1, sr.y1, 14), box('#paramPanel', 10));` });
+// Kept lined up: a hole kept centred on a board, and a slot with its left edge kept in line with the board's; the
+// board selected, so both links show, each with the marker that stops keeping it
+SHOTS.push({ name: 'design-keep-lined-up', page: 'design.html', size: [1400, 900],
+  setup: `toast = function () {};
+    drawing(300, 180, [{ t: 'rect', x: 40, y: 30, w: 220, h: 120 }, { t: 'circle', cx: 80, cy: 60, r: 12 }, { t: 'rect', x: 120, y: 110, w: 60, h: 20 }]);
+    UICFG.alignKeep = true; keepBtnSync();
+    SEL = [1, 0]; alignBtnClick('center'); SEL = [2, 0]; alignBtnClick('left');
+    SEL = [0]; setTool('select'); draw();
+    document.getElementById('tpCollapse').click(); await wait(250);
+    const sr = stockRect(); VIEW.scale = 2.2; VIEW.ox = cvRect().width / 2 - (sr.x0 + sr.x1) / 2 * VIEW.scale; VIEW.oy = cvRect().height / 2 + (sr.y0 + sr.y1) / 2 * VIEW.scale; draw();
+    return region(sr.x0 + 20, sr.y0 + 15, sr.x1 - 20, sr.y1 - 15, 10);` });
 // Two pockets in 12 mm material: one half the material deep, from a parameter, and one typed as 15 mm,
 // which goes through. The panel's cards, and what Save G-code says first.
 const PAST = CAM + `drawing(200, 120, [rounded(20, 20, 70, 80, 8), rounded(110, 20, 70, 80, 8)]); DOC.params = [];

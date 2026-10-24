@@ -15,8 +15,9 @@
    opening it brings that history back. The browser's storage keeps it too, so it's there after closing Design. */
 var HIST_MAX = 500;
 // the parts of the drawing a step keeps, in this order (as docSnap always wrote them); lists get a piece per item
-var HIST_KEYS = ['ents', 'guides', 'dims', 'params', 'toolpaths', 'tpGroups', 'vcConverted', 'stock', 'layers', 'activeLayer', 'images', 'sheets'];
-var HIST_LIST = {ents: 1, guides: 1, dims: 1, params: 1, toolpaths: 1};
+// ('keeps' came last, in Design 0.157.0: a history kept before it has one fewer, and is read as having none, histTake)
+var HIST_KEYS = ['ents', 'guides', 'dims', 'params', 'toolpaths', 'tpGroups', 'vcConverted', 'stock', 'layers', 'activeLayer', 'images', 'sheets', 'keeps'];
+var HIST_LIST = {ents: 1, guides: 1, dims: 1, params: 1, toolpaths: 1, keeps: 1};
 var HIST_STR = [], HIST_ID = new Map();
 var HIST_STORE_KEY = 'd454DesignHist';
 
@@ -43,7 +44,7 @@ function histEntText(e){
 function histValues(){
   return {ents: DOC.ents, guides: DOC.guides, dims: DOC.dims || [], params: DOC.params || [], toolpaths: histTpSettings(DOC.toolpaths),
           tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock, layers: DOC.layers,
-          activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null};
+          activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null, keeps: keepsForHist()};
 }
 // A shape just made is put on the layer, and the sheet, being drawn on, as the Layers panel does when it's next shown
 // (layersInit): so a step keeps it there, and a step done again (history-replay.js) can be compared with it.
@@ -265,7 +266,7 @@ function histAuto(a, b){
   else if (histListDiff(at(a, 'toolpaths'), at(b, 'toolpaths')).moved) say('Toolpath order', 'toolpath');
   var other = [['dims', 'Dimensions', 'dim'], ['guides', 'Guide lines', 'guide'], ['params', 'Parameters', 'params'], ['stock', 'Material', 'mach'],
                ['sheets', 'Sheets', 'layers'], ['layers', 'Layers', 'layers'], ['activeLayer', 'Layers', 'layers'], ['images', 'Pictures', 'image'],
-               ['tpGroups', 'Toolpath groups', 'toolpath'], ['vcConverted', 'Toolpaths', 'toolpath']];
+               ['tpGroups', 'Toolpath groups', 'toolpath'], ['vcConverted', 'Toolpaths', 'toolpath'], ['keeps', 'Kept lined up', 'aKeep']];
   other.forEach(function (o) {
     var x = at(a, o[0]), y = at(b, o[0]);
     var same = Array.isArray(x) && Array.isArray(y) ? x.length === y.length && x.every(function (j, i) { return j === y[i]; }) : x === y;
@@ -293,7 +294,7 @@ var HIST_ICON = {
 };
 // A named step's icon, by what its name starts with (the tools name their steps: Fillet 6 mm, Opened shelf.454.json).
 var HIST_NAME_ICON = [['Opened', 'load'], ['New drawing', 'neu'], ['Recovered', 'recover'], ['Import', 'import'], ['Paste', 'copy'],
-  ['Duplicate', 'copy'], ['Align', 'aLeft'], ['Space evenly', 'aDistH'], ['Flip', 'flipH'], ['Nest', 'nest'], ['Trace image', 'image'],
+  ['Duplicate', 'copy'], ['Align and keep', 'aKeep'], ['Stop keeping', 'aKeep'], ['Align', 'aLeft'], ['Space evenly', 'aDistH'], ['Flip', 'flipH'], ['Nest', 'nest'], ['Trace image', 'image'],
   ['Text on curve', 'textCurve'], ['Inlay wizard', 'toolpath'], ['Make editable', 'toolpath'], ['Template', 'toolpath'], ['Fix shapes', 'node'],
   ['Fillet corners', 'filletall'], ['Dog-bone corners', 'filletall'], ['T-bone corners', 'filletall'], ['Fillet', 'fillet'], ['Dog-bone', 'fillet'],
   ['T-bone', 'fillet'], ['Weld', 'weld'], ['Subtract', 'subtract'], ['Intersect', 'intersect'], ['Join', 'join'], ['Explode', 'expl'],
@@ -383,7 +384,8 @@ function histTake(h){
   try {
     var ids = h.pieces.map(function (o) { var s = JSON.stringify(o); return histPiece(s === undefined ? 'null' : s); });
     var unpack = function (st) {
-      if (!Array.isArray(st) || st.length !== HIST_KEYS.length) throw new Error('state');
+      if (!Array.isArray(st) || (st.length !== HIST_KEYS.length && st.length !== HIST_KEYS.length - 1)) throw new Error('state');
+      if (st.length < HIST_KEYS.length) st = st.concat([-1]);            // kept before shapes could be kept lined up: none
       return st.map(function (x) {
         if (x === -1) return -1;
         if (Array.isArray(x)) return x.map(function (j) { if (ids[j] === undefined) throw new Error('piece'); return ids[j]; });

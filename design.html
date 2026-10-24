@@ -1304,7 +1304,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.156.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.157.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -2582,7 +2582,7 @@ function docForStorage(pretty){
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
 function docRestore(str){
-  var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
+  var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || []; DOC.keeps=s.keeps || [];
   DOC.vcConverted = !!s.vcConverted;
   if (s.stock) DOC.stock = s.stock;
   if (s.layers){ DOC.layers = s.layers; DOC.activeLayer = s.activeLayer; DOC.images = s.images || []; }
@@ -2615,8 +2615,9 @@ function docRestore(str){
    opening it brings that history back. The browser's storage keeps it too, so it's there after closing Design. */
 var HIST_MAX = 500;
 // the parts of the drawing a step keeps, in this order (as docSnap always wrote them); lists get a piece per item
-var HIST_KEYS = ['ents', 'guides', 'dims', 'params', 'toolpaths', 'tpGroups', 'vcConverted', 'stock', 'layers', 'activeLayer', 'images', 'sheets'];
-var HIST_LIST = {ents: 1, guides: 1, dims: 1, params: 1, toolpaths: 1};
+// ('keeps' came last, in Design 0.157.0: a history kept before it has one fewer, and is read as having none, histTake)
+var HIST_KEYS = ['ents', 'guides', 'dims', 'params', 'toolpaths', 'tpGroups', 'vcConverted', 'stock', 'layers', 'activeLayer', 'images', 'sheets', 'keeps'];
+var HIST_LIST = {ents: 1, guides: 1, dims: 1, params: 1, toolpaths: 1, keeps: 1};
 var HIST_STR = [], HIST_ID = new Map();
 var HIST_STORE_KEY = 'd454DesignHist';
 
@@ -2643,7 +2644,7 @@ function histEntText(e){
 function histValues(){
   return {ents: DOC.ents, guides: DOC.guides, dims: DOC.dims || [], params: DOC.params || [], toolpaths: histTpSettings(DOC.toolpaths),
           tpGroups: DOC.tpGroups || [], vcConverted: !!DOC.vcConverted, stock: DOC.stock, layers: DOC.layers,
-          activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null};
+          activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null, keeps: keepsForHist()};
 }
 // A shape just made is put on the layer, and the sheet, being drawn on, as the Layers panel does when it's next shown
 // (layersInit): so a step keeps it there, and a step done again (history-replay.js) can be compared with it.
@@ -2865,7 +2866,7 @@ function histAuto(a, b){
   else if (histListDiff(at(a, 'toolpaths'), at(b, 'toolpaths')).moved) say('Toolpath order', 'toolpath');
   var other = [['dims', 'Dimensions', 'dim'], ['guides', 'Guide lines', 'guide'], ['params', 'Parameters', 'params'], ['stock', 'Material', 'mach'],
                ['sheets', 'Sheets', 'layers'], ['layers', 'Layers', 'layers'], ['activeLayer', 'Layers', 'layers'], ['images', 'Pictures', 'image'],
-               ['tpGroups', 'Toolpath groups', 'toolpath'], ['vcConverted', 'Toolpaths', 'toolpath']];
+               ['tpGroups', 'Toolpath groups', 'toolpath'], ['vcConverted', 'Toolpaths', 'toolpath'], ['keeps', 'Kept lined up', 'aKeep']];
   other.forEach(function (o) {
     var x = at(a, o[0]), y = at(b, o[0]);
     var same = Array.isArray(x) && Array.isArray(y) ? x.length === y.length && x.every(function (j, i) { return j === y[i]; }) : x === y;
@@ -2893,7 +2894,7 @@ var HIST_ICON = {
 };
 // A named step's icon, by what its name starts with (the tools name their steps: Fillet 6 mm, Opened shelf.454.json).
 var HIST_NAME_ICON = [['Opened', 'load'], ['New drawing', 'neu'], ['Recovered', 'recover'], ['Import', 'import'], ['Paste', 'copy'],
-  ['Duplicate', 'copy'], ['Align', 'aLeft'], ['Space evenly', 'aDistH'], ['Flip', 'flipH'], ['Nest', 'nest'], ['Trace image', 'image'],
+  ['Duplicate', 'copy'], ['Align and keep', 'aKeep'], ['Stop keeping', 'aKeep'], ['Align', 'aLeft'], ['Space evenly', 'aDistH'], ['Flip', 'flipH'], ['Nest', 'nest'], ['Trace image', 'image'],
   ['Text on curve', 'textCurve'], ['Inlay wizard', 'toolpath'], ['Make editable', 'toolpath'], ['Template', 'toolpath'], ['Fix shapes', 'node'],
   ['Fillet corners', 'filletall'], ['Dog-bone corners', 'filletall'], ['T-bone corners', 'filletall'], ['Fillet', 'fillet'], ['Dog-bone', 'fillet'],
   ['T-bone', 'fillet'], ['Weld', 'weld'], ['Subtract', 'subtract'], ['Intersect', 'intersect'], ['Join', 'join'], ['Explode', 'expl'],
@@ -2983,7 +2984,8 @@ function histTake(h){
   try {
     var ids = h.pieces.map(function (o) { var s = JSON.stringify(o); return histPiece(s === undefined ? 'null' : s); });
     var unpack = function (st) {
-      if (!Array.isArray(st) || st.length !== HIST_KEYS.length) throw new Error('state');
+      if (!Array.isArray(st) || (st.length !== HIST_KEYS.length && st.length !== HIST_KEYS.length - 1)) throw new Error('state');
+      if (st.length < HIST_KEYS.length) st = st.concat([-1]);            // kept before shapes could be kept lined up: none
       return st.map(function (x) {
         if (x === -1) return -1;
         if (Array.isArray(x)) return x.map(function (j) { if (ids[j] === undefined) throw new Error('piece'); return ids[j]; });
@@ -3528,7 +3530,7 @@ function histReplay(L, from, to){
       try { r = st.recipe && HIST_OPS[st.recipe.op] ? histRun(st, L.s[i]) : {p: histPatch(st.orig, L.s[i])}; }
       catch (e) { r = {why: typeof e === 'string' ? e : HIST_WHY.cant}; }
       if (r.why){ st.failed = r.why; L.s[i + 1] = L.s[i]; failed++; }
-      else { delete st.failed; L.s[i + 1] = r.p; }
+      else { delete st.failed; L.s[i + 1] = keepsAfterStep(r.p); }   // shapes kept lined up, put back in line
     }
   } finally { DRY = false; HIST_REPLAYING = false; SEL = keepSel; }
   return failed;
@@ -13775,6 +13777,7 @@ function persist(){
   // step (Fillet corners) keeps it on the shapes it makes: the history knows them by it (history.js)
   if (typeof histGiveIds === 'function') histGiveIds();
   if (typeof dimsFollow === 'function') dimsFollow();   // dimensions onto shapes a tool remade, or removed (dimension-follow.js)
+  if (typeof keepsRun === 'function') keepsRun();       // shapes kept lined up put back in line (keep-lined-up.js)
   markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
   histChanged();                                        // the History bar's last step, and the history kept
   try{ localStorage.setItem('d454Design', docForStorage()); }
@@ -13973,6 +13976,7 @@ function clearDrawing(){
   DOC.ents = [];
   DOC.guides = [];
   DOC.dims = [];
+  DOC.keeps = [];
   DOC.vcToolpaths = [];
   DOC.vcConverted = false; DOC.vcPreview = [];
   DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
@@ -14887,6 +14891,8 @@ function draw(){
       ctx.restore();
     }
   }
+
+  keepsDraw(ctx);                                 // links between shapes kept lined up, while one is selected
 
   // ---- dimension layer ----
   if (UICFG.showDims && DOC.dims && DOC.dims.length){
@@ -17038,17 +17044,33 @@ function alignSelection(op){
     });
   }
   var real = moves.filter(function(m){ return Math.abs(m[1]) > 1e-9 || Math.abs(m[2]) > 1e-9; });
-  if (!real.length) return {moved:0};
-  pushUndo(op === 'disth' || op === 'distv' ? 'Space evenly' : 'Align');
+  // Keep lined up (keep-lined-up.js): each shape that moved follows the last one picked, or the material, from now on.
+  // Centred in the material is one shape's: a selection moves as a block, and a block isn't kept (group it first).
+  var keeping = keepMode() && KEEP_OPS[op], pairs = [], loops = 0;
+  if (keeping){
+    var mat = op === 'mat' || op === 'matx' || op === 'maty';
+    if (mat && SEL.length === 1) pairs = [[entId(DOC.ents[SEL[0]]), 'stock']];
+    else if (!mat) pairs = items.slice(0, -1).map(function(it){ return [entId(DOC.ents[it.i]), entId(DOC.ents[items[items.length-1].i])]; });
+    pairs = pairs.filter(function(p){ if (keepCant(op, p[0], p[1])){ loops++; return false; } return true; });
+  }
+  var res = {moved:real.length, kept:pairs.length, loops:loops, block: !!keeping && SEL.length > 1 && /^mat/.test(op)};
+  if (!real.length && !pairs.length) return res;
+  pushUndo(op === 'disth' || op === 'distv' ? 'Space evenly' : pairs.length ? 'Align and keep lined up' : 'Align');
   real.forEach(function(m){ moveEntity(DOC.ents[m[0]], m[1], m[2]); });
+  pairs.forEach(function(p){ keepAdd(op, p[0], p[1]); });
   persist();
-  return {moved:real.length};
+  return res;
 }
 function alignBtnClick(op){
   var r = alignSelection(op);
   if (r.err === 'none') toast('info', 'Select something first', 'Select the shapes to align, then choose an alignment.');
   else if (r.err === 'two') toast('info', 'Pick two or more', 'Shapes align to the LAST one you pick, which stays put. Select the shapes to move, then Shift-click the one to line them up with.');
   else if (r.err === 'three') toast('info', 'Pick three or more', 'Even spacing needs at least three shapes. The two outermost stay put and the rest are spaced between them.');
+  else if (r.loops) toast('warn', 'Not kept lined up', 'The last one picked already follows ' + (r.loops === 1 ? 'that shape' : 'those shapes') +
+                          ', so ' + (r.loops === 1 ? 'it' : 'they') + ' can’t follow it as well. To swap them round, click the link marker and stop keeping it first.');
+  else if (r.block) toast('info', 'Lined up, not kept', 'Only one shape at a time can be kept centred in the material. To keep these centred together, group them first (Ctrl+G).');
+  else if (r.kept) toast('ok', 'Kept lined up', (r.kept === 1 ? 'It' : 'They') + ' will stay lined up when ' + (op.indexOf('mat') === 0 ? 'the material changes' : 'the last one picked moves or changes size') +
+                         '. While ' + (r.kept === 1 ? 'it’s' : 'they’re') + ' selected, the link shows; click its marker to stop keeping it.');
   draw();
 }
 
@@ -17099,6 +17121,246 @@ function applySel(copy, fn){
   return true;
 }
 
+/* ---------------- shapes kept lined up ----------------
+   The Align buttons line shapes up once; change one afterwards and they come apart. With Keep lined up on
+   (the chain button by them), Align also keeps them that way: a hole centred on a board stays centred when the
+   board is made wider, by a dimension, a parameter, a step changed on the History bar, or a drag. Clint, 2026-10-23:
+   "useful when needing to make sure things stay where they should when something changes".
+
+   DOC.keeps lists them: {id, op, a, b}. a is the shape that moves (its id), b the one it follows (an id, or 'stock'
+   for the material); op is the Align button's (ALIGN_OPS). After every change (persist), and after every step the
+   History bar does again, each shape that follows is moved, without turning or resizing it, until it's in line
+   again. A shape follows at most one other in each direction, and never, through others, itself. A link whose
+   shape is gone moves to a shape in the same place (Fillet corners and Trim remake shapes), or is removed, and said.
+   While a shape that has a link is selected, the link is drawn; click its marker to stop keeping it. */
+var KEEP_OPS = {
+  center: {x: 'c', y: 'c'}, hcenter: {x: 'c'}, vcenter: {y: 'c'},
+  left: {x: 'lo'}, right: {x: 'hi'}, top: {y: 'hi'}, bottom: {y: 'lo'},
+  mat: {x: 'c', y: 'c'}, matx: {x: 'c'}, maty: {y: 'c'}
+};
+var KEEP_NAMES = {
+  center: 'centred on', hcenter: 'centred left-right on', vcenter: 'centred top-bottom on',
+  left: 'left edge in line with', right: 'right edge in line with', top: 'top edge in line with', bottom: 'bottom edge in line with',
+  mat: 'centred on', matx: 'centred left-right on', maty: 'centred top-bottom on'
+};
+var KEEP_BOX = typeof WeakMap === 'function' ? new WeakMap() : null;   // where each link's two shapes were, to find them again
+var KEEP_TOL = 0.01;                                                    // mm
+var KEEP_HITS = [];                                                     // the markers drawn: {k, x, y} on screen
+var KEEP_SAID = 0;
+
+function keepsArr(){ if (!DOC.keeps) DOC.keeps = []; return DOC.keeps; }
+function keepBox(id){
+  if (id === 'stock') return stockRect();
+  var e = entById(id);
+  return e ? entBBox(e) : null;
+}
+function keepAt(b, how, axis){
+  var lo = axis === 'x' ? b.x0 : b.y0, hi = axis === 'x' ? b.x1 : b.y1;
+  return how === 'lo' ? lo : how === 'hi' ? hi : (lo + hi) / 2;
+}
+// How far a's shape has to move to be in line again: {dx, dy}, or null if either shape isn't there
+function keepDelta(k){
+  var op = KEEP_OPS[k.op], fa = keepBox(k.a), fb = keepBox(k.b);
+  if (!op || !fa || !fb) return null;
+  return {dx: op.x ? keepAt(fb, op.x, 'x') - keepAt(fa, op.x, 'x') : 0,
+          dy: op.y ? keepAt(fb, op.y, 'y') - keepAt(fa, op.y, 'y') : 0};
+}
+// The link that moves shape id in this direction ('x' or 'y'), or null
+function keepOn(id, axis){
+  var ks = DOC.keeps || [];
+  for (var i = 0; i < ks.length; i++) if (ks[i].a === id && KEEP_OPS[ks[i].op] && KEEP_OPS[ks[i].op][axis]) return ks[i];
+  return null;
+}
+// Would shape a following b in this direction make a follow itself, through b and the shapes b follows?
+function keepLoop(a, b, axis){
+  var cur = b, n = 0;
+  while (cur && n++ < 1000){
+    if (cur === a) return true;
+    var k = keepOn(cur, axis);
+    cur = k ? k.b : null;
+  }
+  return false;
+}
+// Why a can't be kept lined up with b: 'loop' (b follows a, through others), 'cant', or '' if it can
+function keepCant(op, a, b){
+  var o = KEEP_OPS[op];
+  if (!o || !a || !b || a === b) return 'cant';
+  return ['x', 'y'].some(function (ax) { return o[ax] && keepLoop(a, b, ax); }) ? 'loop' : '';
+}
+// Keep shape a lined up with b (an id, or 'stock'), as op lines them up: {ok} or {why}.
+// A link a already had in the same direction is replaced: the newest says where it goes.
+function keepAdd(op, a, b){
+  var why = keepCant(op, a, b);
+  if (why) return {why: why};
+  var axes = ['x', 'y'].filter(function (ax) { return KEEP_OPS[op][ax]; });
+  DOC.keeps = keepsArr().filter(function (k) {
+    return !(k.a === a && axes.some(function (ax) { return KEEP_OPS[k.op] && KEEP_OPS[k.op][ax]; }));
+  });
+  DOC.keeps.push({id: 'k' + Math.random().toString(36).slice(2, 9), op: op, a: a, b: b});
+  return {ok: true};
+}
+// The links a shape is in, either end
+function keepsOf(id){ return (DOC.keeps || []).filter(function (k) { return k.a === id || k.b === id; }); }
+
+// Every shape that follows another moved back in line, a few times round for shapes that follow shapes that
+// follow others. Returns the links that moved their shape.
+function keepsApply(){
+  var ks = DOC.keeps || [], moved = [];
+  if (!ks.length) return moved;
+  for (var pass = 0; pass < 10; pass++){
+    var any = false;
+    ks.forEach(function (k) {
+      var d = keepDelta(k);
+      if (!d || (Math.abs(d.dx) < 1e-9 && Math.abs(d.dy) < 1e-9)) return;
+      moveEntity(entById(k.a), d.dx, d.dy);
+      any = true;
+      if (moved.indexOf(k) < 0) moved.push(k);
+    });
+    if (!any) break;
+  }
+  if (KEEP_BOX) ks.forEach(function (k) {
+    var fa = keepBox(k.a), fb = k.b === 'stock' ? null : keepBox(k.b);
+    if (fa && (fb || k.b === 'stock')) KEEP_BOX.set(k, {a: fa, b: fb});
+  });
+  return moved;
+}
+// A shape on this sheet whose box is where box was (a shape a tool remade in place), or null
+function keepFindBox(box){
+  if (!box) return null;
+  var same = function (b) { return Math.abs(b.x0 - box.x0) < KEEP_TOL && Math.abs(b.y0 - box.y0) < KEEP_TOL &&
+                                    Math.abs(b.x1 - box.x1) < KEEP_TOL && Math.abs(b.y1 - box.y1) < KEEP_TOL; };
+  var found = DOC.ents.filter(function (e) { return entOnSheet(e) && !e.con && same(entBBox(e)); });
+  return found.length === 1 ? found[0] : null;               // two in the same place: can't tell which
+}
+// Links onto shapes a tool remade, or removed when what they link is gone. Returns how many were removed.
+function keepsFollow(){
+  if (!DOC.keeps || !DOC.keeps.length) return 0;
+  var gone = 0;
+  DOC.keeps = DOC.keeps.filter(function (k) {
+    var was = KEEP_BOX && KEEP_BOX.get(k);
+    ['a', 'b'].forEach(function (end) {
+      if (k[end] === 'stock' || entById(k[end])) return;
+      var e = was && keepFindBox(was[end]);
+      if (e) k[end] = entId(e);
+    });
+    if (k.a !== k.b && entById(k.a) && (k.b === 'stock' || entById(k.b))) return true;
+    gone++; return false;
+  });
+  return gone;
+}
+// After every change (persist): links followed, and shapes put back in line
+function keepsRun(){
+  var gone = keepsFollow(), moved = keepsApply();
+  if (gone) toast('info', gone === 1 ? 'A shape is no longer kept lined up' : gone + ' shapes are no longer kept lined up',
+                  'A shape ' + (gone === 1 ? 'it was' : 'they were') + ' lined up with is no longer in the drawing. Undo brings it back.');
+  // a selected shape put back where it was kept, as it was moved on its own: say why, now and then
+  var back = moved.filter(function (k) {
+    var a = entById(k.a), b = k.b === 'stock' ? null : entById(k.b);
+    return a && SEL.indexOf(DOC.ents.indexOf(a)) >= 0 && !(b && SEL.indexOf(DOC.ents.indexOf(b)) >= 0);
+  });
+  if (back.length && Date.now() - KEEP_SAID > 20000){
+    KEEP_SAID = Date.now();
+    toast('info', 'Kept lined up', 'The ' + histLower(histShapeName(entById(back[0].a))) + ' is kept ' + KEEP_NAMES[back[0].op] + ' ' +
+          keepName(back[0].b) + ', so it stays in line. To move it freely, click the link marker beside it and choose Stop keeping lined up.');
+  }
+}
+function keepName(id){ return id === 'stock' ? 'the material' : 'the ' + histLower(histShapeName(entById(id))); }
+// For the History bar: the links as a step leaves them (none: not kept at all)
+function keepsForHist(){ return DOC.keeps && DOC.keeps.length ? DOC.keeps : undefined; }
+// A step the History bar did again: its shapes put back in line, as they were when it was first done
+function keepsAfterStep(p){
+  var K = HIST_KEYS.indexOf('keeps');
+  if (!Array.isArray(p[K]) || !p[K].length) return p;
+  histLoad(p);
+  return keepsApply().length ? histPack() : p;
+}
+
+/* ---- seen and undone: drawn while a shape in one is selected; its marker clicked to stop keeping it */
+// Where a link is drawn, on screen: from a point on the shape that follows (f) to the one it follows (t): along the
+// line they share, to the middle of the shape followed, as both are kept on it
+function keepEnds(k){
+  var op = KEEP_OPS[k.op], fa = keepBox(k.a), fb = keepBox(k.b);
+  if (!op || !fa || !fb) return null;
+  var f = {x: op.x ? keepAt(fa, op.x, 'x') : (fa.x0 + fa.x1) / 2, y: op.y ? keepAt(fa, op.y, 'y') : (fa.y0 + fa.y1) / 2};
+  var t = {x: op.x ? keepAt(fb, op.x, 'x') : (fb.x0 + fb.x1) / 2, y: op.y ? keepAt(fb, op.y, 'y') : (fb.y0 + fb.y1) / 2};
+  return {f: w2s(f.x, f.y), t: w2s(t.x, t.y), fa: fa, fb: k.b === 'stock' ? null : fb};
+}
+function keepsShown(){
+  if (!DOC.keeps || !DOC.keeps.length || !SEL.length) return [];
+  var ids = SEL.map(function (i) { return DOC.ents[i] && DOC.ents[i]._id; });
+  return DOC.keeps.filter(function (k) { return ids.indexOf(k.a) >= 0 || ids.indexOf(k.b) >= 0; });
+}
+// Each link: a dashed line from the shape that follows to the one it follows (a cross where they're centred on each
+// other), the one it follows outlined, and a marker (a chain link) off the top right of the shape that follows
+function keepsDraw(ctx){
+  KEEP_HITS = [];
+  var shown = keepsShown(), per = {};
+  if (!shown.length) return;
+  ctx.save();
+  shown.forEach(function (k) {
+    var en = keepEnds(k);
+    if (!en) return;
+    ctx.strokeStyle = THEME.accentLight; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(en.f.x, en.f.y); ctx.lineTo(en.t.x, en.t.y); ctx.stroke();
+    if (en.fb){
+      var b0 = w2s(en.fb.x0, en.fb.y1), b1 = w2s(en.fb.x1, en.fb.y0);
+      ctx.globalAlpha = 0.7; ctx.strokeRect(b0.x - 3, b0.y - 3, b1.x - b0.x + 6, b1.y - b0.y + 6); ctx.globalAlpha = 1;
+    }
+    ctx.setLineDash([]);
+    if (Math.hypot(en.f.x - en.t.x, en.f.y - en.t.y) < 1){
+      ctx.beginPath(); ctx.moveTo(en.t.x - 6, en.t.y); ctx.lineTo(en.t.x + 6, en.t.y); ctx.moveTo(en.t.x, en.t.y - 6); ctx.lineTo(en.t.x, en.t.y + 6); ctx.stroke();
+    }
+    var n = per[k.a] = (per[k.a] || 0) + 1, c = w2s(en.fa.x1, en.fa.y1);
+    var mx = c.x + 16 + (n - 1) * 22, my = c.y - 16;
+    ctx.fillStyle = 'rgba(20,24,29,0.9)';
+    ctx.beginPath(); ctx.arc(mx, my, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 1.4;
+    [[-2.2, 2.2], [2.2, -2.2]].forEach(function (o) {
+      ctx.save(); ctx.translate(mx + o[0], my + o[1]); ctx.rotate(-Math.PI / 4);
+      ctx.beginPath(); ctx.rect(-3.2, -1.8, 6.4, 3.6); ctx.stroke(); ctx.restore();
+    });
+    ctx.lineWidth = 1;
+    KEEP_HITS.push({k: k, x: mx, y: my});
+  });
+  ctx.restore();
+}
+// The link whose marker is at this point on screen, or null
+function keepHitAt(sx, sy){
+  for (var i = KEEP_HITS.length - 1; i >= 0; i--)
+    if (Math.hypot(sx - KEEP_HITS[i].x, sy - KEEP_HITS[i].y) <= 10) return KEEP_HITS[i].k;
+  return null;
+}
+function keepRemove(k){
+  if (!DOC.keeps || DOC.keeps.indexOf(k) < 0) return false;
+  pushUndo('Stop keeping lined up');
+  DOC.keeps = DOC.keeps.filter(function (x) { return x !== k; });
+  persist(); draw();
+  return true;
+}
+function keepMenu(k, cx, cy){
+  var a = entById(k.a);
+  ctxMenuOpen(cx, cy, [
+    {label: 'The ' + histLower(histShapeName(a)) + ' is kept ' + KEEP_NAMES[k.op] + ' ' + keepName(k.b), disabled: true, fn: function () {}},
+    null,
+    {label: 'Stop keeping lined up', danger: true, fn: function () {
+      if (keepRemove(k)) toast('ok', 'No longer kept lined up', 'The shapes stay where they are, and move separately from now on. Undo brings the link back.');
+    }}
+  ]);
+}
+
+/* ---- the Keep lined up button */
+function keepMode(){ return !!UICFG.alignKeep; }
+function keepBtnSync(){
+  var b = document.getElementById('alKeep');
+  if (b){ b.classList.toggle('active', keepMode()); b.setAttribute('aria-pressed', keepMode() ? 'true' : 'false'); }
+}
+function keepToggle(){
+  UICFG.alignKeep = !keepMode(); uiCfgSave();
+  keepBtnSync();
+  toast('info', keepMode() ? 'Keep lined up is on' : 'Keep lined up is off',
+        keepMode() ? 'The Align buttons now keep shapes lined up: change or move the last one picked (or the material) and the others follow. Space evenly isn’t kept.'
+                  : 'The Align buttons line shapes up once. Links already made are kept; click a link’s marker to stop keeping it.');
+}
 /* ---------------- offset / join / explode ---------------- */
 function signedArea(pts){
   var a = 0;
@@ -18813,6 +19075,7 @@ var ICON = {
  aCenter:'<svg viewBox="0 0 18 18"><rect x="2" y="2" width="14" height="14"/><rect x="6.5" y="6.5" width="5" height="5" opacity=".6"/></svg>',
  aHCenter:'<svg viewBox="0 0 18 18"><path d="M9 1.5 V16.5" stroke-dasharray="2 2"/><rect x="3" y="4" width="12" height="3"/><rect x="5.5" y="11" width="7" height="3"/></svg>',
  aVCenter:'<svg viewBox="0 0 18 18"><path d="M1.5 9 H16.5" stroke-dasharray="2 2"/><rect x="4" y="3" width="3" height="12"/><rect x="11" y="5.5" width="3" height="7"/></svg>',
+ aKeep:'<svg viewBox="0 0 18 18"><path d="M7.6 10.4 L10.4 7.6"/><path d="M8.3 5.2 L10 3.5 a3 3 0 0 1 4.5 4.5 L12.8 9.7"/><path d="M9.7 12.8 L8 14.5 a3 3 0 0 1 -4.5 -4.5 L5.2 8.3"/></svg>',
  aLeft:'<svg viewBox="0 0 18 18"><path d="M2 1.5 V16.5"/><rect x="4" y="4" width="11" height="3"/><rect x="4" y="11" width="6" height="3"/></svg>',
  aRight:'<svg viewBox="0 0 18 18"><path d="M16 1.5 V16.5"/><rect x="3" y="4" width="11" height="3"/><rect x="8" y="11" width="6" height="3"/></svg>',
  aTop:'<svg viewBox="0 0 18 18"><path d="M1.5 2 H16.5"/><rect x="4" y="4" width="3" height="11"/><rect x="11" y="4" width="3" height="6"/></svg>',
@@ -18865,6 +19128,7 @@ var PANEL_BTNS = {
  alRight:{id:'alRight', icon:'aRight', title:'Align right edges with the last one picked'},
  alTop:{id:'alTop', icon:'aTop', title:'Align top edges with the last one picked'},
  alBottom:{id:'alBottom', icon:'aBottom', title:'Align bottom edges with the last one picked'},
+ alKeep:{id:'alKeep', icon:'aKeep', title:'Keep lined up — when on, the Align buttons keep shapes lined up: change or move the last one picked (or the material) and the others follow'},
  alDistH:{id:'alDistH', icon:'aDistH', title:'Space evenly left to right \u2014 equal gaps; the leftmost and rightmost shapes stay put'},
  alDistV:{id:'alDistV', icon:'aDistV', title:'Space evenly top to bottom \u2014 equal gaps; the top and bottom shapes stay put'},
  flipHBtn:{id:'flipHBtn', icon:'flipH', title:'Flip horizontal (Shift+H) \u2014 turn the selection over in place, left to right, in place'},
@@ -18909,7 +19173,7 @@ var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','filletAllT','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
- {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alDistH','alDistV']},
+ {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alKeep','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
  /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
 ];
@@ -19172,6 +19436,8 @@ function wirePanel(){
   [['alMat','mat'],['alMatX','matx'],['alMatY','maty'],['alCenter','center'],['alHCenter','hcenter'],['alVCenter','vcenter'],
    ['alLeft','left'],['alRight','right'],['alTop','top'],['alBottom','bottom'],['alDistH','disth'],['alDistV','distv']]
     .forEach(function(pr){ document.getElementById(pr[0]).addEventListener('click', function(){ alignBtnClick(pr[1]); }); });
+  document.getElementById('alKeep').addEventListener('click', keepToggle);
+  keepBtnSync();
   ['weld','subtract','intersect'].forEach(function (k){
     document.getElementById(k + 'Btn').addEventListener('click', function(){ boolBtnClick(k); });
   });
@@ -19914,8 +20180,10 @@ function wire(){
         }
       }
     }
-    // select tool: grab a transform handle
+    // select tool: a kept-lined-up link's marker (keep-lined-up.js), then a transform handle
     if (TOOL === 'select' && SEL.length){
+      var kHit = keepHitAt(e.clientX - r.left, e.clientY - r.top);
+      if (kHit){ keepMenu(kHit, e.clientX, e.clientY); return; }
       var hh = handleAt(e.clientX - r.left, e.clientY - r.top);
       if (hh){
         var b0 = selBBox();

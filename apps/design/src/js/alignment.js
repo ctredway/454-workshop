@@ -49,17 +49,33 @@ function alignSelection(op){
     });
   }
   var real = moves.filter(function(m){ return Math.abs(m[1]) > 1e-9 || Math.abs(m[2]) > 1e-9; });
-  if (!real.length) return {moved:0};
-  pushUndo(op === 'disth' || op === 'distv' ? 'Space evenly' : 'Align');
+  // Keep lined up (keep-lined-up.js): each shape that moved follows the last one picked, or the material, from now on.
+  // Centred in the material is one shape's: a selection moves as a block, and a block isn't kept (group it first).
+  var keeping = keepMode() && KEEP_OPS[op], pairs = [], loops = 0;
+  if (keeping){
+    var mat = op === 'mat' || op === 'matx' || op === 'maty';
+    if (mat && SEL.length === 1) pairs = [[entId(DOC.ents[SEL[0]]), 'stock']];
+    else if (!mat) pairs = items.slice(0, -1).map(function(it){ return [entId(DOC.ents[it.i]), entId(DOC.ents[items[items.length-1].i])]; });
+    pairs = pairs.filter(function(p){ if (keepCant(op, p[0], p[1])){ loops++; return false; } return true; });
+  }
+  var res = {moved:real.length, kept:pairs.length, loops:loops, block: !!keeping && SEL.length > 1 && /^mat/.test(op)};
+  if (!real.length && !pairs.length) return res;
+  pushUndo(op === 'disth' || op === 'distv' ? 'Space evenly' : pairs.length ? 'Align and keep lined up' : 'Align');
   real.forEach(function(m){ moveEntity(DOC.ents[m[0]], m[1], m[2]); });
+  pairs.forEach(function(p){ keepAdd(op, p[0], p[1]); });
   persist();
-  return {moved:real.length};
+  return res;
 }
 function alignBtnClick(op){
   var r = alignSelection(op);
   if (r.err === 'none') toast('info', 'Select something first', 'Select the shapes to align, then choose an alignment.');
   else if (r.err === 'two') toast('info', 'Pick two or more', 'Shapes align to the LAST one you pick, which stays put. Select the shapes to move, then Shift-click the one to line them up with.');
   else if (r.err === 'three') toast('info', 'Pick three or more', 'Even spacing needs at least three shapes. The two outermost stay put and the rest are spaced between them.');
+  else if (r.loops) toast('warn', 'Not kept lined up', 'The last one picked already follows ' + (r.loops === 1 ? 'that shape' : 'those shapes') +
+                          ', so ' + (r.loops === 1 ? 'it' : 'they') + ' can’t follow it as well. To swap them round, click the link marker and stop keeping it first.');
+  else if (r.block) toast('info', 'Lined up, not kept', 'Only one shape at a time can be kept centred in the material. To keep these centred together, group them first (Ctrl+G).');
+  else if (r.kept) toast('ok', 'Kept lined up', (r.kept === 1 ? 'It' : 'They') + ' will stay lined up when ' + (op.indexOf('mat') === 0 ? 'the material changes' : 'the last one picked moves or changes size') +
+                         '. While ' + (r.kept === 1 ? 'it’s' : 'they’re') + ' selected, the link shows; click its marker to stop keeping it.');
   draw();
 }
 

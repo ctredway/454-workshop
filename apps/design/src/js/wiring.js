@@ -666,8 +666,10 @@ function wire(){
         }
       }
     }
-    // select tool: grab a transform handle
+    // select tool: a kept-lined-up link's marker (keep-lined-up.js), then a transform handle
     if (TOOL === 'select' && SEL.length){
+      var kHit = keepHitAt(e.clientX - r.left, e.clientY - r.top);
+      if (kHit){ keepMenu(kHit, e.clientX, e.clientY); return; }
       var hh = handleAt(e.clientX - r.left, e.clientY - r.top);
       if (hh){
         var b0 = selBBox();

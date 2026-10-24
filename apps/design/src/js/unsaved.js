@@ -109,6 +109,7 @@ function clearDrawing(){
   DOC.ents = [];
   DOC.guides = [];
   DOC.dims = [];
+  DOC.keeps = [];
   DOC.vcToolpaths = [];
   DOC.vcConverted = false; DOC.vcPreview = [];
   DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();

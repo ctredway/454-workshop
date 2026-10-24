@@ -17,6 +17,7 @@ import offset from '../../assets/shots/design-offset.png';
 import textPanel from '../../assets/shots/design-text-panel.png';
 import nestPanel from '../../assets/shots/design-nest-panel.png';
 import parameters from '../../assets/shots/design-parameters.png';
+import keepLinedUp from '../../assets/shots/design-keep-lined-up.png';
 
 
 Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
@@ -648,7 +649,7 @@ with it; changing the letter height keeps the same curve.
 
 Arranging shapes: packing parts onto the material, centering, lining up and spacing. The tools that line shapes up use the **last one you picked** as the reference, outlined in green.
 
-<Shot src={gAlign} alt="The Align and nest group: Nest parts, the centering tools, the edge alignment tools and even spacing." />
+<Shot src={gAlign} alt="The Align and nest group: Nest parts, the centering tools, the edge alignment tools, Keep lined up (a chain link) and even spacing." />
 
 ### Nest parts
 
@@ -704,6 +705,36 @@ Moves shapes up or down so their centers line up with the last one picked.
 Four tools that line up the shapes’ left, right, top or bottom edges with the last one picked.
 
 1. Select the shapes, picking the one to line up with last, then click the edge to line up.
+
+### Keep lined up
+
+The chain-link button. On its own, an Align button lines shapes up once: change one afterwards and they come apart.
+With **Keep lined up** on, they stay lined up. A hole centred on a board stays centred when you make the board wider,
+whether you type a new dimension, change a parameter, change a step on the History bar, or drag the board.
+
+1. Click **Keep lined up**, so it's lit. It stays on until you click it again.
+2. Line shapes up as usual: select them, picking the one to follow last, then click an Align button. **Center on last picked**,
+   **Line up centers**, the four **Align edges** buttons and the three **Center in material** buttons can all be kept.
+
+From then on, the shapes you lined up follow the last one picked, or the material:
+
+- **They move, but never turn or change size.** Each keeps only what you lined up. A slot with its left edge kept in line
+  can still be moved up and down. Moved sideways on its own, it goes back in line, and Design says why.
+- **Shapes can follow shapes that follow others.** A slot centred on a hole that's centred on a board follows both. A shape
+  can't follow itself through others: Design says so and leaves it as it was.
+- **Lining a shape up again replaces its old link** in that direction: the newest one wins.
+- **Fillet corners keeps the link.** So does any tool that remakes a shape in the same place (Weld with a shape inside
+  it). If the shape is deleted, or a tool remakes it a different size (Trim), the link goes, and Design says so.
+- **Only one shape at a time can be kept centred in the material.** To keep several centred together, group them first
+  (Ctrl+G).
+- **Space evenly** lines shapes up once. It isn't kept.
+
+**To see a link,** select either shape. A dashed line shows what it follows, with the shape it follows outlined.
+
+**To stop keeping it,** click the chain-link marker by the shape's top right corner, then **Stop keeping lined up**. The
+shapes stay where they are. Undo brings the link back.
+
+<Shot src={keepLinedUp} alt="A board selected: a hole kept centred on it, marked with a cross at the centre, and a slot with its left edge kept in line with the board's. Each has a chain-link marker by its top right corner." />
 
 ### Space evenly left to right, or top to bottom
 

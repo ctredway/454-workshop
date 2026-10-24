@@ -307,7 +307,7 @@ function histReplay(L, from, to){
       try { r = st.recipe && HIST_OPS[st.recipe.op] ? histRun(st, L.s[i]) : {p: histPatch(st.orig, L.s[i])}; }
       catch (e) { r = {why: typeof e === 'string' ? e : HIST_WHY.cant}; }
       if (r.why){ st.failed = r.why; L.s[i + 1] = L.s[i]; failed++; }
-      else { delete st.failed; L.s[i + 1] = r.p; }
+      else { delete st.failed; L.s[i + 1] = keepsAfterStep(r.p); }   // shapes kept lined up, put back in line
     }
   } finally { DRY = false; HIST_REPLAYING = false; SEL = keepSel; }
   return failed;

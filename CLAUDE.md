@@ -178,6 +178,10 @@ without a published release looks to them like a newest release with nothing in 
   (2026-10-17), feature for feature, checked against the volumes SolidCraft measured. A change to its shapes is a
   change to that design: ask Clint. Its tests also check that inserts drop in and trays stack and interlock.
 - **Dimensions remember which edge they measure** (a rectangle's side, an outline's segment), not a point.
+- **Keep lined up** (`keep-lined-up.js`, `DOC.keeps`): with it on, Align also links each shape to the last one picked (or
+  the material). A link is put back in line after every change (`persist`) and after every step the History bar does again,
+  so steps after it work on the shape where it's kept. Shape to shape only, by the box round each shape; constraints
+  within an outline (parallel, tangent...) are the next stages, offered to Clint (2026-10-23).
 
 ## Open items
 

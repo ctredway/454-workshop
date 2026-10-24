@@ -73,7 +73,7 @@ function docForStorage(pretty){
   return pretty ? JSON.stringify(copy, null, 1) : JSON.stringify(copy);
 }
 function docRestore(str){
-  var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || [];
+  var s=JSON.parse(str); DOC.ents=s.ents; DOC.guides=s.guides; DOC.dims=s.dims || []; DOC.params=s.params || []; DOC.keeps=s.keeps || [];
   DOC.vcConverted = !!s.vcConverted;
   if (s.stock) DOC.stock = s.stock;
   if (s.layers){ DOC.layers = s.layers; DOC.activeLayer = s.activeLayer; DOC.images = s.images || []; }

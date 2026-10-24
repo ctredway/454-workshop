@@ -1461,6 +1461,30 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.157.0 — Keep lined up: shapes that stay where they should when something changes
+Clint, 2026-10-23, on sketch constraints: "useful when needing to make sure things stay where they should when something
+changes". This is the first part, shape to shape. Within one outline (parallel, perpendicular, tangent) comes later.
+- **Keep lined up** (the chain button in Align and nest; Tools → Align and nest): with it on, the Align buttons also
+  keep shapes lined up. A hole centred on a board stays centred when the board changes, by a dimension, a parameter,
+  a step changed on the History bar, a drag or (centred in it) the material's size. The shape moves, but never turns or
+  changes size, and only in the directions it was lined up in.
+- **Where it's kept:** `DOC.keeps`, `{id, op, a, b}`: `a` follows `b` (a shape, or `'stock'`), as the Align button `op`
+  lined them up (keep-lined-up.js). It's put back in line after every change (`persist`), and after every step the History
+  bar does again (`keepsAfterStep` in `histReplay`), so a later step works on the shape where it's kept. In a History
+  step, saved with the drawing, and undone.
+- **Not allowed:** a shape following itself through others (refused, and said). A second link in the same direction
+  replaces the first. A selection centred in the material as a block isn't kept: group it first.
+- **A shape a tool remade** in the same place (Fillet corners keeps its id anyway; Weld with a shape inside it) keeps its
+  links: they move onto the shape whose box is where its box was. Deleted, or remade another size (Trim), the link goes,
+  and Design says so.
+- **Seen and undone:** while either shape is selected, a dashed line to what it follows, that shape outlined, and a chain-link
+  marker; click the marker for **Stop keeping lined up**. A shape moved on its own, out of line, goes back, and Design says why.
+- **The History bar:** its saved history now keeps the links too (`'keeps'`, last in `HIST_KEYS`). A history saved before
+  this has one fewer part and opens as having none (`histTake`).
+- keep-lined-up.test.mjs, 12 tests. Broken on purpose 5 ways (not put back after a change, not after a History step, no
+  moving onto a remade shape, no loop check, an older history refused), and each one caught. In the real app, the marker
+  clicked opened the menu, and Stop keeping lined up removed the link.
+
 ### 0.156.1 — no note on the History bar when you’ve gone back
 Clint, 2026-10-23: the label shown while the marker is behind the newest step isn’t needed. “Back 2 steps. A change goes
 in here; the 2 after it are redone on top” is gone: the marker shows where you are, and the faded steps after it are

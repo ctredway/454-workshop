@@ -1,0 +1,240 @@
+/* ---------------- shapes kept lined up ----------------
+   The Align buttons line shapes up once; change one afterwards and they come apart. With Keep lined up on
+   (the chain button by them), Align also keeps them that way: a hole centred on a board stays centred when the
+   board is made wider, by a dimension, a parameter, a step changed on the History bar, or a drag. Clint, 2026-10-23:
+   "useful when needing to make sure things stay where they should when something changes".
+
+   DOC.keeps lists them: {id, op, a, b}. a is the shape that moves (its id), b the one it follows (an id, or 'stock'
+   for the material); op is the Align button's (ALIGN_OPS). After every change (persist), and after every step the
+   History bar does again, each shape that follows is moved, without turning or resizing it, until it's in line
+   again. A shape follows at most one other in each direction, and never, through others, itself. A link whose
+   shape is gone moves to a shape in the same place (Fillet corners and Trim remake shapes), or is removed, and said.
+   While a shape that has a link is selected, the link is drawn; click its marker to stop keeping it. */
+var KEEP_OPS = {
+  center: {x: 'c', y: 'c'}, hcenter: {x: 'c'}, vcenter: {y: 'c'},
+  left: {x: 'lo'}, right: {x: 'hi'}, top: {y: 'hi'}, bottom: {y: 'lo'},
+  mat: {x: 'c', y: 'c'}, matx: {x: 'c'}, maty: {y: 'c'}
+};
+var KEEP_NAMES = {
+  center: 'centred on', hcenter: 'centred left-right on', vcenter: 'centred top-bottom on',
+  left: 'left edge in line with', right: 'right edge in line with', top: 'top edge in line with', bottom: 'bottom edge in line with',
+  mat: 'centred on', matx: 'centred left-right on', maty: 'centred top-bottom on'
+};
+var KEEP_BOX = typeof WeakMap === 'function' ? new WeakMap() : null;   // where each link's two shapes were, to find them again
+var KEEP_TOL = 0.01;                                                    // mm
+var KEEP_HITS = [];                                                     // the markers drawn: {k, x, y} on screen
+var KEEP_SAID = 0;
+
+function keepsArr(){ if (!DOC.keeps) DOC.keeps = []; return DOC.keeps; }
+function keepBox(id){
+  if (id === 'stock') return stockRect();
+  var e = entById(id);
+  return e ? entBBox(e) : null;
+}
+function keepAt(b, how, axis){
+  var lo = axis === 'x' ? b.x0 : b.y0, hi = axis === 'x' ? b.x1 : b.y1;
+  return how === 'lo' ? lo : how === 'hi' ? hi : (lo + hi) / 2;
+}
+// How far a's shape has to move to be in line again: {dx, dy}, or null if either shape isn't there
+function keepDelta(k){
+  var op = KEEP_OPS[k.op], fa = keepBox(k.a), fb = keepBox(k.b);
+  if (!op || !fa || !fb) return null;
+  return {dx: op.x ? keepAt(fb, op.x, 'x') - keepAt(fa, op.x, 'x') : 0,
+          dy: op.y ? keepAt(fb, op.y, 'y') - keepAt(fa, op.y, 'y') : 0};
+}
+// The link that moves shape id in this direction ('x' or 'y'), or null
+function keepOn(id, axis){
+  var ks = DOC.keeps || [];
+  for (var i = 0; i < ks.length; i++) if (ks[i].a === id && KEEP_OPS[ks[i].op] && KEEP_OPS[ks[i].op][axis]) return ks[i];
+  return null;
+}
+// Would shape a following b in this direction make a follow itself, through b and the shapes b follows?
+function keepLoop(a, b, axis){
+  var cur = b, n = 0;
+  while (cur && n++ < 1000){
+    if (cur === a) return true;
+    var k = keepOn(cur, axis);
+    cur = k ? k.b : null;
+  }
+  return false;
+}
+// Why a can't be kept lined up with b: 'loop' (b follows a, through others), 'cant', or '' if it can
+function keepCant(op, a, b){
+  var o = KEEP_OPS[op];
+  if (!o || !a || !b || a === b) return 'cant';
+  return ['x', 'y'].some(function (ax) { return o[ax] && keepLoop(a, b, ax); }) ? 'loop' : '';
+}
+// Keep shape a lined up with b (an id, or 'stock'), as op lines them up: {ok} or {why}.
+// A link a already had in the same direction is replaced: the newest says where it goes.
+function keepAdd(op, a, b){
+  var why = keepCant(op, a, b);
+  if (why) return {why: why};
+  var axes = ['x', 'y'].filter(function (ax) { return KEEP_OPS[op][ax]; });
+  DOC.keeps = keepsArr().filter(function (k) {
+    return !(k.a === a && axes.some(function (ax) { return KEEP_OPS[k.op] && KEEP_OPS[k.op][ax]; }));
+  });
+  DOC.keeps.push({id: 'k' + Math.random().toString(36).slice(2, 9), op: op, a: a, b: b});
+  return {ok: true};
+}
+// The links a shape is in, either end
+function keepsOf(id){ return (DOC.keeps || []).filter(function (k) { return k.a === id || k.b === id; }); }
+
+// Every shape that follows another moved back in line, a few times round for shapes that follow shapes that
+// follow others. Returns the links that moved their shape.
+function keepsApply(){
+  var ks = DOC.keeps || [], moved = [];
+  if (!ks.length) return moved;
+  for (var pass = 0; pass < 10; pass++){
+    var any = false;
+    ks.forEach(function (k) {
+      var d = keepDelta(k);
+      if (!d || (Math.abs(d.dx) < 1e-9 && Math.abs(d.dy) < 1e-9)) return;
+      moveEntity(entById(k.a), d.dx, d.dy);
+      any = true;
+      if (moved.indexOf(k) < 0) moved.push(k);
+    });
+    if (!any) break;
+  }
+  if (KEEP_BOX) ks.forEach(function (k) {
+    var fa = keepBox(k.a), fb = k.b === 'stock' ? null : keepBox(k.b);
+    if (fa && (fb || k.b === 'stock')) KEEP_BOX.set(k, {a: fa, b: fb});
+  });
+  return moved;
+}
+// A shape on this sheet whose box is where box was (a shape a tool remade in place), or null
+function keepFindBox(box){
+  if (!box) return null;
+  var same = function (b) { return Math.abs(b.x0 - box.x0) < KEEP_TOL && Math.abs(b.y0 - box.y0) < KEEP_TOL &&
+                                    Math.abs(b.x1 - box.x1) < KEEP_TOL && Math.abs(b.y1 - box.y1) < KEEP_TOL; };
+  var found = DOC.ents.filter(function (e) { return entOnSheet(e) && !e.con && same(entBBox(e)); });
+  return found.length === 1 ? found[0] : null;               // two in the same place: can't tell which
+}
+// Links onto shapes a tool remade, or removed when what they link is gone. Returns how many were removed.
+function keepsFollow(){
+  if (!DOC.keeps || !DOC.keeps.length) return 0;
+  var gone = 0;
+  DOC.keeps = DOC.keeps.filter(function (k) {
+    var was = KEEP_BOX && KEEP_BOX.get(k);
+    ['a', 'b'].forEach(function (end) {
+      if (k[end] === 'stock' || entById(k[end])) return;
+      var e = was && keepFindBox(was[end]);
+      if (e) k[end] = entId(e);
+    });
+    if (k.a !== k.b && entById(k.a) && (k.b === 'stock' || entById(k.b))) return true;
+    gone++; return false;
+  });
+  return gone;
+}
+// After every change (persist): links followed, and shapes put back in line
+function keepsRun(){
+  var gone = keepsFollow(), moved = keepsApply();
+  if (gone) toast('info', gone === 1 ? 'A shape is no longer kept lined up' : gone + ' shapes are no longer kept lined up',
+                  'A shape ' + (gone === 1 ? 'it was' : 'they were') + ' lined up with is no longer in the drawing. Undo brings it back.');
+  // a selected shape put back where it was kept, as it was moved on its own: say why, now and then
+  var back = moved.filter(function (k) {
+    var a = entById(k.a), b = k.b === 'stock' ? null : entById(k.b);
+    return a && SEL.indexOf(DOC.ents.indexOf(a)) >= 0 && !(b && SEL.indexOf(DOC.ents.indexOf(b)) >= 0);
+  });
+  if (back.length && Date.now() - KEEP_SAID > 20000){
+    KEEP_SAID = Date.now();
+    toast('info', 'Kept lined up', 'The ' + histLower(histShapeName(entById(back[0].a))) + ' is kept ' + KEEP_NAMES[back[0].op] + ' ' +
+          keepName(back[0].b) + ', so it stays in line. To move it freely, click the link marker beside it and choose Stop keeping lined up.');
+  }
+}
+function keepName(id){ return id === 'stock' ? 'the material' : 'the ' + histLower(histShapeName(entById(id))); }
+// For the History bar: the links as a step leaves them (none: not kept at all)
+function keepsForHist(){ return DOC.keeps && DOC.keeps.length ? DOC.keeps : undefined; }
+// A step the History bar did again: its shapes put back in line, as they were when it was first done
+function keepsAfterStep(p){
+  var K = HIST_KEYS.indexOf('keeps');
+  if (!Array.isArray(p[K]) || !p[K].length) return p;
+  histLoad(p);
+  return keepsApply().length ? histPack() : p;
+}
+
+/* ---- seen and undone: drawn while a shape in one is selected; its marker clicked to stop keeping it */
+// Where a link is drawn, on screen: from a point on the shape that follows (f) to the one it follows (t): along the
+// line they share, to the middle of the shape followed, as both are kept on it
+function keepEnds(k){
+  var op = KEEP_OPS[k.op], fa = keepBox(k.a), fb = keepBox(k.b);
+  if (!op || !fa || !fb) return null;
+  var f = {x: op.x ? keepAt(fa, op.x, 'x') : (fa.x0 + fa.x1) / 2, y: op.y ? keepAt(fa, op.y, 'y') : (fa.y0 + fa.y1) / 2};
+  var t = {x: op.x ? keepAt(fb, op.x, 'x') : (fb.x0 + fb.x1) / 2, y: op.y ? keepAt(fb, op.y, 'y') : (fb.y0 + fb.y1) / 2};
+  return {f: w2s(f.x, f.y), t: w2s(t.x, t.y), fa: fa, fb: k.b === 'stock' ? null : fb};
+}
+function keepsShown(){
+  if (!DOC.keeps || !DOC.keeps.length || !SEL.length) return [];
+  var ids = SEL.map(function (i) { return DOC.ents[i] && DOC.ents[i]._id; });
+  return DOC.keeps.filter(function (k) { return ids.indexOf(k.a) >= 0 || ids.indexOf(k.b) >= 0; });
+}
+// Each link: a dashed line from the shape that follows to the one it follows (a cross where they're centred on each
+// other), the one it follows outlined, and a marker (a chain link) off the top right of the shape that follows
+function keepsDraw(ctx){
+  KEEP_HITS = [];
+  var shown = keepsShown(), per = {};
+  if (!shown.length) return;
+  ctx.save();
+  shown.forEach(function (k) {
+    var en = keepEnds(k);
+    if (!en) return;
+    ctx.strokeStyle = THEME.accentLight; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(en.f.x, en.f.y); ctx.lineTo(en.t.x, en.t.y); ctx.stroke();
+    if (en.fb){
+      var b0 = w2s(en.fb.x0, en.fb.y1), b1 = w2s(en.fb.x1, en.fb.y0);
+      ctx.globalAlpha = 0.7; ctx.strokeRect(b0.x - 3, b0.y - 3, b1.x - b0.x + 6, b1.y - b0.y + 6); ctx.globalAlpha = 1;
+    }
+    ctx.setLineDash([]);
+    if (Math.hypot(en.f.x - en.t.x, en.f.y - en.t.y) < 1){
+      ctx.beginPath(); ctx.moveTo(en.t.x - 6, en.t.y); ctx.lineTo(en.t.x + 6, en.t.y); ctx.moveTo(en.t.x, en.t.y - 6); ctx.lineTo(en.t.x, en.t.y + 6); ctx.stroke();
+    }
+    var n = per[k.a] = (per[k.a] || 0) + 1, c = w2s(en.fa.x1, en.fa.y1);
+    var mx = c.x + 16 + (n - 1) * 22, my = c.y - 16;
+    ctx.fillStyle = 'rgba(20,24,29,0.9)';
+    ctx.beginPath(); ctx.arc(mx, my, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 1.4;
+    [[-2.2, 2.2], [2.2, -2.2]].forEach(function (o) {
+      ctx.save(); ctx.translate(mx + o[0], my + o[1]); ctx.rotate(-Math.PI / 4);
+      ctx.beginPath(); ctx.rect(-3.2, -1.8, 6.4, 3.6); ctx.stroke(); ctx.restore();
+    });
+    ctx.lineWidth = 1;
+    KEEP_HITS.push({k: k, x: mx, y: my});
+  });
+  ctx.restore();
+}
+// The link whose marker is at this point on screen, or null
+function keepHitAt(sx, sy){
+  for (var i = KEEP_HITS.length - 1; i >= 0; i--)
+    if (Math.hypot(sx - KEEP_HITS[i].x, sy - KEEP_HITS[i].y) <= 10) return KEEP_HITS[i].k;
+  return null;
+}
+function keepRemove(k){
+  if (!DOC.keeps || DOC.keeps.indexOf(k) < 0) return false;
+  pushUndo('Stop keeping lined up');
+  DOC.keeps = DOC.keeps.filter(function (x) { return x !== k; });
+  persist(); draw();
+  return true;
+}
+function keepMenu(k, cx, cy){
+  var a = entById(k.a);
+  ctxMenuOpen(cx, cy, [
+    {label: 'The ' + histLower(histShapeName(a)) + ' is kept ' + KEEP_NAMES[k.op] + ' ' + keepName(k.b), disabled: true, fn: function () {}},
+    null,
+    {label: 'Stop keeping lined up', danger: true, fn: function () {
+      if (keepRemove(k)) toast('ok', 'No longer kept lined up', 'The shapes stay where they are, and move separately from now on. Undo brings the link back.');
+    }}
+  ]);
+}
+
+/* ---- the Keep lined up button */
+function keepMode(){ return !!UICFG.alignKeep; }
+function keepBtnSync(){
+  var b = document.getElementById('alKeep');
+  if (b){ b.classList.toggle('active', keepMode()); b.setAttribute('aria-pressed', keepMode() ? 'true' : 'false'); }
+}
+function keepToggle(){
+  UICFG.alignKeep = !keepMode(); uiCfgSave();
+  keepBtnSync();
+  toast('info', keepMode() ? 'Keep lined up is on' : 'Keep lined up is off',
+        keepMode() ? 'The Align buttons now keep shapes lined up: change or move the last one picked (or the material) and the others follow. Space evenly isn’t kept.'
+                  : 'The Align buttons line shapes up once. Links already made are kept; click a link’s marker to stop keeping it.');
+}
