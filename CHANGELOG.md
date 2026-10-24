@@ -33,6 +33,13 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.7.0-beta.1 — 0.7.0 from here on; a shorter way round the holes, and a lower lift inside a part
+- **The version moves to 0.7.0** (Clint, 2026-10-24), still a beta: betas count again from 1 (0.7.0-beta.2 next), and
+  installed copies on the Beta channel update to it as usual (0.7.0-beta.1 comes after 0.6.2-beta.67).
+- Includes Design 0.159.0: drilling, chamfers and profiles cut their shapes a short way round, shapes inside others
+  first, not in the order picked (the rapids on Clint's arm inserts went from 9.1 m to 5.3 m); Job setup's Lift inside
+  a part lifts less between cuts inside a part. **(machine)**
+
 ### 0.6.2-beta.67 — Keep lined up, Concentric and Same size
 - Includes Design 0.157.0 and 0.158.0: with Keep lined up on, the Align buttons keep shapes lined up when something
   changes (a dimension, a parameter, a History step, a drag, the material); Concentric, and Same width, Same height and

@@ -104,7 +104,8 @@ node site/build.js && node site/serve.js          # the whole website on this co
 ## Releases (the desktop app)
 
 1. Set the new version in `apps/desktop/package.json` (a suffix such as `-beta.13` makes a pre-release,
-   offered only on the app's **Beta** update channel), commit, and push to `main`.
+   offered only on the app's **Beta** update channel), commit, and push to `main`. From 2026-10-24 the versions are
+   **0.7.0-beta.N** (Clint: "move the version to 0.7.0 from this point forward"; he chose beta numbers from 1 again).
 2. The Windows workflow builds it and **drafts** a release with the installer, zip, `latest.yml` and blockmap.
    It creates **no tag**: GitHub creates the tag when the draft is published.
 3. **Publish that draft.** Never create a release by hand: a hand-made release has no files, and installed
