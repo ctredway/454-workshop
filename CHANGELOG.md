@@ -33,6 +33,16 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.7.0-beta.2 — Electron 42
+- **Electron 33 → 42** (Dependabot #6, done by hand so the lock file kept the app's version): Electron 33 is no longer
+  given security fixes, and Dependabot flagged a high-severity one (compromised eMudhra intermediate certificates)
+  among others. Nothing in the app needed changing.
+- Checked before release: the desktop app's tests (113 pass; the serial test runs on GitHub, needing socat); Pause &
+  lift and Resume end to end in the real app against the simulated machine (`e2e-pause.mjs`); the app started with
+  nothing in its log; 45 of the docs' 46 screenshots taken on it, looking as they did (cam-inlay fails on Electron 33
+  too: the screenshot script, not the app). Not checked here: the installer (electron-builder needs Windows'
+  Developer Mode on this computer; GitHub builds it), a real serial port, and the Linux AppImage.
+
 ### 0.7.0-beta.1 — 0.7.0 from here on; a shorter way round the holes, and a lower lift inside a part
 - **The version moves to 0.7.0** (Clint, 2026-10-24), still a beta: betas count again from 1 (0.7.0-beta.2 next), and
   installed copies on the Beta channel update to it as usual (0.7.0-beta.1 comes after 0.6.2-beta.67).
