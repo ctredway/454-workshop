@@ -294,7 +294,7 @@ var HIST_ICON = {
 };
 // A named step's icon, by what its name starts with (the tools name their steps: Fillet 6 mm, Opened shelf.454.json).
 var HIST_NAME_ICON = [['Opened', 'load'], ['New drawing', 'neu'], ['Recovered', 'recover'], ['Import', 'import'], ['Paste', 'copy'],
-  ['Duplicate', 'copy'], ['Align and keep', 'aKeep'], ['Stop keeping', 'aKeep'], ['Align', 'aLeft'], ['Space evenly', 'aDistH'], ['Flip', 'flipH'], ['Nest', 'nest'], ['Trace image', 'image'],
+  ['Duplicate', 'copy'], ['Align and keep', 'aKeep'], ['Stop keeping', 'aKeep'], ['Concentric', 'aConc'], ['Same width', 'aSameW'], ['Same height', 'aSameH'], ['Same size', 'aSame'], ['Align', 'aLeft'], ['Space evenly', 'aDistH'], ['Flip', 'flipH'], ['Nest', 'nest'], ['Trace image', 'image'],
   ['Text on curve', 'textCurve'], ['Inlay wizard', 'toolpath'], ['Make editable', 'toolpath'], ['Template', 'toolpath'], ['Fix shapes', 'node'],
   ['Fillet corners', 'filletall'], ['Dog-bone corners', 'filletall'], ['T-bone corners', 'filletall'], ['Fillet', 'fillet'], ['Dog-bone', 'fillet'],
   ['T-bone', 'fillet'], ['Weld', 'weld'], ['Subtract', 'subtract'], ['Intersect', 'intersect'], ['Join', 'join'], ['Explode', 'expl'],

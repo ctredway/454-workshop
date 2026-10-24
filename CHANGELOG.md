@@ -1461,6 +1461,20 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.158.0 — Concentric, and Same width, Same height, Same size
+The rest of stage 1 of constraints (Clint, 2026-10-23, "go ahead and do those"). Four buttons beside Align's that
+work the same way: on the other shapes, against the last one picked, once, or kept with Keep lined up on.
+- **Concentric** puts the shapes' centres on the last one's: a circle's or an arc's own centre (an arc's isn't the
+  middle of its box), or the middle of any other shape.
+- **Same width, Same height, Same size**, about each shape's own centre. A rectangle takes any shape's width and height
+  (a circle's diameter, an outline's box). A circle or an arc takes another's radius. A line takes another line's
+  length, from its start. Outlines and text aren't resized, as they'd be stretched out of shape, and Design says so.
+- **Kept:** three holes the same size as the first follow when its diameter is typed. Width and height are their own
+  directions, as across and up and down are, so a slot can be kept as wide as a board and with its left edge in line
+  with the board's. Sizes are put right before places, each time round.
+- keep-lined-up.test.mjs, 6 more tests (18). Broken on purpose 6 ways (not about its centre, an arc's box for its
+  centre, no loop check for sizes, sizes never kept, a circle given a rectangle's size), and each one caught.
+
 ### 0.157.0 — Keep lined up: shapes that stay where they should when something changes
 Clint, 2026-10-23, on sketch constraints: "useful when needing to make sure things stay where they should when something
 changes". This is the first part, shape to shape. Within one outline (parallel, perpendicular, tangent) comes later.

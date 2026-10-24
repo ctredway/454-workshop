@@ -69,7 +69,8 @@ function wirePanel(){
   document.getElementById('curvesBtn').addEventListener('click', curvesBtnClick);
   document.getElementById('textCurveBtn').addEventListener('click', textOnCurveClick);
   [['alMat','mat'],['alMatX','matx'],['alMatY','maty'],['alCenter','center'],['alHCenter','hcenter'],['alVCenter','vcenter'],
-   ['alLeft','left'],['alRight','right'],['alTop','top'],['alBottom','bottom'],['alDistH','disth'],['alDistV','distv']]
+   ['alLeft','left'],['alRight','right'],['alTop','top'],['alBottom','bottom'],['alDistH','disth'],['alDistV','distv'],
+   ['alConc','conc'],['alSameW','sameW'],['alSameH','sameH'],['alSame','same']]
     .forEach(function(pr){ document.getElementById(pr[0]).addEventListener('click', function(){ alignBtnClick(pr[1]); }); });
   document.getElementById('alKeep').addEventListener('click', keepToggle);
   keepBtnSync();

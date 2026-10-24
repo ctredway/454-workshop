@@ -48,6 +48,10 @@ var ICON = {
  aCenter:'<svg viewBox="0 0 18 18"><rect x="2" y="2" width="14" height="14"/><rect x="6.5" y="6.5" width="5" height="5" opacity=".6"/></svg>',
  aHCenter:'<svg viewBox="0 0 18 18"><path d="M9 1.5 V16.5" stroke-dasharray="2 2"/><rect x="3" y="4" width="12" height="3"/><rect x="5.5" y="11" width="7" height="3"/></svg>',
  aVCenter:'<svg viewBox="0 0 18 18"><path d="M1.5 9 H16.5" stroke-dasharray="2 2"/><rect x="4" y="3" width="3" height="12"/><rect x="11" y="5.5" width="3" height="7"/></svg>',
+ aConc:'<svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7"/><circle cx="9" cy="9" r="3.5"/><path d="M9 7.8 V10.2 M7.8 9 H10.2" opacity=".7"/></svg>',
+ aSameW:'<svg viewBox="0 0 18 18"><rect x="3" y="2.5" width="12" height="4"/><rect x="3" y="9.5" width="12" height="6"/><path d="M3 8 H15" stroke-dasharray="1.6 1.4" opacity=".6"/></svg>',
+ aSameH:'<svg viewBox="0 0 18 18"><rect x="2.5" y="3" width="4" height="12"/><rect x="9.5" y="3" width="6" height="12"/><path d="M8 3 V15" stroke-dasharray="1.6 1.4" opacity=".6"/></svg>',
+ aSame:'<svg viewBox="0 0 18 18"><rect x="2" y="2" width="6" height="6"/><rect x="10" y="10" width="6" height="6"/><path d="M10 2 H16 V8 H10 Z" stroke-dasharray="1.6 1.4" opacity=".6"/></svg>',
  aKeep:'<svg viewBox="0 0 18 18"><path d="M7.6 10.4 L10.4 7.6"/><path d="M8.3 5.2 L10 3.5 a3 3 0 0 1 4.5 4.5 L12.8 9.7"/><path d="M9.7 12.8 L8 14.5 a3 3 0 0 1 -4.5 -4.5 L5.2 8.3"/></svg>',
  aLeft:'<svg viewBox="0 0 18 18"><path d="M2 1.5 V16.5"/><rect x="4" y="4" width="11" height="3"/><rect x="4" y="11" width="6" height="3"/></svg>',
  aRight:'<svg viewBox="0 0 18 18"><path d="M16 1.5 V16.5"/><rect x="3" y="4" width="11" height="3"/><rect x="8" y="11" width="6" height="3"/></svg>',
@@ -101,6 +105,10 @@ var PANEL_BTNS = {
  alRight:{id:'alRight', icon:'aRight', title:'Align right edges with the last one picked'},
  alTop:{id:'alTop', icon:'aTop', title:'Align top edges with the last one picked'},
  alBottom:{id:'alBottom', icon:'aBottom', title:'Align bottom edges with the last one picked'},
+ alConc:{id:'alConc', icon:'aConc', title:'Concentric \u2014 moves the other shapes so their centres sit on the last one picked: a circle\u2019s or an arc\u2019s own centre, or the middle of any other shape'},
+ alSameW:{id:'alSameW', icon:'aSameW', title:'Same width \u2014 makes the other rectangles as wide as the last one picked, about their centres (circles and arcs: the same radius; lines: the same length)'},
+ alSameH:{id:'alSameH', icon:'aSameH', title:'Same height \u2014 makes the other rectangles as tall as the last one picked, about their centres (circles and arcs: the same radius; lines: the same length)'},
+ alSame:{id:'alSame', icon:'aSame', title:'Same size \u2014 makes the other rectangles the size of the last one picked, about their centres; circles and arcs the same radius; lines the same length'},
  alKeep:{id:'alKeep', icon:'aKeep', title:'Keep lined up — when on, the Align buttons keep shapes lined up: change or move the last one picked (or the material) and the others follow'},
  alDistH:{id:'alDistH', icon:'aDistH', title:'Space evenly left to right \u2014 equal gaps; the leftmost and rightmost shapes stay put'},
  alDistV:{id:'alDistV', icon:'aDistV', title:'Space evenly top to bottom \u2014 equal gaps; the top and bottom shapes stay put'},
@@ -146,7 +154,7 @@ var PANEL_GROUPS = [
  {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
  {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
  {id:'edit',   label:'Edit Vectors',   btns:['fillet','filletAllT','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
- {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alKeep','alDistH','alDistV']},
+ {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alConc','alSameW','alSameH','alSame','alKeep','alDistH','alDistV']},
  {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
  /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
 ];

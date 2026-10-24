@@ -181,3 +181,76 @@ test('saved and opened: the links come back; a history kept before links still o
   assert.equal(D.run(`histTake(${JSON.stringify(h)})`), true, 'the old history is read');
   assert.ok(D.run('UNDO.length') >= 3, 'with its steps');
 });
+
+// ---- Concentric, Same width, Same height, Same size (Design 0.158.0) ----
+const add = (js) => D.run(`pushUndo(); DOC.ents.push(Object.assign(${js}, {layer: 'L1'})); persist(); DOC.ents.length - 1`);
+const size = (i) => { const b = box(i); return { w: +(b.x1 - b.x0).toFixed(6), h: +(b.y1 - b.y0).toFixed(6) }; };
+
+test('Same size, once: the slot made the size of the board, about its own centre; nothing kept', () => {
+  drawing(false);
+  const c = box(2);
+  align([2, 0], 'same');
+  assert.deepEqual(size(2), { w: 200, h: 100 });
+  near(box(2).cx, c.cx, 'its centre stays'); near(box(2).cy, c.cy);
+  assert.equal(D.run('DOC.keeps.length'), 0);
+  assert.equal(D.run('UNDO[UNDO.length - 1].name'), 'Same size');
+});
+
+test('Same width, kept: the board made wider, the slot follows its width, not its height', () => {
+  drawing(true);
+  align([2, 0], 'sameW');
+  assert.deepEqual(size(2), { w: 200, h: 20 });
+  typeDim(0, '260');
+  assert.deepEqual(size(2), { w: 260, h: 20 }, 'as wide as the board again, as tall as it was');
+  D.run(`pushUndo(); DOC.ents[0].h = 150; persist(); 1`);
+  assert.deepEqual(size(2), { w: 260, h: 20 }, 'the board’s height isn’t kept');
+});
+
+test('Same size on holes: change one hole’s diameter and the others follow', () => {
+  drawing(true);
+  const h2 = add(`{t: 'circle', cx: 100, cy: 60, r: 8}`), h3 = add(`{t: 'circle', cx: 160, cy: 60, r: 3}`);
+  align([h2, h3, 1], 'same');
+  near(D.run(`DOC.ents[${h2}].r`), 5); near(D.run(`DOC.ents[${h3}].r`), 5);
+  D.run(`addDim({kind: 'dia', a: entId(DOC.ents[1])}); persist(); 1`);
+  typeDim(1, '12');
+  near(D.run('DOC.ents[1].r'), 6, 'the first hole');
+  near(D.run(`DOC.ents[${h2}].r`), 6, 'the second follows'); near(D.run(`DOC.ents[${h3}].r`), 6, 'and the third');
+  near(D.run(`DOC.ents[${h2}].cx`), 100, 'where they were');
+});
+
+test('Concentric: an arc’s own centre on the hole’s, not the middle of its box; it follows the hole', () => {
+  drawing(true);
+  const arc = add(`{t: 'arc', cx: 150, cy: 50, r: 15, a0: 0, a1: Math.PI / 2, ccw: true}`);
+  align([arc, 1], 'conc');
+  near(D.run(`DOC.ents[${arc}].cx`), 40); near(D.run(`DOC.ents[${arc}].cy`), 30);
+  D.run(`SEL = [1]; pushUndo('Move'); moveEntity(DOC.ents[1], 25, 10); persist(); SEL = []; 1`);
+  near(D.run(`DOC.ents[${arc}].cx`), 65, 'followed'); near(D.run(`DOC.ents[${arc}].cy`), 40);
+  near(D.run(`DOC.ents[${arc}].r`), 15, 'its own size');
+});
+
+test('size and place kept together: the slot the size of a block, its left edge on the board’s', () => {
+  drawing(true);
+  const blk = add(`{t: 'rect', x: 250, y: 150, w: 40, h: 25}`);
+  align([2, blk], 'same');
+  align([2, 0], 'left');
+  D.run(`pushUndo(); DOC.ents[${blk}].w = 80; persist(); 1`);
+  assert.deepEqual(size(2), { w: 80, h: 25 }, 'resized');
+  near(box(2).x0, 20, 'and still in line with the board, after');
+});
+
+test('shapes Same size can’t resize: said, and nothing done; a size can’t follow itself', () => {
+  drawing(true);
+  const pl = add(`{t: 'poly', closed: true, pts: [[10, 10], [40, 10], [25, 40]]}`);
+  toasts.length = 0;
+  const before = D.run('UNDO.length');
+  align([pl, 0], 'same');
+  assert.equal(D.run('UNDO.length'), before, 'no step');
+  assert.ok(toasts.some((t) => /^Not those shapes/.test(t)), toasts.join(' / '));
+  align([1, 0], 'same');                                      // a hole the size of a board: which way?
+  near(D.run('DOC.ents[1].r'), 5, 'a circle takes only a circle’s or an arc’s size');
+  align([2, 0], 'sameW');
+  toasts.length = 0;
+  align([0, 2], 'sameW');
+  assert.equal(D.run('DOC.keeps.length'), 1, 'not kept the other way round');
+  assert.ok(toasts.some((t) => /^Not kept lined up/.test(t)), toasts.join(' / '));
+});

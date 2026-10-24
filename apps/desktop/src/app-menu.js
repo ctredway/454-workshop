@@ -104,6 +104,7 @@ function menuTemplate({ kind, act, updates = [], recent = [], startWith = 'desig
       sep,
       tb('Center on last picked', 'alCenter'), tb('Line up centers left-right', 'alHCenter'), tb('Line up centers top-bottom', 'alVCenter'),
       tb('Align left edges', 'alLeft'), tb('Align right edges', 'alRight'), tb('Align top edges', 'alTop'), tb('Align bottom edges', 'alBottom'),
+      tb('Concentric', 'alConc'), tb('Same width', 'alSameW'), tb('Same height', 'alSameH'), tb('Same size', 'alSame'),
       tb('Keep lined up', 'alKeep'),
       sep,
       tb('Space evenly left to right', 'alDistH'), tb('Space evenly top to bottom', 'alDistV'),

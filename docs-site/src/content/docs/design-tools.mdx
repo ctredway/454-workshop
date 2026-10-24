@@ -649,7 +649,7 @@ with it; changing the letter height keeps the same curve.
 
 Arranging shapes: packing parts onto the material, centering, lining up and spacing. The tools that line shapes up use the **last one you picked** as the reference, outlined in green.
 
-<Shot src={gAlign} alt="The Align and nest group: Nest parts, the centering tools, the edge alignment tools, Keep lined up (a chain link) and even spacing." />
+<Shot src={gAlign} alt="The Align and nest group: Nest parts, the centering tools, the edge alignment tools, Concentric, Same width, Same height, Same size, Keep lined up (a chain link) and even spacing." />
 
 ### Nest parts
 
@@ -706,6 +706,26 @@ Four tools that line up the shapes’ left, right, top or bottom edges with the 
 
 1. Select the shapes, picking the one to line up with last, then click the edge to line up.
 
+### Concentric
+
+Moves the other selected shapes so their centres sit on the last one picked. For a circle or an arc that's its own
+centre, the point it's drawn round, which for an arc isn't the middle of its box. For any other shape it's the middle.
+
+1. Select the shapes, picking the one to centre them on last, then click **Concentric**.
+
+### Same width, Same height, Same size
+
+Make the other selected shapes the same size as the last one picked. Each one is resized about its own centre.
+
+- **A rectangle** takes the width, the height, or both, of any shape: another rectangle, a circle (its diameter) or an
+  outline (the box round it).
+- **A circle or an arc** takes the radius of another circle or arc. All three buttons do the same for these.
+- **A line** takes the length of another line, measured from its start.
+- **Other shapes,** such as outlines and text, aren't resized, because they'd have to be stretched out of shape. Design
+  says so.
+
+1. Select the shapes, picking the one whose size they take last, then click the button.
+
 ### Keep lined up
 
 The chain-link button. On its own, an Align button lines shapes up once: change one afterwards and they come apart.
@@ -714,11 +734,13 @@ whether you type a new dimension, change a parameter, change a step on the Histo
 
 1. Click **Keep lined up**, so it's lit. It stays on until you click it again.
 2. Line shapes up as usual: select them, picking the one to follow last, then click an Align button. **Center on last picked**,
-   **Line up centers**, the four **Align edges** buttons and the three **Center in material** buttons can all be kept.
+   **Line up centers**, the four **Align edges** buttons, the three **Center in material** buttons, **Concentric** and the
+   three **Same size** buttons can all be kept. For example, make three holes the same size as the first, and they
+   follow when you type a new diameter into it.
 
 From then on, the shapes you lined up follow the last one picked, or the material:
 
-- **They move, but never turn or change size.** Each keeps only what you lined up. A slot with its left edge kept in line
+- **They move, but never turn or change size,** unless they're kept the same size. Each keeps only what you lined up. A slot with its left edge kept in line
   can still be moved up and down. Moved sideways on its own, it goes back in line, and Design says why.
 - **Shapes can follow shapes that follow others.** A slot centred on a hole that's centred on a board follows both. A shape
   can't follow itself through others: Design says so and leaves it as it was.

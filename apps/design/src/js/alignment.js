@@ -6,10 +6,12 @@ var ALIGN_OPS = {
   mat:'Center in material', matx:'Center left-right in material', maty:'Center top-bottom in material',
   center:'Center on last picked', hcenter:'Line up centers left-right', vcenter:'Line up centers top-bottom',
   left:'Align left edges', right:'Align right edges', top:'Align top edges', bottom:'Align bottom edges',
-  disth:'Space evenly left to right', distv:'Space evenly top to bottom'
+  disth:'Space evenly left to right', distv:'Space evenly top to bottom',
+  conc:'Concentric', sameW:'Same width', sameH:'Same height', same:'Same size'
 };
 function alignSelection(op){
   if (!SEL.length) return {err:'none'};
+  if (KEEP_SHAPE_OPS[op]) return keepAlignShapes(op);   // Concentric and the Same sizes (keep-lined-up.js)
   function cx(b){ return (b.x0 + b.x1) / 2; }
   function cy(b){ return (b.y0 + b.y1) / 2; }
   var items = SEL.map(function(i){ return {i:i, b:entBBox(DOC.ents[i])}; });
@@ -71,10 +73,12 @@ function alignBtnClick(op){
   if (r.err === 'none') toast('info', 'Select something first', 'Select the shapes to align, then choose an alignment.');
   else if (r.err === 'two') toast('info', 'Pick two or more', 'Shapes align to the LAST one you pick, which stays put. Select the shapes to move, then Shift-click the one to line them up with.');
   else if (r.err === 'three') toast('info', 'Pick three or more', 'Even spacing needs at least three shapes. The two outermost stay put and the rest are spaced between them.');
+  else if (r.kinds && !r.moved && !r.kept) toast('info', 'Not those shapes', 'Same size works on rectangles (made as wide or as tall as any shape), circles and arcs (the same radius as another circle or arc), and lines (the same length as another line).');
   else if (r.loops) toast('warn', 'Not kept lined up', 'The last one picked already follows ' + (r.loops === 1 ? 'that shape' : 'those shapes') +
                           ', so ' + (r.loops === 1 ? 'it' : 'they') + ' can’t follow it as well. To swap them round, click the link marker and stop keeping it first.');
   else if (r.block) toast('info', 'Lined up, not kept', 'Only one shape at a time can be kept centred in the material. To keep these centred together, group them first (Ctrl+G).');
-  else if (r.kept) toast('ok', 'Kept lined up', (r.kept === 1 ? 'It' : 'They') + ' will stay lined up when ' + (op.indexOf('mat') === 0 ? 'the material changes' : 'the last one picked moves or changes size') +
+  else if (r.kept) toast('ok', 'Kept lined up', (r.kept === 1 ? 'It' : 'They') + ' will stay ' + (KEEP_NAMES[op] || 'lined up with') + ' ' +
+                         (op.indexOf('mat') === 0 ? 'the material when it changes' : 'the last one picked when it moves or changes size') +
                          '. While ' + (r.kept === 1 ? 'it’s' : 'they’re') + ' selected, the link shows; click its marker to stop keeping it.');
   draw();
 }

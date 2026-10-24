@@ -7,18 +7,24 @@
    DOC.keeps lists them: {id, op, a, b}. a is the shape that moves (its id), b the one it follows (an id, or 'stock'
    for the material); op is the Align button's (ALIGN_OPS). After every change (persist), and after every step the
    History bar does again, each shape that follows is moved, without turning or resizing it, until it's in line
-   again. A shape follows at most one other in each direction, and never, through others, itself. A link whose
+   again; or, kept the same size (Same width, Same height, Same size), resized about its centre. Concentric keeps
+   circles' and arcs' own centres together (any other shape's, its box's). A shape follows at most one other in each
+   direction (across, up and down, its width, its height), and never, through others, itself. A link whose
    shape is gone moves to a shape in the same place (Fillet corners and Trim remake shapes), or is removed, and said.
    While a shape that has a link is selected, the link is drawn; click its marker to stop keeping it. */
 var KEEP_OPS = {
   center: {x: 'c', y: 'c'}, hcenter: {x: 'c'}, vcenter: {y: 'c'},
   left: {x: 'lo'}, right: {x: 'hi'}, top: {y: 'hi'}, bottom: {y: 'lo'},
-  mat: {x: 'c', y: 'c'}, matx: {x: 'c'}, maty: {y: 'c'}
+  mat: {x: 'c', y: 'c'}, matx: {x: 'c'}, maty: {y: 'c'},
+  conc: {x: 'p', y: 'p'}, sameW: {w: 1}, sameH: {h: 1}, same: {w: 1, h: 1}
 };
+var KEEP_AXES = ['x', 'y', 'w', 'h'];
+function keepSizeOp(op){ return !!(KEEP_OPS[op] && (KEEP_OPS[op].w || KEEP_OPS[op].h)); }
 var KEEP_NAMES = {
   center: 'centred on', hcenter: 'centred left-right on', vcenter: 'centred top-bottom on',
-  left: 'left edge in line with', right: 'right edge in line with', top: 'top edge in line with', bottom: 'bottom edge in line with',
-  mat: 'centred on', matx: 'centred left-right on', maty: 'centred top-bottom on'
+  left: 'with the left edge in line with', right: 'with the right edge in line with', top: 'with the top edge in line with', bottom: 'with the bottom edge in line with',
+  mat: 'centred on', matx: 'centred left-right on', maty: 'centred top-bottom on',
+  conc: 'concentric with', sameW: 'the same width as', sameH: 'the same height as', same: 'the same size as'
 };
 var KEEP_BOX = typeof WeakMap === 'function' ? new WeakMap() : null;   // where each link's two shapes were, to find them again
 var KEEP_TOL = 0.01;                                                    // mm
@@ -35,14 +41,71 @@ function keepAt(b, how, axis){
   var lo = axis === 'x' ? b.x0 : b.y0, hi = axis === 'x' ? b.x1 : b.y1;
   return how === 'lo' ? lo : how === 'hi' ? hi : (lo + hi) / 2;
 }
-// How far a's shape has to move to be in line again: {dx, dy}, or null if either shape isn't there
-function keepDelta(k){
-  var op = KEEP_OPS[k.op], fa = keepBox(k.a), fb = keepBox(k.b);
-  if (!op || !fa || !fb) return null;
-  return {dx: op.x ? keepAt(fb, op.x, 'x') - keepAt(fa, op.x, 'x') : 0,
-          dy: op.y ? keepAt(fb, op.y, 'y') - keepAt(fa, op.y, 'y') : 0};
+// A shape's own centre: a circle's or an arc's, or the middle of its box
+function keepPointE(e){
+  if (e.t === 'circle' || e.t === 'arc') return {x: e.cx, y: e.cy};
+  var b = entBBox(e);
+  return {x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2};
 }
-// The link that moves shape id in this direction ('x' or 'y'), or null
+// How far shape A has to move to be in line with b (an id, or 'stock') again: {dx, dy}, or null if b isn't there
+function keepDeltaE(op, A, b){
+  var o = KEEP_OPS[op], fb = keepBox(b);
+  if (!o || !A || !fb) return null;
+  if (o.x === 'p'){
+    var pa = keepPointE(A), pb = b === 'stock' ? {x: (fb.x0 + fb.x1) / 2, y: (fb.y0 + fb.y1) / 2} : keepPointE(entById(b));
+    return {dx: pb.x - pa.x, dy: pb.y - pa.y};
+  }
+  var fa = entBBox(A);
+  return {dx: o.x ? keepAt(fb, o.x, 'x') - keepAt(fa, o.x, 'x') : 0,
+          dy: o.y ? keepAt(fb, o.y, 'y') - keepAt(fa, o.y, 'y') : 0};
+}
+// The size a shape gives one kept the same size as it: {w, h}. A circle's or an arc's is its diameter, both ways.
+function keepSizeOf(e){
+  if (e.t === 'circle' || e.t === 'arc') return {w: 2 * e.r, h: 2 * e.r};
+  var b = entBBox(e);
+  return {w: b.x1 - b.x0, h: b.y1 - b.y0};
+}
+// Why shape A can't be kept the same size as B: '' if it can. A rectangle can take any shape's width and height; a
+// circle or an arc another's radius; a line another line's length. Other shapes aren't resized: their outlines would
+// have to be stretched out of shape.
+function keepSizeWhy(A, B){
+  if (!A || !B) return 'cant';
+  var round = function (e) { return e.t === 'circle' || e.t === 'arc'; };
+  if (A.t === 'rect') return '';
+  if (round(A)) return round(B) ? '' : 'kind';
+  if (A.t === 'line') return B.t === 'line' ? '' : 'kind';
+  return 'kind';
+}
+// Shape A resized to B's size, as op keeps it: a rectangle about its centre, a circle or an arc about its own, a line
+// from its start. True if it changed.
+function keepResizeE(op, A, B){
+  if (keepSizeWhy(A, B)) return false;
+  var o = KEEP_OPS[op], s = keepSizeOf(B), tol = 1e-9;
+  if (A.t === 'rect'){
+    var nw = o.w ? s.w : A.w, nh = o.h ? s.h : A.h;
+    if (!(nw > 0) || !(nh > 0) || (Math.abs(nw - A.w) < tol && Math.abs(nh - A.h) < tol)) return false;
+    A.x += (A.w - nw) / 2; A.y += (A.h - nh) / 2; A.w = nw; A.h = nh;
+    return true;
+  }
+  if (A.t === 'circle' || A.t === 'arc'){
+    if (!(B.r > 0) || Math.abs(A.r - B.r) < tol) return false;
+    A.r = B.r; return true;
+  }
+  var L = Math.hypot(A.x2 - A.x1, A.y2 - A.y1), T = Math.hypot(B.x2 - B.x1, B.y2 - B.y1);
+  if (L < 1e-9 || !(T > 0) || Math.abs(L - T) < tol) return false;
+  A.x2 = A.x1 + (A.x2 - A.x1) / L * T; A.y2 = A.y1 + (A.y2 - A.y1) / L * T;
+  return true;
+}
+// Shape A put right by op against b (an id, or 'stock'): moved into line, or resized. True if it changed.
+function keepFixE(op, A, b){
+  if (!A || !KEEP_OPS[op]) return false;
+  if (keepSizeOp(op)) return b !== 'stock' && keepResizeE(op, A, entById(b));
+  var d = keepDeltaE(op, A, b);
+  if (!d || (Math.abs(d.dx) < 1e-9 && Math.abs(d.dy) < 1e-9)) return false;
+  moveEntity(A, d.dx, d.dy);
+  return true;
+}
+// The link that moves or sizes shape id in this direction ('x', 'y', 'w' or 'h'), or null
 function keepOn(id, axis){
   var ks = DOC.keeps || [];
   for (var i = 0; i < ks.length; i++) if (ks[i].a === id && KEEP_OPS[ks[i].op] && KEEP_OPS[ks[i].op][axis]) return ks[i];
@@ -62,14 +125,19 @@ function keepLoop(a, b, axis){
 function keepCant(op, a, b){
   var o = KEEP_OPS[op];
   if (!o || !a || !b || a === b) return 'cant';
-  return ['x', 'y'].some(function (ax) { return o[ax] && keepLoop(a, b, ax); }) ? 'loop' : '';
+  if (keepSizeOp(op)){
+    if (b === 'stock') return 'cant';
+    var why = keepSizeWhy(entById(a), entById(b));
+    if (why) return why;
+  }
+  return KEEP_AXES.some(function (ax) { return o[ax] && keepLoop(a, b, ax); }) ? 'loop' : '';
 }
 // Keep shape a lined up with b (an id, or 'stock'), as op lines them up: {ok} or {why}.
 // A link a already had in the same direction is replaced: the newest says where it goes.
 function keepAdd(op, a, b){
   var why = keepCant(op, a, b);
   if (why) return {why: why};
-  var axes = ['x', 'y'].filter(function (ax) { return KEEP_OPS[op][ax]; });
+  var axes = KEEP_AXES.filter(function (ax) { return KEEP_OPS[op][ax]; });
   DOC.keeps = keepsArr().filter(function (k) {
     return !(k.a === a && axes.some(function (ax) { return KEEP_OPS[k.op] && KEEP_OPS[k.op][ax]; }));
   });
@@ -79,17 +147,17 @@ function keepAdd(op, a, b){
 // The links a shape is in, either end
 function keepsOf(id){ return (DOC.keeps || []).filter(function (k) { return k.a === id || k.b === id; }); }
 
-// Every shape that follows another moved back in line, a few times round for shapes that follow shapes that
-// follow others. Returns the links that moved their shape.
+// Every shape that follows another moved back in line, or to its size, a few times round for shapes that follow
+// shapes that follow others. Sizes first in each round: a shape resized about its centre is then put back in line.
+// Returns the links that changed their shape.
 function keepsApply(){
   var ks = DOC.keeps || [], moved = [];
   if (!ks.length) return moved;
+  var order = ks.filter(function (k) { return keepSizeOp(k.op); }).concat(ks.filter(function (k) { return !keepSizeOp(k.op); }));
   for (var pass = 0; pass < 10; pass++){
     var any = false;
-    ks.forEach(function (k) {
-      var d = keepDelta(k);
-      if (!d || (Math.abs(d.dx) < 1e-9 && Math.abs(d.dy) < 1e-9)) return;
-      moveEntity(entById(k.a), d.dx, d.dy);
+    order.forEach(function (k) {
+      if (!keepFixE(k.op, entById(k.a), k.b)) return;
       any = true;
       if (moved.indexOf(k) < 0) moved.push(k);
     });
@@ -160,6 +228,7 @@ function keepEnds(k){
   if (!op || !fa || !fb) return null;
   var f = {x: op.x ? keepAt(fa, op.x, 'x') : (fa.x0 + fa.x1) / 2, y: op.y ? keepAt(fa, op.y, 'y') : (fa.y0 + fa.y1) / 2};
   var t = {x: op.x ? keepAt(fb, op.x, 'x') : (fb.x0 + fb.x1) / 2, y: op.y ? keepAt(fb, op.y, 'y') : (fb.y0 + fb.y1) / 2};
+  if (op.x === 'p'){ f = keepPointE(entById(k.a)); t = f; }      // concentric: a cross on the centre they share
   return {f: w2s(f.x, f.y), t: w2s(t.x, t.y), fa: fa, fb: k.b === 'stock' ? null : fb};
 }
 function keepsShown(){
@@ -235,6 +304,29 @@ function keepToggle(){
   UICFG.alignKeep = !keepMode(); uiCfgSave();
   keepBtnSync();
   toast('info', keepMode() ? 'Keep lined up is on' : 'Keep lined up is off',
-        keepMode() ? 'The Align buttons now keep shapes lined up: change or move the last one picked (or the material) and the others follow. Space evenly isn’t kept.'
+        keepMode() ? 'The Align buttons, Concentric and Same size now keep shapes that way: change or move the last one picked (or the material) and the others follow. Space evenly isn’t kept.'
                   : 'The Align buttons line shapes up once. Links already made are kept; click a link’s marker to stop keeping it.');
+}
+
+/* ---- Concentric, Same width, Same height, Same size: buttons beside Align's. The other shapes are put right against
+   the last one picked, which stays as it is, and kept that way while Keep lined up is on. */
+var KEEP_SHAPE_OPS = {conc: 'Concentric', sameW: 'Same width', sameH: 'Same height', same: 'Same size'};
+// {moved, kept, loops, kinds}, or {err: 'two'}
+function keepAlignShapes(op){
+  if (SEL.length < 2) return {err: 'two'};
+  var ents = SEL.map(function (i) { return DOC.ents[i]; }), B = ents[ents.length - 1], b = entId(B);
+  var res = {moved: 0, kept: 0, loops: 0, kinds: 0}, change = [], keep = [];
+  ents.slice(0, -1).forEach(function (A) {
+    if (keepSizeOp(op) && keepSizeWhy(A, B)){ res.kinds++; return; }
+    var a = entId(A);
+    if (keepMode()){ if (keepCant(op, a, b)) res.loops++; else keep.push(a); }
+    if (keepFixE(op, cloneEnt(A), b)) change.push(A);          // tried on a copy: a step only when something happens
+  });
+  res.moved = change.length; res.kept = keep.length;
+  if (!change.length && !keep.length) return res;
+  pushUndo(KEEP_SHAPE_OPS[op] + (keep.length ? ', kept' : ''));
+  change.forEach(function (A) { keepFixE(op, A, b); });
+  keep.forEach(function (a) { keepAdd(op, a, b); });
+  persist();
+  return res;
 }
