@@ -33,6 +33,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.6.2-beta.67 — Keep lined up, Concentric and Same size
+- Includes Design 0.157.0 and 0.158.0: with Keep lined up on, the Align buttons keep shapes lined up when something
+  changes (a dimension, a parameter, a History step, a drag, the material); Concentric, and Same width, Same height and
+  Same size, done once or kept.
+
 ### 0.6.2-beta.66 — the Z nudge lands in seconds, and the readout shows it
 - Includes Control 0.41.0: only about 4 s of a job is queued at the machine, so a Z nudge lands in seconds (it took
   minutes on long surfacing rows); the Z readout includes the nudge.
