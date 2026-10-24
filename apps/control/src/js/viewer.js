@@ -28,13 +28,33 @@ var orbit = {theta: -Math.PI/4, phi: Math.PI/3.2, radius: 400, target: new THREE
 
 function w3(x,y,z){ return new THREE.Vector3(x, z, -y); } // CNC -> three
 
+// Where the 3D preview goes, when it can't be shown: why, and that the rest of Control works
+function view3dOff(){
+  var v = document.getElementById('viewport');
+  if (!v || document.getElementById('view3dOff')) return;
+  var n = document.createElement('div');
+  n.id = 'view3dOff';
+  n.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted, #8794a1);font-size:14px;line-height:1.5';
+  n.textContent = 'The 3D preview can’t be shown on this computer: its 3D graphics (WebGL) aren’t available. ' +
+                  'Everything else works as usual: connecting, jogging, probing and running jobs.';
+  v.appendChild(n);
+}
 function initThree(){
   applyViewPal();                                      // start in the saved theme's colours
   viewportEl = document.getElementById('viewport');
   scene = new THREE.Scene();
   scene.background = new THREE.Color(cssNum('--bg', 0x14181d));
   camera = new THREE.PerspectiveCamera(45, 1, 0.1, 50000);
-  renderer3 = new THREE.WebGLRenderer({antialias:true});
+  // Without 3D graphics (WebGL), the preview can't be drawn: say so where it goes, and carry on without it. It used to
+  // throw here, the first thing Control set up, so no button worked (Electron 42 on a Linux PC with no graphics card,
+  // 2026-10-24: "Start this job?" couldn't be answered).
+  try { renderer3 = new THREE.WebGLRenderer({antialias:true}); } catch (e) { renderer3 = null; }
+  if (!renderer3){
+    view3dOff();
+    buildStage(); buildViewCube();                     // the rest of Control adds to the scene: it's kept, not drawn
+    (function loop(){ requestAnimationFrame(loop); tick(); })();   // playback still moves on
+    return;
+  }
   renderer3.setPixelRatio(window.devicePixelRatio || 1);
   viewportEl.appendChild(renderer3.domElement);
 

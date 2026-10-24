@@ -127,7 +127,8 @@ var SAMPLE = [
 ].join('\n');
 
 function wire(){
-  initThree();
+  // the 3D preview first; whatever goes wrong with it, the buttons below are still wired (viewer.js)
+  try { initThree(); } catch (e) { console.error(e); view3dOff(); }
   helpWire({context: controlHelpWhere, own: /^control-/, icons: HELP_ICONS});               // F1 and Help in the header: the guides, in a window over this one
 
   document.getElementById('openBtn').addEventListener('click', function(){

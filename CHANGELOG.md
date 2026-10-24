@@ -36,7 +36,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 ### 0.7.0-beta.2 — Electron 42
 - **Electron 33 → 42** (Dependabot #6, done by hand so the lock file kept the app's version): Electron 33 is no longer
   given security fixes, and Dependabot flagged a high-severity one (compromised eMudhra intermediate certificates)
-  among others. Nothing in the app needed changing.
+  among others.
+- Includes Control 0.41.1: Control works on a computer without 3D graphics, saying the 3D preview can't be shown.
+  GitHub's Linux build found it: Electron 42 no longer falls back to software 3D there, and Control's start-up stopped
+  at the preview. The build now prints the pages' logs when its packaged job fails, and reads console messages the
+  way Electron 42 gives them.
 - Checked before release: the desktop app's tests (113 pass; the serial test runs on GitHub, needing socat); Pause &
   lift and Resume end to end in the real app against the simulated machine (`e2e-pause.mjs`); the app started with
   nothing in its log; 45 of the docs' 46 screenshots taken on it, looking as they did (cam-inlay fails on Electron 33
@@ -793,6 +797,16 @@ into the PC; and with a long list, Cancel scrolled away.
   the icon; three.js bundled so it works offline; a Content Security Policy.
 
 ## 454 Control
+
+### 0.41.1 — works on a computer without 3D graphics
+Found by the Linux build's packaged test on Electron 42 (2026-10-24): on a computer without 3D graphics (WebGL), the 3D
+preview threw as Control started, and since it was the first thing set up (`wire` → `initThree`), nothing after it
+was: no button worked, so "Start this job?" and "Home the machine?" couldn't be answered. Electron 33 had quietly fallen
+back to software 3D there; Electron 42 doesn't. Now the preview says where it goes that it can't be shown, and
+everything else works (`view3dOff`, viewer.js; `wire` carries on whatever the preview does). Reproduced in the real app
+here with `--disable-gpu --disable-software-rasterizer` (the WebGL error, then "Start this job?" asked 150 times and
+the job never starting); fixed, the same run homes, starts and finishes the job, with the note shown; with graphics, no
+note and nothing different.
 
 ### 0.41.0 — the Z nudge lands in seconds, and the readout shows it **(machine)**
 Clint, 2026-10-23, on beta.65: “the Z nudge still doesn’t work”. On his wasteboard file, on the simulated machine with
