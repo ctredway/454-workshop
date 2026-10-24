@@ -235,6 +235,8 @@ jobs:
             echo '--- the app:'; grep -v appimage_extracted_ /tmp/p454-pk-electron.log | tail -80
             echo '--- the simulated machine:'; cat /tmp/p454-pk-bridge.log
             echo '--- the routes the app took:'; cat /tmp/p454-pk-result.json.routes 2>/dev/null | tail -20
+            echo '--- 454 Control page log:'; tail -120 /tmp/p454-pk-result.json.console 2>/dev/null
+            echo '--- 454 Design page log:'; tail -40 /tmp/p454-pk-design.json.console 2>/dev/null
             exit 1; }
 
       - name: Attach to this run

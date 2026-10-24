@@ -315,7 +315,12 @@ function testHook() {
   let left = jobs.length;
   jobs.forEach((j) => {
     const w = j.win();
-    w.webContents.on('console-message', (_e, level, message, line, source) => fs.appendFileSync(j.out + '.console', `[${level}] ${message} (${path.basename(source || '')}:${line})\n`));
+    // (Electron 35 and later give the details on the event; the separate arguments are going)
+    w.webContents.on('console-message', (e, ...old) => {
+      const level = e.level !== undefined ? e.level : old[0], message = e.message !== undefined ? e.message : old[1];
+      const line = e.lineNumber !== undefined ? e.lineNumber : old[2], source = e.sourceId !== undefined ? e.sourceId : old[3];
+      fs.appendFileSync(j.out + '.console', `[${level}] ${message} (${path.basename(source || '')}:${line})\n`);
+    });
     w.webContents.once('did-finish-load', async () => {
       // P454_E2E_HIDE="after:for" (seconds): hide the window for a while, as when it's minimised (the soak test)
       const hide = /^(\d+):(\d+)$/.exec(process.env.P454_E2E_HIDE || '');
