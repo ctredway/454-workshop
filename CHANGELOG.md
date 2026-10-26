@@ -809,6 +809,14 @@ into the PC; and with a long list, Cancel scrolled away.
 
 ## 454 Control
 
+### 0.42.0 — Back to Jog from the BitZero panel
+Clint asked (2026-10-26): Probe… on the Jog & zero panel closed it, and after probing he had to open it again by hand,
+though he usually wasn't done jogging. Opened from there, the BitZero panel now has **← Back to Jog**, which returns to
+the jog panel (`bzOpenFromJog`, `bzBackToJog` in bitzero.js). It's greyed out while a probe runs. ✕ and Esc still close
+it all, and opened from the Machine tab there's no Back button. At a tool change, going to the probe from the jog
+panel no longer brings the tool-change prompt up behind it (`jogModalHide`); it comes back when the panels are closed.
+Tested in `probe-back.test.mjs`.
+
 ### 0.41.1 — works on a computer without 3D graphics
 Found by the Linux build's packaged test on Electron 42 (2026-10-24): on a computer without 3D graphics (WebGL), the 3D
 preview threw as Control started, and since it was the first thing set up (`wire` → `initThree`), nothing after it

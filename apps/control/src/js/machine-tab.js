@@ -135,6 +135,7 @@ function wireMachine(){
   // ----- BitZero modal -----
   document.getElementById('bzOpen').addEventListener('click', bzOpenModal);
   document.getElementById('bzClose').addEventListener('click', bzCloseModal);
+  document.getElementById('bzBack').addEventListener('click', bzBackToJog);
   document.getElementById('bzEstop').addEventListener('click', emergencyStop);
   document.getElementById('bzStart').addEventListener('click', bzStart);
   document.getElementById('cfgCheck').addEventListener('click', function(){ controllerCheckShow(false); });
@@ -258,10 +259,7 @@ function wireMachine(){
     });
   });
   document.getElementById('jogTool').addEventListener('click', toolChangeStart);
-  document.getElementById('jogProbe').addEventListener('click', function(){
-    jogModalClose();   // releases keyboard jog cleanly
-    bzOpenModal();
-  });
+  document.getElementById('jogProbe').addEventListener('click', bzOpenFromJog);
 
   // ----- Spindle and Console windows (they were sections of the Machine tab) -----
   document.getElementById('spOpen').addEventListener('click', spOpenModal);

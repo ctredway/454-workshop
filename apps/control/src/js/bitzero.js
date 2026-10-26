@@ -1,5 +1,5 @@
 /* ----- BitZero (standalone Z zeroing) ----- */
-var BZ = {circuitOk:false};
+var BZ = {circuitOk:false, fromJog:false};
 function bzStatus(t){
   var el = document.getElementById('bzStatusLine');
   if (el) el.textContent = t;
@@ -18,14 +18,30 @@ function bzOpenModal(){
   if (!SERIAL.connected){ logC('err', 'connect to the machine first'); return; }
   if (JOB.active && !atToolChange()) return;
   BZ.circuitOk = false;
+  BZ.fromJog = false;
+  document.getElementById('bzBack').hidden = true;
+  document.getElementById('bzModal').hidden = false;
   bzUpdateCircuit();
   bzStatus('ready');
-  document.getElementById('bzModal').hidden = false;
+  return true;
 }
-function bzCloseModal(){ document.getElementById('bzModal').hidden = true; if (atToolChange()) maybeToolPrompt(); }
+function bzOpenFromJog(){                               // Jog & zero's Probe…: Back to Jog returns there
+  jogModalHide();
+  if (!bzOpenModal()){ jogModalOpen(); return; }
+  BZ.fromJog = true;
+  document.getElementById('bzBack').hidden = false;
+}
+function bzBackToJog(){
+  if (PROBE.active){ bzStatus('wait for the probe to finish'); return; }
+  document.getElementById('bzModal').hidden = true;   // no tool-change prompt: the jog panel takes over
+  BZ.fromJog = false;
+  jogModalOpen();
+}
+function bzCloseModal(){ BZ.fromJog = false; document.getElementById('bzModal').hidden = true; if (atToolChange()) maybeToolPrompt(); }
 function bzUpdateCircuit(){
   var el = document.getElementById('bzCircuit');
   if (!el || document.getElementById('bzModal').hidden) return;
+  document.getElementById('bzBack').disabled = !!PROBE.active;
   if (!BZ.circuitOk && !PROBE.active && SERIAL.pins.indexOf('P') >= 0){
     BZ.circuitOk = true;
     logC('sys', 'BitZero: probe circuit verified');

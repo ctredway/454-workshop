@@ -47,8 +47,11 @@ function jogModalOpen(){
   document.getElementById('jogModal').hidden = false;
 }
 function jogModalClose(){
-  document.getElementById('jogModal').hidden = true;
+  jogModalHide();
   if (atToolChange()) setTimeout(maybeToolPrompt, 0);   // back to the tool-change prompt
+}
+function jogModalHide(){                                // releases keyboard jog; another panel takes over
+  document.getElementById('jogModal').hidden = true;
   KEYJOG.code = null;
   jogFastStop(true);
   document.querySelectorAll('#jogGrid button.kbdOn').forEach(function(b){ b.classList.remove('kbdOn'); });

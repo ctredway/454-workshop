@@ -917,6 +917,7 @@
   <div id="bzPanel">
     <div id="jogHead" style="margin-bottom:8px">
       <button id="bzEstop" class="estop" title="EMERGENCY STOP — immediate halt">STOP</button>
+      <button id="bzBack" hidden title="Back to the Jog &amp; zero panel, without closing it all">← Back to Jog</button>
       <b style="font-size:15px">BitZero — Z zero</b> <span class="helpAt" data-k="probepanel"></span>
       <div style="flex:1"></div>
       <button id="bzClose" title="Close (Esc)">✕</button>
@@ -983,7 +984,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // 454 Control's version: shown in the header and the About window, and in the tooltip on its name.
 // The G-code parser, which used to live here, is packages/gcode/src/parser.cjs, shared with the
 // @454/gcode package.
-var CONTROL_VERSION = '0.41.1';
+var CONTROL_VERSION = '0.42.0';
 /* ============================================================
    THE G-CODE PARSER: the GRBL / Carbide Motion dialect
    Produces: segments (tessellated micro-moves), issues, tools
@@ -3420,7 +3421,7 @@ function bsRefNote(){
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { bitSetterSeekRate: bitSetterSeekRate };   // for the tests
 /* ----- BitZero (standalone Z zeroing) ----- */
-var BZ = {circuitOk:false};
+var BZ = {circuitOk:false, fromJog:false};
 function bzStatus(t){
   var el = document.getElementById('bzStatusLine');
   if (el) el.textContent = t;
@@ -3439,14 +3440,30 @@ function bzOpenModal(){
   if (!SERIAL.connected){ logC('err', 'connect to the machine first'); return; }
   if (JOB.active && !atToolChange()) return;
   BZ.circuitOk = false;
+  BZ.fromJog = false;
+  document.getElementById('bzBack').hidden = true;
+  document.getElementById('bzModal').hidden = false;
   bzUpdateCircuit();
   bzStatus('ready');
-  document.getElementById('bzModal').hidden = false;
+  return true;
 }
-function bzCloseModal(){ document.getElementById('bzModal').hidden = true; if (atToolChange()) maybeToolPrompt(); }
+function bzOpenFromJog(){                               // Jog & zero's Probe…: Back to Jog returns there
+  jogModalHide();
+  if (!bzOpenModal()){ jogModalOpen(); return; }
+  BZ.fromJog = true;
+  document.getElementById('bzBack').hidden = false;
+}
+function bzBackToJog(){
+  if (PROBE.active){ bzStatus('wait for the probe to finish'); return; }
+  document.getElementById('bzModal').hidden = true;   // no tool-change prompt: the jog panel takes over
+  BZ.fromJog = false;
+  jogModalOpen();
+}
+function bzCloseModal(){ BZ.fromJog = false; document.getElementById('bzModal').hidden = true; if (atToolChange()) maybeToolPrompt(); }
 function bzUpdateCircuit(){
   var el = document.getElementById('bzCircuit');
   if (!el || document.getElementById('bzModal').hidden) return;
+  document.getElementById('bzBack').disabled = !!PROBE.active;
   if (!BZ.circuitOk && !PROBE.active && SERIAL.pins.indexOf('P') >= 0){
     BZ.circuitOk = true;
     logC('sys', 'BitZero: probe circuit verified');
@@ -3818,8 +3835,11 @@ function jogModalOpen(){
   document.getElementById('jogModal').hidden = false;
 }
 function jogModalClose(){
-  document.getElementById('jogModal').hidden = true;
+  jogModalHide();
   if (atToolChange()) setTimeout(maybeToolPrompt, 0);   // back to the tool-change prompt
+}
+function jogModalHide(){                                // releases keyboard jog; another panel takes over
+  document.getElementById('jogModal').hidden = true;
   KEYJOG.code = null;
   jogFastStop(true);
   document.querySelectorAll('#jogGrid button.kbdOn').forEach(function(b){ b.classList.remove('kbdOn'); });
@@ -6555,6 +6575,7 @@ function wireMachine(){
   // ----- BitZero modal -----
   document.getElementById('bzOpen').addEventListener('click', bzOpenModal);
   document.getElementById('bzClose').addEventListener('click', bzCloseModal);
+  document.getElementById('bzBack').addEventListener('click', bzBackToJog);
   document.getElementById('bzEstop').addEventListener('click', emergencyStop);
   document.getElementById('bzStart').addEventListener('click', bzStart);
   document.getElementById('cfgCheck').addEventListener('click', function(){ controllerCheckShow(false); });
@@ -6678,10 +6699,7 @@ function wireMachine(){
     });
   });
   document.getElementById('jogTool').addEventListener('click', toolChangeStart);
-  document.getElementById('jogProbe').addEventListener('click', function(){
-    jogModalClose();   // releases keyboard jog cleanly
-    bzOpenModal();
-  });
+  document.getElementById('jogProbe').addEventListener('click', bzOpenFromJog);
 
   // ----- Spindle and Console windows (they were sections of the Machine tab) -----
   document.getElementById('spOpen').addEventListener('click', spOpenModal);
