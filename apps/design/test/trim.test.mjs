@@ -119,3 +119,41 @@ test('the hover preview agrees: a rectangle shows what Trim would take', () => {
   assert.deepEqual(ents(), [{ t: 'rect', x: 0, y: 0, w: 100, h: 60 }, { t: 'line', x1: 30, y1: -20, x2: 30, y2: 80 }], 'the preview changes nothing');
   D.run(`setTool('select'); 1`);
 });
+
+// ---- Extend on the open end of a polyline or outline (trim-extend.js extendOutlineEnd). Clint, 2026-10-26: "if
+// vectors are joined the end of one cannot be extended" ----
+const ext = (x, y) => D.doExtend({ x, y });
+test('Extend: a joined polyline’s end runs out to the next shape, along its last segment', () => {
+  // an L joined from two lines: (0,0) to (40,0) to (40,30); a wall at y = 50
+  drawing([{ t: 'poly', closed: false, pts: [[0, 0], [40, 0], [40, 30]], layer: 'L1' }, { t: 'line', x1: 0, y1: 50, x2: 100, y2: 50, layer: 'L1' }]);
+  assert.equal(ext(40, 29), true);
+  assert.deepEqual(pts(ents()[0]), [[0, 0], [40, 0], [40, 50]], 'up to the wall');
+  assert.equal(D.run('UNDO.length'), 1, 'one step');
+});
+test('Extend: the other end, nearer the click; and nothing ahead, nothing done', () => {
+  drawing([{ t: 'poly', closed: false, pts: [[10, 0], [40, 0], [40, 30]], layer: 'L1' }, { t: 'line', x1: -20, y1: -10, x2: -20, y2: 10, layer: 'L1' }]);
+  assert.equal(ext(11, 0), true);
+  assert.deepEqual(pts(ents()[0])[0], [-20, 0], 'the start, out to the line on the left');
+  assert.equal(ext(40, 29), false, 'the top end: nothing above it');
+});
+test('Extend: an end runs into another part of its own outline', () => {
+  // a hook: its end, going left at y = 20, meets its own upright at x = 0
+  drawing([{ t: 'poly', closed: false, pts: [[0, 0], [0, 40], [30, 40], [30, 20], [20, 20]], layer: 'L1' }]);
+  assert.equal(ext(21, 20), true);
+  assert.deepEqual(pts(ents()[0])[4], [0, 20]);
+});
+test('Extend: a curved end goes on round its circle, the same circle', () => {
+  // a quarter circle of radius 20 round (0,0), from (20,0) to (0,20), ending an outline from (20,-30); a wall at x = -15
+  const b = Math.tan(Math.PI / 8);                                            // a quarter turn, counter-clockwise
+  drawing([{ t: 'path', closed: false, pts: [[20, -30, 0], [20, 0, b], [0, 20, 0]], layer: 'L1' }, { t: 'line', x1: -15, y1: -40, x2: -15, y2: 40, layer: 'L1' }]);
+  assert.equal(ext(1, 20), true);
+  const e = ents()[0], end = e.pts[2];
+  assert.ok(near(Math.hypot(end[0], end[1]), 20), 'still on the circle');
+  assert.ok(near(end[0], -15), 'at the wall');
+  const sweep = 4 * Math.atan(e.pts[1][2]);
+  assert.ok(near(sweep, Math.PI / 2 + Math.acos(-15 / 20) - Math.PI / 2), 'the arc now sweeps that much further');
+});
+test('a closed outline has no end to extend', () => {
+  drawing([{ t: 'poly', closed: true, pts: [[0, 0], [40, 0], [40, 30]], layer: 'L1' }, { t: 'line', x1: 0, y1: 50, x2: 100, y2: 50, layer: 'L1' }]);
+  assert.equal(ext(40, 29), false);
+});

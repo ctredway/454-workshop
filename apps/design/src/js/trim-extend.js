@@ -190,6 +190,61 @@ function trimPathEntity(idx, w, as){
   DOC.ents.splice.apply(DOC.ents, [idx,1].concat(newEnts));
   return true;
 }
+// The open end of a polyline or outline (one made by Join, say), nearer w, run out to the next shape it meets, or to
+// another part of itself: a straight end segment along its line, a curved one round its circle. Clint, 2026-10-26: "if
+// vectors are joined the end of one cannot be extended". True if it was.
+function extendOutlineEnd(e, w){
+  var n = e.pts ? e.pts.length : 0;
+  if (n < 2 || e.closed) return false;
+  var last = Math.hypot(w.x - e.pts[n-1][0], w.y - e.pts[n-1][1]) <= Math.hypot(w.x - e.pts[0][0], w.y - e.pts[0][1]);
+  var iE = last ? n - 1 : 0, iA = last ? n - 2 : 1;                 // the end, and the point before it
+  var A = {x: e.pts[iA][0], y: e.pts[iA][1]}, E = {x: e.pts[iE][0], y: e.pts[iE][1]};
+  // the segment's bulge going from A to the end (a segment's bulge is kept on its first point, and runs that way)
+  var bAE = e.t === 'path' ? (last ? (e.pts[n-2][2] || 0) : -(e.pts[0][2] || 0)) : 0;
+  // what it can reach: every other shape on the sheet, and itself without this end segment
+  var self = JSON.parse(JSON.stringify(e)); self.pts = last ? self.pts.slice(0, n - 1) : self.pts.slice(1); delete self._tess; delete self._tess2;
+  var prims = [];
+  DOC.ents.forEach(function(o){ if (o !== e && entOnSheet(o)) primsOf(o).forEach(function(pr){ prims.push(pr); }); });
+  if (self.pts.length >= 2) primsOf(self).forEach(function(pr){ prims.push(pr); });
+  if (Math.abs(bAE) < 1e-9){                                         // straight: along its line, past the end
+    var best = null;
+    prims.forEach(function(pr){
+      if (pr.c === 0){
+        var h = xLineLine(A.x,A.y,E.x,E.y, pr.x1,pr.y1,pr.x2,pr.y2);
+        if (h && h.u > -1e-9 && h.u < 1+1e-9 && h.t > 1+1e-9 && (!best || h.t < best.t)) best = h;
+      } else {
+        xLineCircle(A.x,A.y,E.x,E.y, pr.cx,pr.cy,pr.r).forEach(function(h2){
+          if (h2.t > 1+1e-9 && angOnArc(pr, Math.atan2(h2.y-pr.cy, h2.x-pr.cx)) && (!best || h2.t < best.t)) best = h2;
+        });
+      }
+    });
+    if (!best) return false;
+    pushUndo();
+    e.pts[iE][0] = best.x; e.pts[iE][1] = best.y;
+  } else {                                                           // curved: on round its circle
+    var th = 4 * Math.atan(bAE), cx0 = E.x - A.x, cy0 = E.y - A.y, c = Math.hypot(cx0, cy0);
+    if (c < 1e-9) return false;
+    var off = (c / 2) / Math.tan(th / 2), mx = (A.x + E.x) / 2, my = (A.y + E.y) / 2;
+    var C = {x: mx - cy0 / c * off, y: my + cx0 / c * off}, r = Math.hypot(E.x - C.x, E.y - C.y), ccw = th > 0;
+    var aE = Math.atan2(E.y - C.y, E.x - C.x), bestG = null;
+    var gainTo = function(ang){ return ccw ? angNorm(ang - aE) : angNorm(aE - ang); };
+    prims.forEach(function(pr){
+      var pts = pr.c === 0 ? xLineCircle(pr.x1,pr.y1,pr.x2,pr.y2, C.x,C.y,r).filter(function(h){ return h.t > -1e-4 && h.t < 1+1e-4; })
+                           : xCircleCircle(C.x,C.y,r, pr.cx,pr.cy,pr.r).filter(function(q){ return angOnArc(pr, Math.atan2(q.y-pr.cy, q.x-pr.cx)); });
+      pts.forEach(function(q){
+        var g = gainTo(Math.atan2(q.y - C.y, q.x - C.x));
+        if (g > 1e-6 && Math.abs(th) + g < 2*Math.PI - 1e-6 && (!bestG || g < bestG.g)) bestG = {g: g, x: q.x, y: q.y};
+      });
+    });
+    if (!bestG) return false;
+    pushUndo();
+    var th2 = (ccw ? 1 : -1) * (Math.abs(th) + bestG.g), b2 = Math.tan(th2 / 4);
+    e.pts[iE][0] = bestG.x; e.pts[iE][1] = bestG.y;
+    if (last) e.pts[n-2][2] = b2; else e.pts[0][2] = -b2;
+  }
+  e._tess = null; e._tess2 = null;
+  return true;
+}
 function doExtend(w, at){
   var idx = at !== undefined ? at : pickEntity(w);
   if (idx === null) return false;
@@ -243,5 +298,6 @@ function doExtend(w, at){
     if (dEnd) e.a1 = bestGain.a; else e.a0 = bestGain.a;
     return true;
   }
+  if ((e.t === 'poly' || e.t === 'path') && !e.closed) return extendOutlineEnd(e, w);
   return false;
 }

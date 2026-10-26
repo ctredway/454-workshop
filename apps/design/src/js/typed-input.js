@@ -62,7 +62,7 @@ var STAGE_LABEL = {
   fillet0dog:'Dog-bone \u2014 bit radius {R} (\u00d8{D} bit) \u00b7 click a corner to relieve it so a square part fits \u00b7 type a new radius anytime \u00b7 click a rounded corner to make it sharp again',
   fillet0t:'T-bone \u2014 bit radius {R} (\u00d8{D} bit) \u00b7 click a corner, nearer the edge the relief should cut into \u00b7 type a new radius anytime \u00b7 click a rounded corner to make it sharp again',
   trim0:  'Trim \u2014 click the piece to remove (lines, arcs, circles); crossings bound the cut',
-  extend0:'Extend \u2014 click near the end of a line or arc to run it to the next crossing',
+  extend0:'Extend \u2014 click near the end of a line, an arc or a polyline to run it to the next crossing',
   node0:  'Edit nodes \u2014 click a polyline or path to show its points',
   dim0:   'Dimension \u2014 click a shape, then another, to set the distance between them \u00b7 click one shape twice for its own size \u00b7 click an existing value to change it',
   dim1:   'Dimension \u2014 now click what to measure it TO; that one stays put (or the same shape again for its own size)',

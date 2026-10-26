@@ -1502,6 +1502,14 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.162.0 — Extend works on joined shapes
+Clint, 2026-10-26: "if vectors are joined the end of one cannot be extended". Extend knew lone lines and arcs only, and
+Join makes one polyline or outline. Now the open end of a polyline or outline (the end nearer the click) runs out to the
+next shape (`extendOutlineEnd`, trim-extend.js): a straight end segment along its line, a curved one round the same
+circle (its bulge widened to match). It can run into another part of its own outline. A closed one has no end. The
+pointer's preview and the History bar's step use it as they do for lines. trim.test.mjs, 5 more tests; broken on
+purpose 3 ways, each caught.
+
 ### 0.161.3 — Fit fits what's drawn
 Clint, 2026-10-26: "the fit routine, if there are no vectors drawn, it should fit the material boundaries, if there are
 vectors, it should fit the drawn vectors". Fit (the button, now just **Fit**, Home, opening or importing a drawing) fits

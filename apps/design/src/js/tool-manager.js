@@ -75,12 +75,12 @@ function hoverExtend(w){
   var idx = pickEntity(w);
   if (idx === null) return {action:'none'};
   var e = DOC.ents[idx];
-  if (e.t === 'line' || e.t === 'arc'){
+  if (e.t === 'line' || e.t === 'arc' || ((e.t === 'poly' || e.t === 'path') && !e.closed)){
     var add = extendPreview(w);
     if (!add || !add.length) return {action:'none', hint:'nothing ahead to extend to', at:{x:w.x, y:w.y}};
     return {action:'do', hint:'extend', idx:idx, grow:add};
   }
-  return {action:'none', hint:'extend needs a line or arc'};
+  return {action:'none', hint:'extend needs a line, an arc, or an open end'};
 }
 var HOVER = null; // last computed hover status, for cursor feedback in draw()
 // the Radius box in the prompt bar: shows the fillet radius in the drawing's units

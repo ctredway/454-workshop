@@ -259,7 +259,7 @@ function toolClick(w, snap){
     if (doExtend(w)){ histRecipe(exAt && {op: 'extend', ids: [exAt.id], at: exAt.at}); persist(); stagePrompt('extend0'); }
     else {
       stagePrompt('editMiss');
-      toast('warn', 'Nothing to extend to', 'Extend runs a line or arc out to the next shape it would meet. Nothing lies ahead of that end.');
+      toast('warn', 'Nothing to extend to', 'Extend runs a line, an arc or the open end of a polyline out to the next shape it would meet. Nothing lies ahead of that end.');
     }
   }
   else if (TOOL === 'guide'){
