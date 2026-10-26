@@ -33,6 +33,12 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.7.0-beta.4 — tool panels, Make toolpaths, drawings keep their units
+- Includes Design 0.161.1 to 0.169.1: Array, Rotate, Copy and the drawing tools (Rectangle, Circle, Ellipse, Polygon,
+  Star) are set up in panels, with a dashed preview, in place of typed codes; Array does rows and columns; Make
+  toolpaths proposes toolpaths for a drawing; a drawing keeps its units; dimensions stay on their edges after Fillet
+  corners; Fit fits what's drawn; Extend works on joined shapes; and fixes to History ids and remembered settings.
+
 ### 0.7.0-beta.3 — construction lines and mirrored copies that follow, Shift+D, a tidier prompt bar
 - Includes Design 0.160.0 to 0.161.0: construction lines stay attached to the points they were drawn from; mirrored
   copies stay mirrored (Mirror's new box, ticked by default); the prompt bar sits above the History bar and goes away

@@ -12,6 +12,27 @@ air-cut your next job before cutting material.
 The full record, in more detail than most people want, is the
 [change log on GitHub](https://github.com/ctredway/454-workshop/blob/main/CHANGELOG.md).
 
+## 0.7.0-beta.4
+
+Not released yet
+
+- **Tools are set up in panels, not typed codes.** In 454 Design, **Array**, **Rotate** and **Copy** open a panel beside
+  the drawing: pick the shapes, fill in plain boxes, and the result shows dashed before you click **OK**. The History
+  bar can change a rotation's angle or a copy's distance afterwards.
+- **Array does rows and columns.** A row is horizontal or vertical, and **Rows** repeats it as a grid: shelf-pin holes
+  in two columns in one go.
+- **Rectangle, Circle, Ellipse, Polygon and Star have a panel too.** Leave the size empty to draw by eye as before, or
+  type it and each click places one, with a dashed one following the pointer. Polygon's sides and Star's points have
+  − and + buttons, and a star is two clicks.
+- **Make toolpaths** (the wand in the Toolpaths panel) looks at a drawing and proposes toolpaths: parts cut out with
+  tabs, holes cut through, and round holes a drill in your library fits drilled. It says what it left out and why, and
+  adds nothing until you click **Add**. **(cutting)** Check each toolpath, and air-cut, before cutting material.
+- **A drawing keeps its units.** Made in inches, it opens in inches on any computer.
+- **Fixes:** dimensions stay on their edges after **Fillet corners**; **Fit** fits what's drawn (or the material when
+  nothing is); **Extend** works on the open ends of joined shapes; closing a message with its X takes it off the list
+  of recent ones; the panels remember their settings after Design is closed; a dimension on an array's copy keeps it
+  after the copies are changed on the History bar.
+
 ## 0.7.0-beta.3
 
 26 October 2026
