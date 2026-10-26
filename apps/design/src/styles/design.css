@@ -133,6 +133,21 @@
   #settingsPanel input[type=color]{width:38px;height:24px;padding:0;border:1px solid var(--line);border-radius:4px;background:none;cursor:pointer}
   #nestModal{position:fixed;inset:0;background:rgba(0,0,0,0.12);display:flex;align-items:flex-start;justify-content:flex-end;padding:72px 24px 0 0;z-index:200}
   #nestModal[hidden]{display:none}
+  #autoModal{position:fixed;inset:0;background:rgba(0,0,0,0.12);display:flex;align-items:flex-start;justify-content:flex-end;padding:72px 24px 0 0;z-index:200}
+  #autoModal[hidden]{display:none}
+  #autoPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 20px;width:420px;max-height:calc(100vh - 110px);overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.5)}
+  #autoPanel h3{margin:0 0 6px;font-size:16px}
+  #autoPanel .srow{display:flex;align-items:center;gap:8px;margin-top:10px}
+  #autoPanel .srow label{font-size:13px;color:var(--muted);white-space:nowrap}
+  #autoPanel select{flex:1;min-width:0}
+  #autoPanel .snote{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+  .autoItem{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+  .autoItem input{accent-color:var(--amber);margin-top:2px}
+  .autoItem b{display:block;font-size:13px}
+  .autoItem span{display:block;font-size:12px;color:var(--muted);line-height:1.45}
+  .autoItem .autoWarn{color:var(--amber)}
+  .autoStop{font-size:12.5px;color:var(--amber);margin:10px 0 0}
+  #autoLeft{margin:4px 0 0;padding-left:18px;font-size:12px;color:var(--muted);line-height:1.5}
   #paramModal{position:fixed;inset:0;background:rgba(0,0,0,0.12);display:flex;align-items:flex-start;justify-content:flex-end;padding:72px 24px 0 0;z-index:200}
   #paramModal[hidden]{display:none}
   #paramPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 20px;width:520px;max-width:calc(100vw - 48px);max-height:calc(100vh - 110px);overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,0.5)}

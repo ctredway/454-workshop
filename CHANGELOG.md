@@ -1502,6 +1502,33 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.163.0 — Make toolpaths: proposed from the drawing, added on OK
+Clint, 2026-10-26: "I am always looking for ways to go faster but I also know I need to go well. Can we create a routine
+that looks at a drawing and generate tool paths and give a short summary of what was generated." His rules, asked: holes
+and slots cut through; round holes a library bit fits, drilled; the bit used last; parts cut out with the tabs used last.
+- **The wand in the Toolpaths panel** (`autoOpen`, auto-toolpaths.js) proposes; a summary shows each toolpath (what, the
+  bit, how deep, the time) with a tick box, and what was left out and why; **Add** puts the ticked ones in the cutting
+  order as one step. Nothing is added before.
+- **What's what:** closed shapes on the sheet shown, by how many others they're inside (a part 0, a hole 1, a part in the
+  hole 2...). A round hole within 0.01 mm of a library bit (not a V-bit; a drill first) is drilled, one toolpath for each
+  bit, pecked a bit's width at a time when deeper than three bits. The rest of the holes are an inside profile, through,
+  and the parts an outside profile, through, with `cutTabsStart`'s tabs. The bit: the most recent cutting bit in the
+  library's Recently used (`autoCutters`), its settings as the editor takes them (`libToolSettingsOnto`, moved out of
+  `cutUseTool` word for word).
+- **Left out, and said:** text, open shapes and groups, shapes a toolpath already cuts, holes narrower than the bit (its
+  inside offset is empty), copies stacked on another shape (the same box within 0.05 mm, the same length round within 5%),
+  outlines that cross or double back on themselves, and outlines drawn round another closer than the bit is wide (an
+  offset copy: the bit can't cut both). Quietly: construction lines, hidden layers, other sheets. Nothing without the
+  material's thickness, or a library.
+- **Each worked out before it's offered** (`tpGenerate`): its time (`tpTimeSec`), its own warning, too deep for its bit
+  (`tpTooDeep`), and feeds or stepdown the library didn't have, and what was used.
+- **On his drawings** (their toolpaths taken off, a library like his): the arm inserts came out as he made them by hand,
+  90 holes drilled, 18 slots inside, 9 parts out, with Make editable's leftovers set aside and named (90 drill marks
+  doubling back, 90 stacked copies, 27 offset outlines). The filament stand: its 12 open shapes named (and its Job setup
+  says 1.2 mm thick, left from the arm inserts).
+- auto-toolpaths.test.mjs, 7 tests; broken on purpose 9 ways, each caught. In the real page: the summary, pictured in the
+  docs (design-make-toolpaths).
+
 ### 0.162.0 — Extend works on joined shapes
 Clint, 2026-10-26: "if vectors are joined the end of one cannot be extended". Extend knew lone lines and arcs only, and
 Join makes one polyline or outline. Now the open end of a polyline or outline (the end nearer the click) runs out to the

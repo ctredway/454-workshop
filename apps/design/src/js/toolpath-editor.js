@@ -62,25 +62,7 @@ function cutUseTool(id){
   CUT.toolChosen = !!id;
   var t = id ? libTool(id) : null;
   if (!t) return;
-  var mm = t.units === 'in' ? 25.4 : 1;
-  if (t.diameter) CUT.dia = +(t.diameter * mm).toFixed(3);
-  if (t.angle > 0 && t.angle < 180) CUT.vAngle = t.angle;               // a V-bit's included angle
-  CUT.vTip = t.flat > 0 ? +(t.flat * mm).toFixed(4) : 0;                // and its flat tip, if any
-  // a tapered ball nose (VCarve's type 5): its cone ends in a ball, whose radius the library gives
-  CUT.vBall = +t.type === 5 && t.tipRadius > 0;
-  CUT.vTipR = CUT.vBall ? +(t.tipRadius * mm).toFixed(4) : 0;
-  if (CUT.vBall) CUT.vTip = 0;
-  var cut = libCutFor(t, libDefaultMachine(), UICFG.libMaterial || null) ||
-            t.cuts.filter(function (c) { return c.machine === libDefaultMachine(); })[0] || t.cuts[0];
-  if (cut){
-    var rate = cut.rateUnits === 4 ? 25.4 : 1;                 // in/min -> mm/min
-    var len = cut.lengthUnits === 'in' ? 25.4 : 1;
-    if (cut.feed) CUT.feed = Math.round(cut.feed * rate);
-    if (cut.plunge) CUT.plunge = Math.round(cut.plunge * rate);
-    if (cut.stepdown) CUT.step = +(cut.stepdown * len).toFixed(3);
-    if (cut.stepover && CUT.dia > 0) CUT.stepoverPct = Math.max(5, Math.min(95, Math.round(cut.stepover * len / CUT.dia * 100)));
-    if (cut.rpm) CUT.rpm = cut.rpm;
-  }
+  libToolSettingsOnto(t, CUT);                               // its size, shape, feeds and speeds (tool-library.js)
   cutFillTools(); cutToForm(); cutRender();
 }
 function cutToForm(){

@@ -190,6 +190,14 @@ function wire(){
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
+  // Make toolpaths (auto-toolpaths.js): proposed from the drawing, added on OK
+  document.getElementById('tpAuto').addEventListener('click', function(){ setTool('select'); autoOpen(); });
+  document.getElementById('autoBit').addEventListener('change', function(){ if (AUTO){ AUTO.bitId = this.value || null; autoRender(); } });
+  document.getElementById('autoAdd').addEventListener('click', autoApply);
+  document.getElementById('autoCancel').addEventListener('click', autoClose);
+  document.getElementById('autoX').addEventListener('click', autoClose);
+  document.getElementById('autoModal').addEventListener('keydown', function(e){ if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); autoClose(); } });
+  document.getElementById('autoModal').addEventListener('pointerdown', function(e){ if (e.target.id === 'autoModal') autoClose(); });
   busyButton('tpVcConvert', 'Making the VCarve toolpaths editable…', vcMakeEditable);   // seconds, on a big project
   sheetWire();
   document.getElementById('tpRecalcAll').addEventListener('click', function () { tpRecalcAll(); });
@@ -896,6 +904,7 @@ function wire(){
     if (!document.getElementById('dlgModal').hidden) return;    // and an in-app dialog
     if (!document.getElementById('woodModal').hidden) return;   // and Preview in wood
     if (!document.getElementById('inwModal').hidden) return;    // and the Inlay wizard
+    if (!document.getElementById('autoModal').hidden) return;   // and Make toolpaths
     if (busyNow()) return;                                      // nothing while the app is busy
     if (e.key === 'Escape' && !document.getElementById('msgPanel').hidden){ setMsgPanel(false); return; }
     var inField = e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA';

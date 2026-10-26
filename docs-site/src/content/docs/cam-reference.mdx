@@ -11,6 +11,7 @@ import camProfileEditor from '../../assets/shots/cam-profile-editor.png';
 import camPocketOffset from '../../assets/shots/cam-pocket-offset.png';
 import camPocketRaster from '../../assets/shots/cam-pocket-raster.png';
 import camDrill from '../../assets/shots/cam-drill.png';
+import makeToolpaths from '../../assets/shots/design-make-toolpaths.png';
 import camChamfer from '../../assets/shots/cam-chamfer.png';
 import camVcarve from '../../assets/shots/cam-vcarve.png';
 import camInlay from '../../assets/shots/cam-inlay.png';
@@ -22,7 +23,7 @@ Every toolpath type, setting and check in 454 Design’s CAM, by topic. For a wa
 
 **CAM is in beta.** Toolpaths are new and still being tested on real projects, which is still finding problems. Check every job before cutting material: open it in 454 Control and watch the preview all the way through, read the Checks tab, then run it in the air with Z zeroed well above the material. Every G-code file 454 Design saves starts with a note saying so. If something looks wrong, <a href="https://github.com/ctredway/454-workshop/issues" target="_blank" rel="noopener">report it on GitHub<span class="sr-only"> (opens in a new tab)</span></a>, with the drawing if you can.
 
-**On this page:** [The basics](#the-basics) · [Profile](#profile) · [Pocket](#pocket) · [Drill](#drill) · [Chamfer](#chamfer) · [V-carve](#v-carve) · [Inlay](#inlay) · [Finishing, direction, leads, tabs, ramps](#finishing-direction-leads-tabs-ramps) · [Tools and materials](#tools-and-materials) · [Order, checking and saving](#order-checking-and-saving) · [VCarve projects](#vcarve-projects) · [How the toolpaths are checked](#how-the-toolpaths-are-checked)
+**On this page:** [The basics](#the-basics) · [Profile](#profile) · [Pocket](#pocket) · [Drill](#drill) · [Chamfer](#chamfer) · [V-carve](#v-carve) · [Inlay](#inlay) · [Finishing, direction, leads, tabs, ramps](#finishing-direction-leads-tabs-ramps) · [Tools and materials](#tools-and-materials) · [Make toolpaths](#make-toolpaths) · [Order, checking and saving](#order-checking-and-saving) · [VCarve projects](#vcarve-projects) · [How the toolpaths are checked](#how-the-toolpaths-are-checked)
 
 ## The basics
 
@@ -295,6 +296,29 @@ Choosing a tool opens the **tool library**. Pick the machine and material in its
 - **+ Tool**, **Duplicate**, **Delete**, **+ Material**, and **Import VCarve library…** (reads VCarve’s `tools.vtdb`). No VCarve? **Start an empty library**.
 
 **Toolpaths keep their own feeds.** Editing the library doesn’t change toolpaths already made, so a job you’ve checked can’t change under you. Choose the tool again in a toolpath to take the new values. The library lives in this browser and is shared with 454 Control.
+
+## Make toolpaths
+
+The wand button at the top of the **Toolpaths** panel looks at the drawing and proposes toolpaths for it. Nothing is
+added until you've read the summary and pressed **Add**.
+
+<Shot src={makeToolpaths} alt="The Make toolpaths window: cut with a 1/4 in end mill; three proposed toolpaths, each ticked: four 5 mm holes drilled, two holes and slots cut through round the inside, and one part cut out through with four tabs, each with its bit, depth and time; one open shape left out; Cancel and Add 3 toolpaths." />
+
+- **Holes, slots and cut-outs** (a closed shape inside a part) are cut through, round the inside.
+- **Round holes the size of a bit in your tool library** are drilled with that bit, a toolpath for each size. Deep ones
+  (more than three times the bit's width) are pecked.
+- **Parts** (a closed shape inside nothing, or inside a hole) are cut out through, round the outside, with the tabs you
+  used last.
+- **The bit** is the one you used last, with its feeds and speeds from the tool library. Choose another in **Cut with**,
+  and the summary is worked out again for it.
+- **Each one is worked out before it's offered**, with its depth and a time estimate, and anything worth knowing:
+  deeper than the bit can cut, or feeds the library didn't have (and what was used instead).
+- **Left out, and said why:** text (V-carve or profile it yourself), open shapes, shapes a toolpath already cuts, holes
+  narrower than the bit, copies stacked on another shape, outlines that cross or double back on themselves, and outlines
+  drawn round a part closer than the bit is wide (an offset copy). Construction lines and hidden layers are left out
+  quietly. With no material thickness set, nothing is made: every cut goes through it.
+- Untick any you don't want, then **Add**. They go in the usual cutting order, as one step that Undo takes back. Check
+  them in Preview in wood, and air-cut the first job.
 
 ## Order, checking and saving
 

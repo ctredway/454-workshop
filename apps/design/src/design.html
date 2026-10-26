@@ -52,6 +52,18 @@
     </div>
   </div>
 
+  <div id="autoModal" hidden>
+    <div id="autoPanel" role="dialog" aria-labelledby="autoTitle">
+      <div class="modalHead"><h3 id="autoTitle">Make toolpaths</h3><button class="modalX" id="autoX" title="Close (Esc)" aria-label="Close">✕</button></div>
+      <p class="snote" style="margin-top:0">Proposed from the drawing: holes and slots cut through, round holes a bit fits drilled, and the parts cut out with tabs. Untick any you don’t want. Nothing is added until you press Add.</p>
+      <div class="srow" id="autoBitRow"><label for="autoBit">Cut with</label><select id="autoBit"></select></div>
+      <p class="autoStop" id="autoStop" hidden></p>
+      <div id="autoList"></div>
+      <p class="snote" id="autoLeftHead" hidden><b>Left out</b></p>
+      <ul id="autoLeft"></ul>
+      <div class="mirBtns"><button id="autoCancel">Cancel</button><button id="autoAdd" class="primary">Add</button></div>
+    </div>
+  </div>
   <div id="nestModal" hidden>
     <div id="nestPanel" role="dialog" aria-labelledby="nestTitle">
       <div class="modalHead"><h3 id="nestTitle">Nest parts</h3><button class="modalX" id="nestX" title="Close (Esc)" aria-label="Close">✕</button></div>
@@ -325,6 +337,7 @@
       <button id="tpCheck" class="tpIcon" hidden aria-label="Check the drawing" title="Check: look over the drawing before cutting — open shapes, pieces, doubles, crossings, and shapes no toolpath cuts"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2l3.3 3.3M5.3 7l1.2 1.2 2.3-2.4"/></svg></button>
       <button id="tpRecalcAll" class="tpIcon" hidden aria-label="Recalculate all toolpaths" title="Recalculate all: rebuild every toolpath from its shapes and the material as they are now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg></button>
       <button id="tpFoldAll" class="tpIcon" hidden aria-label="Fold all toolpaths to their titles" title="Fold every toolpath to its title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
+      <button id="tpAuto" class="tpIcon" hidden aria-label="Make toolpaths for the drawing" title="Make toolpaths: look at the drawing and propose toolpaths for it (holes, inside cuts, the parts), with a summary to check before anything is added"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l7-7M9 4l3 3"/><path d="M12 1.8v2.4M10.8 3h2.4M14 6.8v1.6M13.2 7.6h1.6M5.5 2.2v1.6M4.7 3h1.6"/></svg></button>
       <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
       <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
     <div id="tpActs" hidden role="toolbar" aria-label="Preview, job sheet and templates">
@@ -651,6 +664,7 @@
 @@include js/vector-check.js
 @@include js/toolpath-generate.js
 @@include js/toolpath-hops.js
+@@include js/auto-toolpaths.js
 @@include js/toolpath-editor.js
 @@include js/toolpath-help.js
 @@include js/toolpath-passes.js

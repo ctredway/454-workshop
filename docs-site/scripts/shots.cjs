@@ -308,3 +308,17 @@ SHOTS.push({ name: 'design-sheets', page: 'design.html', size: [1400, 900],
     return { x: top.left, y: bar.top - 6, width: top.width, height: bar.height + 12 };` });
 
 module.exports = { PRELUDE, SHOTS };
+SHOTS.push({ name: 'design-make-toolpaths', page: 'design.html', size: [1400, 1000],
+  setup: `toast = function () {};
+    drawing(300, 180, [{ t: 'rect', x: 20, y: 20, w: 220, h: 130 }, { t: 'circle', cx: 45, cy: 45, r: 2.5 }, { t: 'circle', cx: 45, cy: 125, r: 2.5 },
+      { t: 'circle', cx: 215, cy: 45, r: 2.5 }, { t: 'circle', cx: 215, cy: 125, r: 2.5 }, { t: 'circle', cx: 90, cy: 85, r: 15 },
+      { t: 'path', closed: true, pts: [[140, 70, 0], [190, 70, 1], [190, 100, 0], [140, 100, 1]] }, { t: 'line', x1: 30, y1: 160, x2: 120, y2: 160 }]);
+    DOC.stock.t = 12;
+    TOOLLIB = { machines: [{ id: 'm1', name: 'Shapeoko XXL' }], materials: [{ id: 'mat1', name: 'Plywood' }], tools: [
+      { id: 'em14', name: '1/4 in down-cut end mill', diameter: 0.25, units: 'in', typeName: 'End Mill', numbers: {}, fluteLength: 1,
+        cuts: [{ machine: 'm1', material: 'mat1', feed: 60, plunge: 20, rpm: 18000, stepdown: 0.125, rateUnits: 4, lengthUnits: 'in' }] },
+      { id: 'dr5', name: '5 mm brad-point drill', diameter: 5, units: 'mm', typeName: 'Drill', numbers: {}, fluteLength: 40,
+        cuts: [{ machine: 'm1', material: 'mat1', feed: 600, plunge: 400, rpm: 12000, stepdown: 3, rateUnits: 1, lengthUnits: 'mm' }] }] };
+    UICFG.recentTools = ['em14']; UICFG.libMachine = 'm1'; UICFG.libMaterial = 'mat1'; UICFG.tabs = { count: 4, len: 6, thk: 2, style: 'flat' };
+    autoOpen(); await wait(300);
+    return box('#autoPanel', 8);` });

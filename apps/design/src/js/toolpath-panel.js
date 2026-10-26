@@ -22,6 +22,7 @@ function renderToolpathPanel(){
   document.getElementById('tpStripCount').textContent = list.length ? '(' + list.length + ')' : '';
   var mine = tpList();
   document.getElementById('tpNew').hidden = !camReady();
+  document.getElementById('tpAuto').hidden = !camReady();
   document.getElementById('tpBeta').hidden = !camReady();                // CAM is in beta: say so where it's used
   document.getElementById('tpRecalcAll').hidden = !camReady() || !tpList().length;   // only when there's something to recalculate
   var fa = document.getElementById('tpFoldAll'), allFolded = tpAllFolded();

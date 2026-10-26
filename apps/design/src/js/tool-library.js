@@ -174,6 +174,31 @@ function libCutFor(tool, machineId, materialId){
   for (var i = 0; i < tool.cuts.length; i++){ var c = tool.cuts[i]; if (c.machine === machineId && c.material === materialId) return c; }
   return null;
 }
+// A tool's size, shape, feeds and speeds, onto a toolpath (or the editor's CUT): its diameter, a V-bit's angle and tip,
+// and from the library's cut data for the machine and material chosen (or the first for the machine, or the first)
+// its feed, plunge, stepdown, stepover and speed. What the library doesn't give is left as it was.
+function libToolSettingsOnto(t, o){
+  var mm = t.units === 'in' ? 25.4 : 1;
+  if (t.diameter) o.dia = +(t.diameter * mm).toFixed(3);
+  if (t.angle > 0 && t.angle < 180) o.vAngle = t.angle;                 // a V-bit's included angle
+  o.vTip = t.flat > 0 ? +(t.flat * mm).toFixed(4) : 0;                  // and its flat tip, if any
+  // a tapered ball nose (VCarve's type 5): its cone ends in a ball, whose radius the library gives
+  o.vBall = +t.type === 5 && t.tipRadius > 0;
+  o.vTipR = o.vBall ? +(t.tipRadius * mm).toFixed(4) : 0;
+  if (o.vBall) o.vTip = 0;
+  var cut = libCutFor(t, libDefaultMachine(), UICFG.libMaterial || null) ||
+            t.cuts.filter(function (c) { return c.machine === libDefaultMachine(); })[0] || t.cuts[0];
+  if (cut){
+    var rate = cut.rateUnits === 4 ? 25.4 : 1;                 // in/min -> mm/min
+    var len = cut.lengthUnits === 'in' ? 25.4 : 1;
+    if (cut.feed) o.feed = Math.round(cut.feed * rate);
+    if (cut.plunge) o.plunge = Math.round(cut.plunge * rate);
+    if (cut.stepdown) o.step = +(cut.stepdown * len).toFixed(3);
+    if (cut.stepover && o.dia > 0) o.stepoverPct = Math.max(5, Math.min(95, Math.round(cut.stepover * len / o.dia * 100)));
+    if (cut.rpm) o.rpm = cut.rpm;
+  }
+  return o;
+}
 function libCutText(c){
   var ru = RATE_UNITS[c.rateUnits] || ('rate code ' + c.rateUnits), lu = c.lengthUnits === 'in' ? ' in' : ' mm';
   var parts = [];
