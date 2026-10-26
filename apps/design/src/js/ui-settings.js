@@ -41,6 +41,9 @@ function uiCfgLoad(){
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
       if (c.tabs && typeof c.tabs === 'object') UICFG.tabs = c.tabs;   // checked where it's used (cutTabsStart)
       if (c.lastOffset > 0) UICFG.lastOffset = c.lastOffset;           // the tool panels, as last used: checked where they open
+      if (c.polySize && c.polySize.v > 0) UICFG.polySize = c.polySize;
+      if (c.starSize > 0) UICFG.starSize = c.starSize;
+      if (c.starInner > 0 && c.starInner < 1) UICFG.starInner = c.starInner;
       ['arrLast', 'rotLast', 'cpyLast'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') UICFG[k] = c[k]; });
     }
   }catch(e){}

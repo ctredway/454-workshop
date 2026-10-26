@@ -561,6 +561,21 @@
   #arrKind button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
   #arrKind button+button{border-left:1px solid var(--line)}
   #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  /* Polygon and Star: the same panel, open while the tool is */
+  #shpPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #shpPanel[hidden],#shpPoly[hidden],#shpStar[hidden]{display:none}
+  #shpPanel h3{font-size:14px}
+  #shpPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #shpPanel .panelUnit{margin-left:0;width:18px;flex:none;text-align:right}
+  .shpCount{display:inline-flex;align-items:center;gap:4px;margin-left:auto;margin-right:22px}
+  .shpCount input[type=text]{width:40px!important;margin-left:0!important;text-align:center}
+  .shpCount button{width:24px;height:22px;padding:0;line-height:1}
+  #shpInner{margin-left:auto;width:96px;accent-color:var(--amber)}
+  #shpInnerVal{margin-left:6px;width:34px;flex:none;text-align:right}
+  #shpBy{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #shpBy button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
+  #shpBy button+button{border-left:1px solid var(--line)}
+  #shpBy button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
   /* Copy: the same panel, with From and To side by side */
   #cpyPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #cpyPanel[hidden]{display:none}
@@ -1267,6 +1282,20 @@
       <p class="mirHint" id="offHint"></p>
       <div class="mirBtns"><button id="offCancel">Cancel</button><button id="offOk" class="primary">OK</button></div>
     </div>
+    <div id="shpPanel" hidden role="dialog" aria-labelledby="shpTitle">
+      <div class="modalHead"><h3><span id="shpTitle">Polygon</span></h3><button class="modalX" id="shpX" title="Done (Esc)" aria-label="Done">✕</button></div>
+      <div id="shpPoly">
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpSides">Sides</label></span><span class="shpCount"><button id="shpSidesLess" aria-label="One side fewer">&minus;</button><input id="shpSides" type="text" inputmode="numeric" autocomplete="off"><button id="shpSidesMore" aria-label="One side more">+</button></span></div>
+        <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Across</span><span id="shpBy" role="group" aria-label="How the size is measured"><button data-by="flats" title="The size a spanner fits: from one flat side to the one opposite">Flats</button><button data-by="corners" title="From one corner to the one opposite">Corners</button></span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpPolySize">Size</label></span><input id="shpPolySize" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+      </div>
+      <div id="shpStar" hidden>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpPoints">Points</label></span><span class="shpCount"><button id="shpPointsLess" aria-label="One point fewer">&minus;</button><input id="shpPoints" type="text" inputmode="numeric" autocomplete="off"><button id="shpPointsMore" aria-label="One point more">+</button></span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpStarSize">Across the tips</label></span><input id="shpStarSize" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpInner" title="How far out the inner corners are, as a share of the way to the tips: less is a spikier star">Inner corners</label></span><input id="shpInner" type="range" min="10" max="90" step="1"><span class="mirVal" id="shpInnerVal">50%</span></div>
+      </div>
+      <p class="mirHint" id="shpHint"></p>
+    </div>
     <div id="cpyPanel" hidden role="dialog" aria-label="Copy">
       <div class="modalHead"><h3>Copy</h3><button class="modalX" id="cpyX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
       <button class="mirSlot" id="cpyObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="cpyObjsVal">none</span></button>
@@ -1420,7 +1449,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.166.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.167.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -4091,11 +4120,10 @@ var STAGE_LABEL = {
   circle1:'Circle \u2014 click radius point, or type "D5" / "R2.5"',
   ellipse0:'Ellipse — click the centre, or type "x,y"',
   ellipse1:'Ellipse — click a corner of its box, or type its width and height, e.g. "120,60"',
-  polygon0:'Polygon — {S} sides (type S8 for 8) · click the centre, or type "x,y"',
+  polygon0:'Polygon — {S} sides · click the centre, or type "x,y"',
   polygon1:'Polygon — {S} sides · click a corner, or type R40 to the corners, D80 across them, F70 across the flats',
-  star0:  'Star — {P} points (type S6 for 6) · click the centre, or type "x,y"',
+  star0:  'Star — {P} points · click the centre, or type "x,y"',
   star1:  'Star — {P} points · click the tip of a point, or type R40 (a point straight up)',
-  star2:  'Star — click where the inner corners go, or type their radius, e.g. 15',
   poly0:  'Polyline \u2014 click first point, or type "x,y"',
   poly1:  'Polyline \u2014 next point ("@dx,dy" / "50<45" ok) \u00b7 Enter finishes \u00b7 click start closes',
   filletall0:'Fillet corners \u2014 click shapes to add or remove them, set the radius and which corners, then OK',
@@ -4137,6 +4165,8 @@ function stagePrompt(key){
   var txt = STAGE_LABEL[key] || '';
   if (txt.indexOf('{R}') >= 0) txt = txt.replace('{R}', UICFG.filletR);
   if (txt.indexOf('{S}') >= 0) txt = txt.replace(/\{S\}/g, shapeSides());
+  if ((key === 'polygon0' || key === 'star0') && typeof shpStamp === 'function' && shpStamp({x: 0, y: 0}))
+    txt = txt.replace(/ · click the centre, or type "x,y"$/, ' · click to place one, centred where you click');
   if (txt.indexOf('{P}') >= 0) txt = txt.replace(/\{P\}/g, shapePoints());
   if (txt.indexOf('{D}') >= 0) txt = txt.replace('{D}', +(UICFG.filletR * 2).toFixed(3));
   showPrompt(txt, '');
@@ -4417,6 +4447,7 @@ function toolMgrEnter(t){
   if (t !== 'array' && ARR) arrClose();
   if (t !== 'rotate' && ROT) rotClose();
   if (t !== 'copy' && CPY) cpyClose();
+  if (SHP && SHP.t !== t) shpClose();
   if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
@@ -4440,6 +4471,7 @@ function toolMgrEnter(t){
   if (t === 'array' && !ARR) arrOpen();
   if (t === 'rotate' && !ROT) rotOpen();
   if (t === 'copy' && !CPY) cpyOpen();
+  if ((t === 'polygon' || t === 'star') && !SHP) shpOpen(t);   // the panel stays open while the tool is
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){
@@ -5082,8 +5114,10 @@ function arrayMake(r, idx){
      Ellipse  then a corner of its box, or type its width and height ("120,60").
      Polygon  then one of its corners, or type R (to the corners), D (across the corners) or F (across the flats,
               the size a spanner fits). Type S and a number any time for the number of sides.
-     Star     then the tip of a point (or type R), then where its inner corners sit (click, or type their radius).
+     Star     then the tip of a point (or type R or D), its inner corners the panel's share of the way out.
               Type S and a number any time for the number of points.
+   Polygon and Star have a panel (shape-panel.js) for the sides or points, the star's inner corners, and a size: with
+   one, a click places one there, centred where clicked.
    A polygon and a star are ordinary closed polylines. An ellipse is a closed path of arcs, each through three
    points on the ellipse, as many as it takes to stay within 0.0005 mm of the true curve: finer than any bit
    cuts, and it offsets, dimensions and exports (as arcs) like any other outline. */
@@ -5139,8 +5173,7 @@ function shapeFromDraw(p){
   var dx = p.x - DRAW.x, dy = p.y - DRAW.y, r = Math.hypot(dx, dy);
   if (TOOL === 'ellipse' && DRAW.stage === 1) return ellipseShape(DRAW.x, DRAW.y, dx, dy);
   if (TOOL === 'polygon' && DRAW.stage === 1) return r > 1e-6 ? polygonShape(DRAW.x, DRAW.y, r, shapeSides(), Math.atan2(dy, dx)) : null;
-  if (TOOL === 'star' && DRAW.stage === 1) return r > 1e-6 ? starShape(DRAW.x, DRAW.y, r, r * 0.5, shapePoints(), Math.atan2(dy, dx)) : null;
-  if (TOOL === 'star' && DRAW.stage === 2) return r > 1e-6 && r < DRAW.r ? starShape(DRAW.x, DRAW.y, DRAW.r, r, shapePoints(), DRAW.a) : null;
+  if (TOOL === 'star' && DRAW.stage === 1) return r > 1e-6 ? starShape(DRAW.x, DRAW.y, r, r * starInner(), shapePoints(), Math.atan2(dy, dx)) : null;
   return null;
 }
 function shapeAdd(e, next){
@@ -5152,15 +5185,10 @@ function shapeAdd(e, next){
 // A click for one of the three tools. Returns true if it was one of them.
 function shapeToolClick(p){
   if (TOOL !== 'ellipse' && TOOL !== 'polygon' && TOOL !== 'star') return false;
+  if (!DRAW && shpStamp(p)){ shapeAdd(shpStamp(p), TOOL + '0'); return true; }   // a size set in the panel: placed here
   if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y}; stagePrompt(TOOL + '1'); return true; }
-  if (TOOL === 'star' && DRAW.stage === 1){
-    var r = Math.hypot(p.x - DRAW.x, p.y - DRAW.y);
-    if (r > 1e-6){ DRAW = {stage:2, x:DRAW.x, y:DRAW.y, r:r, a:Math.atan2(p.y - DRAW.y, p.x - DRAW.x)}; stagePrompt('star2'); }
-    return true;
-  }
   var e = shapeFromDraw(p);
   if (e) shapeAdd(e, TOOL + '0');
-  else if (TOOL === 'star') toast('info', 'Inside the points', 'The inner corners go between the centre and the tips: click closer to the centre.');
   return true;
 }
 // Typed text for one of the three tools. Returns true if it was one of them (whether or not it was understood).
@@ -5172,11 +5200,12 @@ function shapeToolText(txt){
     if (n < 3 || n > 100){ toast('warn', 'Between 3 and 100', 'A ' + (TOOL === 'star' ? 'star needs 3 to 100 points.' : 'polygon needs 3 to 100 sides.')); return true; }
     if (TOOL === 'star') UICFG.starPoints = n; else UICFG.polySides = n;
     uiCfgSave(); stagePrompt(TOOL + (DRAW ? DRAW.stage : 0)); draw();
+    if (SHP) shpFill();
     return true;
   }
   if (!DRAW){                                                          // the centre, typed
     var c = parseNumericPoint(t, null);
-    if (c){ DRAW = {stage:1, x:c.x, y:c.y}; stagePrompt(TOOL + '1'); draw(); }
+    if (c) shapeToolClick(c);
     return true;
   }
   if (TOOL === 'ellipse'){
@@ -5185,12 +5214,6 @@ function shapeToolText(txt){
       var w = lenIn(wh[0]), h = lenIn(wh[1]);
       if (w > 0 && h > 0) shapeAdd(ellipseShape(DRAW.x, DRAW.y, w / 2, h / 2), 'ellipse0');
     }
-    return true;
-  }
-  if (TOOL === 'star' && DRAW.stage === 2){                            // inner radius: "12" or "R12"
-    var ri = lenIn(t.replace(/^[Rr]\s*/, ''));
-    if (ri > 0 && ri < DRAW.r) shapeAdd(starShape(DRAW.x, DRAW.y, DRAW.r, ri, shapePoints(), DRAW.a), 'star0');
-    else if (!isNaN(ri)) toast('warn', 'Smaller than the points', 'The inner corners’ radius has to be less than the points’ (' + +DRAW.r.toFixed(3) + ' mm).');
     return true;
   }
   // polygon corner or star tip: R to the corners, D across them, F across the flats (polygon), or a point
@@ -5203,7 +5226,7 @@ function shapeToolText(txt){
     // typed sizes stand square: a polygon on a flat, a star with a point straight up
     var a0 = TOOL === 'polygon' ? -Math.PI / 2 + Math.PI / n2 : Math.PI / 2;
     if (TOOL === 'polygon') shapeAdd(polygonShape(DRAW.x, DRAW.y, r, n2, a0), 'polygon0');
-    else { DRAW = {stage:2, x:DRAW.x, y:DRAW.y, r:r, a:a0}; stagePrompt('star2'); draw(); }
+    else shapeAdd(starShape(DRAW.x, DRAW.y, r, r * starInner(), n2, a0), 'star0');
     return true;
   }
   var p = parseNumericPoint(t, {x:DRAW.x, y:DRAW.y});
@@ -5212,10 +5235,7 @@ function shapeToolText(txt){
 }
 // The dashed preview while drawing.
 function shapeToolPreview(ctx, m){
-  var e = shapeFromDraw(m);
-  if (TOOL === 'star' && DRAW && DRAW.stage === 2 && !e){                  // pointer past the tips: show the tips' circle
-    var c0 = w2s(DRAW.x, DRAW.y); ctx.arc(c0.x, c0.y, DRAW.r * VIEW.scale, 0, Math.PI * 2); return;
-  }
+  var e = DRAW ? shapeFromDraw(m) : shpStamp(m);      // drawing one, or one of the panel's size following the pointer
   if (!e) return;
   if (TOOL === 'ellipse' && e.t === 'circle'){ var cc = w2s(e.cx, e.cy); ctx.arc(cc.x, cc.y, e.r * VIEW.scale, 0, Math.PI * 2); return; }
   if (TOOL === 'ellipse'){
@@ -8007,6 +8027,7 @@ var HELP_ICONS = [
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#inwTitle', 'cam-reference.html#inlay', 'Makes both halves of a V-carve inlay at once: choose the bit and the end mill, then the depths.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
+  ['#shpPanel .modalHead > h3', 'design-tools.html#polygon', 'The number of sides or points, and a size: with one, each click places a shape of that size, centred where you click.'],
   ['#cpyPanel .modalHead > h3', 'design-tools.html#copy', 'Makes copies of the shapes you pick, a distance across and up from them: typed, or measured from one point to another on the drawing.'],
   ['#rotPanel .modalHead > h3', 'design-tools.html#rotate', 'Turns the shapes you pick by an angle, about their own centre or a point you pick.'],
   ['#arrPanel .modalHead > h3', 'design-tools.html#array', 'Makes evenly spaced copies of the shapes you pick, in a row or around a centre.'],
@@ -15254,6 +15275,11 @@ function draw(){
     }
     ctx.stroke(); ctx.setLineDash([]);
   }
+  // a polygon or star of the size set in its panel, following the pointer: where a click puts it (shape-panel.js)
+  if (!DRAW && SHP && MOUSE.snap && shpStamp(MOUSE.snap)){
+    ctx.strokeStyle = THEME.accent; ctx.lineWidth = 1.2; ctx.setLineDash([4,4]);
+    ctx.beginPath(); shapeToolPreview(ctx, MOUSE.snap); ctx.stroke(); ctx.setLineDash([]);
+  }
 
   // snap marker
   // ---- alignment anchor: the last-picked shape, which stays put when aligning ----
@@ -16344,6 +16370,87 @@ function cpyWire(){
   $('cpyOk').addEventListener('click', cpyApply);
   $('cpyCancel').addEventListener('click', function(){ cpyClose(); setTool('select'); });
   $('cpyX').addEventListener('click', function(){ cpyClose(); setTool('select'); });
+}
+// The drawing tools' panel (Clint, 2026-10-26: "this is a very visual process and most users, including me, do not work
+// well with the non visual way"). Polygon and Star are still drawn by clicking (the centre, then a corner or a tip), and
+// the panel holds what was typed before: the number of sides or points (S8), and a size, which makes each click place
+// one there (a dashed one follows the pointer), and the star's inner corners. Open while the tool is.
+var SHP = null;             // the open panel: {t: 'polygon'|'star'}
+function shpOpen(t){
+  SHP = {t: t};
+  document.getElementById('shpPanel').hidden = false;
+  document.getElementById('shpTitle').textContent = t === 'star' ? 'Star' : 'Polygon';
+  document.getElementById('shpPoly').hidden = t !== 'polygon';
+  document.getElementById('shpStar').hidden = t !== 'star';
+  shpFill();
+  shpRender();
+}
+function shpClose(){ SHP = null; document.getElementById('shpPanel').hidden = true; }
+// the size set in the panel, in mm, or null (drawn by eye)
+function polySize(){ var s = UICFG.polySize; return s && s.v > 0 ? {by: s.by === 'corners' ? 'corners' : 'flats', v: s.v} : null; }
+function starSize(){ return UICFG.starSize > 0 ? UICFG.starSize : null; }
+function starInner(){ var f = UICFG.starInner; return f >= 0.05 && f <= 0.95 ? f : 0.5; }
+// a polygon or star of the panel's size, centred at p, standing square (a polygon on a flat, a star with a point straight
+// up), or null if no size is set
+function shpStamp(p){
+  if (TOOL === 'polygon' && polySize()){
+    var n = shapeSides(), s = polySize(), r = s.by === 'flats' ? s.v / 2 / Math.cos(Math.PI / n) : s.v / 2;
+    return polygonShape(p.x, p.y, r, n, -Math.PI / 2 + Math.PI / n);
+  }
+  if (TOOL === 'star' && starSize()){
+    var r1 = starSize() / 2;
+    return starShape(p.x, p.y, r1, r1 * starInner(), shapePoints(), Math.PI / 2);
+  }
+  return null;
+}
+function shpFill(){
+  var s = polySize();
+  document.getElementById('shpSides').value = shapeSides();
+  document.getElementById('shpPolySize').value = s ? fmtDisp(s.v) : '';
+  document.getElementById('shpPoints').value = shapePoints();
+  document.getElementById('shpStarSize').value = starSize() ? fmtDisp(starSize()) : '';
+  document.getElementById('shpInner').value = Math.round(starInner() * 100);
+}
+function shpRender(){
+  if (!SHP) return;
+  var by = (UICFG.polySize && UICFG.polySize.by) === 'corners' ? 'corners' : 'flats';
+  Array.prototype.forEach.call(document.querySelectorAll('#shpBy button'), function(b){ b.setAttribute('aria-pressed', b.dataset.by === by ? 'true' : 'false'); });
+  Array.prototype.forEach.call(document.querySelectorAll('#shpPanel .panelU'), function(u){ u.textContent = unitTag(); });
+  document.getElementById('shpInnerVal').textContent = Math.round(starInner() * 100) + '%';
+  var sized = SHP.t === 'star' ? starSize() : polySize();
+  document.getElementById('shpHint').textContent = sized
+    ? 'Click the drawing to place one, centred where you click. Clear the size to draw them by eye.'
+    : (SHP.t === 'star' ? 'Click the centre, then the tip of a point. Or give it a size, and each click places one.'
+                        : 'Click the centre, then a corner. Or give it a size, and each click places one.');
+  stagePrompt(TOOL + (DRAW ? DRAW.stage : 0));
+  draw();
+}
+function shpWire(){
+  var $ = function(id){ return document.getElementById(id); };
+  function count(id, key, step){
+    function set(n){
+      if (!(n >= 3 && n <= 100)) return false;
+      UICFG[key] = n; uiCfgSave(); $(id).value = n; shpRender(); return true;
+    }
+    $(id).addEventListener('input', function(){ var t = $(id).value.trim(); if (/^\d+$/.test(t)) set(+t); });
+    $(id).addEventListener('change', function(){ $(id).value = key === 'starPoints' ? shapePoints() : shapeSides(); });   // a number it refused: back to the one it has
+    $(id + 'Less').addEventListener('click', function(){ set((key === 'starPoints' ? shapePoints() : shapeSides()) - step); });
+    $(id + 'More').addEventListener('click', function(){ set((key === 'starPoints' ? shapePoints() : shapeSides()) + step); });
+  }
+  count('shpSides', 'polySides', 1); count('shpPoints', 'starPoints', 1);
+  $('shpPolySize').addEventListener('input', function(){
+    var t = $('shpPolySize').value.trim(), v = t ? lenIn(t) : NaN, by = polySize() ? polySize().by : ((UICFG.polySize && UICFG.polySize.by) || 'flats');
+    UICFG.polySize = {by: by, v: v > 0 ? v : null}; uiCfgSave(); shpRender();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#shpBy button'), function(b){
+    b.addEventListener('click', function(){ UICFG.polySize = {by: b.dataset.by, v: polySize() ? polySize().v : null}; uiCfgSave(); shpRender(); });
+  });
+  $('shpStarSize').addEventListener('input', function(){
+    var t = $('shpStarSize').value.trim(), v = t ? lenIn(t) : NaN;
+    UICFG.starSize = v > 0 ? v : null; uiCfgSave(); shpRender();
+  });
+  $('shpInner').addEventListener('input', function(){ UICFG.starInner = +$('shpInner').value / 100; uiCfgSave(); shpRender(); });
+  $('shpX').addEventListener('click', function(){ setTool('select'); });
 }
 // PREVIEWS FOR TRIM AND EXTEND
 // The preview runs the real operation on a throwaway copy of the affected shape and then shows
@@ -20560,8 +20667,8 @@ var PANEL_BTNS = {
  line:  {tool:'line', icon:'line', title:'Line (L) \u2014 click points; type exact coords anytime'},
  rect:  {tool:'rect', icon:'rect', title:'Rectangle (R) \u2014 two corners, or click then type W,H'},
  ellipse:{tool:'ellipse', icon:'ellipse', title:'Ellipse — centre, then a corner of its box, or type W,H e.g. 120,60'},
- polygon:{tool:'polygon', icon:'polygon', title:'Polygon — centre, then a corner; type S8 for 8 sides, or R, D or F (across the flats) for its size'},
- star:{tool:'star', icon:'star', title:'Star — centre, the tip of a point, then the inner corners; type S6 for 6 points'},
+ polygon:{tool:'polygon', icon:'polygon', title:'Polygon — centre, then a corner; sides and an exact size in its panel'},
+ star:{tool:'star', icon:'star', title:'Star — centre, then the tip of a point; points, size and inner corners in its panel'},
  circle:{tool:'circle', icon:'circ', title:'Circle (C) \u2014 center then radius point, or type D5 for diameter'},
  arc:   {tool:'arc', icon:'arc', title:'Arc (A) \u2014 start point, end point, then bow it with the mouse (3-point) or type a radius; + bows left of start\u2192end, \u2212 right'},
  poly:  {tool:'poly', icon:'poly', title:'Polyline (P) \u2014 click points, Enter ends, click start to close'},
@@ -20674,6 +20781,9 @@ function uiCfgLoad(){
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
       if (c.tabs && typeof c.tabs === 'object') UICFG.tabs = c.tabs;   // checked where it's used (cutTabsStart)
       if (c.lastOffset > 0) UICFG.lastOffset = c.lastOffset;           // the tool panels, as last used: checked where they open
+      if (c.polySize && c.polySize.v > 0) UICFG.polySize = c.polySize;
+      if (c.starSize > 0) UICFG.starSize = c.starSize;
+      if (c.starInner > 0 && c.starInner < 1) UICFG.starInner = c.starInner;
       ['arrLast', 'rotLast', 'cpyLast'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') UICFG[k] = c[k]; });
     }
   }catch(e){}
@@ -21181,6 +21291,7 @@ function wire(){
   arrWire();                                                // the Array panel (array-panel.js)
   rotWire();                                                // the Rotate panel (rotate-panel.js)
   cpyWire();                                                // the Copy panel (copy-panel.js)
+  shpWire();                                                // the Polygon and Star panel (shape-panel.js)
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });

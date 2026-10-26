@@ -191,6 +191,7 @@ function wire(){
   arrWire();                                                // the Array panel (array-panel.js)
   rotWire();                                                // the Rotate panel (rotate-panel.js)
   cpyWire();                                                // the Copy panel (copy-panel.js)
+  shpWire();                                                // the Polygon and Star panel (shape-panel.js)
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });

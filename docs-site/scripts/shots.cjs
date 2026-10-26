@@ -308,6 +308,16 @@ SHOTS.push({ name: 'design-sheets', page: 'design.html', size: [1400, 900],
     return { x: top.left, y: bar.top - 6, width: top.width, height: bar.height + 12 };` });
 
 module.exports = { PRELUDE, SHOTS };
+// The Polygon panel: hexagons 50 mm across the flats, two placed and a third following the pointer
+SHOTS.push({ name: 'design-polygon', page: 'design.html', size: [1400, 900],
+  setup: `toast = function () {};
+    drawing(360, 240, []); fitStock();
+    DOC.stock.units = 'mm'; syncStockUI();
+    UICFG.polySides = 6; UICFG.polySize = { by: 'flats', v: 50 };
+    document.getElementById('tpCollapse').click(); await wait(250);
+    setTool('polygon'); toolClick({ x: 70, y: 120 }, { x: 70, y: 120 }); toolClick({ x: 140, y: 120 }, { x: 140, y: 120 });
+    hoverAt(210, 120); draw(); await wait(200);
+    return box('#canvasWrap');` });
 // The Copy panel: a shelf, measured from its corner to a point beside it, the copy shown dashed there
 SHOTS.push({ name: 'design-copy', page: 'design.html', size: [1400, 900],
   setup: `toast = function () {};

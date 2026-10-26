@@ -21,6 +21,7 @@ import keepLinedUp from '../../assets/shots/design-keep-lined-up.png';
 import arrayPanel from '../../assets/shots/design-array.png';
 import rotatePanel from '../../assets/shots/design-rotate.png';
 import copyPanel from '../../assets/shots/design-copy.png';
+import shapePanel from '../../assets/shots/design-polygon.png';
 
 
 Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
@@ -282,20 +283,29 @@ stay an ellipse you can resize by typing, as a rectangle does.
 
 ### Polygon
 
-Draws a regular polygon: a triangle, square, hexagon, octagon, and so on.
+Draws a regular polygon: a triangle, square, hexagon, octagon, and so on. Its panel opens beside the drawing while the
+tool is in use.
 
-1. The prompt shows the number of sides. To change it, type `S` and the number, such as `S8`, and press Enter. It's remembered for next time.
-2. Click the centre, or type it as `x,y`.
-3. Click where one corner goes, or type the size: `R40` for 40 mm from the centre to each corner, `D80` for 80 mm across the corners, or `F70` for 70 mm across the flats (the size a spanner fits). A typed polygon stands on a flat.
+1. Set **Sides**: type it, or click **−** and **+**. It's remembered for next time.
+2. To draw it by eye, leave **Size** empty: click the centre, then where one corner goes.
+3. For an exact size, choose whether it's measured across the **Flats** (the size a spanner fits) or the **Corners**, and type the **Size**. A
+   dashed polygon follows the pointer: each click places one there, centred where you click, standing on a flat.
+
+<Shot src={shapePanel} alt="The Polygon panel beside the drawing: 6 sides, 50 mm across the flats, two hexagons placed and a third, dashed, following the pointer." />
+
+The typed codes still work: `S8` for 8 sides, a centre as `x,y`, then `R40` to the corners, `D80` across them or
+`F70` across the flats.
 
 ### Star
 
-Draws a star.
+Draws a star. Its panel opens beside the drawing while the tool is in use.
 
-1. The prompt shows the number of points. To change it, type `S` and the number, such as `S6`, and press Enter.
-2. Click the centre, or type it as `x,y`.
-3. Click the tip of one point, or type `R40` for points 40 mm from the centre, with one pointing straight up.
-4. Move the pointer in or out to set how deep the points are, and click; or type the inner corners' distance from the centre, such as `15`.
+1. Set **Points**: type it, or click **−** and **+**.
+2. Set **Inner corners**: how far out they sit, as a share of the way to the tips. Less makes a spikier star.
+3. To draw it by eye, leave **Across the tips** empty: click the centre, then the tip of one point.
+4. For an exact size, type **Across the tips**. Each click places one, centred where you click, with a point straight up.
+
+The typed codes still work: `S6` for 6 points, a centre as `x,y`, then `R40` to the tips or `D80` across them.
 
 ### Arc
 

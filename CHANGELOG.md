@@ -1502,6 +1502,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.167.0 — Polygon and Star have a panel; a star is two clicks
+The fourth of the tool panels (Clint, 2026-10-26). The number of sides or points was typed (S8), and an exact size typed
+after clicking the centre (R, D or F).
+- **A panel open while the tool is** (`shape-panel.js`): **Sides** or **Points** (typed, or − and +, 3 to 100, kept
+  for next time), and a **Size**: for a polygon across the flats or across the corners, for a star across the tips.
+  Empty, the tool draws by eye as before (the centre, then a corner or a tip). With a size, **each click places one**,
+  centred where it's clicked (a polygon on a flat, a star with a point up), and a dashed one follows the pointer first.
+- **A star is two clicks**: the centre, then a tip. Its **Inner corners** are set in the panel, as a share of the way out
+  to the tips (half, to start with); before, a third click placed them. Typed, `R` or `D` makes the star at once.
+- The sizes and the inner corners are kept from one visit to the next (`polySize`, `starSize`, `starInner`). The typed
+  codes still work, and a centre typed with a size set places one there.
+
 ### 0.166.1 — the tool panels remember their settings from one visit to the next
 Offset, Array, Rotate and Copy open as they were last used, but only until Design was closed: the settings were saved
 with the rest, and starting Design reads back only the settings it names (`uiCfgLoad`), which didn't name these. It does

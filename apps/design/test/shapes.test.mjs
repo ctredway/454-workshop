@@ -56,27 +56,28 @@ test('Polygon: F is across the flats, standing on a flat; R to the corners; D ac
   type(D, '0,0'); type(D, 'D20');
   radii(ents(D)[2], 0, 0).forEach((r) => near(r, 10, 1e-9, 'D: across the corners'));
 });
-test('Star: centre, tip, inner corners; points alternate between the two radii', () => {
+test('Star: centre, then a tip; the inner corners the panel\u2019s share of the way out (half, to start with)', () => {
   const D = fresh();
   D.setTool('star');
   click(D, 0, 0); click(D, 0, 40);
-  assert.equal(ents(D).length, 0, 'not made until the inner corners are placed');
-  click(D, 15, 0);
-  const e = ents(D)[0];
+  let e = ents(D)[0];
   assert.equal(e.pts.length, 10, 'five points, five inner corners');
-  radii(e, 0, 0).forEach((r, i) => near(r, i % 2 ? 15 : 40, 1e-9, `corner ${i}`));
+  radii(e, 0, 0).forEach((r, i) => near(r, i % 2 ? 20 : 40, 1e-9, `corner ${i}`));
   near(e.pts[0][0], 0, 1e-9, 'the first tip where clicked'); near(e.pts[0][1], 40, 1e-9, 'the first tip where clicked');
+  D.run('UICFG.starInner = 0.3; 1');
+  click(D, 100, 0); click(D, 140, 0);
+  radii(ents(D)[1], 100, 0).forEach((r, i) => near(r, i % 2 ? 12 : 40, 1e-9, `spikier: corner ${i}`));
 });
-test('Star: typed sizes, S for the number of points, and inner corners must be inside the tips', () => {
+test('Star: typed sizes and S for the number of points', () => {
   const D = fresh();
   D.setTool('star');
-  type(D, 'S6'); type(D, '10,10'); type(D, 'R30'); type(D, '40');
-  assert.equal(ents(D).length, 0, 'an inner radius past the tips is refused');
-  type(D, 'R12');
+  type(D, 'S6'); type(D, '10,10'); type(D, 'R30');
   const e = ents(D)[0];
   assert.equal(e.pts.length, 12);
   near(e.pts[0][0], 10, 1e-9, 'a point straight up'); near(e.pts[0][1], 40, 1e-9, 'a point straight up');
-  radii(e, 10, 10).forEach((r, i) => near(r, i % 2 ? 12 : 30, 1e-9, `corner ${i}`));
+  radii(e, 10, 10).forEach((r, i) => near(r, i % 2 ? 15 : 30, 1e-9, `corner ${i}`));
+  type(D, '0,0'); type(D, 'D30');
+  radii(ents(D)[1], 0, 0).forEach((r, i) => near(r, i % 2 ? 7.5 : 15, 1e-9, `D: across the tips, corner ${i}`));
 });
 test('Ellipse: typed width and height; every point of it within 0.0005 mm of the true ellipse; area right', () => {
   const D = fresh();
@@ -111,7 +112,7 @@ test('Ellipse: clicking a corner of its box; a round one is a circle; a flat one
 test('each shape is one undo step', () => {
   const D = fresh();
   D.setTool('polygon'); click(D, 0, 0); click(D, 10, 0);
-  D.setTool('star'); click(D, 0, 0); click(D, 0, 10); click(D, 3, 0);
+  D.setTool('star'); click(D, 0, 0); click(D, 0, 10);
   assert.equal(ents(D).length, 2);
   D.run('doUndo()'); assert.equal(ents(D).length, 1);
   D.run('doUndo()'); assert.equal(ents(D).length, 0);

@@ -3,8 +3,10 @@
      Ellipse  then a corner of its box, or type its width and height ("120,60").
      Polygon  then one of its corners, or type R (to the corners), D (across the corners) or F (across the flats,
               the size a spanner fits). Type S and a number any time for the number of sides.
-     Star     then the tip of a point (or type R), then where its inner corners sit (click, or type their radius).
+     Star     then the tip of a point (or type R or D), its inner corners the panel's share of the way out.
               Type S and a number any time for the number of points.
+   Polygon and Star have a panel (shape-panel.js) for the sides or points, the star's inner corners, and a size: with
+   one, a click places one there, centred where clicked.
    A polygon and a star are ordinary closed polylines. An ellipse is a closed path of arcs, each through three
    points on the ellipse, as many as it takes to stay within 0.0005 mm of the true curve: finer than any bit
    cuts, and it offsets, dimensions and exports (as arcs) like any other outline. */
@@ -60,8 +62,7 @@ function shapeFromDraw(p){
   var dx = p.x - DRAW.x, dy = p.y - DRAW.y, r = Math.hypot(dx, dy);
   if (TOOL === 'ellipse' && DRAW.stage === 1) return ellipseShape(DRAW.x, DRAW.y, dx, dy);
   if (TOOL === 'polygon' && DRAW.stage === 1) return r > 1e-6 ? polygonShape(DRAW.x, DRAW.y, r, shapeSides(), Math.atan2(dy, dx)) : null;
-  if (TOOL === 'star' && DRAW.stage === 1) return r > 1e-6 ? starShape(DRAW.x, DRAW.y, r, r * 0.5, shapePoints(), Math.atan2(dy, dx)) : null;
-  if (TOOL === 'star' && DRAW.stage === 2) return r > 1e-6 && r < DRAW.r ? starShape(DRAW.x, DRAW.y, DRAW.r, r, shapePoints(), DRAW.a) : null;
+  if (TOOL === 'star' && DRAW.stage === 1) return r > 1e-6 ? starShape(DRAW.x, DRAW.y, r, r * starInner(), shapePoints(), Math.atan2(dy, dx)) : null;
   return null;
 }
 function shapeAdd(e, next){
@@ -73,15 +74,10 @@ function shapeAdd(e, next){
 // A click for one of the three tools. Returns true if it was one of them.
 function shapeToolClick(p){
   if (TOOL !== 'ellipse' && TOOL !== 'polygon' && TOOL !== 'star') return false;
+  if (!DRAW && shpStamp(p)){ shapeAdd(shpStamp(p), TOOL + '0'); return true; }   // a size set in the panel: placed here
   if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y}; stagePrompt(TOOL + '1'); return true; }
-  if (TOOL === 'star' && DRAW.stage === 1){
-    var r = Math.hypot(p.x - DRAW.x, p.y - DRAW.y);
-    if (r > 1e-6){ DRAW = {stage:2, x:DRAW.x, y:DRAW.y, r:r, a:Math.atan2(p.y - DRAW.y, p.x - DRAW.x)}; stagePrompt('star2'); }
-    return true;
-  }
   var e = shapeFromDraw(p);
   if (e) shapeAdd(e, TOOL + '0');
-  else if (TOOL === 'star') toast('info', 'Inside the points', 'The inner corners go between the centre and the tips: click closer to the centre.');
   return true;
 }
 // Typed text for one of the three tools. Returns true if it was one of them (whether or not it was understood).
@@ -93,11 +89,12 @@ function shapeToolText(txt){
     if (n < 3 || n > 100){ toast('warn', 'Between 3 and 100', 'A ' + (TOOL === 'star' ? 'star needs 3 to 100 points.' : 'polygon needs 3 to 100 sides.')); return true; }
     if (TOOL === 'star') UICFG.starPoints = n; else UICFG.polySides = n;
     uiCfgSave(); stagePrompt(TOOL + (DRAW ? DRAW.stage : 0)); draw();
+    if (SHP) shpFill();
     return true;
   }
   if (!DRAW){                                                          // the centre, typed
     var c = parseNumericPoint(t, null);
-    if (c){ DRAW = {stage:1, x:c.x, y:c.y}; stagePrompt(TOOL + '1'); draw(); }
+    if (c) shapeToolClick(c);
     return true;
   }
   if (TOOL === 'ellipse'){
@@ -106,12 +103,6 @@ function shapeToolText(txt){
       var w = lenIn(wh[0]), h = lenIn(wh[1]);
       if (w > 0 && h > 0) shapeAdd(ellipseShape(DRAW.x, DRAW.y, w / 2, h / 2), 'ellipse0');
     }
-    return true;
-  }
-  if (TOOL === 'star' && DRAW.stage === 2){                            // inner radius: "12" or "R12"
-    var ri = lenIn(t.replace(/^[Rr]\s*/, ''));
-    if (ri > 0 && ri < DRAW.r) shapeAdd(starShape(DRAW.x, DRAW.y, DRAW.r, ri, shapePoints(), DRAW.a), 'star0');
-    else if (!isNaN(ri)) toast('warn', 'Smaller than the points', 'The inner corners’ radius has to be less than the points’ (' + +DRAW.r.toFixed(3) + ' mm).');
     return true;
   }
   // polygon corner or star tip: R to the corners, D across them, F across the flats (polygon), or a point
@@ -124,7 +115,7 @@ function shapeToolText(txt){
     // typed sizes stand square: a polygon on a flat, a star with a point straight up
     var a0 = TOOL === 'polygon' ? -Math.PI / 2 + Math.PI / n2 : Math.PI / 2;
     if (TOOL === 'polygon') shapeAdd(polygonShape(DRAW.x, DRAW.y, r, n2, a0), 'polygon0');
-    else { DRAW = {stage:2, x:DRAW.x, y:DRAW.y, r:r, a:a0}; stagePrompt('star2'); draw(); }
+    else shapeAdd(starShape(DRAW.x, DRAW.y, r, r * starInner(), n2, a0), 'star0');
     return true;
   }
   var p = parseNumericPoint(t, {x:DRAW.x, y:DRAW.y});
@@ -133,10 +124,7 @@ function shapeToolText(txt){
 }
 // The dashed preview while drawing.
 function shapeToolPreview(ctx, m){
-  var e = shapeFromDraw(m);
-  if (TOOL === 'star' && DRAW && DRAW.stage === 2 && !e){                  // pointer past the tips: show the tips' circle
-    var c0 = w2s(DRAW.x, DRAW.y); ctx.arc(c0.x, c0.y, DRAW.r * VIEW.scale, 0, Math.PI * 2); return;
-  }
+  var e = DRAW ? shapeFromDraw(m) : shpStamp(m);      // drawing one, or one of the panel's size following the pointer
   if (!e) return;
   if (TOOL === 'ellipse' && e.t === 'circle'){ var cc = w2s(e.cx, e.cy); ctx.arc(cc.x, cc.y, e.r * VIEW.scale, 0, Math.PI * 2); return; }
   if (TOOL === 'ellipse'){

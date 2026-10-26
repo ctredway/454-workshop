@@ -551,6 +551,21 @@
   #arrKind button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
   #arrKind button+button{border-left:1px solid var(--line)}
   #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  /* Polygon and Star: the same panel, open while the tool is */
+  #shpPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #shpPanel[hidden],#shpPoly[hidden],#shpStar[hidden]{display:none}
+  #shpPanel h3{font-size:14px}
+  #shpPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #shpPanel .panelUnit{margin-left:0;width:18px;flex:none;text-align:right}
+  .shpCount{display:inline-flex;align-items:center;gap:4px;margin-left:auto;margin-right:22px}
+  .shpCount input[type=text]{width:40px!important;margin-left:0!important;text-align:center}
+  .shpCount button{width:24px;height:22px;padding:0;line-height:1}
+  #shpInner{margin-left:auto;width:96px;accent-color:var(--amber)}
+  #shpInnerVal{margin-left:6px;width:34px;flex:none;text-align:right}
+  #shpBy{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #shpBy button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
+  #shpBy button+button{border-left:1px solid var(--line)}
+  #shpBy button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
   /* Copy: the same panel, with From and To side by side */
   #cpyPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #cpyPanel[hidden]{display:none}

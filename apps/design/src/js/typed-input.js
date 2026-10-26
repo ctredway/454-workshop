@@ -40,11 +40,10 @@ var STAGE_LABEL = {
   circle1:'Circle \u2014 click radius point, or type "D5" / "R2.5"',
   ellipse0:'Ellipse — click the centre, or type "x,y"',
   ellipse1:'Ellipse — click a corner of its box, or type its width and height, e.g. "120,60"',
-  polygon0:'Polygon — {S} sides (type S8 for 8) · click the centre, or type "x,y"',
+  polygon0:'Polygon — {S} sides · click the centre, or type "x,y"',
   polygon1:'Polygon — {S} sides · click a corner, or type R40 to the corners, D80 across them, F70 across the flats',
-  star0:  'Star — {P} points (type S6 for 6) · click the centre, or type "x,y"',
+  star0:  'Star — {P} points · click the centre, or type "x,y"',
   star1:  'Star — {P} points · click the tip of a point, or type R40 (a point straight up)',
-  star2:  'Star — click where the inner corners go, or type their radius, e.g. 15',
   poly0:  'Polyline \u2014 click first point, or type "x,y"',
   poly1:  'Polyline \u2014 next point ("@dx,dy" / "50<45" ok) \u00b7 Enter finishes \u00b7 click start closes',
   filletall0:'Fillet corners \u2014 click shapes to add or remove them, set the radius and which corners, then OK',
@@ -86,6 +85,8 @@ function stagePrompt(key){
   var txt = STAGE_LABEL[key] || '';
   if (txt.indexOf('{R}') >= 0) txt = txt.replace('{R}', UICFG.filletR);
   if (txt.indexOf('{S}') >= 0) txt = txt.replace(/\{S\}/g, shapeSides());
+  if ((key === 'polygon0' || key === 'star0') && typeof shpStamp === 'function' && shpStamp({x: 0, y: 0}))
+    txt = txt.replace(/ · click the centre, or type "x,y"$/, ' · click to place one, centred where you click');
   if (txt.indexOf('{P}') >= 0) txt = txt.replace(/\{P\}/g, shapePoints());
   if (txt.indexOf('{D}') >= 0) txt = txt.replace('{D}', +(UICFG.filletR * 2).toFixed(3));
   showPrompt(txt, '');
