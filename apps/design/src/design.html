@@ -592,9 +592,11 @@
       <button class="mirSlot" id="arrObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="arrObjsVal">none</span></button>
       <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Copies</span><span id="arrKind" role="group" aria-label="How the copies are laid out"><button data-k="lin">In a row</button><button data-k="circ">Around a centre</button></span></div>
       <div id="arrRow">
+        <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Direction</span><span id="arrDir" role="group" aria-label="Which way the row goes"><button data-d="h" title="Side by side, to the right (a negative spacing goes left)">Horizontal</button><button data-d="v" title="One above another, upwards (a negative spacing goes down)">Vertical</button></span></div>
         <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrN">How many</label></span><input id="arrN" type="text" inputmode="numeric" autocomplete="off"><span class="arrUnit"></span></div>
-        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrDx">Across (X)</label></span><input id="arrDx" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
-        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrDy">Up (Y)</label></span><input id="arrDy" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrSp">Spacing</label></span><input id="arrSp" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrNr" id="arrNrLbl">Rows</label></span><input id="arrNr" type="text" inputmode="numeric" autocomplete="off"><span class="arrUnit"></span></div>
+        <div class="mirSlot" id="arrRspRow" hidden style="cursor:default"><span class="mirLbl"><label for="arrRsp" id="arrRspLbl">Row spacing</label></span><input id="arrRsp" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
       </div>
       <div id="arrRound" hidden>
         <button class="mirSlot" id="arrCentre"><span class="mirLbl">Centre</span><span class="mirVal" id="arrCentreVal">none</span></button>

@@ -549,7 +549,7 @@
   #filletAllBtn[hidden]{display:none}
   /* Array: a panel like Offset's, a little wider for its centre's X and Y */
   #arrPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
-  #arrPanel[hidden],#arrRow[hidden],#arrRound[hidden]{display:none}
+  #arrPanel[hidden],#arrRow[hidden],#arrRound[hidden],#arrRspRow[hidden]{display:none}
   #arrPanel h3{font-size:14px}
   #arrPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #arrPanel input[type=text]:disabled{opacity:.55}
@@ -557,10 +557,10 @@
   #arrCx,#arrCy{width:66px!important}
   #arrCx{margin-left:auto}
   #arrCy{margin-left:0!important}
-  #arrKind{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
-  #arrKind button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
-  #arrKind button+button{border-left:1px solid var(--line)}
-  #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  #arrKind,#arrDir{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #arrKind button,#arrDir button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
+  #arrKind button+button,#arrDir button+button{border-left:1px solid var(--line)}
+  #arrKind button[aria-pressed=true],#arrDir button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
   /* Polygon and Star: the same panel, open while the tool is */
   #shpPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #shpPanel[hidden],#shpPoly[hidden],#shpStar[hidden],#shpWH[hidden],#shpCircle[hidden],#shpRectAt[hidden]{display:none}
@@ -1333,9 +1333,11 @@
       <button class="mirSlot" id="arrObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="arrObjsVal">none</span></button>
       <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Copies</span><span id="arrKind" role="group" aria-label="How the copies are laid out"><button data-k="lin">In a row</button><button data-k="circ">Around a centre</button></span></div>
       <div id="arrRow">
+        <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Direction</span><span id="arrDir" role="group" aria-label="Which way the row goes"><button data-d="h" title="Side by side, to the right (a negative spacing goes left)">Horizontal</button><button data-d="v" title="One above another, upwards (a negative spacing goes down)">Vertical</button></span></div>
         <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrN">How many</label></span><input id="arrN" type="text" inputmode="numeric" autocomplete="off"><span class="arrUnit"></span></div>
-        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrDx">Across (X)</label></span><input id="arrDx" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
-        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrDy">Up (Y)</label></span><input id="arrDy" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrSp">Spacing</label></span><input id="arrSp" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="arrNr" id="arrNrLbl">Rows</label></span><input id="arrNr" type="text" inputmode="numeric" autocomplete="off"><span class="arrUnit"></span></div>
+        <div class="mirSlot" id="arrRspRow" hidden style="cursor:default"><span class="mirLbl"><label for="arrRsp" id="arrRspLbl">Row spacing</label></span><input id="arrRsp" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal arrUnit arrU">mm</span></div>
       </div>
       <div id="arrRound" hidden>
         <button class="mirSlot" id="arrCentre"><span class="mirLbl">Centre</span><span class="mirVal" id="arrCentreVal">none</span></button>
@@ -1457,7 +1459,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.168.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.169.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3599,13 +3601,14 @@ var HIST_OPS = {
     }
   },
   array: {                      // the Array tool (tool-typing.js): a row, or copies around a centre
-    name: function (r) { return r.copy ? 'Copy' + (r.n > 2 ? ' \u00d7' + (r.n - 1) : '') : 'Array ' + r.n + (r.kind === 'circ' ? ' around' : ''); },
+    name: function (r) { return r.copy ? 'Copy' + (r.n > 2 ? ' \u00d7' + (r.n - 1) : '') : 'Array ' + r.n + (r.kind === 'circ' ? ' around' : r.nr > 1 ? ' \u00d7 ' + r.nr : ''); },
     fields: function (r) {
       if (r.copy) return [{k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}];   // the Copy panel's (copy-panel.js)
       return r.kind === 'circ'
         ? [{k: 'n', label: 'How many', kind: 'count'}, {k: 'step', label: 'Angle between', kind: 'deg'},
            {k: 'cx', label: 'Centre X', kind: 'len'}, {k: 'cy', label: 'Centre Y', kind: 'len'}]
-        : [{k: 'n', label: 'How many', kind: 'count'}, {k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}];
+        : [{k: 'n', label: 'How many', kind: 'count'}, {k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}].concat(r.nr > 1
+          ? [{k: 'nr', label: r.rdx ? 'Columns' : 'Rows', kind: 'count'}, {k: r.rdx ? 'rdx' : 'rdy', label: r.rdx ? 'Column spacing' : 'Row spacing', kind: 'len'}] : []);
     },
     run: function (r, idx) { arrayMake(r, idx); return true; }
   },
@@ -5111,18 +5114,22 @@ function toolCommitText(txt){
 }
 
 
-// Array's copies: r {kind: 'lin', n, dx, dy} (a row: copy k is k steps along) or {kind: 'circ', n, step (degrees), cx,
-// cy} (copy k turned k steps about the centre), of the shapes at idx, added to the drawing. The tool and the History
-// bar both make them here, so a step done again gives exactly what the tool gave.
+// Array's copies: r {kind: 'lin', n, dx, dy} (a row: copy k is k steps along; with nr, rdx, rdy, nr such rows, row j
+// j row steps on) or {kind: 'circ', n, step (degrees), cx, cy} (copy k turned k steps about the centre), of the shapes
+// at idx, added to the drawing. The tool and the History bar both make them here, so a step done again gives exactly
+// what the tool gave.
 function arrayMake(r, idx){
   var stepRad = r.step * Math.PI / 180;                 // (as the tool always worked it out: the same copies to the bit)
-  for (var k = 1; k < r.n; k++){
-    idx.forEach(function (i){
-      var c = cloneEnt(DOC.ents[i]);
-      if (r.kind === 'circ') rotateEnt(c, r.cx, r.cy, stepRad * k);
-      else moveEntity(c, r.dx * k, r.dy * k);
-      DOC.ents.push(c);
-    });
+  var rows = r.kind === 'lin' && r.nr > 1 ? r.nr : 1;
+  for (var j = 0; j < rows; j++){
+    for (var k = j ? 0 : 1; k < r.n; k++){              // (the shapes themselves are the first of the first row)
+      idx.forEach(function (i){
+        var c = cloneEnt(DOC.ents[i]);
+        if (r.kind === 'circ') rotateEnt(c, r.cx, r.cy, stepRad * k);
+        else moveEntity(c, r.dx * k + (j ? r.rdx * j : 0), r.dy * k + (j ? r.rdy * j : 0));
+        DOC.ents.push(c);
+      });
+    }
   }
 }/* ---------------- Ellipse, Polygon and Star ----------------
    Three drawing tools, each started with a click on the centre:
@@ -15935,16 +15942,23 @@ function mirClick(w){                                 // a canvas click while th
 // to set or choose what I needed to do"). The shapes (selected first, or clicked while it's open), in a row or around a
 // centre, how many and how far apart, with the copies shown on the drawing before OK. arrayMake (tool-typing.js) makes
 // them, as it does for the History bar, and the step it records is the same one typing "5@12,0" or "6<60" made.
-var ARR = null;             // the open panel: {objs, kind: 'lin'|'circ', n, dx, dy, nc, full, step, c: {x, y} or null, slot}
+// A row is horizontal or vertical, and can be repeated in rows (Clint, 2026-10-26: "it also needs a vertical or
+// horizontal and it needs a row option, default it to 1"): horizontal rows stack upwards, vertical ones (columns) to the
+// right, and a negative spacing goes the other way. Rows open at 1 every time; their spacing is remembered.
+var ARR = null;             // the open panel: {objs, kind: 'lin'|'circ', n, dx, dy, nr, rsp, nc, full, step, c: {x, y} or null, slot}
+// a row's direction: vertical when it goes up or down, else horizontal
+function arrDir(){ return Math.abs(ARR.dy) > Math.abs(ARR.dx) ? 'v' : 'h'; }
+function arrSpacing(){ return arrDir() === 'v' ? ARR.dy : ARR.dx; }
 function arrOpen(){
   var objs = SEL.filter(function(i){ return DOC.ents[i] && entOnSheet(DOC.ents[i]); });
   var L = UICFG.arrLast || {};
-  ARR = {objs: objs, kind: L.kind === 'circ' ? 'circ' : 'lin', n: L.n || 3, dx: L.dx, dy: L.dy || 0,
+  ARR = {objs: objs, kind: L.kind === 'circ' ? 'circ' : 'lin', n: L.n || 3, dx: L.dx, dy: L.dy || 0, nr: 1, rsp: L.rsp,
          nc: L.nc || 6, full: L.full !== false, step: L.step || 60, c: null, slot: 'objs'};
-  if (!(Math.abs(ARR.dx) > 1e-9) && !(Math.abs(ARR.dy) > 1e-9)){
-    var b = arrBox();                                  // first time: a row to the right, 10 mm apart
-    ARR.dx = b ? Math.ceil(b.x1 - b.x0 + 10) : 50;
-  }
+  var b = arrBox();
+  if (!(Math.abs(ARR.dx) > 1e-9) && !(Math.abs(ARR.dy) > 1e-9))
+    ARR.dx = b ? Math.ceil(b.x1 - b.x0 + 10) : 50;   // first time: a row to the right, the shapes' width and 10 mm apart
+  if (!(Math.abs(ARR.rsp) > 1e-9))                   // and rows their height (or width, for columns) and 10 mm apart
+    ARR.rsp = b ? Math.ceil((arrDir() === 'v' ? b.x1 - b.x0 : b.y1 - b.y0) + 10) : 50;
   if (ARR.kind === 'circ' && objs.length) ARR.slot = 'centre';
   document.getElementById('arrPanel').hidden = false;
   arrFill();
@@ -15965,9 +15979,16 @@ function arrRecipe(){
   if (!ARR) return {why: ''};
   if (!ARR.objs.length) return {why: 'Click the shapes on the drawing to copy.'};
   if (ARR.kind === 'lin'){
-    if (!(ARR.n >= 2 && ARR.n <= 500)) return {why: 'How many is 2 to 500, counting the shapes you picked.'};
-    if (!(Math.abs(ARR.dx) > 1e-9) && !(Math.abs(ARR.dy) > 1e-9)) return {why: 'Give it a distance across or up, or the copies all land on top of each other.'};
-    return {r: {op: 'array', kind: 'lin', n: ARR.n, dx: ARR.dx, dy: ARR.dy}};
+    var rows = arrDir() === 'v' ? 'Columns' : 'Rows';
+    if (!(ARR.n >= 1 && ARR.n <= 500)) return {why: 'How many is 1 to 500, counting the shapes you picked.'};
+    if (!(ARR.nr >= 1 && ARR.nr <= 500)) return {why: rows + ' is 1 to 500.'};
+    if (ARR.n * ARR.nr < 2) return {why: 'Make How many or ' + rows + ' more than 1, or there\u2019s nothing to copy.'};
+    if (ARR.n * ARR.nr > 2500) return {why: 'That\u2019s ' + ARR.n * ARR.nr + ' in all: 2500 at most.'};
+    if (ARR.n > 1 && !(Math.abs(arrSpacing()) > 1e-9)) return {why: 'Give it a spacing, or the copies all land on top of each other.'};
+    if (ARR.nr > 1 && !(Math.abs(ARR.rsp) > 1e-9)) return {why: 'Give the ' + rows.toLowerCase() + ' a spacing, or they land on top of each other.'};
+    var r = {op: 'array', kind: 'lin', n: ARR.n, dx: ARR.dx, dy: ARR.dy};
+    if (ARR.nr > 1){ r.nr = ARR.nr; r.rdx = arrDir() === 'v' ? ARR.rsp : 0; r.rdy = arrDir() === 'v' ? 0 : ARR.rsp; }
+    return {r: r};
   }
   if (!(ARR.nc >= 2 && ARR.nc <= 500)) return {why: 'How many is 2 to 500, counting the shapes you picked.'};
   if (!ARR.c) return {why: 'Click the centre on the drawing (it snaps to a circle’s centre), or type it.'};
@@ -15977,24 +15998,19 @@ function arrRecipe(){
 }
 // the copies OK would add, for the preview
 function arrResults(){
-  var rc = arrRecipe(), out = [];
-  if (!rc.r) return out;
-  var stepRad = rc.r.kind === 'circ' ? rc.r.step * Math.PI / 180 : 0;
-  for (var k = 1; k < rc.r.n; k++){
-    ARR.objs.forEach(function(i){
-      var c = cloneEnt(DOC.ents[i]);
-      if (rc.r.kind === 'circ') rotateEnt(c, rc.r.cx, rc.r.cy, stepRad * k);
-      else moveEntity(c, rc.r.dx * k, rc.r.dy * k);
-      out.push(c);
-    });
-  }
-  return out;
+  var rc = arrRecipe();
+  if (!rc.r) return [];
+  var keep = DOC.ents, n0 = DOC.ents.length;
+  DOC.ents = keep.slice();                             // made as OK makes them (arrayMake), on a copy of the list
+  try { arrayMake(rc.r, ARR.objs); return DOC.ents.slice(n0); }
+  finally { DOC.ents = keep; }
 }
 // the boxes from ARR (on opening, and after typing in the prompt)
 function arrFill(){
   document.getElementById('arrN').value = ARR.n;
-  document.getElementById('arrDx').value = fmtDisp(ARR.dx);
-  document.getElementById('arrDy').value = fmtDisp(ARR.dy);
+  document.getElementById('arrSp').value = isFinite(arrSpacing()) ? fmtDisp(arrSpacing()) : '';
+  document.getElementById('arrNr').value = ARR.nr;
+  document.getElementById('arrRsp').value = isFinite(ARR.rsp) ? fmtDisp(ARR.rsp) : '';
   document.getElementById('arrNc').value = ARR.nc;
   document.getElementById('arrFull').checked = ARR.full;
   arrFillCentre();
@@ -16014,6 +16030,13 @@ function arrRender(){
     b.setAttribute('aria-pressed', b.dataset.k === ARR.kind ? 'true' : 'false');
   });
   document.getElementById('arrRow').hidden = circ;
+  Array.prototype.forEach.call(document.querySelectorAll('#arrDir button'), function(b){
+    b.setAttribute('aria-pressed', b.dataset.d === arrDir() ? 'true' : 'false');
+  });
+  var cols = arrDir() === 'v';
+  document.getElementById('arrNrLbl').textContent = cols ? 'Columns' : 'Rows';
+  document.getElementById('arrRspLbl').textContent = cols ? 'Column spacing' : 'Row spacing';
+  document.getElementById('arrRspRow').hidden = !(ARR.nr > 1);
   document.getElementById('arrRound').hidden = !circ;
   Array.prototype.forEach.call(document.querySelectorAll('#arrPanel .arrU'), function(s){ s.textContent = unitTag(); });
   var stepIn = document.getElementById('arrStep');
@@ -16026,8 +16049,12 @@ function arrRender(){
   else if (circ) hint.textContent = (ARR.slot === 'centre' ? 'Click the drawing to move the centre. ' : '') + (ARR.full
     ? ARR.nc + ' evenly round a full circle: the shapes you picked and ' + (ARR.nc - 1) + ' copies.'
     : 'Each copy turns this far from the one before: positive anticlockwise, negative clockwise.');
-  else hint.textContent = 'The shapes you picked and ' + (ARR.n - 1) + (ARR.n === 2 ? ' copy' : ' copies') +
-    ', each this far from the one before, measured centre to centre. Negative goes left or down.';
+  else {
+    var all = ARR.n * ARR.nr - 1, cols2 = arrDir() === 'v';
+    hint.textContent = (ARR.nr > 1 ? ARR.n + ' in each ' + (cols2 ? 'column' : 'row') + ', ' + ARR.nr + (cols2 ? ' columns' : ' rows') + ': the' : 'The') +
+      ' shapes you picked and ' + all + (all === 1 ? ' copy' : ' copies') + ', measured centre to centre. ' +
+      (cols2 ? 'Negative goes down' + (ARR.nr > 1 ? ', and columns to the left.' : '.') : 'Negative goes left' + (ARR.nr > 1 ? ', and rows down.' : '.'));
+  }
   SEL = ARR.objs.slice();
   draw();
 }
@@ -16036,15 +16063,15 @@ function arrApply(){
   if (!rc.r) return;
   var r = rc.r, idx = ARR.objs.slice();
   r.ids = histIdsOf(idx);
-  pushUndo('Array ' + r.n);
+  pushUndo(HIST_OPS.array.name(r));
   var first = DOC.ents.length;
   arrayMake(r, idx);
   histRecipe(r);                                       // done again by the History bar, with its numbers changed or not
   var made = DOC.ents.length - first;
   SEL = idx.concat(Array.from({length: made}, function(_, k){ return first + k; }));
-  UICFG.arrLast = {kind: ARR.kind, n: ARR.n, dx: ARR.dx, dy: ARR.dy, nc: ARR.nc, full: ARR.full, step: ARR.step}; uiCfgSave();
+  UICFG.arrLast = {kind: ARR.kind, n: ARR.n, dx: ARR.dx, dy: ARR.dy, rsp: ARR.rsp, nc: ARR.nc, full: ARR.full, step: ARR.step}; uiCfgSave();
   persist();
-  toast('ok', 'Array', made + (made === 1 ? ' copy' : ' copies') + ' made' + (r.kind === 'circ' ? ' round the centre.' : ' in a row.') +
+  toast('ok', 'Array', made + (made === 1 ? ' copy' : ' copies') + ' made' + (r.kind === 'circ' ? ' round the centre.' : r.nr > 1 ? ' in ' + r.nr + (arrDir() === 'v' ? ' columns.' : ' rows.') : ' in a row.') +
         ' They’re selected with the shapes you picked, to move as one.');
   arrClose();
   setTool('select');
@@ -16100,7 +16127,21 @@ function arrWire(){
   function len(id, k){
     $(id).addEventListener('input', function(){ if (!ARR) return; var v = lenIn($(id).value); ARR[k] = isNaN(v) ? NaN : v; arrRender(); });
   }
-  count('arrN', 'n'); count('arrNc', 'nc'); len('arrDx', 'dx'); len('arrDy', 'dy');
+  count('arrN', 'n'); count('arrNc', 'nc'); count('arrNr', 'nr'); len('arrRsp', 'rsp');
+  $('arrSp').addEventListener('input', function(){       // the spacing along the row, in its direction
+    if (!ARR) return;
+    var v = lenIn($('arrSp').value), d = arrDir();
+    if (d === 'v'){ ARR.dx = 0; ARR.dy = isNaN(v) ? NaN : v; } else { ARR.dy = 0; ARR.dx = isNaN(v) ? NaN : v; }
+    arrRender();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#arrDir button'), function(b){
+    b.addEventListener('click', function(){
+      if (!ARR || b.dataset.d === arrDir()) return;
+      var sp = arrSpacing();                               // the same spacing, the other way
+      if (b.dataset.d === 'v'){ ARR.dx = 0; ARR.dy = sp; } else { ARR.dy = 0; ARR.dx = sp; }
+      arrRender();
+    });
+  });
   function centre(){
     if (!ARR) return;
     var x = lenIn($('arrCx').value), y = lenIn($('arrCy').value);
@@ -16110,7 +16151,7 @@ function arrWire(){
   $('arrCx').addEventListener('input', centre); $('arrCy').addEventListener('input', centre);
   $('arrFull').addEventListener('change', function(){ if (ARR){ ARR.full = $('arrFull').checked; arrRender(); } });
   $('arrStep').addEventListener('input', function(){ if (!ARR) return; var v = parseFloat($('arrStep').value); ARR.step = isNaN(v) ? NaN : v; arrRender(); });
-  ['arrN', 'arrDx', 'arrDy', 'arrNc', 'arrCx', 'arrCy', 'arrStep'].forEach(function(id){
+  ['arrN', 'arrSp', 'arrNr', 'arrRsp', 'arrNc', 'arrCx', 'arrCy', 'arrStep'].forEach(function(id){
     $(id).addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); arrApply(); } });
   });
   $('arrOk').addEventListener('click', arrApply);

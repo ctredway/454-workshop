@@ -1502,6 +1502,16 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.169.0 — Array: horizontal or vertical, and rows
+Clint, 2026-10-26, on the Array panel: "it also needs a vertical or horizontal and it needs a row option, default it to 1".
+- **Direction**: a row is **Horizontal** or **Vertical**, with one **Spacing** (centre to centre; negative goes left or
+  down), in place of the Across and Up boxes. Typing `5@12,0` still makes any row, slanting ones too.
+- **Rows** (1 every time it opens): more makes a grid, each row the same, **Row spacing** apart (remembered), stacking
+  upwards; for a vertical row they're **Columns**, stacking to the right. Negative goes the other way. 2500 in all at most.
+- The step keeps the rows (`nr`, `rdx`, `rdy` beside Array's row; `arrayMake` makes them), named `Array 3 × 2`; the
+  History bar can change the rows and their spacing. One row records the step as it always was.
+- The preview is made by `arrayMake` itself (on a copy of the list), so it can't differ from what OK makes.
+
 ### 0.168.0 — Rectangle, Circle and Ellipse have the panel too
 The last of the tool panels in the order Clint and I chose (2026-10-26). Exact sizes were typed after the first click
 (`120,80`, `D5`).

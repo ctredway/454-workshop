@@ -307,17 +307,21 @@ function toolCommitText(txt){
 }
 
 
-// Array's copies: r {kind: 'lin', n, dx, dy} (a row: copy k is k steps along) or {kind: 'circ', n, step (degrees), cx,
-// cy} (copy k turned k steps about the centre), of the shapes at idx, added to the drawing. The tool and the History
-// bar both make them here, so a step done again gives exactly what the tool gave.
+// Array's copies: r {kind: 'lin', n, dx, dy} (a row: copy k is k steps along; with nr, rdx, rdy, nr such rows, row j
+// j row steps on) or {kind: 'circ', n, step (degrees), cx, cy} (copy k turned k steps about the centre), of the shapes
+// at idx, added to the drawing. The tool and the History bar both make them here, so a step done again gives exactly
+// what the tool gave.
 function arrayMake(r, idx){
   var stepRad = r.step * Math.PI / 180;                 // (as the tool always worked it out: the same copies to the bit)
-  for (var k = 1; k < r.n; k++){
-    idx.forEach(function (i){
-      var c = cloneEnt(DOC.ents[i]);
-      if (r.kind === 'circ') rotateEnt(c, r.cx, r.cy, stepRad * k);
-      else moveEntity(c, r.dx * k, r.dy * k);
-      DOC.ents.push(c);
-    });
+  var rows = r.kind === 'lin' && r.nr > 1 ? r.nr : 1;
+  for (var j = 0; j < rows; j++){
+    for (var k = j ? 0 : 1; k < r.n; k++){              // (the shapes themselves are the first of the first row)
+      idx.forEach(function (i){
+        var c = cloneEnt(DOC.ents[i]);
+        if (r.kind === 'circ') rotateEnt(c, r.cx, r.cy, stepRad * k);
+        else moveEntity(c, r.dx * k + (j ? r.rdx * j : 0), r.dy * k + (j ? r.rdy * j : 0));
+        DOC.ents.push(c);
+      });
+    }
   }
 }

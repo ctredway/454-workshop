@@ -176,13 +176,14 @@ var HIST_OPS = {
     }
   },
   array: {                      // the Array tool (tool-typing.js): a row, or copies around a centre
-    name: function (r) { return r.copy ? 'Copy' + (r.n > 2 ? ' \u00d7' + (r.n - 1) : '') : 'Array ' + r.n + (r.kind === 'circ' ? ' around' : ''); },
+    name: function (r) { return r.copy ? 'Copy' + (r.n > 2 ? ' \u00d7' + (r.n - 1) : '') : 'Array ' + r.n + (r.kind === 'circ' ? ' around' : r.nr > 1 ? ' \u00d7 ' + r.nr : ''); },
     fields: function (r) {
       if (r.copy) return [{k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}];   // the Copy panel's (copy-panel.js)
       return r.kind === 'circ'
         ? [{k: 'n', label: 'How many', kind: 'count'}, {k: 'step', label: 'Angle between', kind: 'deg'},
            {k: 'cx', label: 'Centre X', kind: 'len'}, {k: 'cy', label: 'Centre Y', kind: 'len'}]
-        : [{k: 'n', label: 'How many', kind: 'count'}, {k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}];
+        : [{k: 'n', label: 'How many', kind: 'count'}, {k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}].concat(r.nr > 1
+          ? [{k: 'nr', label: r.rdx ? 'Columns' : 'Rows', kind: 'count'}, {k: r.rdx ? 'rdx' : 'rdy', label: r.rdx ? 'Column spacing' : 'Row spacing', kind: 'len'}] : []);
     },
     run: function (r, idx) { arrayMake(r, idx); return true; }
   },
