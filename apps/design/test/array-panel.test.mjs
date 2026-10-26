@@ -90,12 +90,11 @@ test('rows: 3 across and 2 rows up, as one step; the History bar changes the row
     ['How many', 'Across', 'Up', 'Rows', 'Row spacing']);
   assert.equal(D.run('histEdit(histLine().n - 1, {nr: 3})'), 0);
   assert.equal(ents().length, 2 + 8, 'three rows of three now');
-  // done again from the start, the same shapes in the same places. (Not the same ids: copies beyond the count the step
-  // was made with get new ones each time it's done again, as they did before rows; open, 2026-10-26.)
-  const noIds = (states) => states.map((st) => st.replace(/,"_id":"[^"]*"/g, ''));
-  const before = noIds(plain(D.run('histLine().s.map(histJoin)')));
+  // done again from the start, the same: the shapes, their places and their ids (the third row's too, though the step
+  // was made with two: history-replay.js histRun keeps the extra ids with the step)
+  const before = plain(D.run('histLine().s.map(histJoin)'));
   assert.equal(D.run('(function () { var L = histLine(); var f = histReplay(L, 0); window.__after = L.s.map(histJoin); return f; })()'), 0);
-  assert.deepEqual(noIds(plain(D.run('__after'))), before, 'done again, the same');
+  assert.deepEqual(plain(D.run('__after')), before, 'done again, the same');
 });
 test('vertical with columns: the columns go to the right', () => {
   fresh();

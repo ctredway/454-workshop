@@ -276,11 +276,21 @@ function histRun(st, p){
   var idx = histIndexes(st.recipe.ids || []);
   if (!idx) return {why: HIST_WHY.gone};
   // the new shapes get the ids they had the first time, in the same order
-  HIST_IDS_NEXT = (st.made || st.recipe.out || []).slice();
+  var known = (st.made || st.recipe.out || []).slice(), had = {};
+  DOC.ents.forEach(function (e) { if (e && e._id) had[e._id] = true; });
+  HIST_IDS_NEXT = known.slice();
   try {
     var ok = HIST_OPS[st.recipe.op].run(st.recipe, idx);
     if (ok === true) histGiveIds();
   } finally { HIST_IDS_NEXT = null; }
+  // More than it made the first time (an Array's count raised on the History bar): the extra shapes' new ids are kept
+  // with the step too, so done again they get the same ones, and a toolpath or a dimension on one still finds it.
+  if (ok === true){
+    var isKnown = {}, extra = [];
+    known.forEach(function (id) { isKnown[id] = true; });
+    DOC.ents.forEach(function (e) { if (e && e._id && !had[e._id] && !isKnown[e._id]) extra.push(e._id); });
+    if (extra.length) st.made = known.concat(extra);
+  }
   if (ok !== true) return {why: typeof ok === 'string' ? ok : HIST_WHY.cant};
   // shapes it made go on the layer and sheet they went on the first time (not the ones being drawn on now)
   var first = {}, E = HIST_KEYS.indexOf('ents');

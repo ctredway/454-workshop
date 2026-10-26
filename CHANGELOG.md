@@ -1502,6 +1502,13 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.169.1 — copies an Array step makes past its first count keep their ids
+Clint, 2026-10-26 ("go ahead and fix it"). After an Array step's count was raised on the History bar, the copies past
+the count it was made with got new ids each time the steps were done again. A dimension or toolpath on one of them
+lost it at the next change to an earlier step. Each step keeps the ids it gave out, to give out the same ones again
+(`made`); now, done again and giving out more, it keeps the extra ones too (`histRun`, history-replay.js), with the
+drawing and in its file, so they come back even after the count goes down and up again. Since Design 0.150.0.
+
 ### 0.169.0 — Array: horizontal or vertical, and rows
 Clint, 2026-10-26, on the Array panel: "it also needs a vertical or horizontal and it needs a row option, default it to 1".
 - **Direction**: a row is **Horizontal** or **Vertical**, with one **Spacing** (centre to centre; negative goes left or

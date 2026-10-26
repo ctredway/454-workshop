@@ -84,3 +84,34 @@ test('in the step’s box: a count from a parameter is remembered; one that isn�
   assert.equal(circles().length, 5, 'unchanged');
   D.run('histEditClose(); 1');
 });
+
+// Clint, 2026-10-26 ("go ahead and fix it"): copies beyond the count an Array step was first made with got new ids each
+// time the steps were done again, so a dimension or toolpath on one lost it at the next change to an earlier step.
+const ids = () => plain(D.run('DOC.ents.map(function (e) { return e._id; })'));
+test('copies past the count an array was made with keep their ids, through changes, saving and opening', () => {
+  setup();
+  typeArray('3@25,0');
+  assert.equal(D.run('histEdit(1, {n: 6, dx: 25, dy: 0})'), 0);
+  const six = ids();
+  assert.equal(six.length, 6);
+  D.run('histReplay(histLine(), 0); 1');
+  assert.deepEqual(ids(), six, 'done again: the same ids');
+  // a dimension on the sixth, then a change to the step before the array: still measuring it
+  D.run(`pushUndo(); addDim({kind: 'dia', a: ${JSON.stringify(six[5])}}); 1`);
+  assert.equal(D.run('histEdit(0, {r: 5})'), 0);
+  assert.deepEqual(ids(), six, 'an earlier step changed: the copies keep their ids');
+  assert.equal(D.run('DOC.dims.length'), 1);
+  assert.equal(D.run('dimRefOk(DOC.dims[0])'), true, 'the dimension on the sixth still finds it');
+  assert.equal(D.run('dimValue(DOC.dims[0])'), 10, 'and measures it: Ø10 now');
+  // fewer, then more again: the same ids come back
+  assert.equal(D.run('histEdit(1, {n: 4, dx: 25, dy: 0})'), 0);
+  assert.deepEqual(ids(), six.slice(0, 4));
+  assert.equal(D.run('histEdit(1, {n: 6, dx: 25, dy: 0})'), 0);
+  assert.deepEqual(ids(), six, 'back to six: the ids they had');
+  // saved and opened again: still so
+  const file = JSON.parse(D.run('histAttach(docForStorage(true))'));
+  setup();
+  D.openDrawing(D.run(`(${JSON.stringify(file)})`), 'row.454.json');
+  D.run('histReplay(histLine(), 0); 1');
+  assert.deepEqual(ids(), six, 'opened from a file and done again: the same ids');
+});
