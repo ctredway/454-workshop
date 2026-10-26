@@ -33,6 +33,11 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.7.0-beta.3 — construction lines and mirrored copies that follow, Shift+D, a tidier prompt bar
+- Includes Design 0.160.0 to 0.161.0: construction lines stay attached to the points they were drawn from; mirrored
+  copies stay mirrored (Mirror's new box, ticked by default); the prompt bar sits above the History bar and goes away
+  with no tool chosen; dragging a dimension's value isn't a History step; Shift+D shows or hides the dimensions.
+
 ### 0.7.0-beta.2 — Electron 42
 - **Electron 33 → 42** (Dependabot #6, done by hand so the lock file kept the app's version): Electron 33 is no longer
   given security fixes, and Dependabot flagged a high-severity one (compromised eMudhra intermediate certificates)
