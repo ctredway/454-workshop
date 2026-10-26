@@ -308,6 +308,15 @@ SHOTS.push({ name: 'design-sheets', page: 'design.html', size: [1400, 900],
     return { x: top.left, y: bar.top - 6, width: top.width, height: bar.height + 12 };` });
 
 module.exports = { PRELUDE, SHOTS };
+// The Copy panel: a shelf, measured from its corner to a point beside it, the copy shown dashed there
+SHOTS.push({ name: 'design-copy', page: 'design.html', size: [1400, 900],
+  setup: `toast = function () {};
+    drawing(360, 240, [{ t: 'rect', x: 40, y: 60, w: 120, h: 40 }]); fitStock();
+    DOC.stock.units = 'mm'; syncStockUI();
+    UICFG.cpyLast = null;
+    document.getElementById('tpCollapse').click(); await wait(250);
+    SEL = [0]; setTool('copy'); cpyClick({ x: 40, y: 60 }, { x: 40, y: 60 }); cpyClick({ x: 180, y: 120 }, { x: 180, y: 120 }); await wait(200);
+    return box('#canvasWrap');` });
 // The Rotate panel: an L-shaped bracket, a quarter turn about its centre, shown dashed before OK
 SHOTS.push({ name: 'design-rotate', page: 'design.html', size: [1400, 900],
   setup: `toast = function () {};

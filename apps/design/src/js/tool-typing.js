@@ -120,6 +120,7 @@ function toolCommitText(txt){
     return;
   }
   if (TOOL === 'copy'){
+    if (CPY){ cpyTyped(txt); return; }                 // with its panel open (copy-panel.js), typing fills it in
     if (!SEL.length){ stagePrompt('selFirst'); return; }
     var base = DRAW ? {x:DRAW.bx, y:DRAW.by} : {x:0, y:0};
     var pc = parseNumericPoint(txt, base);

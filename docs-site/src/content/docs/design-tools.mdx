@@ -20,6 +20,7 @@ import parameters from '../../assets/shots/design-parameters.png';
 import keepLinedUp from '../../assets/shots/design-keep-lined-up.png';
 import arrayPanel from '../../assets/shots/design-array.png';
 import rotatePanel from '../../assets/shots/design-rotate.png';
+import copyPanel from '../../assets/shots/design-copy.png';
 
 
 Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
@@ -224,7 +225,7 @@ Copies shapes, with their dimensions, to paste somewhere else in the drawing, or
 2. Press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste: the copy lands centred on the pointer, and snaps as drawing does. If the
    pointer isn't over the drawing, it goes 10 mm right and down from the original.
 3. Or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> to paste it exactly where it was copied from, then move it
-   precisely: type an offset with **Copy** or **Select**, or use the arrow keys.
+   precisely: type its X and Y in the box above the drawing, or use the arrow keys.
 
 The pasted shapes come in selected. Paste again for another copy. In the desktop app, **Edit → Copy**, **Cut**
 and **Paste** do the same.
@@ -489,11 +490,20 @@ follows when you change the sheet you're cutting.
 
 Shortcut: <kbd>M</kbd>
 
-Makes a copy of the selection somewhere else.
+Makes copies of shapes a set distance away. The Copy panel opens beside the drawing, and the copies show dashed until
+you click **OK**.
 
-1. Select the shapes first.
-2. Click a base point on them, or type the offset as `@dx,dy`.
-3. Click where the base point should go, or type it as `x,y` or `@dx,dy`.
+1. Click **Copy**. Shapes you selected first are already in **Objects**; click others on the drawing to add them, or
+   click one again to take it off.
+2. Say how far: type **Across (X)** and **Up (Y)** (negative goes left or down), or measure it on the drawing: click a
+   point on the shapes for **From** (it snaps to corners and centres), then where that point should go for **To**.
+   Across and Up fill in.
+3. **Copies** is how many: with more than one, each goes the same distance on from the one before.
+4. Click **OK**, or press <kbd>Enter</kbd> in any box. The copies are left selected, so Copy again copies them on.
+
+<Shot src={copyPanel} alt="The Copy panel beside a drawing: a shelf picked, measured from its corner to a point beside it, and the copy shown dashed there." />
+
+The History bar can change the distance afterwards. For copies in a grid or round a circle, use **Array**.
 
 ### Mirror
 

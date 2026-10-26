@@ -186,7 +186,7 @@ without a published release looks to them like a newest release with nothing in 
   holes a library bit fits drilled, parts out with the last tabs, the last bit used; what it can't decide is left out and
   said. It never adds without his OK. His rules (2026-10-26): ask before changing what it makes.
 - **Tools are set up in panels, not typed codes** (Clint, 2026-10-26: "I want to start making tool dialogs for most of the
-  tools"). Offset, Mirror, Fillet corners, Array (`array-panel.js`) and Rotate (`rotate-panel.js`) have one: a floating panel beside the drawing (the
+  tools"). Offset, Mirror, Fillet corners, Array (`array-panel.js`), Rotate (`rotate-panel.js`) and Copy (`copy-panel.js`) have one: a floating panel beside the drawing (the
   `.mirSlot` rows), the shapes clicked while it's open, a dashed preview, what's wrong said in it with OK off. Typed codes
   may stay as a shortcut that fills the panel in. More tools are to follow, one at a time.
 - **Dimensions remember which edge they measure** (a rectangle's side, an outline's segment), not a point.

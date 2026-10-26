@@ -92,6 +92,7 @@ function toolClick(w, snap){
     } else if (!MOUSE.shift) SEL = [];
   }
   else if (TOOL === 'copy'){
+    if (CPY){ cpyClick(w, p); return; }              // the panel owns the picking
     if (!SEL.length){ stagePrompt('selFirst'); }
     else if (!DRAW){ DRAW = {stage:1, bx:p.x, by:p.y}; stagePrompt('copy1'); }
     else {

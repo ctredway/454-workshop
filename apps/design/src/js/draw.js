@@ -401,6 +401,20 @@ function draw(){
     }
   }
 
+  // ---- copy preview ----
+  if (TOOL === 'copy' && CPY){
+    ctx.save(); ctx.strokeStyle = accentRGBA(.85); ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    cpyResults().forEach(function(ne){ drawEntityOutline(ne); });
+    ctx.restore();
+    if (CPY.from){                                     // measured on the drawing: from, and to
+      var cpA = w2s(CPY.from.x, CPY.from.y), cpB = CPY.to ? w2s(CPY.to.x, CPY.to.y) : null;
+      ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.fillStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(cpA.x, cpA.y, 4, 0, Math.PI * 2); ctx.fill();
+      if (cpB){ ctx.beginPath(); ctx.moveTo(cpA.x, cpA.y); ctx.lineTo(cpB.x, cpB.y); ctx.stroke(); ctx.beginPath(); ctx.arc(cpB.x, cpB.y, 4, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+
   // ---- rotate preview ----
   if (TOOL === 'rotate' && ROT){
     ctx.save(); ctx.strokeStyle = accentRGBA(.85); ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);

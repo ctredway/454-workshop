@@ -57,6 +57,7 @@ var HELP_ICONS = [
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#inwTitle', 'cam-reference.html#inlay', 'Makes both halves of a V-carve inlay at once: choose the bit and the end mill, then the depths.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
+  ['#cpyPanel .modalHead > h3', 'design-tools.html#copy', 'Makes copies of the shapes you pick, a distance across and up from them: typed, or measured from one point to another on the drawing.'],
   ['#rotPanel .modalHead > h3', 'design-tools.html#rotate', 'Turns the shapes you pick by an angle, about their own centre or a point you pick.'],
   ['#arrPanel .modalHead > h3', 'design-tools.html#array', 'Makes evenly spaced copies of the shapes you pick, in a row or around a centre.'],
   ['#fallPanel .modalHead > h3', 'design-tools.html#fillet-corners', 'Rounds every corner of the chosen shapes at once, or only those pointing out or in. Corners it can\u2019t do are ringed in red.'],

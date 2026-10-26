@@ -1502,6 +1502,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.166.0 — Copy has a panel
+The third of the tool panels (Clint, 2026-10-26). Copy wanted the shapes selected first, then a click on them and a click
+where it goes, or a typed "@dx,dy".
+- **A panel like Array's** (`copy-panel.js`): the shapes (selected first, or clicked), **Across** and **Up** typed, or
+  measured on the drawing: **From** a point (snapping), **To** where it goes, and Across and Up fill in (the tool's two
+  clicks, shown: a green dot and line); and **Copies**, how many, each the distance on from the one before. Shown dashed
+  before OK; what's missing is said with OK off. The copies are left selected, so Copy again copies them on, as before.
+- **A History step that can be changed** (Copy had none it could change): a copy is a row of them, so it's Array's step
+  marked `copy`, named Copy (or Copy ×3), with Across and Up to change.
+- Opens as last used (`UICFG.cpyLast`); the first time, one copy to the right, their width and 10 mm on. Typing
+  "@dx,dy" with the panel open copies.
+
 ### 0.165.0 — Rotate has a panel
 The second of the tool panels (Clint, 2026-10-26: "this is a very visual process and most users, including me, do not
 work well with the non visual way"). Rotate wanted the shapes selected first, a click for the centre, then a typed angle.

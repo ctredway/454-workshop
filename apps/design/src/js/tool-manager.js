@@ -273,6 +273,7 @@ function toolMgrEnter(t){
   if (t !== 'offset' && OFF) offClose();
   if (t !== 'array' && ARR) arrClose();
   if (t !== 'rotate' && ROT) rotClose();
+  if (t !== 'copy' && CPY) cpyClose();
   if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
@@ -295,6 +296,7 @@ function toolMgrEnter(t){
   if (t === 'offset' && !OFF) offOpen();
   if (t === 'array' && !ARR) arrOpen();
   if (t === 'rotate' && !ROT) rotOpen();
+  if (t === 'copy' && !CPY) cpyOpen();
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){

@@ -49,7 +49,7 @@ var STAGE_LABEL = {
   poly1:  'Polyline \u2014 next point ("@dx,dy" / "50<45" ok) \u00b7 Enter finishes \u00b7 click start closes',
   filletall0:'Fillet corners \u2014 click shapes to add or remove them, set the radius and which corners, then OK',
   offset0:'Offset \u2014 select or click shapes, then type the distance: "+2" outward copy, "-1.5" inward',
-  copy0:  'Copy \u2014 click base point, or type the offset "@dx,dy"',
+  copy0:  'Copy \u2014 click the shapes to copy, then set how far in the panel, or measure it on the drawing',
   copy1:  'Copy \u2014 click destination, or type "x,y" / "@dx,dy"',
   mirror0:'Mirror \u2014 click the shapes to mirror, then the line to mirror about \u00b7 a construction line (X) is taken as the axis automatically',
   mirror1:'Mirror \u2014 click the second point of the axis (mirrored copy)',

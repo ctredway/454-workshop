@@ -551,6 +551,15 @@
   #arrKind button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
   #arrKind button+button{border-left:1px solid var(--line)}
   #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  /* Copy: the same panel, with From and To side by side */
+  #cpyPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #cpyPanel[hidden]{display:none}
+  #cpyPanel h3{font-size:14px}
+  #cpyPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #cpyPanel .panelUnit{margin-left:0;width:18px;flex:none;text-align:right}
+  #cpyPanel .cpyOr{margin-top:9px}
+  .cpyPts{display:flex;gap:6px}
+  .cpyPts .mirSlot{margin-top:5px}
   /* Rotate: the same panel, with a row of quick angles */
   #rotPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #rotPanel[hidden],#rotPt[hidden]{display:none}

@@ -561,6 +561,15 @@
   #arrKind button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
   #arrKind button+button{border-left:1px solid var(--line)}
   #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  /* Copy: the same panel, with From and To side by side */
+  #cpyPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #cpyPanel[hidden]{display:none}
+  #cpyPanel h3{font-size:14px}
+  #cpyPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #cpyPanel .panelUnit{margin-left:0;width:18px;flex:none;text-align:right}
+  #cpyPanel .cpyOr{margin-top:9px}
+  .cpyPts{display:flex;gap:6px}
+  .cpyPts .mirSlot{margin-top:5px}
   /* Rotate: the same panel, with a row of quick angles */
   #rotPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #rotPanel[hidden],#rotPt[hidden]{display:none}
@@ -1258,6 +1267,17 @@
       <p class="mirHint" id="offHint"></p>
       <div class="mirBtns"><button id="offCancel">Cancel</button><button id="offOk" class="primary">OK</button></div>
     </div>
+    <div id="cpyPanel" hidden role="dialog" aria-label="Copy">
+      <div class="modalHead"><h3>Copy</h3><button class="modalX" id="cpyX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="cpyObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="cpyObjsVal">none</span></button>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cpyDx">Across (X)</label></span><input id="cpyDx" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal panelUnit panelU">mm</span></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cpyDy">Up (Y)</label></span><input id="cpyDy" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal panelUnit panelU">mm</span></div>
+      <p class="mirHint cpyOr">Or measure it on the drawing:</p>
+      <div class="cpyPts"><button class="mirSlot" id="cpyFrom"><span class="mirLbl">From</span><span class="mirVal" id="cpyFromVal">none</span></button><button class="mirSlot" id="cpyTo"><span class="mirLbl">To</span><span class="mirVal" id="cpyToVal">none</span></button></div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="cpyN">Copies</label></span><input id="cpyN" type="text" inputmode="numeric" autocomplete="off"><span class="mirVal panelUnit"></span></div>
+      <p class="mirHint" id="cpyHint"></p>
+      <div class="mirBtns"><button id="cpyCancel">Cancel</button><button id="cpyOk" class="primary">OK</button></div>
+    </div>
     <div id="rotPanel" hidden role="dialog" aria-label="Rotate">
       <div class="modalHead"><h3>Rotate</h3><button class="modalX" id="rotX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
       <button class="mirSlot" id="rotObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="rotObjsVal">none</span></button>
@@ -1400,7 +1420,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.165.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.166.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3542,8 +3562,9 @@ var HIST_OPS = {
     }
   },
   array: {                      // the Array tool (tool-typing.js): a row, or copies around a centre
-    name: function (r) { return 'Array ' + r.n + (r.kind === 'circ' ? ' around' : ''); },
+    name: function (r) { return r.copy ? 'Copy' + (r.n > 2 ? ' \u00d7' + (r.n - 1) : '') : 'Array ' + r.n + (r.kind === 'circ' ? ' around' : ''); },
     fields: function (r) {
+      if (r.copy) return [{k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}];   // the Copy panel's (copy-panel.js)
       return r.kind === 'circ'
         ? [{k: 'n', label: 'How many', kind: 'count'}, {k: 'step', label: 'Angle between', kind: 'deg'},
            {k: 'cx', label: 'Centre X', kind: 'len'}, {k: 'cy', label: 'Centre Y', kind: 'len'}]
@@ -4079,7 +4100,7 @@ var STAGE_LABEL = {
   poly1:  'Polyline \u2014 next point ("@dx,dy" / "50<45" ok) \u00b7 Enter finishes \u00b7 click start closes',
   filletall0:'Fillet corners \u2014 click shapes to add or remove them, set the radius and which corners, then OK',
   offset0:'Offset \u2014 select or click shapes, then type the distance: "+2" outward copy, "-1.5" inward',
-  copy0:  'Copy \u2014 click base point, or type the offset "@dx,dy"',
+  copy0:  'Copy \u2014 click the shapes to copy, then set how far in the panel, or measure it on the drawing',
   copy1:  'Copy \u2014 click destination, or type "x,y" / "@dx,dy"',
   mirror0:'Mirror \u2014 click the shapes to mirror, then the line to mirror about \u00b7 a construction line (X) is taken as the axis automatically',
   mirror1:'Mirror \u2014 click the second point of the axis (mirrored copy)',
@@ -4395,6 +4416,7 @@ function toolMgrEnter(t){
   if (t !== 'offset' && OFF) offClose();
   if (t !== 'array' && ARR) arrClose();
   if (t !== 'rotate' && ROT) rotClose();
+  if (t !== 'copy' && CPY) cpyClose();
   if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
@@ -4417,6 +4439,7 @@ function toolMgrEnter(t){
   if (t === 'offset' && !OFF) offOpen();
   if (t === 'array' && !ARR) arrOpen();
   if (t === 'rotate' && !ROT) rotOpen();
+  if (t === 'copy' && !CPY) cpyOpen();
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){
@@ -4528,6 +4551,7 @@ function toolClick(w, snap){
     } else if (!MOUSE.shift) SEL = [];
   }
   else if (TOOL === 'copy'){
+    if (CPY){ cpyClick(w, p); return; }              // the panel owns the picking
     if (!SEL.length){ stagePrompt('selFirst'); }
     else if (!DRAW){ DRAW = {stage:1, bx:p.x, by:p.y}; stagePrompt('copy1'); }
     else {
@@ -4858,6 +4882,7 @@ function toolCommitText(txt){
     return;
   }
   if (TOOL === 'copy'){
+    if (CPY){ cpyTyped(txt); return; }                 // with its panel open (copy-panel.js), typing fills it in
     if (!SEL.length){ stagePrompt('selFirst'); return; }
     var base = DRAW ? {x:DRAW.bx, y:DRAW.by} : {x:0, y:0};
     var pc = parseNumericPoint(txt, base);
@@ -7982,6 +8007,7 @@ var HELP_ICONS = [
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#inwTitle', 'cam-reference.html#inlay', 'Makes both halves of a V-carve inlay at once: choose the bit and the end mill, then the depths.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
+  ['#cpyPanel .modalHead > h3', 'design-tools.html#copy', 'Makes copies of the shapes you pick, a distance across and up from them: typed, or measured from one point to another on the drawing.'],
   ['#rotPanel .modalHead > h3', 'design-tools.html#rotate', 'Turns the shapes you pick by an angle, about their own centre or a point you pick.'],
   ['#arrPanel .modalHead > h3', 'design-tools.html#array', 'Makes evenly spaced copies of the shapes you pick, in a row or around a centre.'],
   ['#fallPanel .modalHead > h3', 'design-tools.html#fillet-corners', 'Rounds every corner of the chosen shapes at once, or only those pointing out or in. Corners it can\u2019t do are ringed in red.'],
@@ -15394,6 +15420,20 @@ function draw(){
     }
   }
 
+  // ---- copy preview ----
+  if (TOOL === 'copy' && CPY){
+    ctx.save(); ctx.strokeStyle = accentRGBA(.85); ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    cpyResults().forEach(function(ne){ drawEntityOutline(ne); });
+    ctx.restore();
+    if (CPY.from){                                     // measured on the drawing: from, and to
+      var cpA = w2s(CPY.from.x, CPY.from.y), cpB = CPY.to ? w2s(CPY.to.x, CPY.to.y) : null;
+      ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.fillStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(cpA.x, cpA.y, 4, 0, Math.PI * 2); ctx.fill();
+      if (cpB){ ctx.beginPath(); ctx.moveTo(cpA.x, cpA.y); ctx.lineTo(cpB.x, cpB.y); ctx.stroke(); ctx.beginPath(); ctx.arc(cpB.x, cpB.y, 4, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+
   // ---- rotate preview ----
   if (TOOL === 'rotate' && ROT){
     ctx.save(); ctx.strokeStyle = accentRGBA(.85); ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
@@ -16182,6 +16222,128 @@ function rotWire(){
   $('rotOk').addEventListener('click', rotApply);
   $('rotCancel').addEventListener('click', function(){ rotClose(); setTool('select'); });
   $('rotX').addEventListener('click', function(){ rotClose(); setTool('select'); });
+}
+// Copy, with a panel like Array's (Clint, 2026-10-26: "this is a very visual process"). The shapes (selected first, or
+// clicked while it's open), moved by Across and Up: typed, or measured on the drawing from one point to another (both
+// snapping, as the tool's two clicks were), how many copies, shown dashed before OK. A copy is a row of them, so the step
+// is Array's ({op: 'array', kind: 'lin', copy: true}, arrayMake): the History bar calls it Copy and can change it.
+var CPY = null;             // the open panel: {objs, dx, dy, n (copies), from, to: {x, y} or null, slot: 'objs'|'from'|'to'}
+function cpyOpen(){
+  var objs = SEL.filter(function(i){ return DOC.ents[i] && entOnSheet(DOC.ents[i]); });
+  var L = UICFG.cpyLast || {};
+  CPY = {objs: objs, dx: L.dx, dy: L.dy || 0, n: L.n || 1, from: null, to: null, slot: objs.length ? 'from' : 'objs'};
+  if (!(Math.abs(CPY.dx) > 1e-9) && !(Math.abs(CPY.dy) > 1e-9)){
+    var b = cpyBox();                                  // first time: beside them, 10 mm to the right
+    CPY.dx = b ? Math.ceil(b.x1 - b.x0 + 10) : 50;
+  }
+  document.getElementById('cpyPanel').hidden = false;
+  cpyFill();
+  cpyRender();
+}
+function cpyClose(){ CPY = null; document.getElementById('cpyPanel').hidden = true; draw(); }
+function cpyBox(){
+  var bb = null;
+  (CPY ? CPY.objs : []).forEach(function(i){
+    var b = DOC.ents[i] && entBBox(DOC.ents[i]);
+    if (b) bb = bb ? {x0: Math.min(bb.x0, b.x0), y0: Math.min(bb.y0, b.y0), x1: Math.max(bb.x1, b.x1), y1: Math.max(bb.y1, b.y1)} : b;
+  });
+  return bb;
+}
+function cpyWhy(){
+  if (!CPY.objs.length) return 'Click the shapes on the drawing to copy.';
+  if (!(CPY.n >= 1 && CPY.n <= 499)) return 'Copies is 1 to 499.';
+  if (!isFinite(CPY.dx) || !isFinite(CPY.dy)) return 'Across and Up need a distance (0 is fine for one of them).';
+  if (!(Math.abs(CPY.dx) > 1e-9) && !(Math.abs(CPY.dy) > 1e-9)) return 'Give it a distance across or up, or the copy lands on top of the shapes.';
+  return '';
+}
+// the copies OK would add, for the preview
+function cpyResults(){
+  if (!CPY || cpyWhy()) return [];
+  var out = [];
+  for (var k = 1; k <= CPY.n; k++) CPY.objs.forEach(function(i){ var c = cloneEnt(DOC.ents[i]); moveEntity(c, CPY.dx * k, CPY.dy * k); out.push(c); });
+  return out;
+}
+function cpyFill(){
+  document.getElementById('cpyDx').value = isFinite(CPY.dx) ? fmtDisp(CPY.dx) : '';
+  document.getElementById('cpyDy').value = isFinite(CPY.dy) ? fmtDisp(CPY.dy) : '';
+  document.getElementById('cpyN').value = CPY.n;
+}
+function cpyRender(){
+  if (!CPY) return;
+  var why = cpyWhy();
+  document.getElementById('cpyObjsVal').textContent = CPY.objs.length ? CPY.objs.length + (CPY.objs.length === 1 ? ' shape' : ' shapes') : 'none';
+  document.getElementById('cpyFromVal').textContent = CPY.from ? 'picked' : 'none';
+  document.getElementById('cpyToVal').textContent = CPY.to ? 'picked' : 'none';
+  ['objs', 'from', 'to'].forEach(function(s){
+    document.getElementById({objs: 'cpyObjs', from: 'cpyFrom', to: 'cpyTo'}[s]).setAttribute('aria-pressed', CPY.slot === s ? 'true' : 'false');
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#cpyPanel .panelU'), function(s){ s.textContent = unitTag(); });
+  document.getElementById('cpyOk').disabled = !!why;
+  document.getElementById('cpyHint').textContent = why || (
+    CPY.slot === 'from' && CPY.to ? 'Measured: the copy goes from the first point to the second. Click OK, or click the drawing to measure again.' :
+    CPY.slot === 'from' ?'Click a point on the drawing to measure from (it snaps to corners and centres), or type Across and Up.' :
+    CPY.slot === 'to' ? 'Click where that point goes: Across and Up fill in.' :
+    (CPY.n === 1 ? 'The copy goes' : 'Each copy goes') + ' this far from the ' + (CPY.n === 1 ? 'shapes' : 'one before') + '. Negative goes left or down.');
+  SEL = CPY.objs.slice();
+  draw();
+}
+function cpyApply(){
+  if (!CPY || cpyWhy()) return;
+  var idx = CPY.objs.slice(), r = {op: 'array', kind: 'lin', copy: true, ids: histIdsOf(idx), n: CPY.n + 1, dx: CPY.dx, dy: CPY.dy};
+  pushUndo(HIST_OPS.array.name(r));
+  var first = DOC.ents.length;
+  arrayMake(r, idx);
+  histRecipe(r);                                       // done again by the History bar, with its numbers changed or not
+  var made = DOC.ents.length - first;
+  SEL = Array.from({length: made}, function(_, k){ return first + k; });   // the copies: Copy again copies them on
+  UICFG.cpyLast = {dx: CPY.dx, dy: CPY.dy, n: CPY.n}; uiCfgSave();
+  persist();
+  toast('ok', 'Copied', made + (made === 1 ? ' shape' : ' shapes') + ' made, ' + fmtDisp(CPY.dx) + ' across and ' + fmtDisp(CPY.dy) + ' up ' +
+        unitTag() + (CPY.n > 1 ? ' each.' : '.') + ' The copies are selected.');
+  cpyClose();
+  setTool('select');
+}
+// a canvas click while the panel is open: the shapes, or a point to measure from or to
+function cpyClick(w, p){
+  if (CPY.slot === 'from' || CPY.slot === 'to'){
+    CPY[CPY.slot] = {x: p.x, y: p.y};
+    if (CPY.slot === 'from'){ CPY.to = null; CPY.slot = 'to'; }
+    else { CPY.dx = CPY.to.x - CPY.from.x; CPY.dy = CPY.to.y - CPY.from.y; CPY.slot = 'from'; cpyFill(); }
+    cpyRender();
+    return;
+  }
+  var h = pickEntity(w);
+  if (h === null) return;
+  var at = CPY.objs.indexOf(h);
+  if (at >= 0) CPY.objs.splice(at, 1); else CPY.objs.push(h);
+  cpyRender();
+}
+// typed in the prompt with the panel open: "@dx,dy" (or "dx,dy") the distance, and OK
+function cpyTyped(txt){
+  if (!CPY.objs.length) CPY.objs = SEL.filter(function(i){ return DOC.ents[i]; });
+  var pc = parseNumericPoint(txt.charAt(0) === '@' ? txt : '@' + txt, {x: 0, y: 0});
+  if (!pc) return false;
+  CPY.dx = pc.x; CPY.dy = pc.y; CPY.from = CPY.to = null;
+  cpyFill();
+  if (!cpyWhy()) cpyApply(); else cpyRender();
+  return true;
+}
+function cpyWire(){
+  var $ = function(id){ return document.getElementById(id); };
+  $('cpyObjs').addEventListener('click', function(){ if (CPY){ CPY.slot = 'objs'; cpyRender(); } });
+  $('cpyFrom').addEventListener('click', function(){ if (CPY){ CPY.slot = 'from'; cpyRender(); } });
+  $('cpyTo').addEventListener('click', function(){ if (CPY){ CPY.slot = CPY.from ? 'to' : 'from'; cpyRender(); } });
+  function len(id, k){
+    $(id).addEventListener('input', function(){ if (!CPY) return; var v = lenIn($(id).value); CPY[k] = isNaN(v) ? NaN : v; CPY.from = CPY.to = null; cpyRender(); });
+  }
+  len('cpyDx', 'dx'); len('cpyDy', 'dy');
+  $('cpyN').addEventListener('input', function(){ if (!CPY) return; var t = $('cpyN').value.trim(); CPY.n = /^\d+$/.test(t) ? +t : NaN; cpyRender(); });
+  ['cpyDx', 'cpyDy', 'cpyN'].forEach(function(id){
+    $(id).addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); cpyApply(); } });
+  });
+  $('cpyOk').addEventListener('click', cpyApply);
+  $('cpyCancel').addEventListener('click', function(){ cpyClose(); setTool('select'); });
+  $('cpyX').addEventListener('click', function(){ cpyClose(); setTool('select'); });
 }
 // PREVIEWS FOR TRIM AND EXTEND
 // The preview runs the real operation on a throwaway copy of the affected shape and then shows
@@ -20438,7 +20600,7 @@ var PANEL_BTNS = {
  intersectBtn:{id:'intersectBtn', icon:'intersect', title:'Intersect — keep only the area all the selected shapes share'},
  joinBtn:{id:'joinBtn', icon:'join', title:'Join \u2014 stitch selected OPEN vectors whose ends meet into one continuous contour'},
  explodeBtn:{id:'explodeBtn', icon:'expl', title:'Explode \u2014 break a contour into its individual lines and arcs'},
- copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 select first (V), then click base point and destination, or type @dx,dy'},
+ copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 copies of shapes, a set distance away'},
  mirrorT:{tool:'mirror', icon:'mirror', title:'Mirror (Shift+M) \u2014 opens the mirror panel: pick the shapes, pick the line to mirror about, then OK. Makes mirrored copy across the selection center, HH/VV to flip in place, or click 2 points for a custom axis'},
  rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 turn shapes by an angle, about their centre or a point'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 evenly spaced copies, in a row or around a centre'},
@@ -21016,6 +21178,7 @@ function wire(){
   document.getElementById('offOk').addEventListener('click', offApply);
   arrWire();                                                // the Array panel (array-panel.js)
   rotWire();                                                // the Rotate panel (rotate-panel.js)
+  cpyWire();                                                // the Copy panel (copy-panel.js)
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
@@ -21762,6 +21925,7 @@ function wire(){
       else if (OFF){ offClose(); setTool('select'); }          // cancel the offset
       else if (ARR){ arrClose(); setTool('select'); }          // cancel the array
       else if (ROT){ rotClose(); setTool('select'); }          // cancel the rotation
+      else if (CPY){ cpyClose(); setTool('select'); }          // cancel the copy
       else if (FALL){ fallClose(); setTool('select'); }        // cancel Fillet corners
       else if (FALL_MARKS){ FALL_MARKS = null; }               // clear the rings on corners Fillet corners couldn't do
       else if (MEAS){ MEAS = null; }                           // clear the last measurement

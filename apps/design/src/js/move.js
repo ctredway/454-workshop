@@ -127,7 +127,7 @@ var PANEL_BTNS = {
  intersectBtn:{id:'intersectBtn', icon:'intersect', title:'Intersect — keep only the area all the selected shapes share'},
  joinBtn:{id:'joinBtn', icon:'join', title:'Join \u2014 stitch selected OPEN vectors whose ends meet into one continuous contour'},
  explodeBtn:{id:'explodeBtn', icon:'expl', title:'Explode \u2014 break a contour into its individual lines and arcs'},
- copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 select first (V), then click base point and destination, or type @dx,dy'},
+ copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 copies of shapes, a set distance away'},
  mirrorT:{tool:'mirror', icon:'mirror', title:'Mirror (Shift+M) \u2014 opens the mirror panel: pick the shapes, pick the line to mirror about, then OK. Makes mirrored copy across the selection center, HH/VV to flip in place, or click 2 points for a custom axis'},
  rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 turn shapes by an angle, about their centre or a point'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 evenly spaced copies, in a row or around a centre'},

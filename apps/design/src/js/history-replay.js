@@ -176,8 +176,9 @@ var HIST_OPS = {
     }
   },
   array: {                      // the Array tool (tool-typing.js): a row, or copies around a centre
-    name: function (r) { return 'Array ' + r.n + (r.kind === 'circ' ? ' around' : ''); },
+    name: function (r) { return r.copy ? 'Copy' + (r.n > 2 ? ' \u00d7' + (r.n - 1) : '') : 'Array ' + r.n + (r.kind === 'circ' ? ' around' : ''); },
     fields: function (r) {
+      if (r.copy) return [{k: 'dx', label: 'Across', kind: 'len'}, {k: 'dy', label: 'Up', kind: 'len'}];   // the Copy panel's (copy-panel.js)
       return r.kind === 'circ'
         ? [{k: 'n', label: 'How many', kind: 'count'}, {k: 'step', label: 'Angle between', kind: 'deg'},
            {k: 'cx', label: 'Centre X', kind: 'len'}, {k: 'cy', label: 'Centre Y', kind: 'len'}]
