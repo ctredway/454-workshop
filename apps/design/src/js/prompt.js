@@ -13,6 +13,21 @@ function placeFloatIn(){
   box.style.left = Math.max(8, Math.min(at.x + 16, maxX)) + 'px';
   box.style.top  = Math.max(8, Math.min(at.y - h - 10, maxY)) + 'px';
 }
+// The prompt bar sits just above the History bar (it used to sit on it, Clint 2026-10-26), and the hint above both
+function promptPlace(){
+  var bar = document.getElementById('promptBar'), hint = document.getElementById('promptHint'), hb = document.getElementById('histBar');
+  if (!bar) return;
+  var base = hb && hb.offsetParent ? hb.offsetHeight + 10 + 8 : 14;
+  bar.style.bottom = base + 'px';
+  if (hint) hint.style.bottom = (base + (bar.classList.contains('on') ? bar.offsetHeight + 6 : 0)) + 'px';
+}
+// With no tool chosen (the Select tool, nothing being drawn or typed), the prompt bar isn't wanted: it's put away
+function promptTidy(){
+  var bar = document.getElementById('promptBar');
+  if (!bar || !bar.classList.contains('on')) return;
+  if (TOOL !== 'select' || DRAW || DIMSEL !== null || document.activeElement === document.getElementById('promptIn')) return;   // (a dimension selected: its prompt says what can be done)
+  hidePrompt();
+}
 function showPrompt(label, val, selectAll, tag){
   var delB = document.getElementById('floatDel');
   if (delB) delB.hidden = !(DRAW && DRAW.stage === 'dimValue');
@@ -28,6 +43,7 @@ function showPrompt(label, val, selectAll, tag){
   // (trim, extend, fillet corners). The field receives focus when the user starts typing.
   if (selectAll){ i.focus(); i.select(); }
   paramPickRender();
+  promptPlace();
 }
 function hidePrompt(){
   document.getElementById('promptBar').classList.remove('on');

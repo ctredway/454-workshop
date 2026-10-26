@@ -54,7 +54,7 @@ test('a diameter moves its value anywhere, keeping its offset from the circle', 
   assert.deepEqual({ x: p.x, y: p.y }, { x: 105, y: 25 });
 });
 
-test('a drag: a small wobble only selects; a real drag moves it as one undo step; Esc puts it back', () => {
+test('a drag: a small wobble only selects; a real drag moves it, not a step on the History bar; Esc puts it back', () => {
   setup();
   // grabbed at its value, which sits a little above the side until it's been dragged
   const lab = J('dimLabelWorld(DOC.dims[0])');
@@ -64,9 +64,9 @@ test('a drag: a small wobble only selects; a real drag moves it as one undo step
   assert.equal(J('UNDO.length'), 0);
   D.run(`dimDragTo(DRAW, {x:20, y:-10}, 100, 150); dimDragTo(DRAW, {x:25, y:-12}, 110, 160); dimDragEnd(DRAW); DRAW = null;`);
   assert.deepEqual(r3(J('DOC.dims[0].place')), { n: -12, s: 5 });
-  assert.equal(J('UNDO.length'), 1, 'one undo step for the whole drag');
-  D.run('doUndo();');
-  assert.equal(J('DOC.dims[0].place || null'), null, 'undo puts it back');
+  // where its value is shown isn't a change to the drawing: no step (Clint, 2026-10-26), but kept with the drawing
+  assert.equal(J('UNDO.length'), 0, 'no step on the History bar');
+  assert.deepEqual(r3(J('JSON.parse(docForStorage()).dims[0].place')), { n: -12, s: 5 }, 'saved where it was put');
   // Esc in the middle of a drag
   D.run(`DRAW = {stage:'dimDrag', di:0, gx:0, gy:0, was:null, sx:0, sy:0, moved:false, pushed:false};
     dimDragTo(DRAW, {x:20, y:-10}, 50, 50); dimDragCancel(DRAW); DRAW = null;`);

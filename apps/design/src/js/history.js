@@ -460,6 +460,7 @@ function histWhen(ms){
   return d.toDateString() === now.toDateString() ? t : d.getDate() + ' ' + 'JanFebMarAprMayJunJulAugSepOctNovDec'.substr(d.getMonth() * 3, 3) + ' ' + t;
 }
 function histRender(){
+  setTimeout(promptPlace, 0);                          // the prompt bar sits above this one, however tall (prompt.js)
   var bar = document.getElementById('histBar');
   if (!bar) return;
   var open = UICFG.histBar !== false;

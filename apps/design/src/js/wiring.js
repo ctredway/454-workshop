@@ -885,6 +885,7 @@ function wire(){
     e.stopPropagation();
   });
 
+  window.addEventListener('resize', promptPlace);
   // global keys: type-to-enter numbers, tool hotkeys, editing
   window.addEventListener('keydown', function(e){
     if (!document.getElementById('textModal').hidden) return;   // the text dialog owns the keyboard
@@ -1014,6 +1015,7 @@ function wire(){
     // any printable char while a tool is live routes into the entry bar
     if (TOOL !== 'select' && e.key.length === 1 && !e.ctrlKey && !e.altKey){
       document.getElementById('promptBar').classList.add('on');
+      promptPlace();
       var fbox = document.getElementById('floatIn');
       fbox.hidden = false;                                  // typing opens the box at the cursor
       if (!document.getElementById('floatTag').textContent)

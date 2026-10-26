@@ -132,11 +132,11 @@ function dimPlaceAt(d, w){
   d.place = p.line ? {n: rx*p.n.x + ry*p.n.y, s: rx*p.u.x + ry*p.u.y} : {dx: rx, dy: ry};
 }
 // a drag (DRAW.stage 'dimDrag', from the Select tool): nothing moves until the pointer has gone 3 px, so a click
-// only selects; the first move makes the undo step
+// only selects. Where a dimension's value is shown isn't a change to the drawing, so it isn't a step on the History
+// bar (Clint, 2026-10-26); it's kept with the drawing all the same.
 function dimDragTo(g, w, sx, sy){
   var d = DOC.dims[g.di]; if (!d) return;
   if (!g.moved && Math.hypot(sx - g.sx, sy - g.sy) < 3) return;
-  if (!g.pushed){ pushUndo('Move dimension'); g.pushed = true; }
   g.moved = true;
   dimPlaceAt(d, {x: w.x - g.gx, y: w.y - g.gy});
 }

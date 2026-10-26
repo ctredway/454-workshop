@@ -1311,7 +1311,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.160.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.160.1'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1955,11 +1955,11 @@ function dimPlaceAt(d, w){
   d.place = p.line ? {n: rx*p.n.x + ry*p.n.y, s: rx*p.u.x + ry*p.u.y} : {dx: rx, dy: ry};
 }
 // a drag (DRAW.stage 'dimDrag', from the Select tool): nothing moves until the pointer has gone 3 px, so a click
-// only selects; the first move makes the undo step
+// only selects. Where a dimension's value is shown isn't a change to the drawing, so it isn't a step on the History
+// bar (Clint, 2026-10-26); it's kept with the drawing all the same.
 function dimDragTo(g, w, sx, sy){
   var d = DOC.dims[g.di]; if (!d) return;
   if (!g.moved && Math.hypot(sx - g.sx, sy - g.sy) < 3) return;
-  if (!g.pushed){ pushUndo('Move dimension'); g.pushed = true; }
   g.moved = true;
   dimPlaceAt(d, {x: w.x - g.gx, y: w.y - g.gy});
 }
@@ -3099,6 +3099,7 @@ function histWhen(ms){
   return d.toDateString() === now.toDateString() ? t : d.getDate() + ' ' + 'JanFebMarAprMayJunJulAugSepOctNovDec'.substr(d.getMonth() * 3, 3) + ' ' + t;
 }
 function histRender(){
+  setTimeout(promptPlace, 0);                          // the prompt bar sits above this one, however tall (prompt.js)
   var bar = document.getElementById('histBar');
   if (!bar) return;
   var open = UICFG.histBar !== false;
@@ -5223,6 +5224,21 @@ function placeFloatIn(){
   box.style.left = Math.max(8, Math.min(at.x + 16, maxX)) + 'px';
   box.style.top  = Math.max(8, Math.min(at.y - h - 10, maxY)) + 'px';
 }
+// The prompt bar sits just above the History bar (it used to sit on it, Clint 2026-10-26), and the hint above both
+function promptPlace(){
+  var bar = document.getElementById('promptBar'), hint = document.getElementById('promptHint'), hb = document.getElementById('histBar');
+  if (!bar) return;
+  var base = hb && hb.offsetParent ? hb.offsetHeight + 10 + 8 : 14;
+  bar.style.bottom = base + 'px';
+  if (hint) hint.style.bottom = (base + (bar.classList.contains('on') ? bar.offsetHeight + 6 : 0)) + 'px';
+}
+// With no tool chosen (the Select tool, nothing being drawn or typed), the prompt bar isn't wanted: it's put away
+function promptTidy(){
+  var bar = document.getElementById('promptBar');
+  if (!bar || !bar.classList.contains('on')) return;
+  if (TOOL !== 'select' || DRAW || DIMSEL !== null || document.activeElement === document.getElementById('promptIn')) return;   // (a dimension selected: its prompt says what can be done)
+  hidePrompt();
+}
 function showPrompt(label, val, selectAll, tag){
   var delB = document.getElementById('floatDel');
   if (delB) delB.hidden = !(DRAW && DRAW.stage === 'dimValue');
@@ -5238,6 +5254,7 @@ function showPrompt(label, val, selectAll, tag){
   // (trim, extend, fillet corners). The field receives focus when the user starts typing.
   if (selectAll){ i.focus(); i.select(); }
   paramPickRender();
+  promptPlace();
 }
 function hidePrompt(){
   document.getElementById('promptBar').classList.remove('on');
@@ -14583,6 +14600,7 @@ function keysWire(){
 /* ---------------- rendering ---------------- */
 function draw(){
   if (HIST_REPLAYING) return;                          // the history doing steps again (history-replay.js): drawn after
+  promptTidy();                                        // no tool chosen: no prompt bar (prompt.js)
   selBoxRefresh();
   var w = cv.width = cv.clientWidth * (window.devicePixelRatio||1);
   var h = cv.height = cv.clientHeight * (window.devicePixelRatio||1);
@@ -20831,6 +20849,7 @@ function wire(){
     e.stopPropagation();
   });
 
+  window.addEventListener('resize', promptPlace);
   // global keys: type-to-enter numbers, tool hotkeys, editing
   window.addEventListener('keydown', function(e){
     if (!document.getElementById('textModal').hidden) return;   // the text dialog owns the keyboard
@@ -20960,6 +20979,7 @@ function wire(){
     // any printable char while a tool is live routes into the entry bar
     if (TOOL !== 'select' && e.key.length === 1 && !e.ctrlKey && !e.altKey){
       document.getElementById('promptBar').classList.add('on');
+      promptPlace();
       var fbox = document.getElementById('floatIn');
       fbox.hidden = false;                                  // typing opens the box at the cursor
       if (!document.getElementById('floatTag').textContent)

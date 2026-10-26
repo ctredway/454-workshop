@@ -1497,6 +1497,21 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.160.1 — the prompt bar above the History bar, and away when no tool is chosen; moving a dimension isn't a step
+Clint, 2026-10-26: "The bar that explains the selected tool that is at the bottom of the drawing area, we need to move
+that up above the history bar, currently it covers the history bar when its visible. that same bar also needs to hide
+once no tool is selected. ... we do [not] need to track when dimension elements are moved as that doesn't affect the
+drawing."
+- **The prompt bar sits just above the History bar** (`promptPlace`, prompt.js: from the History bar's height, after it's
+  drawn and when the window changes size), and the hint above both. It was at the same place as the History bar's steps.
+- **No tool chosen, no prompt bar** (`promptTidy`, at the start of every redraw): with the Select tool, nothing being
+  drawn or typed and no dimension selected, it's put away. A prompt shown with nothing chosen used to stay up.
+- **Dragging a dimension's value isn't a step on the History bar** (`dimDragTo`): where a value is shown isn't a change
+  to the drawing. It's still kept with it, and Esc during the drag still puts it back.
+- prompt-bar.test.mjs, 4 tests; dim-drag.test.mjs changed to say no step. Broken on purpose 3 ways (no tidy-up in the
+  redraw, a tidy-up that does nothing, the step put back), each caught. In the real page: the Line tool's prompt above 12
+  History steps, and none with the Select tool.
+
 ### 0.160.0 — construction lines stay attached to the points they were drawn from, and mirrored copies stay mirrored
 Clint, 2026-10-25: "construction lines are not holding their place. I draw a line from the center point of a circle or
 the midpoint of the line and make it a construction line, if I move the circle or shorten the line, the construction
