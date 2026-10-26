@@ -18,6 +18,7 @@ import textPanel from '../../assets/shots/design-text-panel.png';
 import nestPanel from '../../assets/shots/design-nest-panel.png';
 import parameters from '../../assets/shots/design-parameters.png';
 import keepLinedUp from '../../assets/shots/design-keep-lined-up.png';
+import arrayPanel from '../../assets/shots/design-array.png';
 
 
 Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
@@ -547,11 +548,25 @@ To turn shapes by eye instead, select them, then click them again for rotate han
 
 Shortcut: <kbd>Y</kbd>
 
-Makes several evenly spaced copies, in a row or around a circle.
+Makes several evenly spaced copies, in a row or around a centre. The Array panel opens beside the drawing, and the
+copies show dashed until you click **OK**.
 
-1. Select the shapes first.
-2. **In a row:** type how many and the step between them as `count@dx,dy`; `5@12,0` makes 5 copies 12 mm apart to the right.
-3. **Around a circle:** click the center, then type how many and the angle between them as `count<angle`; `6<60` makes 6 copies 60° apart.
+1. Click **Array**. Shapes you selected first are already in **Objects**; click others on the drawing to add them, or
+   click one again to take it off.
+2. Choose how the copies are laid out:
+   - **In a row:** **How many** counts the shapes you picked, so 5 makes 4 copies. **Across (X)** and **Up (Y)** are
+     how far each copy is from the one before, centre to centre; a negative number goes left or down.
+   - **Around a centre:** click the centre on the drawing (it snaps to a circle's centre), or type its **X** and **Y**.
+     Set **How many**. With **Spread evenly round a full circle** ticked they're shared out round 360°; untick it
+     to set the **Angle between** them (positive is anticlockwise, negative clockwise).
+3. Click **OK**, or press <kbd>Enter</kbd> in any box. The shapes and their copies are left selected, to move as one.
+
+<Shot src={arrayPanel} alt="The Array panel beside a cabinet side: one shelf-pin hole picked, In a row, How many 6, Up 32 mm, and the five copies shown dashed above it." />
+
+:::tip
+Six shelf-pin holes 32 mm apart: draw one hole, click **Array**, set **How many** to 6 and **Up (Y)** to `32mm` (a unit typed after the number wins, even in an inch drawing).
+The quick codes still work: type `5@12,0` for a row, or `6<60` for 6 copies 60° apart around the centre.
+:::
 
 ### Group
 

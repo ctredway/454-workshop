@@ -1502,6 +1502,20 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.164.0 — Array has a panel
+Clint, 2026-10-26: "I went to use the array tool earlier and I didn't understand how to set or choose what I needed to
+do." Array took only typed codes ("5@12,0" for a row; click a centre, then "6<60"), with the shapes selected first. The
+first of the tool panels he asked for ("I want to start making tool dialogs for most of the tools").
+- **A panel like Offset's** (`array-panel.js`): the shapes (selected first, or clicked while it's open, a second click
+  taking one off), **In a row** (How many, Across and Up, centre to centre, in the drawing's units, fractions too) or
+  **Around a centre** (the centre clicked, snapping to a circle's centre, or typed as X and Y; How many; spread evenly
+  round a full circle, or a set angle between them). How many counts the shapes picked.
+- **The copies are shown dashed before OK**, and OK makes exactly those (`arrayMake`, as the History bar does): one
+  Undo, one History step, the same step the typed codes made. The shapes and their copies are left selected.
+- **What's wrong is said in the panel** and OK stays off: no shapes, fewer than 2, no distance, no centre.
+- It opens as last used (`UICFG.arrLast`); the first time, a row of 3 to the right, the shapes' width and 10 mm apart.
+- The typed codes still work with the panel open, filling it in.
+
 ### 0.163.1 — a drawing keeps its units
 Clint, 2026-10-26, opening his filament stand in the app run from the repository: "it is displaying the dimensions in
 metric. I think the drawing should know what units to use and Design should honor that. this would be confusing if

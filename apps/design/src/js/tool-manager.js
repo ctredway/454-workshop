@@ -271,6 +271,7 @@ function toolMgrEnter(t){
   DRAW = null;
   if (t !== 'mirror' && MIR) mirClose();
   if (t !== 'offset' && OFF) offClose();
+  if (t !== 'array' && ARR) arrClose();
   if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
@@ -291,6 +292,7 @@ function toolMgrEnter(t){
   if (t === 'dim' && UICFG.showDims === false) dimsShow(true);   // the Dimension tool: dimensions shown, to see what's made
   if (t === 'mirror' && !MIR) mirOpen();            // the panel is the tool
   if (t === 'offset' && !OFF) offOpen();
+  if (t === 'array' && !ARR) arrOpen();
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){

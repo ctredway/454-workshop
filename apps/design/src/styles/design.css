@@ -537,6 +537,20 @@
   #fallWhich button:disabled{opacity:.4;cursor:default}
   #filletAllBtn{margin-left:6px;font-size:12px;padding:4px 9px}
   #filletAllBtn[hidden]{display:none}
+  /* Array: a panel like Offset's, a little wider for its centre's X and Y */
+  #arrPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #arrPanel[hidden],#arrRow[hidden],#arrRound[hidden]{display:none}
+  #arrPanel h3{font-size:14px}
+  #arrPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #arrPanel input[type=text]:disabled{opacity:.55}
+  #arrPanel .arrUnit{margin-left:0;width:18px;flex:none;text-align:right}
+  #arrCx,#arrCy{width:66px!important}
+  #arrCx{margin-left:auto}
+  #arrCy{margin-left:0!important}
+  #arrKind{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #arrKind button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
+  #arrKind button+button{border-left:1px solid var(--line)}
+  #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
   #offDist{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #tracePanel{position:absolute;top:12px;right:12px;z-index:9;width:250px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
   #tracePanel[hidden]{display:none}

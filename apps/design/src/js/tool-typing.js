@@ -149,6 +149,7 @@ function toolCommitText(txt){
   if (TOOL === 'array'){
     // (arrayMake, below, makes the copies: for the tool and for the History bar doing it again)
     // Array: "N@dx,dy" a row of N (the shapes, then copies dx, dy apart); "N<step" after clicking a centre, N around it
+    if (ARR){ arrTyped(txt); return; }                 // with its panel open (array-panel.js), typing fills it in
     if (!SEL.length){ stagePrompt('selFirst'); return; }
     var at = txt.trim();
     var mLin = at.match(/^(\d+)\s*@\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)$/);

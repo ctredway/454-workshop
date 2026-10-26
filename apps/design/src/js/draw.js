@@ -387,6 +387,20 @@ function draw(){
     }
   }
 
+  // ---- array preview ----
+  if (TOOL === 'array' && ARR){
+    var arrRes = arrResults();
+    ctx.save(); ctx.strokeStyle = accentRGBA(.85); ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    arrRes.forEach(function(ne){ drawEntityOutline(ne); });
+    ctx.restore();
+    if (ARR.kind === 'circ' && ARR.c){                 // the centre they turn round
+      var arrC = w2s(ARR.c.x, ARR.c.y);
+      ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(arrC.x - 7, arrC.y); ctx.lineTo(arrC.x + 7, arrC.y); ctx.moveTo(arrC.x, arrC.y - 7); ctx.lineTo(arrC.x, arrC.y + 7); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   // ---- mirror preview ----
   if (TOOL === 'mirror' && MIR){
     var mAx = mirAxis();

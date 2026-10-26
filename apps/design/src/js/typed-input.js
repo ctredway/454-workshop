@@ -55,7 +55,7 @@ var STAGE_LABEL = {
   mirror1:'Mirror \u2014 click the second point of the axis (mirrored copy)',
   rotate0:'Rotate \u2014 click the rotation center, or type "x,y"',
   rotate1:'Rotate \u2014 type the angle in degrees (+ CCW, \u2212 CW)',
-  array0: 'Array \u2014 type "N@dx,dy" (linear, e.g. 5@12,0), or click a center for a circular array',
+  array0: 'Array \u2014 click the shapes to copy, then set the copies in the panel: in a row, or around a centre',
   array1: 'Array \u2014 type "N<step\u00b0" (e.g. 6<60) around the clicked center',
   selFirst:'Select something first \u2014 press V, click entities (shift adds), then pick the transform',
   fillet0:'Fillet \u2014 radius R{R} \u00b7 click a corner (poly/rect corner, or two meeting lines) \u00b7 type a new radius anytime \u00b7 click a rounded corner to make it sharp again',

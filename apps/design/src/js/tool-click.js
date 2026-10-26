@@ -137,8 +137,7 @@ function toolClick(w, snap){
     else if (!DRAW){ DRAW = {stage:1, cx:p.x, cy:p.y}; stagePrompt('rotate1'); }
   }
   else if (TOOL === 'array'){
-    if (!SEL.length){ stagePrompt('selFirst'); }
-    else if (!DRAW){ DRAW = {stage:1, cx:p.x, cy:p.y}; stagePrompt('array1'); }
+    if (ARR){ arrClick(w, p); return; }              // the panel owns the picking
   }
   else if (TOOL === 'dim'){
     // clicking an existing dimension label opens it for editing

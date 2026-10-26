@@ -308,6 +308,15 @@ SHOTS.push({ name: 'design-sheets', page: 'design.html', size: [1400, 900],
     return { x: top.left, y: bar.top - 6, width: top.width, height: bar.height + 12 };` });
 
 module.exports = { PRELUDE, SHOTS };
+// The Array panel: a shelf-pin hole on a cabinet side, six of them 32 mm apart, shown dashed before OK
+SHOTS.push({ name: 'design-array', page: 'design.html', size: [1400, 900],
+  setup: `toast = function () {};
+    drawing(420, 260, [{ t: 'rect', x: 20, y: 20, w: 380, h: 220 }, { t: 'circle', cx: 60, cy: 50, r: 2.5 }]);
+    DOC.stock.units = 'mm'; syncStockUI();
+    UICFG.arrLast = { kind: 'lin', n: 6, dx: 0, dy: 32, nc: 6, full: true, step: 60 };
+    document.getElementById('tpCollapse').click(); await wait(250);
+    SEL = [1]; setTool('array'); await wait(200);
+    return union(region(20, 20, 400, 240, 12), box('#arrPanel', 8));` });
 SHOTS.push({ name: 'design-make-toolpaths', page: 'design.html', size: [1400, 1000],
   setup: `toast = function () {};
     drawing(300, 180, [{ t: 'rect', x: 20, y: 20, w: 220, h: 130 }, { t: 'circle', cx: 45, cy: 45, r: 2.5 }, { t: 'circle', cx: 45, cy: 125, r: 2.5 },
