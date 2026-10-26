@@ -106,3 +106,58 @@ test('a toolpath that cut a shape that’s gone drops it, and says so', () => {
   assert.equal(D.run('Object.keys(DOC.toolpaths[0].tabPts).length'), 0, 'its tabs on the shape too');
   assert.ok(toasts.some((t) => /^Legs Outside lost a shape \| .*edit the toolpath and pick the new shape, or it won.t be cut\./.test(t)), toasts.join(' / '));
 });
+
+// ---- an outline's edges numbered afresh (Fillet corners, a point added or removed): dimensions found again by where
+// their edges were. Clint's filament stand, 2026-10-26: Fillet corners on a joined outline sent five distances to the
+// wrong edges, or none ----
+// a stand's side, as a polyline: 120 wide, 80 tall, with a foot cut in the bottom; a distance across it (its own two
+// sides) and one from its top to a line above
+function outline() {
+  toasts.length = 0;
+  D.run(`DOC.ents = [{t:'poly', closed:true, pts:[[0,0],[30,0],[30,10],[90,10],[90,0],[120,0],[120,80],[0,80]]},
+                     {t:'line', x1:0, y1:100, x2:120, y2:100}];
+    DOC.dims = []; DOC.toolpaths = []; DOC.keeps = []; UNDO = []; REDO = []; SEL = []; persist();
+    var P = DOC.ents[0];
+    addDim({kind:'pair', a:entId(P), b:entId(P), edge:false, aAt:hintOf(P, {x:0, y:40}), bAt:hintOf(P, {x:120, y:40})});   // 0: 120 across
+    addDim({kind:'pair', a:entId(DOC.ents[1]), b:entId(P), edge:false, aAt:hintOf(DOC.ents[1], {x:60, y:100}), bAt:hintOf(P, {x:60, y:80})});   // 1: 20 to the line
+    persist(); 1`);
+}
+test('Fillet corners on an outline: its distances still measure the same edges', () => {
+  outline();
+  near(values()[0], 120); near(values()[1], 20);
+  D.run('SEL = [0]; UICFG.filletR = 4; UICFG.filletType = "round"; UICFG.filletAllWhich = "all"; fallOpen(); fallApply(); SEL = []; 1');
+  assert.ok(D.run('DOC.ents[0].pts.length') > 8, 'rounded: more points');
+  assert.equal(D.run('DOC.dims.length'), 2);
+  const v = values(); near(v[0], 120, 'across'); near(v[1], 20, 'to the line');
+  typeInto(0, '140');
+  near(values()[0], 140, 'and typing still stretches it');
+  near(values()[1], 20, 'the other kept');
+});
+test('a point added on an edge: still the same edge; a point dragged: the dimension follows it', () => {
+  outline();
+  D.run(`pushUndo(); DOC.ents[0].pts.splice(7, 0, [0, 60]); persist(); 1`);       // a point on the left side
+  near(values()[0], 120);
+  D.run(`pushUndo(); DOC.ents[0].pts.forEach(function (p) { if (p[0] === 120) p[0] = 130; }); persist(); 1`);   // the right side dragged out
+  near(values()[0], 130, 'follows the edge moved, as before');
+});
+test('the edge it measured is gone: removed, and said, not left measuring another', () => {
+  outline();
+  D.run(`pushUndo(); DOC.ents[0].pts = [[0,0],[120,0],[120,80]]; persist(); 1`);   // the left side and the top: gone
+  assert.equal(D.run('DOC.dims.length'), 0, 'both removed');
+  assert.ok(toasts.some((t) => /dimensions were removed/.test(t)), toasts.join(' / '));
+});
+test('a dimension from before outlines’ edges were counted: counted now, and followed after', () => {
+  outline();
+  D.run(`DOC.dims.forEach(function (d) { if (d.aAt) delete d.aAt.n; if (d.bAt) delete d.bAt.n; }); dimValue(DOC.dims[0]); dimValue(DOC.dims[1]); 1`);
+  assert.equal(D.run('DOC.dims[0].aAt.n'), 8, 'counted');
+  D.run('SEL = [0]; UICFG.filletR = 4; fallOpen(); fallApply(); SEL = []; 1');
+  near(values()[0], 120); near(values()[1], 20);
+});
+test('a distance whose edges aren’t parallel any more (the shape turned): removed, and said', () => {
+  outline();
+  D.run(`pushUndo(); DOC.ents[1].y2 = 130; persist(); 1`);                    // the line above, tilted
+  assert.equal(D.run('DOC.dims.length'), 1, 'the distance to it removed; the one across kept');
+  assert.ok(toasts.some((t) => /aren’t parallel any more/.test(t)), toasts.join(' / '));
+  D.run('doUndo(); 1');
+  assert.equal(D.run('DOC.dims.length'), 2, 'Undo brings it back');
+});

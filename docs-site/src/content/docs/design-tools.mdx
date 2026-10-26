@@ -434,8 +434,10 @@ Sets exact distances and sizes, and keeps a dimension on the drawing that update
 **Dimensions survive the tools that remake shapes.** Fillet corners, Trim, Join and Explode make new shapes out of old ones, and
 the dimensions move onto them: a rectangle’s width or height stays its width or height once its corners are rounded
 (measured between its sides, out to where the corners were; type a new size and the outline stretches, its rounded
-corners kept), and a line’s length becomes the length of that edge of the outline it joined. A dimension whose shape is
-really gone is removed, with a note, and Undo brings it back. A toolpath that cut a shape that’s gone says so: edit it
+corners kept), and a line’s length becomes the length of that edge of the outline it joined. A distance to an edge of an
+outline stays on that edge when the outline gains or loses points (its corners rounded, a point added or taken away).
+A dimension whose shape is really gone, or whose two edges aren’t parallel any more, is removed, with a note, and Undo
+brings it back. A toolpath that cut a shape that’s gone says so: edit it
 and pick the new shape, or that part won’t be cut.
 
 :::tip

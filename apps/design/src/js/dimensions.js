@@ -31,7 +31,8 @@ function hintOf(e, pt){
     var n = e.pts.length, last = e.closed ? n : n - 1, bk = 0, bd2 = Infinity;
     for (var k = 0; k < last; k++){ var a = e.pts[k], b = e.pts[(k+1) % n], d2 = distToSeg(pt.x, pt.y, a[0], a[1], b[0], b[1]); if (d2 < bd2){ bd2 = d2; bk = k; } }
     var A = e.pts[bk], B = e.pts[(bk+1) % n];
-    return {seg:bk, t:alongSeg(pt, [A[0], A[1], B[0], B[1]])};
+    // n: how many points the outline had; when that changes, the edges are numbered afresh (dimension-follow.js)
+    return {seg:bk, t:alongSeg(pt, [A[0], A[1], B[0], B[1]]), n:n};
   }
   var bb = entBBox(e);
   return {lx:pt.x - bb.x0, ly:pt.y - bb.y0};

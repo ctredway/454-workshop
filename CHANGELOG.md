@@ -1502,6 +1502,24 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.161.2 — dimensions stay on their edges when an outline's corners are rounded
+Clint, 2026-10-26, on his filament stand: "I changed the vector to add feet and after I did the dimensions were all
+off. I had to delete them and redo them. ... At best, we should recalculate them OR at worst, remove them and notify the
+user". His drawing's history showed it: the Trims and Joins were fine, and it was **Fillet corners 0.25 in** on the
+joined outline (22 points to 40) that sent five distances to the wrong edges (163.8, 265.1, 487.8, 680.4 mm) or none.
+- **Why:** an outline's edge is remembered by its number and how far along (`hintOf`); Fillet corners keeps the shape (its
+  id) and adds points, so every number after the first rounded corner meant another edge. Nothing noticed: the shape was
+  still there and the same kind.
+- **Now** a hint also keeps its outline's number of points (`n`); when that has changed, the edge is found again where it
+  was (`dimHintsStale`, dimension-follow.js: on its line, overlapping it, on the same shape first). Points moved without
+  being added or taken away (the Node tool) still move the edge, and the dimension with it, as before. Hints from before
+  are counted the first time they're worked out.
+- **Can't be found, or can't be measured** (a distance whose edges aren't parallel any more, a shape turned): removed,
+  and said, instead of left showing "lost its reference". On opening his file: 3 such left over, removed; the 16 others
+  as they were.
+- Checked on his drawing: the fillet done again with this, from just before it: all 16 dimensions the same after as
+  before. dim-follow.test.mjs, 5 more tests; broken on purpose 4 ways, each caught.
+
 ### 0.161.1 — a message dismissed with its X leaves the recent messages too
 Clint, 2026-10-26: "if the X is clicked on a notification that notification needs to be cleared from the list". The X
 took it off the screen only; the lightbulb's list kept it. Now it's gone from both, and the count goes down (the

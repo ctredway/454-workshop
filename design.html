@@ -1311,7 +1311,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.161.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.161.2'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1854,7 +1854,8 @@ function hintOf(e, pt){
     var n = e.pts.length, last = e.closed ? n : n - 1, bk = 0, bd2 = Infinity;
     for (var k = 0; k < last; k++){ var a = e.pts[k], b = e.pts[(k+1) % n], d2 = distToSeg(pt.x, pt.y, a[0], a[1], b[0], b[1]); if (d2 < bd2){ bd2 = d2; bk = k; } }
     var A = e.pts[bk], B = e.pts[(bk+1) % n];
-    return {seg:bk, t:alongSeg(pt, [A[0], A[1], B[0], B[1]])};
+    // n: how many points the outline had; when that changes, the edges are numbered afresh (dimension-follow.js)
+    return {seg:bk, t:alongSeg(pt, [A[0], A[1], B[0], B[1]]), n:n};
   }
   var bb = entBBox(e);
   return {lx:pt.x - bb.x0, ly:pt.y - bb.y0};
@@ -19107,6 +19108,9 @@ function dimEdgeNear(e, h){
 // What a dimension measures, in the drawing's terms, while it can be worked out
 function dimGeoKeep(d){
   if (!DIM_GEO) return;
+  if (dimHintsStale(d)) return;                         // (what it measured is in DIM_GEO from before: kept, to find it again)
+  if (d.kind === 'pair'){ dimHintStamp(entById(d.a), d.aAt); dimHintStamp(entById(d.b), d.bAt); }
+  else if (d.kind === 'seg') dimHintStamp(entById(d.a), d.at);
   var g = null;
   if (d.kind === 'side'){
     var e = entById(d.a), s = rectSides(e), w = rectSideIsWidth(e, d.at), at = resolveHint(e, d.at) || repPoint(e);
@@ -19130,6 +19134,17 @@ function dimGeoKeep(d){
   }
   if (g) DIM_GEO.set(d, g);
 }
+// An outline's edge is remembered by its number and how far along (hintOf); Fillet corners, Trim or a node added or
+// removed numbers the edges afresh, so a hint made with another number of points may now point at another edge. (Clint's
+// filament stand, 2026-10-26: Fillet corners on a joined outline sent five distances to the wrong edges, or none.)
+function dimHintStale(e, h){ return !!(e && h && h.seg !== undefined && h.n !== undefined && e.pts && e.pts.length !== h.n); }
+function dimHintsStale(d){
+  if (d.kind === 'pair') return dimHintStale(entById(d.a), d.aAt) || dimHintStale(entById(d.b), d.bAt);
+  if (d.kind === 'seg') return dimHintStale(entById(d.a), d.at);
+  return false;
+}
+// A hint made before hints knew their outline's number of points: stamped with it now, while it's right
+function dimHintStamp(e, h){ if (e && e.pts && h && h.seg !== undefined && h.n === undefined) h.n = e.pts.length; }
 // Is a dimension's shape there, and the kind it measures?
 function dimRefOk(d){
   var a = entById(d.a);
@@ -19203,7 +19218,8 @@ function dimRetarget(d){
       if (s.C){ var cc = dimFindCircle(s.C); return cc ? {e: cc, h: null} : null; }
       var fe = dimFindEdge(s.E, s.p || null, prefer); return fe ? {e: fe.e, h: hintOf(fe.e, fe.p)} : null;
     };
-    var na = entById(d.a) ? {e: entById(d.a), h: d.aAt} : find(g.a), nb = entById(d.b) ? {e: entById(d.b), h: d.bAt} : find(g.b);
+    var ea = entById(d.a), eb = entById(d.b);
+    var na = ea && !dimHintStale(ea, d.aAt) ? {e: ea, h: d.aAt} : find(g.a), nb = eb && !dimHintStale(eb, d.bAt) ? {e: eb, h: d.bAt} : find(g.b);
     if (!na || !nb) return false;
     d.a = entId(na.e); d.b = entId(nb.e); d.aAt = na.h; d.bAt = nb.h;
     return true;
@@ -19212,10 +19228,16 @@ function dimRetarget(d){
 }
 // After every change (persist): dimensions moved onto what's there now, or removed; toolpaths drop shapes that are gone
 function dimsFollow(){
-  var gone = 0;
+  var gone = 0, cant = 0;
   if (DOC.dims && DOC.dims.length){
     DOC.dims = DOC.dims.filter(function (d){
-      if (dimRefOk(d)) return true;
+      if (dimRefOk(d) && !dimHintsStale(d)){
+        // there, but can't be measured (a distance between edges no longer parallel): found again, or removed and said
+        // (Clint, 2026-10-26: "at best, we should recalculate them OR at worst, remove them and notify the user")
+        if (dimValueNow(d) !== null) return true;
+        if (dimRetarget(d) && dimRefOk(d) && dimValueNow(d) !== null) return true;
+        cant++; return false;
+      }
       if (dimRetarget(d) && dimRefOk(d)) return true;
       gone++; return false;
     });
@@ -19234,13 +19256,16 @@ function dimsFollow(){
     if (fresh) tp.sig = tpSignature(tp.ents) + tpStockSig(tp);        // a shape that's gone was cut by nothing anyway
     lost.push(tp.name);
   });
+  if (cant) toast('info', cant === 1 ? 'A dimension was removed' : cant + ' dimensions were removed',
+                  (cant === 1 ? 'It' : 'They') + ' no longer measured anything: the edges ' + (cant === 1 ? 'it was' : 'they were') +
+                  ' between aren’t parallel any more' + (dimsFollow.opening ? ' (left over from an earlier version).' : '. Undo brings ' + (cant === 1 ? 'it' : 'them') + ' back.'));
   if (gone) toast('info', gone === 1 ? 'A dimension was removed' : gone + ' dimensions were removed',
                   'What ' + (gone === 1 ? 'it' : 'they') + ' measured is no longer in the drawing' +
                   (dimsFollow.opening ? ' (left over from an earlier version).' : '. Undo brings ' + (gone === 1 ? 'it' : 'them') + ' back.'));
   if (lost.length) toast('warn', lost.length === 1 ? lost[0] + ' lost a shape' : lost.length + ' toolpaths lost a shape',
                          'A shape ' + (lost.length === 1 ? 'it' : 'they') + ' cut is no longer in the drawing (' + lost.slice(0, 4).join(', ') +
                          '). If it was remade (by Trim or Join, say), edit the toolpath and pick the new shape, or it won’t be cut.');
-  return gone;
+  return gone + cant;
 }
 
 // ---- 'seg': the length of one straight edge of an outline (a line's length, after Join made it part of one) ----
