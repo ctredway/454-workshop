@@ -21,7 +21,13 @@ function toast(kind, title, detail){
   x.className = 'tx';
   x.title = 'Dismiss';
   x.textContent = '\u00d7';
-  x.addEventListener('click', function(){ el.remove(); });
+  var entry = {kind:kind || 'info', title:title, detail:detail || '', at:Date.now()};
+  // dismissed with the X: gone from the recent messages too (Clint, 2026-10-26); one that fades by itself stays there
+  x.addEventListener('click', function(){
+    el.remove();
+    var i = MSG_LOG.indexOf(entry);
+    if (i >= 0){ MSG_LOG.splice(i, 1); refreshMsgBulb(); }
+  });
   el.appendChild(msg);
   el.appendChild(x);
   wrap.appendChild(el);
@@ -35,7 +41,7 @@ function toast(kind, title, detail){
   el.addEventListener('mouseleave', function(){ arm(3000); });
   arm(10000);
   // keep the last 5 in the status-bar history
-  MSG_LOG.unshift({kind:kind || 'info', title:title, detail:detail || '', at:Date.now()});
+  MSG_LOG.unshift(entry);
   if (MSG_LOG.length > 5) MSG_LOG.length = 5;
   refreshMsgBulb();
   return el;

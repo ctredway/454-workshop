@@ -1502,6 +1502,12 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.161.1 — a message dismissed with its X leaves the recent messages too
+Clint, 2026-10-26: "if the X is clicked on a notification that notification needs to be cleared from the list". The X
+took it off the screen only; the lightbulb's list kept it. Now it's gone from both, and the count goes down (the
+lightbulb itself when none are left). A message that fades by itself stays listed, to look back at. messages.test.mjs,
+3 tests; broken on purpose, all three caught.
+
 ### 0.161.0 — Shift+D shows or hides the dimensions
 Clint, 2026-10-26: "when a drawing gets a lot of on screen dimensions, it can be a little difficult to 'see' what you
 are doing". The setting was there (Settings → Show dimensions layer); now it's a key.
