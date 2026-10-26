@@ -559,3 +559,45 @@ test('the + key: a new toolpath for the shapes selected, as the + at the top of 
   press('+');
   assert.equal(D.CUT, null);
 });
+
+// ---- Shift+D: show or hide the dimensions (dimensions.js dimsShow). Clint, 2026-10-26: "when a drawing gets a lot of
+// on screen dimensions, it can be a little difficult to 'see' what you are doing" ----
+test('Shift+D hides the dimensions, and again shows them; Settings’ box follows', () => {
+  const D = fresh();
+  D.run(`UICFG.showDims = true; document.getElementById('showDims').checked = true; 1`);
+  assert.equal(D.press('D', { shift: true }).defaultPrevented, true);
+  assert.equal(D.run('UICFG.showDims'), false, 'hidden');
+  assert.equal(D.run(`document.getElementById('showDims').checked`), false, 'Settings agrees');
+  assert.equal(D.run('pickDim(0, 0)'), -1, 'hidden: none can be picked');
+  D.press('D', { shift: true });
+  assert.equal(D.run('UICFG.showDims'), true, 'shown again');
+});
+
+test('Shift+D with shapes selected only hides: it doesn’t dimension them, as D does', () => {
+  const D = fresh();
+  D.run(`UICFG.showDims = true; SEL = [0, 1]; 1`);
+  const n = D.run('DOC.dims.length');
+  D.press('D', { shift: true });
+  assert.equal(D.run('DOC.dims.length'), n, 'no dimension added');
+  assert.equal(D.run('UICFG.showDims'), false);
+  D.run('SEL = [0]; 1');
+  D.press('D', { shift: true });
+  assert.equal(D.run('DOC.dims.length'), n, 'one shape: none added either');
+});
+
+test('hidden, the Dimension tool shows them again; the View menu does what Shift+D does', () => {
+  const D = fresh();
+  D.run(`UICFG.showDims = false; setTool('dim'); 1`);
+  assert.equal(D.run('UICFG.showDims'), true, 'the Dimension tool: shown');
+  D.run(`setTool('select'); 1`);
+  assert.equal(D.run(`menuDo('dims')`), true);
+  assert.equal(D.run('UICFG.showDims'), false, 'View → Show or hide dimensions');
+});
+
+test('a dimension being dragged when they’re hidden is put back', () => {
+  const D = fresh();
+  D.run(`UICFG.showDims = true; DRAW = {stage:'dimDrag', di:0, gx:0, gy:0, was:null, sx:0, sy:0, moved:false, pushed:false};
+    dimDragTo(DRAW, {x:20, y:-10}, 50, 50); dimsShow(false); 1`);
+  assert.equal(D.run('DRAW'), null);
+  assert.equal(D.run('DOC.dims[0].place || null'), null, 'where it was');
+});

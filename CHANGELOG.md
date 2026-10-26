@@ -1497,6 +1497,17 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.161.0 — Shift+D shows or hides the dimensions
+Clint, 2026-10-26: "when a drawing gets a lot of on screen dimensions, it can be a little difficult to 'see' what you
+are doing". The setting was there (Settings → Show dimensions layer); now it's a key.
+- **Shift+D** (whatever the tool, when nothing's being drawn or typed; `dimsShow`, dimensions.js) swaps it, and
+  Settings' box follows. Shift+D used to do what D does; with shapes selected it no longer dimensions them.
+- **Hidden, a note in the top left corner** says how many and that Shift+D shows them, so they aren't thought lost.
+  None can be picked; one being dragged is put back. **The Dimension tool shows them**, to see what it makes.
+- **View → Show or hide dimensions** in the desktop app's menu (Shift+D shown, the page's key).
+- keys.test.mjs, 4 tests; app-menu.test.mjs's View test. Broken on purpose 5 ways, each caught. In the real page:
+  Shift+D pressed, both dimensions hidden and the note shown.
+
 ### 0.160.1 — the prompt bar above the History bar, and away when no tool is chosen; moving a dimension isn't a step
 Clint, 2026-10-26: "The bar that explains the selected tool that is at the bottom of the drawing area, we need to move
 that up above the history bar, currently it covers the history bar when its visible. that same bar also needs to hide

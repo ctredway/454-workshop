@@ -534,6 +534,15 @@ function draw(){
       ctx.fillText(broken + ' dimension' + (broken>1?'s':'') + ' lost its reference', 12, 18);
     }
     ctx.restore();
+  } else if (DOC.dims && DOC.dims.length){
+    // hidden (Shift+D): say so, so they aren't thought lost
+    ctx.save();
+    ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    var hidTxt = DOC.dims.length + (DOC.dims.length === 1 ? ' dimension' : ' dimensions') + ' hidden · Shift+D shows ' + (DOC.dims.length === 1 ? 'it' : 'them');
+    var hidW = ctx.measureText(hidTxt).width;
+    ctx.fillStyle = 'rgba(20,24,29,0.85)'; ctx.fillRect(8, 8, hidW + 10, 20);
+    ctx.fillStyle = dispCol('dim'); ctx.fillText(hidTxt, 13, 18);
+    ctx.restore();
   }
 
   // node editing: draw vertex handles and label every segment of the open shape

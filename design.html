@@ -1311,7 +1311,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.160.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.161.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -1822,6 +1822,19 @@ function textCurveRowsRead(e){
   if (!e.crev) delete e.crev;
 }
 function dimsArr(){ if (!DOC.dims) DOC.dims = []; return DOC.dims; }
+// Show or hide the dimensions (Shift+D, View in the desktop app's menu, or Settings): with many on screen it can be hard
+// to see the drawing (Clint, 2026-10-26). on: true or false, or left out to swap. Hidden, none can be picked or edited.
+function dimsShow(on){
+  UICFG.showDims = on === undefined ? UICFG.showDims === false : !!on;
+  uiCfgSave();
+  var sd = document.getElementById('showDims'); if (sd) sd.checked = UICFG.showDims;
+  if (!UICFG.showDims){
+    DIMSEL = null;
+    if (DRAW && /^dim/.test(String(DRAW.stage))){ if (DRAW.stage === 'dimDrag') dimDragCancel(DRAW); DRAW = null; hidePrompt(); }
+  }
+  draw();
+  return UICFG.showDims;
+}
 var SELAT = {};                                        // entity id -> where it was last clicked to select it
 // A dimension remembers WHICH edge of a shape it measures, not a point on the drawing: a point stays put
 // when the shape moves, and can end up on a different edge. For a rectangle, the side and how far along
@@ -4307,6 +4320,7 @@ function toolMgrEnter(t){
   if (!desc.keepSel) SEL = [];
   HOVER = null;
   if (desc.prompt) stagePrompt(desc.prompt);
+  if (t === 'dim' && UICFG.showDims === false) dimsShow(true);   // the Dimension tool: dimensions shown, to see what's made
   if (t === 'mirror' && !MIR) mirOpen();            // the panel is the tool
   if (t === 'offset' && !OFF) offOpen();
   if (t === 'filletall' && !FALL) fallOpen();
@@ -14535,6 +14549,7 @@ function menuDo(what, arg){
     if (!el || el.disabled) return false;
     el.click(); return true;
   }
+  if (what === 'dims'){ dimsShow(); return true; }      // View: show or hide the dimensions
   if (what === 'new') newDrawing();
   else if (what === 'open') openFiles('open');
   else if (what === 'import') openFiles('import');
@@ -15132,6 +15147,15 @@ function draw(){
       ctx.textAlign = 'left';
       ctx.fillText(broken + ' dimension' + (broken>1?'s':'') + ' lost its reference', 12, 18);
     }
+    ctx.restore();
+  } else if (DOC.dims && DOC.dims.length){
+    // hidden (Shift+D): say so, so they aren't thought lost
+    ctx.save();
+    ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    var hidTxt = DOC.dims.length + (DOC.dims.length === 1 ? ' dimension' : ' dimensions') + ' hidden · Shift+D shows ' + (DOC.dims.length === 1 ? 'it' : 'them');
+    var hidW = ctx.measureText(hidTxt).width;
+    ctx.fillStyle = 'rgba(20,24,29,0.85)'; ctx.fillRect(8, 8, hidW + 10, 20);
+    ctx.fillStyle = dispCol('dim'); ctx.fillText(hidTxt, 13, 18);
     ctx.restore();
   }
 
@@ -20066,7 +20090,7 @@ function wire(){
   var sd = document.getElementById('showDims');
   if (sd){
     sd.checked = UICFG.showDims !== false;
-    sd.addEventListener('change', function(){ UICFG.showDims = sd.checked; uiCfgSave(); draw(); });
+    sd.addEventListener('change', function(){ dimsShow(sd.checked); });
   }
   [['colVec','vec'],['colTp','tp'],['colCon','con'],['colDim','dim']].forEach(function(pair){
     var inp = document.getElementById(pair[0]);
@@ -20893,7 +20917,7 @@ function wire(){
       else if (SEL.length){ SEL = []; }
       draw(); return;
     }
-    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 2 && !e.ctrlKey){
+    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 2 && !e.ctrlKey && !e.shiftKey){
       // the edges clicked when each shape was selected (not whichever is nearest the other's centre)
       var dA = SELAT[entId(DOC.ents[SEL[0]])], dB = SELAT[entId(DOC.ents[SEL[1]])];
       var r2 = relInfo(DOC.ents[SEL[0]], DOC.ents[SEL[1]], dA, dB);
@@ -20918,7 +20942,7 @@ function wire(){
     if (e.key === '+' && TOOL === 'select' && !e.ctrlKey && !e.metaKey && !e.altKey && !CUT && DRAW === null && camReady()){
       e.preventDefault(); cutOpen(null); return;
     }
-    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 1 && !e.ctrlKey){
+    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 1 && !e.ctrlKey && !e.shiftKey){
       var de = DOC.ents[SEL[0]];
       DRAW = {stage:'dimEdit', ent:SEL[0]};
       if (de.t === 'line'){
@@ -20955,6 +20979,11 @@ function wire(){
     if (e.shiftKey && !e.ctrlKey && !e.altKey && TOOL === 'select' && SEL.length &&
         (e.key === 'H' || e.key === 'h' || e.key === 'V' || e.key === 'v')){
       e.preventDefault(); flipBtnRef(e.key.toLowerCase() === 'h'); return;
+    }
+    // Shift+D shows or hides the dimensions (dimensions.js), whatever the tool, when nothing's being drawn or typed
+    if (e.shiftKey && !e.ctrlKey && !e.altKey && (e.key === 'D' || e.key === 'd') &&
+        DRAW === null && document.activeElement !== document.getElementById('promptIn')){
+      e.preventDefault(); dimsShow(); return;
     }
     // Shift+M mirror, Shift+R rotate: the tools Fusion gives no key of their own
     if (e.shiftKey && !e.ctrlKey && !e.altKey && e.key.length === 1 && SHIFT_HOTKEYS[e.key.toLowerCase()] &&

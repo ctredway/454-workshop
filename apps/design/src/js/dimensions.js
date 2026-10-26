@@ -1,4 +1,17 @@
 function dimsArr(){ if (!DOC.dims) DOC.dims = []; return DOC.dims; }
+// Show or hide the dimensions (Shift+D, View in the desktop app's menu, or Settings): with many on screen it can be hard
+// to see the drawing (Clint, 2026-10-26). on: true or false, or left out to swap. Hidden, none can be picked or edited.
+function dimsShow(on){
+  UICFG.showDims = on === undefined ? UICFG.showDims === false : !!on;
+  uiCfgSave();
+  var sd = document.getElementById('showDims'); if (sd) sd.checked = UICFG.showDims;
+  if (!UICFG.showDims){
+    DIMSEL = null;
+    if (DRAW && /^dim/.test(String(DRAW.stage))){ if (DRAW.stage === 'dimDrag') dimDragCancel(DRAW); DRAW = null; hidePrompt(); }
+  }
+  draw();
+  return UICFG.showDims;
+}
 var SELAT = {};                                        // entity id -> where it was last clicked to select it
 // A dimension remembers WHICH edge of a shape it measures, not a point on the drawing: a point stays put
 // when the shape moves, and can end up on a different edge. For a rectangle, the side and how far along

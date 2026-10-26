@@ -119,6 +119,7 @@ function menuTemplate({ kind, act, updates = [], recent = [], startWith = 'desig
     { label: 'File', submenu: file },
     { label: 'Edit', submenu: edit },
     { label: 'View', submenu: [
+      ...(kind === 'design' ? [page('Show or hide dimensions', 'dims', 'Shift+D'), sep] : []),
       { role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, sep, { role: 'togglefullscreen' },
       sep, { label: 'Toggle developer tools', accelerator: 'CmdOrCtrl+Shift+I', click: act.devTools },
     ] },

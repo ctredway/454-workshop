@@ -29,6 +29,7 @@ function menuDo(what, arg){
     if (!el || el.disabled) return false;
     el.click(); return true;
   }
+  if (what === 'dims'){ dimsShow(); return true; }      // View: show or hide the dimensions
   if (what === 'new') newDrawing();
   else if (what === 'open') openFiles('open');
   else if (what === 'import') openFiles('import');

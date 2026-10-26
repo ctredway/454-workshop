@@ -102,7 +102,7 @@ function wire(){
   var sd = document.getElementById('showDims');
   if (sd){
     sd.checked = UICFG.showDims !== false;
-    sd.addEventListener('change', function(){ UICFG.showDims = sd.checked; uiCfgSave(); draw(); });
+    sd.addEventListener('change', function(){ dimsShow(sd.checked); });
   }
   [['colVec','vec'],['colTp','tp'],['colCon','con'],['colDim','dim']].forEach(function(pair){
     var inp = document.getElementById(pair[0]);
@@ -929,7 +929,7 @@ function wire(){
       else if (SEL.length){ SEL = []; }
       draw(); return;
     }
-    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 2 && !e.ctrlKey){
+    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 2 && !e.ctrlKey && !e.shiftKey){
       // the edges clicked when each shape was selected (not whichever is nearest the other's centre)
       var dA = SELAT[entId(DOC.ents[SEL[0]])], dB = SELAT[entId(DOC.ents[SEL[1]])];
       var r2 = relInfo(DOC.ents[SEL[0]], DOC.ents[SEL[1]], dA, dB);
@@ -954,7 +954,7 @@ function wire(){
     if (e.key === '+' && TOOL === 'select' && !e.ctrlKey && !e.metaKey && !e.altKey && !CUT && DRAW === null && camReady()){
       e.preventDefault(); cutOpen(null); return;
     }
-    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 1 && !e.ctrlKey){
+    if (e.key.toLowerCase() === 'd' && TOOL === 'select' && SEL.length === 1 && !e.ctrlKey && !e.shiftKey){
       var de = DOC.ents[SEL[0]];
       DRAW = {stage:'dimEdit', ent:SEL[0]};
       if (de.t === 'line'){
@@ -991,6 +991,11 @@ function wire(){
     if (e.shiftKey && !e.ctrlKey && !e.altKey && TOOL === 'select' && SEL.length &&
         (e.key === 'H' || e.key === 'h' || e.key === 'V' || e.key === 'v')){
       e.preventDefault(); flipBtnRef(e.key.toLowerCase() === 'h'); return;
+    }
+    // Shift+D shows or hides the dimensions (dimensions.js), whatever the tool, when nothing's being drawn or typed
+    if (e.shiftKey && !e.ctrlKey && !e.altKey && (e.key === 'D' || e.key === 'd') &&
+        DRAW === null && document.activeElement !== document.getElementById('promptIn')){
+      e.preventDefault(); dimsShow(); return;
     }
     // Shift+M mirror, Shift+R rotate: the tools Fusion gives no key of their own
     if (e.shiftKey && !e.ctrlKey && !e.altKey && e.key.length === 1 && SHIFT_HOTKEYS[e.key.toLowerCase()] &&

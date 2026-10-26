@@ -288,6 +288,7 @@ function toolMgrEnter(t){
   if (!desc.keepSel) SEL = [];
   HOVER = null;
   if (desc.prompt) stagePrompt(desc.prompt);
+  if (t === 'dim' && UICFG.showDims === false) dimsShow(true);   // the Dimension tool: dimensions shown, to see what's made
   if (t === 'mirror' && !MIR) mirOpen();            // the panel is the tool
   if (t === 'offset' && !OFF) offOpen();
   if (t === 'filletall' && !FALL) fallOpen();

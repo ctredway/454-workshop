@@ -112,9 +112,14 @@ describe('the menu bar', () => {
     expect([line.accelerator, line.registerAccelerator]).toEqual(['L', false]);
     // (Design's own tests check every item against its toolbar)
   });
-  it('View is as it was', () => {
-    const { menu } = build('design');
-    expect(labels(sub(menu, 'View'))).toEqual(['reload', 'resetZoom', 'zoomIn', 'zoomOut', '-', 'togglefullscreen', '-', 'Toggle developer tools']);
+  it('View: in 454 Design, showing or hiding the dimensions (Shift+D, a key the page handles) first; otherwise as it was', () => {
+    const { menu, did } = build('design');
+    expect(labels(sub(menu, 'View'))).toEqual(['Show or hide dimensions', '-', 'reload', 'resetZoom', 'zoomIn', 'zoomOut', '-', 'togglefullscreen', '-', 'Toggle developer tools']);
+    const dims = item(menu, 'View', 'Show or hide dimensions');
+    expect([dims.accelerator, dims.registerAccelerator]).toEqual(['Shift+D', false]);
+    dims.click();
+    expect(did).toEqual(['page:dims']);
+    expect(labels(sub(build('control').menu, 'View'))).toEqual(['reload', 'resetZoom', 'zoomIn', 'zoomOut', '-', 'togglefullscreen', '-', 'Toggle developer tools']);
   });
 });
 
