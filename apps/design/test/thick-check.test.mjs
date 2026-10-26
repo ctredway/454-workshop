@@ -20,7 +20,7 @@ function drawing(t = 12) {
   D.DOC.stock = Object.assign({}, D.DOC.stock, { w: 200, h: 120, t, zero: 'top' });
   D.DOC.layers = [{ id: 'L1', name: 'Layer 1', visible: true, locked: false }]; D.DOC.activeLayer = 'L1';
   D.DOC.ents = [{ t: 'rect', x: 20, y: 20, w: 60, h: 40, layer: 'L1' }]; D.DOC.toolpaths = []; D.DOC.name = 'Bookstand';
-  D.run("UICFG.stockUnits = 'mm'; 1"); D.syncStockUI();
+  D.run("UICFG.stockUnits = DOC.stock.units = 'mm'; 1"); D.syncStockUI();
   if (asking()) el('dlgCancel').click();
 }
 function profile(o = {}) {
@@ -33,7 +33,7 @@ function profile(o = {}) {
   return tp;
 }
 function thickness(txt, units) {
-  D.run(`UICFG.stockUnits = '${units}'; 1`);
+  D.run(`UICFG.stockUnits = DOC.stock.units = '${units}'; 1`);
   set('stkT', txt, 'change');
 }
 

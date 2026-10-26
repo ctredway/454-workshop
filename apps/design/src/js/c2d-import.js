@@ -342,7 +342,7 @@ function c2dOpen(buf, name){
   var aside = asideTake();
   pushUndo('Opened ' + name, 'open');
   DOC = r.doc;
-  UICFG.stockUnits = r.inches ? 'in' : 'mm'; uiCfgSave();
+  DOC.stock.units = r.inches ? 'in' : 'mm';               // the project's own units, kept with the drawing
   SEL = []; CUTSEL = null; setTool('select');
   // its toolpaths, as 454 toolpaths (c2d-toolpaths.js): needs the CAM engine to build them
   var tps = r.toolpaths && camReady() ? c2dToolpaths(ex) : {made: [], left: [], notes: []};

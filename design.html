@@ -868,7 +868,7 @@
         <select id="stkUnits" aria-label="Units"><option value="mm">mm</option><option value="in">in</option></select>
       </div>
       <p class="snote" id="stkEq"></p>
-      <p class="snote">Units apply everywhere: the material size, dimensions, typed values, the measure tool and the readout. A unit written after a number always wins, so 25mm works while drawing in inches, and 1/2&quot; works while drawing in mm.</p>
+      <p class="snote">Units apply everywhere: the material size, dimensions, typed values, the measure tool and the readout. They’re saved with the drawing, so it opens in them on any computer; new drawings start in the last ones chosen. A unit written after a number always wins, so 25mm works while drawing in inches, and 1/2&quot; works while drawing in mm.</p>
       <div class="srow" style="align-items:flex-start">
         <label style="padding-top:4px">XY zero</label>
         <div id="stkOriginPick" role="radiogroup" aria-label="Where X0 Y0 is on the material">
@@ -1339,7 +1339,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.163.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.163.1'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -13417,7 +13417,7 @@ function c2dOpen(buf, name){
   var aside = asideTake();
   pushUndo('Opened ' + name, 'open');
   DOC = r.doc;
-  UICFG.stockUnits = r.inches ? 'in' : 'mm'; uiCfgSave();
+  DOC.stock.units = r.inches ? 'in' : 'mm';               // the project's own units, kept with the drawing
   SEL = []; CUTSEL = null; setTool('select');
   // its toolpaths, as 454 toolpaths (c2d-toolpaths.js): needs the CAM engine to build them
   var tps = r.toolpaths && camReady() ? c2dToolpaths(ex) : {made: [], left: [], notes: []};
@@ -14271,7 +14271,22 @@ function persist(){
 }
 // Material is often sold in inches even when the work is metric, so its size can be entered
 // in either. The drawing always stays in millimetres.
-function stockUnits(){ return UICFG.stockUnits === 'in' ? 'in' : 'mm'; }
+// The drawing's units, kept with it (DOC.stock.units), so it shows the same on every computer (Clint, 2026-10-26: "I think
+// the drawing should know what units to use and Design should honor that"). Settings' units are for new drawings.
+function stockUnits(){
+  var u = DOC && DOC.stock && DOC.stock.units;
+  if (u === 'in' || u === 'mm') return u;
+  return UICFG.stockUnits === 'in' ? 'in' : 'mm';
+}
+// A drawing saved before it kept its units: inches if its material is a whole number of sixteenths of an inch and not a
+// whole number of millimetres (48 x 48 in is 1219.2 mm), else this computer's choice. Kept with it from then on.
+function stockUnitsGuess(st){
+  if (!st || st.units === 'in' || st.units === 'mm') return st && st.units;
+  var inch = function (v) { var s = v / 25.4 * 16; return v > 0 && Math.abs(s - Math.round(s)) < 1e-6; };
+  var mm = function (v) { return Math.abs(v - Math.round(v)) < 1e-6; };
+  if (inch(st.w) && inch(st.h) && !(mm(st.w) && mm(st.h))) return 'in';
+  return UICFG.stockUnits === 'in' ? 'in' : 'mm';
+}
 // Display units. The drawing itself is always millimetres; these only change what is shown
 // and what typed dimension values mean.
 function dispIn(){ return stockUnits() === 'in'; }
@@ -14345,6 +14360,7 @@ function restore(){ // startup ONLY: pulls the persisted doc. Never call after s
     if (s){ var d = JSON.parse(s); if (d && d.stock) DOC = d; }
   }catch(e){}
   histRestoreStored();                                // its history, kept in the browser's storage (history.js)
+  if (DOC.stock && !DOC.stock.units) DOC.stock.units = stockUnits();   // from before drawings kept their units: as it was shown
   syncStockUI();
   tpRebuildAll();                                     // toolpaths come back as settings only
 }
@@ -14461,6 +14477,7 @@ function clearDrawing(){
   DOC.guides = [];
   DOC.dims = [];
   DOC.keeps = [];
+  if (DOC.stock) DOC.stock.units = UICFG.stockUnits === 'in' ? 'in' : 'mm';   // a new drawing: in the units new drawings use
   DOC.vcToolpaths = [];
   DOC.vcConverted = false; DOC.vcPreview = [];
   DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
@@ -14489,6 +14506,7 @@ function openDrawing(d, name){
   var h = d.history; delete d.history;
   pushUndo('Opened ' + name, 'open');
   DOC = d; histTake(h);
+  if (DOC.stock && !DOC.stock.units) DOC.stock.units = stockUnitsGuess(DOC.stock);   // saved before drawings kept their units
   dimsFollow.opening = true;                                       // stranded dimensions it was saved with: said as such
   try { syncStockUI(); persist(); } finally { dimsFollow.opening = false; }
   markSaved(name);
@@ -20467,7 +20485,8 @@ function wire(){
     });
   });
   document.getElementById('stkUnits').addEventListener('change', function(e){
-    UICFG.stockUnits = e.target.value; uiCfgSave(); syncStockUI();   // same size, shown in the new units
+    // the drawing's units (kept with it), and new drawings' too
+    DOC.stock.units = UICFG.stockUnits = e.target.value === 'in' ? 'in' : 'mm'; uiCfgSave(); syncStockUI(); persist(); draw();   // same size, shown in the new units
   });
   // display colors (now in the Settings modal, wired once)
   // Shift pressed or released while drawing a line: the preview follows at once
@@ -20964,6 +20983,7 @@ function wire(){
     DOC = {stock: docD.stock, ents: docD.ents.concat(docP.ents), guides: [], dims: [], vcToolpaths: ex.toolpaths || [],
            vcPreview: (ex.preview || []).map(function (c) { return c.map(function (sp) { return [sp[0]*scale + (docD.moved ? docD.moved[0] : 0), sp[1]*scale + (docD.moved ? docD.moved[1] : 0), sp[2]]; }); })};
     var sheetsMade = sheetsFromCrv(ex);
+    DOC.stock.units = scale === 25.4 ? 'in' : 'mm';            // the project's units, as asked: kept with the drawing
     syncStockUI(); persist(); fit();
     if (sheetsMade) toast('info', 'This project has ' + sheetsMade.length + ' sheets',
       sheetsMade.map(function (l) { return l.name; }).join(', ') + ': each has its own toolpaths and its own G-code. Choose the sheet at the top of the Toolpaths panel.');

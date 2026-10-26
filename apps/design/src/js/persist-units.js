@@ -22,7 +22,22 @@ function persist(){
 }
 // Material is often sold in inches even when the work is metric, so its size can be entered
 // in either. The drawing always stays in millimetres.
-function stockUnits(){ return UICFG.stockUnits === 'in' ? 'in' : 'mm'; }
+// The drawing's units, kept with it (DOC.stock.units), so it shows the same on every computer (Clint, 2026-10-26: "I think
+// the drawing should know what units to use and Design should honor that"). Settings' units are for new drawings.
+function stockUnits(){
+  var u = DOC && DOC.stock && DOC.stock.units;
+  if (u === 'in' || u === 'mm') return u;
+  return UICFG.stockUnits === 'in' ? 'in' : 'mm';
+}
+// A drawing saved before it kept its units: inches if its material is a whole number of sixteenths of an inch and not a
+// whole number of millimetres (48 x 48 in is 1219.2 mm), else this computer's choice. Kept with it from then on.
+function stockUnitsGuess(st){
+  if (!st || st.units === 'in' || st.units === 'mm') return st && st.units;
+  var inch = function (v) { var s = v / 25.4 * 16; return v > 0 && Math.abs(s - Math.round(s)) < 1e-6; };
+  var mm = function (v) { return Math.abs(v - Math.round(v)) < 1e-6; };
+  if (inch(st.w) && inch(st.h) && !(mm(st.w) && mm(st.h))) return 'in';
+  return UICFG.stockUnits === 'in' ? 'in' : 'mm';
+}
 // Display units. The drawing itself is always millimetres; these only change what is shown
 // and what typed dimension values mean.
 function dispIn(){ return stockUnits() === 'in'; }
@@ -96,6 +111,7 @@ function restore(){ // startup ONLY: pulls the persisted doc. Never call after s
     if (s){ var d = JSON.parse(s); if (d && d.stock) DOC = d; }
   }catch(e){}
   histRestoreStored();                                // its history, kept in the browser's storage (history.js)
+  if (DOC.stock && !DOC.stock.units) DOC.stock.units = stockUnits();   // from before drawings kept their units: as it was shown
   syncStockUI();
   tpRebuildAll();                                     // toolpaths come back as settings only
 }

@@ -45,7 +45,9 @@ these, so it's worth setting first. Open it from the header, or **Settings → J
 <Shot src={jobSetup} alt="The Job setup panel: width 320 and height 200 in millimetres; an XY zero picker with four corners and the centre, front-left chosen; thickness 12 mm with Z zero on top of the material; Lift inside a part, not set; and the machine's cutting area, where the material sits on it, and how far in from that corner." />
 
 - **Width, Height and units.** The units apply everywhere: the material, dimensions, typed values, the
-  measure tool and the readout. A unit typed after a number always wins, so `25mm` works in an inch
+  measure tool and the readout. They're saved with the drawing, so it opens in the same units on any computer, and
+  new drawings start in the last units you chose. A drawing saved before Design kept its units opens in inches if its
+  material is a whole number of sixteenths of an inch (48 × 48 in, say), and otherwise in this computer's units. A unit typed after a number always wins, so `25mm` works in an inch
   drawing.
 - **XY zero:** where X0 Y0 is on the material: one of the four corners, or the centre. Match it to where
   you'll set X and Y zero on the machine in 454 Control. Changing it keeps your parts where they are on the

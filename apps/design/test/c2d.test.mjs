@@ -244,7 +244,7 @@ test('opening one: it becomes the drawing, in its units, unsaved, and Save won�
     assert.equal(D.c2dIs(new Uint8Array(Buffer.from('{"stock": {}, "ents": []}'))), false, 'a 454 drawing isn’t one');
     D.c2dOpen(fixture('Circle.c2d'), 'Circle.c2d');
     assert.equal(D.DOC.ents.length, 1); assert.equal(D.DOC.ents[0].t, 'circle'); assert.equal(D.DOC.name, 'Circle');
-    assert.equal(D.UICFG.stockUnits, 'in');
+    assert.equal(D.DOC.stock.units, 'in', 'the drawing is in inches');
     assert.equal(el('stkT').value, '1', 'Job setup shows the thickness, in inches');
     assert.equal(D.SAVE_HANDLE, null); assert.equal(D.lsGet(D.PATH_KEY), null, 'the last drawing’s file is forgotten');
     assert.equal(D.drawingUnsaved(), true, 'not saved as a 454 drawing yet');

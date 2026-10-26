@@ -110,6 +110,7 @@ function clearDrawing(){
   DOC.guides = [];
   DOC.dims = [];
   DOC.keeps = [];
+  if (DOC.stock) DOC.stock.units = UICFG.stockUnits === 'in' ? 'in' : 'mm';   // a new drawing: in the units new drawings use
   DOC.vcToolpaths = [];
   DOC.vcConverted = false; DOC.vcPreview = [];
   DOC.layers = null; DOC.images = []; DOC.imageData = {}; layersInit();
@@ -138,6 +139,7 @@ function openDrawing(d, name){
   var h = d.history; delete d.history;
   pushUndo('Opened ' + name, 'open');
   DOC = d; histTake(h);
+  if (DOC.stock && !DOC.stock.units) DOC.stock.units = stockUnitsGuess(DOC.stock);   // saved before drawings kept their units
   dimsFollow.opening = true;                                       // stranded dimensions it was saved with: said as such
   try { syncStockUI(); persist(); } finally { dimsFollow.opening = false; }
   markSaved(name);

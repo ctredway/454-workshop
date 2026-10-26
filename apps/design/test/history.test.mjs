@@ -15,7 +15,7 @@ const OLD_SNAP = `JSON.stringify({ents:DOC.ents, guides:DOC.guides, dims:DOC.dim
   layers: DOC.layers, activeLayer: DOC.activeLayer, images: DOC.images, sheets: DOC.sheets || null})`;
 
 function setup() {
-  D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 200, h: 120, t: 12, zero: 'top'});
+  D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 200, h: 120, t: 12, zero: 'top', units: 'mm'});
     DOC.layers = [{id: 'L1', name: 'Layer 1', visible: true, locked: false}]; DOC.activeLayer = 'L1';
     DOC.ents = []; DOC.toolpaths = []; DOC.dims = []; DOC.guides = []; DOC.params = []; DOC.tpGroups = []; DOC.images = []; delete DOC.sheets;
     UNDO = []; REDO = []; SEL = []; 1`);

@@ -86,7 +86,8 @@ function wire(){
     });
   });
   document.getElementById('stkUnits').addEventListener('change', function(e){
-    UICFG.stockUnits = e.target.value; uiCfgSave(); syncStockUI();   // same size, shown in the new units
+    // the drawing's units (kept with it), and new drawings' too
+    DOC.stock.units = UICFG.stockUnits = e.target.value === 'in' ? 'in' : 'mm'; uiCfgSave(); syncStockUI(); persist(); draw();   // same size, shown in the new units
   });
   // display colors (now in the Settings modal, wired once)
   // Shift pressed or released while drawing a line: the preview follows at once
@@ -583,6 +584,7 @@ function wire(){
     DOC = {stock: docD.stock, ents: docD.ents.concat(docP.ents), guides: [], dims: [], vcToolpaths: ex.toolpaths || [],
            vcPreview: (ex.preview || []).map(function (c) { return c.map(function (sp) { return [sp[0]*scale + (docD.moved ? docD.moved[0] : 0), sp[1]*scale + (docD.moved ? docD.moved[1] : 0), sp[2]]; }); })};
     var sheetsMade = sheetsFromCrv(ex);
+    DOC.stock.units = scale === 25.4 ? 'in' : 'mm';            // the project's units, as asked: kept with the drawing
     syncStockUI(); persist(); fit();
     if (sheetsMade) toast('info', 'This project has ' + sheetsMade.length + ' sheets',
       sheetsMade.map(function (l) { return l.name; }).join(', ') + ': each has its own toolpaths and its own G-code. Choose the sheet at the top of the Toolpaths panel.');

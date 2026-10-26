@@ -109,7 +109,7 @@ test('Rotate turns the selection about the reference point; a quarter turn leave
 });
 test('inches when the drawing is shown in inches; nonsense and zero are refused', () => {
   const D = fresh([{t:'rect', x:0, y:0, w:25.4, h:50.8}]);
-  D.run(`UICFG.stockUnits = 'in'; selBoxRefresh(); 1`);
+  D.run(`UICFG.stockUnits = DOC.stock.units = 'in'; selBoxRefresh(); 1`);
   anchor(D, 'bl');
   assert.equal(field(D, 'sbW').value, '1.000'); assert.equal(field(D, 'sbUnit').textContent, 'in');
   enter(D, 'sbX', 2);

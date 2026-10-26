@@ -19,7 +19,7 @@ function setup(units = 'mm') {
     DOC.ents = []; DOC.toolpaths = []; DOC.dims = []; DOC.guides = []; DOC.tpGroups = []; DOC.images = []; delete DOC.sheets;
     DOC.params = [{name: 'count', expr: '4', unit: ${JSON.stringify(units)}, note: ''}, {name: 'pitch', expr: '${units === 'in' ? '1' : '25'}', unit: ${JSON.stringify(units)}, note: ''},
                   {name: 'angle', expr: '45', unit: ${JSON.stringify(units)}, note: ''}];
-    UNDO = []; REDO = []; SEL = []; HIST_EDITS = []; HIST_EDITS_UNDONE = []; UICFG.stockUnits = ${JSON.stringify(units)};
+    UNDO = []; REDO = []; SEL = []; HIST_EDITS = []; HIST_EDITS_UNDONE = []; UICFG.stockUnits = DOC.stock.units = ${JSON.stringify(units)};
     pushUndo(); DOC.ents.push({t: 'circle', cx: 20, cy: 20, r: 3, layer: 'L1'}); persist(); SEL = [0]; 1`);
 }
 // the Array tool, as typed: "N@dx,dy" for a row, or a centre clicked then "N<step"

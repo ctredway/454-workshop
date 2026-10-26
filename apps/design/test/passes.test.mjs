@@ -21,7 +21,7 @@ function drawing(units = 'mm') {
   D.run(`DOC = {stock: Object.assign({}, DOC.stock, {w: 300, h: 200, t: 12, zero: 'top'}), guides: [], dims: [], params: [], toolpaths: [],
     layers: [{id: 'L1', name: 'Layer 1', visible: true, locked: false}], activeLayer: 'L1',
     ents: [{t: 'rect', x: 20, y: 20, w: 16, h: 12, layer: 'L1'}], name: 'Cabinet'};
-    UNDO.length = 0; SEL = []; CUTSEL = null; UICFG.stockUnits = '${units}'; UICFG.tpPanel = true; renderToolpathPanel(); 1`);
+    UNDO.length = 0; SEL = []; CUTSEL = null; UICFG.stockUnits = DOC.stock.units = '${units}'; UICFG.tpPanel = true; renderToolpathPanel(); 1`);
 }
 function open(type, depth, step) {
   D.SEL = [0]; D.cutOpen(null); set('cutType', type, 'change'); D.CUT.toolChosen = true; set('cutDia', D.UICFG.stockUnits === 'in' ? 0.125 : 3.175);

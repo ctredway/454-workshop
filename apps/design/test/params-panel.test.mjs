@@ -14,7 +14,7 @@ const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, (msg || '') + `: $
 function typeInto(input, v) { input.value = v; input.dispatchEvent(new D.Event('change', { bubbles: true })); }
 // a rectangle whose width is a dimension, and an open, empty list
 function fresh() {
-  D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 300, h: 200, t: 18, zero: 'top'}); UICFG.stockUnits = 'mm';
+  D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 300, h: 200, t: 18, zero: 'top', units: 'mm'}); UICFG.stockUnits = 'mm';
     DOC.ents = [{t:'rect', x:10, y:10, w:50, h:30}]; DOC.params = []; DOC.dims = [];
     addDim({kind:'side', a:entId(DOC.ents[0]), at:hintOf(DOC.ents[0], {x:30, y:10})}); UNDO.length = 0; 1`);
   el('paramsBtn').click();
@@ -85,7 +85,7 @@ test('delete: refused while it’s used, then allowed; Undo brings it back', () 
   D.run('doUndo(); 1'); assert.equal(D.run('DOC.params.length'), 2);
 });
 test('typed in inches while the drawing shows inches: kept as inches', () => {
-  fresh(); D.run(`UICFG.stockUnits = 'in'; 1`);
+  fresh(); D.run(`UICFG.stockUnits = DOC.stock.units = 'in'; 1`);
   try {
     add('thickness', '3/4');
     near(D.run(`paramValue('thickness')`), 19.05);

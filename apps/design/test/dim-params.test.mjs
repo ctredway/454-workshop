@@ -131,7 +131,7 @@ test('dimensions that undo each other are settled by going round again', () => {
 });
 test('typed with the drawing in inches: the expression\u2019s numbers are inches', () => {
   cabinet();
-  D.run(`UICFG.stockUnits = 'in'; 1`);
+  D.run(`UICFG.stockUnits = DOC.stock.units = 'in'; 1`);
   try {
     type(0, 'thickness + 1');
     near(ents()[0].w, 18 + 25.4); assert.equal(dims()[0].exprUnit, 'in');

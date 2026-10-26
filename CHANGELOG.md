@@ -1502,6 +1502,21 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.163.1 — a drawing keeps its units
+Clint, 2026-10-26, opening his filament stand in the app run from the repository: "it is displaying the dimensions in
+metric. I think the drawing should know what units to use and Design should honor that. this would be confusing if
+needing to work on a design from different devices". The units were the computer's setting (`UICFG.stockUnits`).
+- **`DOC.stock.units`**, read first by `stockUnits()` (persist-units.js); this computer's setting is for new drawings.
+  Job setup's units set both. Saved with the drawing, and in its History like the rest of the material.
+- **Given to a drawing when it begins** (never in the middle of its History, where it would read as a change): a new one
+  takes new drawings' units; one opened without them is guessed (`stockUnitsGuess`): inches if its material is a whole
+  number of sixteenths of an inch and not of millimetres (his stand: 1219.2 mm, 48 in), else this computer's; the drawing
+  left open at startup keeps what it was shown in. Carbide Create projects say theirs, and VCarve projects take the units
+  asked for on opening (they used to change the computer's setting instead).
+- drawing-units.test.mjs, 3 tests; broken on purpose 4 ways, each caught (one only after the test was made stricter).
+  Tests that switched units through the setting now switch the drawing's. His file, opened here with the setting in
+  mm: inches, the material 48 × 48, a hole spacing 9.000″.
+
 ### 0.163.0 — Make toolpaths: proposed from the drawing, added on OK
 Clint, 2026-10-26: "I am always looking for ways to go faster but I also know I need to go well. Can we create a routine
 that looks at a drawing and generate tool paths and give a short summary of what was generated." His rules, asked: holes
