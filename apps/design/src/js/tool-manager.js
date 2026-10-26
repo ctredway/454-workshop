@@ -272,6 +272,7 @@ function toolMgrEnter(t){
   if (t !== 'mirror' && MIR) mirClose();
   if (t !== 'offset' && OFF) offClose();
   if (t !== 'array' && ARR) arrClose();
+  if (t !== 'rotate' && ROT) rotClose();
   if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
@@ -293,6 +294,7 @@ function toolMgrEnter(t){
   if (t === 'mirror' && !MIR) mirOpen();            // the panel is the tool
   if (t === 'offset' && !OFF) offOpen();
   if (t === 'array' && !ARR) arrOpen();
+  if (t === 'rotate' && !ROT) rotOpen();
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){

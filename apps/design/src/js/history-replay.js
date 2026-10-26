@@ -107,8 +107,8 @@ var HIST_OPS = {
     run: function (r, idx) {
       SEL = idx;
       var b = selBBox();
-      if (!b || !r.at) return HIST_WHY.cant;
-      var o = histFromFrac(b, r.at);
+      if (!b || (!r.at && !r.pt)) return HIST_WHY.cant;
+      var o = r.pt ? {x: r.pt.x, y: r.pt.y} : histFromFrac(b, r.at);   // the Rotate panel's point (rotate-panel.js), or a place on the box
       if (r.kind === 'rot') idx.forEach(function (i) { rotateEnt(DOC.ents[i], o.x, o.y, r.ang * Math.PI / 180); });
       else { SCALE_NOTE = null; idx.forEach(function (i) { scaleEnt(DOC.ents[i], o.x, o.y, r.sx, r.sy); }); }
       return true;

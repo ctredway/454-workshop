@@ -1502,6 +1502,20 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.165.0 — Rotate has a panel
+The second of the tool panels (Clint, 2026-10-26: "this is a very visual process and most users, including me, do not
+work well with the non visual way"). Rotate wanted the shapes selected first, a click for the centre, then a typed angle.
+- **A panel like Array's** (`rotate-panel.js`): the shapes (selected first, or clicked), turned about **Their centre**
+  (the middle of their box) or **A point** (clicked, snapping, or typed as X and Y, shown by a green cross), by an
+  **Angle** typed or one of the quick ones (90° and 45° either way, 180°). The turned shapes show dashed before OK, and
+  what's missing is said with OK off.
+- **A History step that can be changed**: the same as turning by the handles (`xform`, `kind: 'rot'`), so its angle can
+  be changed on the History bar. Typed, the old way, Rotate made a step the History bar could only go back to.
+  About a point, the step keeps that point (`pt`): a place on the shapes' box, as the handles' step keeps, can't say
+  where a point off a flat box is (a straight line has no height), and the line came back in the wrong place.
+- Opens as last used (`UICFG.rotLast`); the first time, a quarter turn anticlockwise about their centre. Typing an angle
+  or a point with the panel open fills it in.
+
 ### 0.164.0 — Array has a panel
 Clint, 2026-10-26: "I went to use the array tool earlier and I didn't understand how to set or choose what I needed to
 do." Array took only typed codes ("5@12,0" for a row; click a centre, then "6<60"), with the shapes selected first. The

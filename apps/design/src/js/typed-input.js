@@ -53,7 +53,7 @@ var STAGE_LABEL = {
   copy1:  'Copy \u2014 click destination, or type "x,y" / "@dx,dy"',
   mirror0:'Mirror \u2014 click the shapes to mirror, then the line to mirror about \u00b7 a construction line (X) is taken as the axis automatically',
   mirror1:'Mirror \u2014 click the second point of the axis (mirrored copy)',
-  rotate0:'Rotate \u2014 click the rotation center, or type "x,y"',
+  rotate0:'Rotate \u2014 click the shapes to turn, then set the angle in the panel',
   rotate1:'Rotate \u2014 type the angle in degrees (+ CCW, \u2212 CW)',
   array0: 'Array \u2014 click the shapes to copy, then set the copies in the panel: in a row, or around a centre',
   array1: 'Array \u2014 type "N<step\u00b0" (e.g. 6<60) around the clicked center',

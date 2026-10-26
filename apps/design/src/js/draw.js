@@ -401,6 +401,20 @@ function draw(){
     }
   }
 
+  // ---- rotate preview ----
+  if (TOOL === 'rotate' && ROT){
+    ctx.save(); ctx.strokeStyle = accentRGBA(.85); ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    rotResults().forEach(function(ne){ drawEntityOutline(ne); });
+    ctx.restore();
+    var rotP = rotPivot();
+    if (rotP && ROT.objs.length){                      // the point they turn about
+      var rotC = w2s(rotP.x, rotP.y);
+      ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(rotC.x - 7, rotC.y); ctx.lineTo(rotC.x + 7, rotC.y); ctx.moveTo(rotC.x, rotC.y - 7); ctx.lineTo(rotC.x, rotC.y + 7); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   // ---- mirror preview ----
   if (TOOL === 'mirror' && MIR){
     var mAx = mirAxis();

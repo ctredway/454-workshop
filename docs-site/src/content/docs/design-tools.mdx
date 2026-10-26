@@ -19,6 +19,7 @@ import nestPanel from '../../assets/shots/design-nest-panel.png';
 import parameters from '../../assets/shots/design-parameters.png';
 import keepLinedUp from '../../assets/shots/design-keep-lined-up.png';
 import arrayPanel from '../../assets/shots/design-array.png';
+import rotatePanel from '../../assets/shots/design-rotate.png';
 
 
 Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
@@ -534,11 +535,20 @@ Turns the selection over top to bottom, where it is.
 
 Shortcut: <kbd>Shift+R</kbd>
 
-Turns the selection by an exact angle.
+Turns shapes by an exact angle. The Rotate panel opens beside the drawing, and the turned shapes show dashed until you
+click **OK**.
 
-1. Select the shapes first.
-2. Click the point to turn around, or type it as `x,y`.
-3. Type the angle in degrees and press <kbd>Enter</kbd>: positive turns counter-clockwise, negative clockwise.
+1. Click **Rotate**. Shapes you selected first are already in **Objects**; click others on the drawing to add them, or
+   click one again to take it off.
+2. Choose what they turn about: **Their centre** (the middle of the box round them), or **A point**: click it on the
+   drawing (it snaps to corners and centres), or type its **X** and **Y**. A green cross shows it.
+3. Type the **Angle**, or click a quick one: 90° and 45° either way, or 180°. Positive turns anticlockwise, negative
+   clockwise.
+4. Click **OK**, or press <kbd>Enter</kbd> in any box.
+
+<Shot src={rotatePanel} alt="The Rotate panel beside a drawing: a bracket picked, turning about their centre, 90 degrees anticlockwise, and the bracket shown dashed where it will go." />
+
+The History bar can change the angle afterwards.
 
 :::tip
 To turn shapes by eye instead, select them, then click them again for rotate handles.

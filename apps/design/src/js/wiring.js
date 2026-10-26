@@ -189,6 +189,7 @@ function wire(){
   });
   document.getElementById('offOk').addEventListener('click', offApply);
   arrWire();                                                // the Array panel (array-panel.js)
+  rotWire();                                                // the Rotate panel (rotate-panel.js)
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
@@ -934,6 +935,7 @@ function wire(){
       else if (MIR){ mirClose(); setTool('select'); }          // cancel the mirror
       else if (OFF){ offClose(); setTool('select'); }          // cancel the offset
       else if (ARR){ arrClose(); setTool('select'); }          // cancel the array
+      else if (ROT){ rotClose(); setTool('select'); }          // cancel the rotation
       else if (FALL){ fallClose(); setTool('select'); }        // cancel Fillet corners
       else if (FALL_MARKS){ FALL_MARKS = null; }               // clear the rings on corners Fillet corners couldn't do
       else if (MEAS){ MEAS = null; }                           // clear the last measurement

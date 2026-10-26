@@ -133,8 +133,7 @@ function toolClick(w, snap){
     }
   }
   else if (TOOL === 'rotate'){
-    if (!SEL.length){ stagePrompt('selFirst'); }
-    else if (!DRAW){ DRAW = {stage:1, cx:p.x, cy:p.y}; stagePrompt('rotate1'); }
+    if (ROT){ rotClick(w, p); return; }              // the panel owns the picking
   }
   else if (TOOL === 'array'){
     if (ARR){ arrClick(w, p); return; }              // the panel owns the picking

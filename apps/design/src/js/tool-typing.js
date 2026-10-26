@@ -133,6 +133,7 @@ function toolCommitText(txt){
   }
   if (TOOL === 'mirror') return;                   // mirroring is the panel's job
   if (TOOL === 'rotate'){
+    if (ROT){ rotTyped(txt); return; }                 // with its panel open (rotate-panel.js), typing fills it in
     if (!SEL.length){ stagePrompt('selFirst'); return; }
     if (!DRAW){
       var pr2 = parseNumericPoint(txt, null);

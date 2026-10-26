@@ -129,7 +129,7 @@ var PANEL_BTNS = {
  explodeBtn:{id:'explodeBtn', icon:'expl', title:'Explode \u2014 break a contour into its individual lines and arcs'},
  copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 select first (V), then click base point and destination, or type @dx,dy'},
  mirrorT:{tool:'mirror', icon:'mirror', title:'Mirror (Shift+M) \u2014 opens the mirror panel: pick the shapes, pick the line to mirror about, then OK. Makes mirrored copy across the selection center, HH/VV to flip in place, or click 2 points for a custom axis'},
- rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 select first; click the rotation center, then type the angle in degrees (+ CCW)'},
+ rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 turn shapes by an angle, about their centre or a point'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 evenly spaced copies, in a row or around a centre'},
  fillet:{tool:'fillet', icon:'fillet', title:'Fillet (F) \u2014 type a radius, then click a corner: a poly/rect corner, or where two lines meet'},
  filletAllT:{tool:'filletall', icon:'filletall', title:'Fillet corners \u2014 select shapes first, or click them: rounds every corner at once (or only those pointing out or in), and rings any that won\u2019t fit'},

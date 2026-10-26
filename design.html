@@ -561,6 +561,21 @@
   #arrKind button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
   #arrKind button+button{border-left:1px solid var(--line)}
   #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  /* Rotate: the same panel, with a row of quick angles */
+  #rotPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #rotPanel[hidden],#rotPt[hidden]{display:none}
+  #rotPanel h3{font-size:14px}
+  #rotPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
+  #rotPanel .panelUnit{margin-left:0;width:18px;flex:none;text-align:right}
+  #rotCx,#rotCy{width:66px!important}
+  #rotCy{margin-left:0!important}
+  #rotAbout{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #rotQuick{display:flex;margin-top:7px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #rotQuick button{flex:1;padding-top:4px;padding-bottom:4px}
+  #rotAbout button,#rotQuick button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding-left:7px;padding-right:7px}
+  #rotAbout button{padding-top:4px;padding-bottom:4px}
+  #rotAbout button+button,#rotQuick button+button{border-left:1px solid var(--line)}
+  #rotAbout button[aria-pressed=true],#rotQuick button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
   #offDist{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #tracePanel{position:absolute;top:12px;right:12px;z-index:9;width:250px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
   #tracePanel[hidden]{display:none}
@@ -1243,6 +1258,19 @@
       <p class="mirHint" id="offHint"></p>
       <div class="mirBtns"><button id="offCancel">Cancel</button><button id="offOk" class="primary">OK</button></div>
     </div>
+    <div id="rotPanel" hidden role="dialog" aria-label="Rotate">
+      <div class="modalHead"><h3>Rotate</h3><button class="modalX" id="rotX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="rotObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="rotObjsVal">none</span></button>
+      <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Turn about</span><span id="rotAbout" role="group" aria-label="What they turn about"><button data-a="box">Their centre</button><button data-a="pt">A point</button></span></div>
+      <div id="rotPt" hidden>
+        <button class="mirSlot" id="rotCentre"><span class="mirLbl">Point</span><span class="mirVal" id="rotCentreVal">none</span></button>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="rotCx">X</label></span><input id="rotCx" type="text" inputmode="decimal" autocomplete="off"><span class="mirLbl"><label for="rotCy">Y</label></span><input id="rotCy" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal panelUnit" id="rotU">mm</span></div>
+      </div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="rotAng">Angle</label></span><input id="rotAng" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal panelUnit">&deg;</span></div>
+      <div id="rotQuick" role="group" aria-label="Quick angles"><button data-ang="90" title="A quarter turn anticlockwise">90&deg; &#x21BA;</button><button data-ang="-90" title="A quarter turn clockwise">90&deg; &#x21BB;</button><button data-ang="180" title="A half turn">180&deg;</button><button data-ang="45" title="An eighth of a turn anticlockwise">45&deg; &#x21BA;</button><button data-ang="-45" title="An eighth of a turn clockwise">45&deg; &#x21BB;</button></div>
+      <p class="mirHint" id="rotHint"></p>
+      <div class="mirBtns"><button id="rotCancel">Cancel</button><button id="rotOk" class="primary">OK</button></div>
+    </div>
     <div id="arrPanel" hidden role="dialog" aria-label="Array">
       <div class="modalHead"><h3>Array</h3><button class="modalX" id="arrX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
       <button class="mirSlot" id="arrObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="arrObjsVal">none</span></button>
@@ -1372,7 +1400,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.164.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.165.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -3445,8 +3473,8 @@ var HIST_OPS = {
     run: function (r, idx) {
       SEL = idx;
       var b = selBBox();
-      if (!b || !r.at) return HIST_WHY.cant;
-      var o = histFromFrac(b, r.at);
+      if (!b || (!r.at && !r.pt)) return HIST_WHY.cant;
+      var o = r.pt ? {x: r.pt.x, y: r.pt.y} : histFromFrac(b, r.at);   // the Rotate panel's point (rotate-panel.js), or a place on the box
       if (r.kind === 'rot') idx.forEach(function (i) { rotateEnt(DOC.ents[i], o.x, o.y, r.ang * Math.PI / 180); });
       else { SCALE_NOTE = null; idx.forEach(function (i) { scaleEnt(DOC.ents[i], o.x, o.y, r.sx, r.sy); }); }
       return true;
@@ -4055,7 +4083,7 @@ var STAGE_LABEL = {
   copy1:  'Copy \u2014 click destination, or type "x,y" / "@dx,dy"',
   mirror0:'Mirror \u2014 click the shapes to mirror, then the line to mirror about \u00b7 a construction line (X) is taken as the axis automatically',
   mirror1:'Mirror \u2014 click the second point of the axis (mirrored copy)',
-  rotate0:'Rotate \u2014 click the rotation center, or type "x,y"',
+  rotate0:'Rotate \u2014 click the shapes to turn, then set the angle in the panel',
   rotate1:'Rotate \u2014 type the angle in degrees (+ CCW, \u2212 CW)',
   array0: 'Array \u2014 click the shapes to copy, then set the copies in the panel: in a row, or around a centre',
   array1: 'Array \u2014 type "N<step\u00b0" (e.g. 6<60) around the clicked center',
@@ -4366,6 +4394,7 @@ function toolMgrEnter(t){
   if (t !== 'mirror' && MIR) mirClose();
   if (t !== 'offset' && OFF) offClose();
   if (t !== 'array' && ARR) arrClose();
+  if (t !== 'rotate' && ROT) rotClose();
   if (t !== 'filletall' && FALL) fallClose();
   if (t !== 'node') NODE = null;
   HANDLES.active = false;
@@ -4387,6 +4416,7 @@ function toolMgrEnter(t){
   if (t === 'mirror' && !MIR) mirOpen();            // the panel is the tool
   if (t === 'offset' && !OFF) offOpen();
   if (t === 'array' && !ARR) arrOpen();
+  if (t === 'rotate' && !ROT) rotOpen();
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){
@@ -4539,8 +4569,7 @@ function toolClick(w, snap){
     }
   }
   else if (TOOL === 'rotate'){
-    if (!SEL.length){ stagePrompt('selFirst'); }
-    else if (!DRAW){ DRAW = {stage:1, cx:p.x, cy:p.y}; stagePrompt('rotate1'); }
+    if (ROT){ rotClick(w, p); return; }              // the panel owns the picking
   }
   else if (TOOL === 'array'){
     if (ARR){ arrClick(w, p); return; }              // the panel owns the picking
@@ -4842,6 +4871,7 @@ function toolCommitText(txt){
   }
   if (TOOL === 'mirror') return;                   // mirroring is the panel's job
   if (TOOL === 'rotate'){
+    if (ROT){ rotTyped(txt); return; }                 // with its panel open (rotate-panel.js), typing fills it in
     if (!SEL.length){ stagePrompt('selFirst'); return; }
     if (!DRAW){
       var pr2 = parseNumericPoint(txt, null);
@@ -7952,6 +7982,7 @@ var HELP_ICONS = [
   ['#traceTitle', 'design-quickstart.html#trace-an-image', 'Turns a picture into outlines you can cut. Move Threshold until the shape you want is solid.'],
   ['#inwTitle', 'cam-reference.html#inlay', 'Makes both halves of a V-carve inlay at once: choose the bit and the end mill, then the depths.'],
   ['#offPanel .modalHead > h3', 'design-tools.html#offset', 'Makes a copy of a shape a set distance inside or outside it.'],
+  ['#rotPanel .modalHead > h3', 'design-tools.html#rotate', 'Turns the shapes you pick by an angle, about their own centre or a point you pick.'],
   ['#arrPanel .modalHead > h3', 'design-tools.html#array', 'Makes evenly spaced copies of the shapes you pick, in a row or around a centre.'],
   ['#fallPanel .modalHead > h3', 'design-tools.html#fillet-corners', 'Rounds every corner of the chosen shapes at once, or only those pointing out or in. Corners it can\u2019t do are ringed in red.'],
   ['#mirPanel .modalHead > h3', 'design-tools.html#mirror', 'Makes a mirror image of the selected shapes across a line you pick.'],
@@ -15363,6 +15394,20 @@ function draw(){
     }
   }
 
+  // ---- rotate preview ----
+  if (TOOL === 'rotate' && ROT){
+    ctx.save(); ctx.strokeStyle = accentRGBA(.85); ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    rotResults().forEach(function(ne){ drawEntityOutline(ne); });
+    ctx.restore();
+    var rotP = rotPivot();
+    if (rotP && ROT.objs.length){                      // the point they turn about
+      var rotC = w2s(rotP.x, rotP.y);
+      ctx.save(); ctx.strokeStyle = '#7fb069'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(rotC.x - 7, rotC.y); ctx.lineTo(rotC.x + 7, rotC.y); ctx.moveTo(rotC.x, rotC.y - 7); ctx.lineTo(rotC.x, rotC.y + 7); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   // ---- mirror preview ----
   if (TOOL === 'mirror' && MIR){
     var mAx = mirAxis();
@@ -15991,6 +16036,152 @@ function arrWire(){
   $('arrOk').addEventListener('click', arrApply);
   $('arrCancel').addEventListener('click', function(){ arrClose(); setTool('select'); });
   $('arrX').addEventListener('click', function(){ arrClose(); setTool('select'); });
+}
+// Rotate, with a panel like Array's (Clint, 2026-10-26: "this is a very visual process and most users, including me, do
+// not work well with the non visual way"). The shapes (selected first, or clicked while it's open), turned about their
+// own centre or a point (clicked, snapping, or typed), by an angle typed or one of the quick ones, shown dashed before
+// OK. The step it records is a handle rotation's ({op: 'xform', kind: 'rot'}, history-replay.js), so the History bar
+// can change its angle: about their centre it turns about their centre as they are then; about a point, that point.
+var ROT = null;             // the open panel: {objs, about: 'box'|'pt', c: {x, y} or null, ang (degrees), slot}
+function rotOpen(){
+  var objs = SEL.filter(function(i){ return DOC.ents[i] && entOnSheet(DOC.ents[i]); });
+  var L = UICFG.rotLast || {};
+  ROT = {objs: objs, about: L.about === 'pt' ? 'pt' : 'box', c: null, ang: isFinite(L.ang) && L.ang ? L.ang : 90, slot: 'objs'};
+  if (ROT.about === 'pt' && objs.length) ROT.slot = 'centre';
+  document.getElementById('rotPanel').hidden = false;
+  document.getElementById('rotAng').value = +(+ROT.ang).toFixed(3);
+  rotFillCentre();
+  rotRender();
+}
+function rotClose(){ ROT = null; document.getElementById('rotPanel').hidden = true; draw(); }
+function rotBox(){
+  var bb = null;
+  (ROT ? ROT.objs : []).forEach(function(i){
+    var b = DOC.ents[i] && entBBox(DOC.ents[i]);
+    if (b) bb = bb ? {x0: Math.min(bb.x0, b.x0), y0: Math.min(bb.y0, b.y0), x1: Math.max(bb.x1, b.x1), y1: Math.max(bb.y1, b.y1)} : b;
+  });
+  return bb;
+}
+// the point they turn about, or null
+function rotPivot(){
+  if (!ROT) return null;
+  if (ROT.about === 'pt') return ROT.c;
+  var b = rotBox();
+  return b ? {x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2} : null;
+}
+function rotWhy(){
+  if (!ROT.objs.length) return 'Click the shapes on the drawing to turn.';
+  if (ROT.about === 'pt' && !ROT.c) return 'Click the point to turn them about (it snaps to corners and centres), or type it.';
+  if (!isFinite(ROT.ang) || Math.abs(ROT.ang) < 1e-9) return 'Give it an angle to turn.';
+  return '';
+}
+// the shapes as OK would leave them, for the preview
+function rotResults(){
+  if (!ROT || rotWhy()) return [];
+  var pv = rotPivot(), a = ROT.ang * Math.PI / 180;
+  return ROT.objs.map(function(i){ var c = cloneEnt(DOC.ents[i]); rotateEnt(c, pv.x, pv.y, a); return c; });
+}
+function rotFillCentre(){
+  document.getElementById('rotCx').value = ROT.c ? fmtDisp(ROT.c.x) : '';
+  document.getElementById('rotCy').value = ROT.c ? fmtDisp(ROT.c.y) : '';
+}
+function rotRender(){
+  if (!ROT) return;
+  var why = rotWhy(), pt = ROT.about === 'pt';
+  document.getElementById('rotObjsVal').textContent = ROT.objs.length ? ROT.objs.length + (ROT.objs.length === 1 ? ' shape' : ' shapes') : 'none';
+  document.getElementById('rotObjs').setAttribute('aria-pressed', ROT.slot === 'objs' ? 'true' : 'false');
+  document.getElementById('rotCentre').setAttribute('aria-pressed', ROT.slot === 'centre' ? 'true' : 'false');
+  document.getElementById('rotCentreVal').textContent = ROT.c ? 'picked' : 'none';
+  Array.prototype.forEach.call(document.querySelectorAll('#rotAbout button'), function(b){
+    b.setAttribute('aria-pressed', b.dataset.a === ROT.about ? 'true' : 'false');
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#rotQuick button'), function(b){
+    b.setAttribute('aria-pressed', Math.abs(+b.dataset.ang - ROT.ang) < 1e-9 ? 'true' : 'false');
+  });
+  document.getElementById('rotPt').hidden = !pt;
+  document.getElementById('rotU').textContent = unitTag();
+  document.getElementById('rotOk').disabled = !!why;
+  document.getElementById('rotHint').textContent = why ||
+    ((pt && ROT.slot === 'centre' ? 'Click the drawing to move the point. ' : '') +
+     'Positive turns anticlockwise, negative clockwise.');
+  SEL = ROT.objs.slice();
+  draw();
+}
+function rotApply(){
+  if (!ROT || rotWhy()) return;
+  var idx = ROT.objs.slice(), pv = rotPivot(), b = rotBox(), a = ROT.ang;
+  pushUndo('Rotate ' + parseFloat((+a).toFixed(2)) + '°');
+  var r = histRecipe({op: 'xform', ids: histIdsOf(idx), kind: 'rot', ang: a, at: histFrac(b, pv.x, pv.y)});
+  if (r && ROT.about === 'pt') r.pt = {x: pv.x, y: pv.y};   // that point, whatever the shapes' box is then
+  idx.forEach(function(i){ rotateEnt(DOC.ents[i], pv.x, pv.y, a * Math.PI / 180); });
+  SEL = idx;
+  UICFG.rotLast = {about: ROT.about, ang: a}; uiCfgSave();
+  persist();
+  toast('ok', 'Rotated', idx.length + (idx.length === 1 ? ' shape' : ' shapes') + ' turned ' + parseFloat((+a).toFixed(2)) + '° ' +
+        (a > 0 ? 'anticlockwise' : 'clockwise') + (ROT.about === 'pt' ? ' about the point you picked.' : ' about their centre.'));
+  rotClose();
+  setTool('select');
+}
+// a canvas click while the panel is open: the shapes, or the point
+function rotClick(w, p){
+  if (ROT.about === 'pt' && ROT.slot === 'centre'){
+    ROT.c = {x: p.x, y: p.y};
+    rotFillCentre();
+    rotRender();
+    return;
+  }
+  var h = pickEntity(w);
+  if (h === null) return;
+  var at = ROT.objs.indexOf(h);
+  if (at >= 0) ROT.objs.splice(at, 1); else ROT.objs.push(h);
+  if (ROT.about === 'pt' && !ROT.c && ROT.objs.length) ROT.slot = 'centre';
+  rotRender();
+}
+// typed in the prompt with the panel open: "x,y" the point to turn about, a number the angle (and OK)
+function rotTyped(txt){
+  if (!ROT.objs.length) ROT.objs = SEL.filter(function(i){ return DOC.ents[i]; });
+  var pt = parseNumericPoint(txt, null);
+  if (pt){ ROT.about = 'pt'; ROT.c = pt; ROT.slot = 'objs'; rotFillCentre(); rotRender(); return true; }
+  var v = parseFloat(txt);
+  if (isNaN(v)) return false;
+  ROT.ang = v;
+  document.getElementById('rotAng').value = +v.toFixed(3);
+  if (!rotWhy()) rotApply(); else rotRender();
+  return true;
+}
+function rotWire(){
+  var $ = function(id){ return document.getElementById(id); };
+  $('rotObjs').addEventListener('click', function(){ if (ROT){ ROT.slot = 'objs'; rotRender(); } });
+  $('rotCentre').addEventListener('click', function(){ if (ROT){ ROT.slot = 'centre'; rotRender(); } });
+  Array.prototype.forEach.call(document.querySelectorAll('#rotAbout button'), function(b){
+    b.addEventListener('click', function(){
+      if (!ROT) return;
+      ROT.about = b.dataset.a;
+      ROT.slot = ROT.about === 'pt' && !ROT.c && ROT.objs.length ? 'centre' : 'objs';
+      rotRender();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#rotQuick button'), function(b){
+    b.addEventListener('click', function(){
+      if (!ROT) return;
+      ROT.ang = +b.dataset.ang; $('rotAng').value = ROT.ang;
+      rotRender();
+    });
+  });
+  $('rotAng').addEventListener('input', function(){ if (!ROT) return; var v = parseFloat($('rotAng').value); ROT.ang = isNaN(v) ? NaN : v; rotRender(); });
+  function centre(){
+    if (!ROT) return;
+    var x = lenIn($('rotCx').value), y = lenIn($('rotCy').value);
+    ROT.c = isNaN(x) || isNaN(y) ? null : {x: x, y: y};
+    rotRender();
+  }
+  $('rotCx').addEventListener('input', centre); $('rotCy').addEventListener('input', centre);
+  ['rotAng', 'rotCx', 'rotCy'].forEach(function(id){
+    $(id).addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); rotApply(); } });
+  });
+  $('rotOk').addEventListener('click', rotApply);
+  $('rotCancel').addEventListener('click', function(){ rotClose(); setTool('select'); });
+  $('rotX').addEventListener('click', function(){ rotClose(); setTool('select'); });
 }
 // PREVIEWS FOR TRIM AND EXTEND
 // The preview runs the real operation on a throwaway copy of the affected shape and then shows
@@ -20249,7 +20440,7 @@ var PANEL_BTNS = {
  explodeBtn:{id:'explodeBtn', icon:'expl', title:'Explode \u2014 break a contour into its individual lines and arcs'},
  copyT: {tool:'copy', icon:'copy', title:'Copy (M) \u2014 select first (V), then click base point and destination, or type @dx,dy'},
  mirrorT:{tool:'mirror', icon:'mirror', title:'Mirror (Shift+M) \u2014 opens the mirror panel: pick the shapes, pick the line to mirror about, then OK. Makes mirrored copy across the selection center, HH/VV to flip in place, or click 2 points for a custom axis'},
- rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 select first; click the rotation center, then type the angle in degrees (+ CCW)'},
+ rotateT:{tool:'rotate', icon:'rotate', title:'Rotate (Shift+R) \u2014 turn shapes by an angle, about their centre or a point'},
  arrayT:{tool:'array', icon:'array', title:'Array (Y) \u2014 evenly spaced copies, in a row or around a centre'},
  fillet:{tool:'fillet', icon:'fillet', title:'Fillet (F) \u2014 type a radius, then click a corner: a poly/rect corner, or where two lines meet'},
  filletAllT:{tool:'filletall', icon:'filletall', title:'Fillet corners \u2014 select shapes first, or click them: rounds every corner at once (or only those pointing out or in), and rings any that won\u2019t fit'},
@@ -20824,6 +21015,7 @@ function wire(){
   });
   document.getElementById('offOk').addEventListener('click', offApply);
   arrWire();                                                // the Array panel (array-panel.js)
+  rotWire();                                                // the Rotate panel (rotate-panel.js)
   document.getElementById('offCancel').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('offX').addEventListener('click', function(){ offClose(); setTool('select'); });
   document.getElementById('tpNew').addEventListener('click', function(){ setTool('select'); cutOpen(null); });
@@ -21569,6 +21761,7 @@ function wire(){
       else if (MIR){ mirClose(); setTool('select'); }          // cancel the mirror
       else if (OFF){ offClose(); setTool('select'); }          // cancel the offset
       else if (ARR){ arrClose(); setTool('select'); }          // cancel the array
+      else if (ROT){ rotClose(); setTool('select'); }          // cancel the rotation
       else if (FALL){ fallClose(); setTool('select'); }        // cancel Fillet corners
       else if (FALL_MARKS){ FALL_MARKS = null; }               // clear the rings on corners Fillet corners couldn't do
       else if (MEAS){ MEAS = null; }                           // clear the last measurement

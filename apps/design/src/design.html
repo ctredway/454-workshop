@@ -541,6 +541,19 @@
       <p class="mirHint" id="offHint"></p>
       <div class="mirBtns"><button id="offCancel">Cancel</button><button id="offOk" class="primary">OK</button></div>
     </div>
+    <div id="rotPanel" hidden role="dialog" aria-label="Rotate">
+      <div class="modalHead"><h3>Rotate</h3><button class="modalX" id="rotX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
+      <button class="mirSlot" id="rotObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="rotObjsVal">none</span></button>
+      <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Turn about</span><span id="rotAbout" role="group" aria-label="What they turn about"><button data-a="box">Their centre</button><button data-a="pt">A point</button></span></div>
+      <div id="rotPt" hidden>
+        <button class="mirSlot" id="rotCentre"><span class="mirLbl">Point</span><span class="mirVal" id="rotCentreVal">none</span></button>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="rotCx">X</label></span><input id="rotCx" type="text" inputmode="decimal" autocomplete="off"><span class="mirLbl"><label for="rotCy">Y</label></span><input id="rotCy" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal panelUnit" id="rotU">mm</span></div>
+      </div>
+      <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="rotAng">Angle</label></span><input id="rotAng" type="text" inputmode="decimal" autocomplete="off"><span class="mirVal panelUnit">&deg;</span></div>
+      <div id="rotQuick" role="group" aria-label="Quick angles"><button data-ang="90" title="A quarter turn anticlockwise">90&deg; &#x21BA;</button><button data-ang="-90" title="A quarter turn clockwise">90&deg; &#x21BB;</button><button data-ang="180" title="A half turn">180&deg;</button><button data-ang="45" title="An eighth of a turn anticlockwise">45&deg; &#x21BA;</button><button data-ang="-45" title="An eighth of a turn clockwise">45&deg; &#x21BB;</button></div>
+      <p class="mirHint" id="rotHint"></p>
+      <div class="mirBtns"><button id="rotCancel">Cancel</button><button id="rotOk" class="primary">OK</button></div>
+    </div>
     <div id="arrPanel" hidden role="dialog" aria-label="Array">
       <div class="modalHead"><h3>Array</h3><button class="modalX" id="arrX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
       <button class="mirSlot" id="arrObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="arrObjsVal">none</span></button>
@@ -731,6 +744,7 @@
 @@include js/draw.js
 @@include js/offset-mirror-panels.js
 @@include js/array-panel.js
+@@include js/rotate-panel.js
 @@include js/edit-previews.js
 @@include js/geometry.js
 @@include js/trim-extend.js
