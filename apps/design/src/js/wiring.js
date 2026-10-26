@@ -82,7 +82,7 @@ function wire(){
         syncStockUI(); return;                          // put the last good values back
       }
       DOC.stock.w = w; DOC.stock.h = h;
-      syncStockUI(); persist(); fit();
+      syncStockUI(); persist(); fitStock();             // the material just changed: show it
     });
   });
   document.getElementById('stkUnits').addEventListener('change', function(e){

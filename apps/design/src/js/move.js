@@ -140,7 +140,7 @@ var PANEL_BTNS = {
  machArea:{id:'machAreaBtn', icon:'mach', title:'Machine area \u2014 show or hide the machine\u2019s cutting area, for laying out material and parts'},
  undoBtn:{id:'undoBtn', icon:'undo', title:'Undo (Ctrl+Z)'},
  redoBtn:{id:'redoBtn', icon:'redo', title:'Redo (Ctrl+Y or Ctrl+Shift+Z)'},
- fitBtn2:{id:'fitBtn2', icon:'fit', title:'Fit stock (Home)'},
+ fitBtn2:{id:'fitBtn2', icon:'fit', title:'Fit (Home) — the shapes drawn, or the material when nothing is drawn yet'},
  newBtn:{id:'newBtn', icon:'neu', title:'New (Ctrl+N) — clear all vectors and guides (undoable with Ctrl+Z)'},
  saveBtn:{id:'saveBtn', icon:'save', title:'Save (Ctrl+S) — the drawing to a file (.454.json), keep it with your G-code or as a backup. Once saved, Save saves to the same file; Ctrl+Shift+S saves a copy under another name.'},
  saveAsBtn:{id:'saveAsBtn', icon:'saveas', title:'Save as (Ctrl+Shift+S) — save the drawing to a new file, or a copy under another name. Save then goes to the new file.'},

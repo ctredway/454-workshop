@@ -82,12 +82,31 @@ function buildToolPanel(){
 }
 
 /* ---------------- wiring ---------------- */
+// Fit (the button, Home, opening a drawing): the shapes drawn, if there are any on the sheet shown, or else the material
+// (Clint, 2026-10-26). Changing the material fits the material (fitStock).
 function fit(){
-  var sr = stockRect();
+  var b = fitDrawnBox();
+  if (b) fitBox(b); else fitStock();
+}
+function fitStock(){ fitBox(stockRect()); }
+// The box round every shape that can be seen on the sheet shown (hidden layers left out), or null if there are none
+function fitDrawnBox(){
+  var b = null;
+  (DOC.ents || []).forEach(function (e){
+    if (!e || (DOC.layers && !entVisible(e))) return;
+    var q = entBBox(e);
+    if (!q || !isFinite(q.x0) || !isFinite(q.y1)) return;
+    b = b ? {x0: Math.min(b.x0, q.x0), y0: Math.min(b.y0, q.y0), x1: Math.max(b.x1, q.x1), y1: Math.max(b.y1, q.y1)} : {x0: q.x0, y0: q.y0, x1: q.x1, y1: q.y1};
+  });
+  return b;
+}
+// Show a box in the middle of the drawing area, as large as fits with a margin (no closer in than the wheel goes)
+function fitBox(sr){
   var margin = 40;
-  var sx = (cv.clientWidth - 2*margin) / (sr.x1 - sr.x0);
-  var sy = (cv.clientHeight - 2*margin) / (sr.y1 - sr.y0);
-  VIEW.scale = Math.max(0.5, Math.min(sx, sy));
+  var w = Math.max(sr.x1 - sr.x0, 1e-6), h = Math.max(sr.y1 - sr.y0, 1e-6);
+  var sx = (cv.clientWidth - 2*margin) / w;
+  var sy = (cv.clientHeight - 2*margin) / h;
+  VIEW.scale = Math.max(0.2, Math.min(60, sx, sy));
   var cx = (sr.x0+sr.x1)/2, cy2 = (sr.y0+sr.y1)/2;
   VIEW.ox = cv.clientWidth/2 - cx*VIEW.scale;
   VIEW.oy = cv.clientHeight/2 + cy2*VIEW.scale;

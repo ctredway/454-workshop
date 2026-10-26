@@ -1502,6 +1502,14 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.161.3 — Fit fits what's drawn
+Clint, 2026-10-26: "the fit routine, if there are no vectors drawn, it should fit the material boundaries, if there are
+vectors, it should fit the drawn vectors". Fit (the button, now just **Fit**, Home, opening or importing a drawing) fits
+the box round every shape that can be seen on the sheet shown (hidden layers left out; `fitDrawnBox`, tool-panel.js), or
+the material with nothing drawn. Changing the material's size or its zero still fits the material (`fitStock`): that's
+what changed. No closer in than the wheel zooms (60 px a mm), so one small hole isn't blown up. fit.test.mjs, 5 tests;
+broken on purpose 3 ways, each caught.
+
 ### 0.161.2 — dimensions stay on their edges when an outline's corners are rounded
 Clint, 2026-10-26, on his filament stand: "I changed the vector to add feet and after I did the dimensions were all
 off. I had to delete them and redo them. ... At best, we should recalculate them OR at worst, remove them and notify the

@@ -29,6 +29,6 @@ function setJobOrigin(o){
     });
     if (typeof tpRebuildAll === 'function') tpRebuildAll();
   }
-  syncStockUI(); persist(); renderToolpathPanel(); fit();
+  syncStockUI(); persist(); renderToolpathPanel(); fitStock();   // the material just changed: show it
 }
 
