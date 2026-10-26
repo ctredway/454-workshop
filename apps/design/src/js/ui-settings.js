@@ -40,6 +40,8 @@ function uiCfgLoad(){
       if (typeof c.libMaterial === 'string') UICFG.libMaterial = c.libMaterial;
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
       if (c.tabs && typeof c.tabs === 'object') UICFG.tabs = c.tabs;   // checked where it's used (cutTabsStart)
+      if (c.lastOffset > 0) UICFG.lastOffset = c.lastOffset;           // the tool panels, as last used: checked where they open
+      ['arrLast', 'rotLast', 'cpyLast'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') UICFG[k] = c[k]; });
     }
   }catch(e){}
 }

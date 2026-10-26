@@ -1502,6 +1502,11 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.166.1 — the tool panels remember their settings from one visit to the next
+Offset, Array, Rotate and Copy open as they were last used, but only until Design was closed: the settings were saved
+with the rest, and starting Design reads back only the settings it names (`uiCfgLoad`), which didn't name these. It does
+now (`lastOffset`, `arrLast`, `rotLast`, `cpyLast`); one that isn't right is left out, and the panel opens as at first.
+
 ### 0.166.0 — Copy has a panel
 The third of the tool panels (Clint, 2026-10-26). Copy wanted the shapes selected first, then a click on them and a click
 where it goes, or a typed "@dx,dy".
