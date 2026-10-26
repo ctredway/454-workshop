@@ -1,4 +1,69 @@
 /* ---------------- snapping ---------------- */
+// Every point a shape can be snapped to, as a feature of it: {k, i}, k 'end' (a corner, a line's or an arc's end, a
+// polyline's or outline's point, text's start), 'center' or 'mid' (the middle of a side, or of an arc), i which one.
+// The point itself is snapFeatureAt's. A line drawn from one remembers it (line-attach.js), so a construction line
+// drawn from a circle's centre follows the circle when it moves.
+function snapFeatures(e){
+  var out = [], k;
+  if (e.t==='line'){ out.push({k:'end',i:0},{k:'end',i:1},{k:'mid',i:0}); }
+  else if (e.t==='circle'){ out.push({k:'center',i:0}); }
+  else if (e.t==='text'){ out.push({k:'end',i:0}); }
+  else if (e.t==='rect'){
+    for (k = 0; k < 4; k++) out.push({k:'end',i:k});
+    out.push({k:'center',i:0});
+    for (k = 0; k < 4; k++) out.push({k:'mid',i:k});
+  }
+  else if (e.t==='poly' || e.t==='path'){
+    var m = e.pts ? e.pts.length : 0, last = e.closed && m > 2 ? m : m - 1;
+    for (k = 0; k < m; k++) out.push({k:'end',i:k});
+    if (m > 1) for (k = 0; k < last; k++) out.push({k:'mid',i:k});
+  }
+  else if (e.t==='arc'){
+    out.push({k:'end',i:0},{k:'end',i:1},{k:'center',i:0});
+    if (arcSweep(e) > 1e-9) out.push({k:'mid',i:0});
+  }
+  return out;
+}
+// Where a shape's feature is now, or null if it hasn't got that one
+function snapFeatureAt(e, f){
+  if (!e || !f) return null;
+  function seg(a, b, bulge){                         // the middle of a side, or of the curve on it
+    var mx = (a[0]+b[0])/2, my = (a[1]+b[1])/2, ch = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    if (ch < 1e-9) return null;
+    var s = (bulge || 0) * ch / 2;                  // the curve's height above the chord (DXF bulge, signed)
+    return {x: mx + (b[1]-a[1])/ch*s, y: my - (b[0]-a[0])/ch*s};
+  }
+  var i = f.i;
+  if (e.t==='line'){
+    if (f.k==='end') return i===0 ? {x:e.x1,y:e.y1} : i===1 ? {x:e.x2,y:e.y2} : null;
+    if (f.k==='mid' && i===0) return seg([e.x1,e.y1], [e.x2,e.y2]);
+  }
+  else if (e.t==='circle'){ if (f.k==='center') return {x:e.cx,y:e.cy}; }
+  else if (e.t==='text'){ if (f.k==='end' && i===0) return {x:e.x,y:e.y}; }
+  else if (e.t==='rect'){
+    var c = [[e.x,e.y],[e.x+e.w,e.y],[e.x+e.w,e.y+e.h],[e.x,e.y+e.h]];
+    if (f.k==='end' && c[i]) return {x:c[i][0], y:c[i][1]};
+    if (f.k==='center') return {x:e.x+e.w/2, y:e.y+e.h/2};
+    if (f.k==='mid' && c[i]) return seg(c[i], c[(i+1)%4]);
+  }
+  else if (e.t==='poly' || e.t==='path'){
+    var m = e.pts ? e.pts.length : 0, last = e.closed && m > 2 ? m : m - 1;
+    if (f.k==='end' && i >= 0 && i < m) return {x:e.pts[i][0], y:e.pts[i][1]};
+    if (f.k==='mid' && i >= 0 && i < last) return seg(e.pts[i], e.pts[(i+1)%m], e.t==='path' ? e.pts[i][2] : 0);
+  }
+  else if (e.t==='arc'){
+    if (f.k==='end' && (i===0 || i===1)) return arcEnds(e)[i];
+    if (f.k==='center') return {x:e.cx,y:e.cy};
+    if (f.k==='mid' && arcSweep(e) > 1e-9) return e0mid(e);
+  }
+  return null;
+}
+// the middle of every side: a lone line, a rectangle's sides, a polyline's or outline's segments (the middle of the
+// curve for a curved one) and an arc. Shown as a triangle and "Midpoint" at the cursor.
+function snapMids(e){
+  return snapFeatures(e).filter(function (f) { return f.k === 'mid'; })
+    .map(function (f) { var p = snapFeatureAt(e, f); return p && {x: p.x, y: p.y, k: 'mid'}; }).filter(Boolean);
+}
 function snapPoints(){
   var pts = [];
   var sr = stockRect();
@@ -6,21 +71,10 @@ function snapPoints(){
            {x:sr.x1,y:sr.y1,k:'corner'},{x:sr.x0,y:sr.y1,k:'corner'});
   DOC.ents.forEach(function(e){
     if (DOC.layers && !entVisible(e)) return;         // nothing on a hidden layer to snap to
-    if (e.t==='line'){ pts.push({x:e.x1,y:e.y1,k:'end'},{x:e.x2,y:e.y2,k:'end'}); }
-    else if (e.t==='circle'){ pts.push({x:e.cx,y:e.cy,k:'center'}); }
-    else if (e.t==='text'){ pts.push({x:e.x,y:e.y,k:'end'}); }
-    else if (e.t==='rect'){
-      pts.push({x:e.x,y:e.y,k:'end'},{x:e.x+e.w,y:e.y,k:'end'},
-               {x:e.x+e.w,y:e.y+e.h,k:'end'},{x:e.x,y:e.y+e.h,k:'end'},
-               {x:e.x+e.w/2,y:e.y+e.h/2,k:'center'});
-    }
-    else if (e.t==='poly'){ e.pts.forEach(function(p){ pts.push({x:p[0],y:p[1],k:'end'}); }); }
-    else if (e.t==='arc'){
-      var ae = arcEnds(e);
-      pts.push({x:ae[0].x,y:ae[0].y,k:'end'},{x:ae[1].x,y:ae[1].y,k:'end'},{x:e.cx,y:e.cy,k:'center'});
-    }
-    else if (e.t==='path'){ e.pts.forEach(function(p){ pts.push({x:p[0],y:p[1],k:'end'}); }); }
-    snapMids(e).forEach(function(p){ pts.push(p); });
+    snapFeatures(e).forEach(function(f){
+      var p = snapFeatureAt(e, f);
+      if (p) pts.push({x:p.x, y:p.y, k:f.k, ent:e, f:f});
+    });
   });
   // guide-guide intersections
   for (var i=0;i<DOC.guides.length;i++)
@@ -29,28 +83,6 @@ function snapPoints(){
       if (p) pts.push({x:p.x,y:p.y,k:'guideX'});
     }
   return pts;
-}
-// the middle of every side: a lone line, a rectangle's sides, a polyline's or outline's segments (the middle of the
-// curve for a curved one) and an arc. Shown as a triangle and "Midpoint" at the cursor.
-function snapMids(e){
-  var out = [];
-  function seg(a, b, bulge){
-    var mx = (a[0]+b[0])/2, my = (a[1]+b[1])/2, ch = Math.hypot(b[0]-a[0], b[1]-a[1]);
-    if (ch < 1e-9) return;
-    var s = (bulge || 0) * ch / 2;                  // the curve's height above the chord (DXF bulge, signed)
-    out.push({x: mx + (b[1]-a[1])/ch*s, y: my - (b[0]-a[0])/ch*s, k: 'mid'});
-  }
-  if (e.t==='line') seg([e.x1,e.y1], [e.x2,e.y2]);
-  else if (e.t==='rect'){
-    seg([e.x,e.y], [e.x+e.w,e.y]); seg([e.x+e.w,e.y], [e.x+e.w,e.y+e.h]);
-    seg([e.x+e.w,e.y+e.h], [e.x,e.y+e.h]); seg([e.x,e.y+e.h], [e.x,e.y]);
-  }
-  else if ((e.t==='poly' || e.t==='path') && e.pts && e.pts.length > 1){
-    var m = e.pts.length, last = e.closed && m > 2 ? m : m - 1;
-    for (var k = 0; k < last; k++) seg(e.pts[k], e.pts[(k+1) % m], e.t==='path' ? e.pts[k][2] : 0);
-  }
-  else if (e.t==='arc' && arcSweep(e) > 1e-9){ var am = e0mid(e); out.push({x: am.x, y: am.y, k: 'mid'}); }
-  return out;
 }
 function guideX(g1,g2){
   var d = g1.a*g2.b - g2.a*g1.b;
@@ -137,7 +169,7 @@ function resolveSnap(w){
   var best = null;
   snapPoints().forEach(function(p){
     var d = Math.hypot(p.x-w.x, p.y-w.y);
-    if (d < tol && (!best || d < best.d)) best = {x:p.x,y:p.y,d:d,k:p.k};
+    if (d < tol && (!best || d < best.d)) best = {x:p.x,y:p.y,d:d,k:p.k,ent:p.ent,f:p.f};
   });
   if (best) return best;                              // a shape's point wins: it's the more deliberate aim
   var as = angleSnap(w);

@@ -2,8 +2,15 @@ function toolClick(w, snap){
   var p = snap;
   if (shapeToolClick(p)) return;
   if (TOOL === 'line'){
-    if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y}; stagePrompt('line1'); }
-    else { pushUndo(); DOC.ents.push({t:'line',x1:DRAW.x,y1:DRAW.y,x2:p.x,y2:p.y}); DRAW = {stage:1,x:p.x,y:p.y}; persist(); }
+    // each end remembers the shape's point it was snapped to, if any (line-attach.js)
+    if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y, a:attachOf(p)}; stagePrompt('line1'); }
+    else {
+      pushUndo();
+      var ln = {t:'line',x1:DRAW.x,y1:DRAW.y,x2:p.x,y2:p.y}, a2 = attachOf(p);
+      if (DRAW.a) ln.a1 = DRAW.a;
+      if (a2) ln.a2 = a2;
+      DOC.ents.push(ln); DRAW = {stage:1,x:p.x,y:p.y,a:a2 && JSON.parse(JSON.stringify(a2))}; persist();
+    }
   }
   else if (TOOL === 'rect'){
     if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y}; stagePrompt('rect1'); }

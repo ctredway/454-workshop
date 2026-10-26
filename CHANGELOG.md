@@ -1497,6 +1497,22 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.160.0 — construction lines stay attached to the points they were drawn from
+Clint, 2026-10-25: "construction lines are not holding their place. I draw a line from the center point of a circle or
+the midpoint of the line and make it a construction line, if I move the circle or shorten the line, the construction
+line doesn't move with the change". A snapped point was only ever its coordinates.
+- **Each snap point is now a feature of its shape** (`snapFeatures`, `snapFeatureAt` in snapping.js: an end, a centre or
+  a midpoint, and which one). The snap points are the same as before: checked old against new on lines, circles, text,
+  rectangles, open and closed polylines, arcs (and a zero sweep) and curved outlines, 52 points, all the same.
+- **A line remembers what each end was snapped to** (`e.a1`, `e.a2`, line-attach.js). After every change, and after each
+  step the History bar does again, a construction line's end follows its feature when the feature has moved and the end
+  is still where it was. Moved by itself (dragged, or the line moved alone), an end lets go; its shape deleted, it stays
+  where it is. A line that isn't construction doesn't follow, and forgets the point once it's off it, so making it
+  construction later doesn't make it jump. Fillet corners making a rectangle an outline: a line from its centre stays
+  on the middle of the outline's box; one from a corner that was rounded off lets go.
+- line-attach.test.mjs, 7 tests (with a circle mirrored about the construction line in a later History step, done
+  again about the line where it then is). Broken on purpose 6 ways, each one caught.
+
 ### 0.159.0 — a shorter way round the holes, and a lower lift inside a part (cutting)
 Clint, 2026-10-23, on his arm inserts (90 holes and 18 slots in 1.2 mm material): "how the tool path chose the order in
 which the holes and the chamfers are completed in. IMO its very inefficient". Chamfers and profiles went in the

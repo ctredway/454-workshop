@@ -213,11 +213,16 @@ function keepName(id){ return id === 'stock' ? 'the material' : 'the ' + histLow
 // For the History bar: the links as a step leaves them (none: not kept at all)
 function keepsForHist(){ return DOC.keeps && DOC.keeps.length ? DOC.keeps : undefined; }
 // A step the History bar did again: its shapes put back in line, as they were when it was first done
+// (and construction lines put back on the points they were drawn from, line-attach.js)
 function keepsAfterStep(p){
-  var K = HIST_KEYS.indexOf('keeps');
-  if (!Array.isArray(p[K]) || !p[K].length) return p;
+  var K = HIST_KEYS.indexOf('keeps'), E = HIST_KEYS.indexOf('ents');
+  var keeps = Array.isArray(p[K]) && p[K].length;
+  var lines = Array.isArray(p[E]) && p[E].some(function (j) { return /"a[12]":/.test(HIST_STR[j]); });
+  if (!keeps && !lines) return p;
   histLoad(p);
-  return keepsApply().length ? histPack() : p;
+  var moved = keeps ? keepsApply().length : 0;
+  if (lines) moved += linesFollow();
+  return moved ? histPack() : p;
 }
 
 /* ---- seen and undone: drawn while a shape in one is selected; its marker clicked to stop keeping it */

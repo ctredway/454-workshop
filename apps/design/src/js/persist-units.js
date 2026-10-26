@@ -10,6 +10,7 @@ function persist(){
   if (typeof histGiveIds === 'function') histGiveIds();
   if (typeof dimsFollow === 'function') dimsFollow();   // dimensions onto shapes a tool remade, or removed (dimension-follow.js)
   if (typeof keepsRun === 'function') keepsRun();       // shapes kept lined up put back in line (keep-lined-up.js)
+  if (typeof linesFollow === 'function') linesFollow(); // construction lines onto the points they were drawn from (line-attach.js)
   markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
   histChanged();                                        // the History bar's last step, and the history kept
   try{ localStorage.setItem('d454Design', docForStorage()); }
