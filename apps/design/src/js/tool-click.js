@@ -1,5 +1,6 @@
 function toolClick(w, snap){
   var p = snap;
+  if (!DRAW && SHP && shpStamp(p)){ shapeAdd(shpStamp(p), TOOL + '0'); return; }   // a size set in the panel: placed here (shape-panel.js)
   if (shapeToolClick(p)) return;
   if (TOOL === 'line'){
     // each end remembers the shape's point it was snapped to, if any (line-attach.js)

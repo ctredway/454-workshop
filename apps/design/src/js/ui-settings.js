@@ -43,6 +43,9 @@ function uiCfgLoad(){
       if (c.lastOffset > 0) UICFG.lastOffset = c.lastOffset;           // the tool panels, as last used: checked where they open
       if (c.polySize && c.polySize.v > 0) UICFG.polySize = c.polySize;
       if (c.starSize > 0) UICFG.starSize = c.starSize;
+      ['rectSize', 'ellSize'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') UICFG[k] = c[k]; });
+      if (c.rectAt === 'centre' || c.rectAt === 'corner') UICFG.rectAt = c.rectAt;
+      if (c.circleD > 0) UICFG.circleD = c.circleD;
       if (c.starInner > 0 && c.starInner < 1) UICFG.starInner = c.starInner;
       ['arrLast', 'rotLast', 'cpyLast'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') UICFG[k] = c[k]; });
     }

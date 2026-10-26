@@ -1502,6 +1502,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.168.0 — Rectangle, Circle and Ellipse have the panel too
+The last of the tool panels in the order Clint and I chose (2026-10-26). Exact sizes were typed after the first click
+(`120,80`, `D5`).
+- **The drawing tools' panel** (`shape-panel.js`) opens with them as well: **Width** and **Height** for a rectangle or
+  an ellipse, **Diameter** for a circle. Empty, they're drawn by eye as before. With a size, each click places one and a
+  dashed one follows the pointer first: a circle or an ellipse centred where clicked, a rectangle with its bottom-left
+  **Corner** or its **Centre** there (chosen in the panel). Each keeps its own size, kept between visits (`rectSize`,
+  `ellSize`, `rectAt`, `circleD`).
+- **A typed point is a click**: with a size set, typing `x,y` places one there.
+- **Fixed: a rectangle's first corner can be typed**, as the guides have said all along (`x,y`); it was ignored.
+- The panel's help button opens the part of the guides for the tool that's in use.
+
 ### 0.167.0 — Polygon and Star have a panel; a star is two clicks
 The fourth of the tool panels (Clint, 2026-10-26). The number of sides or points was typed (S8), and an exact size typed
 after clicking the centre (R, D or F).

@@ -235,10 +235,10 @@ function draw(){
     }
     ctx.stroke(); ctx.setLineDash([]);
   }
-  // a polygon or star of the size set in its panel, following the pointer: where a click puts it (shape-panel.js)
+  // a shape of the size set in its panel, following the pointer: where a click puts it (shape-panel.js)
   if (!DRAW && SHP && MOUSE.snap && shpStamp(MOUSE.snap)){
-    ctx.strokeStyle = THEME.accent; ctx.lineWidth = 1.2; ctx.setLineDash([4,4]);
-    ctx.beginPath(); shapeToolPreview(ctx, MOUSE.snap); ctx.stroke(); ctx.setLineDash([]);
+    ctx.save(); ctx.strokeStyle = THEME.accent; ctx.lineWidth = 1.2; ctx.setLineDash([4,4]);
+    drawEntityOutline(shpStamp(MOUSE.snap)); ctx.restore();
   }
 
   // snap marker

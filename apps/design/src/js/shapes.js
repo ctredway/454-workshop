@@ -74,7 +74,6 @@ function shapeAdd(e, next){
 // A click for one of the three tools. Returns true if it was one of them.
 function shapeToolClick(p){
   if (TOOL !== 'ellipse' && TOOL !== 'polygon' && TOOL !== 'star') return false;
-  if (!DRAW && shpStamp(p)){ shapeAdd(shpStamp(p), TOOL + '0'); return true; }   // a size set in the panel: placed here
   if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y}; stagePrompt(TOOL + '1'); return true; }
   var e = shapeFromDraw(p);
   if (e) shapeAdd(e, TOOL + '0');
@@ -94,7 +93,7 @@ function shapeToolText(txt){
   }
   if (!DRAW){                                                          // the centre, typed
     var c = parseNumericPoint(t, null);
-    if (c) shapeToolClick(c);
+    if (c) toolClick(c, c);
     return true;
   }
   if (TOOL === 'ellipse'){

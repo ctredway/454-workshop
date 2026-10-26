@@ -294,9 +294,14 @@ function toolCommitText(txt){
     }
     return;
   }
+  if (TOOL === 'rect' && !DRAW){                       // the first corner, typed (the docs said it could be; it wasn't read)
+    var pq = parseNumericPoint(txt, null);
+    if (pq){ toolClick(pq, pq); draw(); }             // as a click: with a size set in the panel, placed there
+    return;
+  }
   if (TOOL === 'circle' && !DRAW){
     var pc = parseNumericPoint(txt, null);
-    if (pc){ DRAW = {stage:1, x:pc.x, y:pc.y}; stagePrompt('circle1'); draw(); }
+    if (pc){ toolClick(pc, pc); draw(); }             // the centre, as a click: with a size set in the panel, placed there
     return;
   }
 }

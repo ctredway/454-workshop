@@ -34,8 +34,8 @@ var STAGE_LABEL = {
   measureS:'Measure \u2014 Shift-click the second shape',
   text0:  'Text \u2014 click where the text should start (its baseline), or click existing text to edit it',
   line1:  'Line \u2014 next point: "x,y" abs \u00b7 "@dx,dy" rel \u00b7 "50<45" length<angle\u00b0',
-  rect0:  'Rect \u2014 click first corner, or type "x,y"',
-  rect1:  'Rect \u2014 opposite corner, or type "W,H" e.g. "120,80"',
+  rect0:  'Rectangle \u2014 click first corner, or type "x,y"',
+  rect1:  'Rectangle \u2014 opposite corner, or type "W,H" e.g. "120,80"',
   circle0:'Circle \u2014 click center, or type "x,y"',
   circle1:'Circle \u2014 click radius point, or type "D5" / "R2.5"',
   ellipse0:'Ellipse — click the centre, or type "x,y"',
@@ -85,8 +85,9 @@ function stagePrompt(key){
   var txt = STAGE_LABEL[key] || '';
   if (txt.indexOf('{R}') >= 0) txt = txt.replace('{R}', UICFG.filletR);
   if (txt.indexOf('{S}') >= 0) txt = txt.replace(/\{S\}/g, shapeSides());
-  if ((key === 'polygon0' || key === 'star0') && typeof shpStamp === 'function' && shpStamp({x: 0, y: 0}))
-    txt = txt.replace(/ · click the centre, or type "x,y"$/, ' · click to place one, centred where you click');
+  if (/^(rect|circle|ellipse|polygon|star)0$/.test(key) && typeof shpStamp === 'function' && SHP && shpStamp({x: 0, y: 0}))
+    txt = txt.replace(/ (\u2014|·) click (the |first )?(centre|center|corner).*$/, ' $1 click to place one, ' +
+                      (key === 'rect0' && rectAt() === 'corner' ? 'its bottom-left corner' : 'centred') + ' where you click');
   if (txt.indexOf('{P}') >= 0) txt = txt.replace(/\{P\}/g, shapePoints());
   if (txt.indexOf('{D}') >= 0) txt = txt.replace('{D}', +(UICFG.filletR * 2).toFixed(3));
   showPrompt(txt, '');

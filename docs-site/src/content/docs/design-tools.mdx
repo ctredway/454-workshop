@@ -22,6 +22,7 @@ import arrayPanel from '../../assets/shots/design-array.png';
 import rotatePanel from '../../assets/shots/design-rotate.png';
 import copyPanel from '../../assets/shots/design-copy.png';
 import shapePanel from '../../assets/shots/design-polygon.png';
+import rectPanel from '../../assets/shots/design-rectangle.png';
 
 
 Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
@@ -256,26 +257,34 @@ Draws straight lines, one after another.
 
 Shortcut: <kbd>R</kbd>
 
-Draws a rectangle.
+Draws a rectangle. Its panel opens beside the drawing while the tool is in use.
 
-1. Click one corner, or type it as `x,y`.
-2. Click the opposite corner, or type the size as `width,height`, such as `120,80`.
+1. To draw it by eye, leave **Width** and **Height** empty: click one corner (or type it as `x,y`), then the opposite
+   corner (or type the size as `width,height`, such as `120,80`).
+2. For an exact size, type the **Width** and **Height**, and choose whether a click puts its bottom-left **Corner** or
+   its **Centre** where you click. A dashed rectangle follows the pointer: each click places one.
+
+<Shot src={rectPanel} alt="The Rectangle panel beside the drawing: 120 by 80 mm, a click putting its centre where you click, one placed and a second, dashed, following the pointer." />
 
 ### Circle
 
 Shortcut: <kbd>C</kbd>
 
-Draws a circle.
+Draws a circle. Its panel opens beside the drawing while the tool is in use.
 
-1. Click the center, or type it as `x,y`.
-2. Click a point on the edge, or type the size: `D5` for a 5 mm diameter, `R2.5` for a 2.5 mm radius.
+1. To draw it by eye, leave **Diameter** empty: click the centre (or type it as `x,y`), then a point on the edge, or
+   type the size: `D5` for a 5 mm diameter, `R2.5` for a 2.5 mm radius.
+2. For an exact size, type the **Diameter**. A dashed circle follows the pointer: each click places one, centred where
+   you click. Handy for a row of holes: click each centre.
 
 ### Ellipse
 
-Draws an ellipse, square to the material. Rotate it afterwards if it should lean.
+Draws an ellipse, square to the material. Rotate it afterwards if it should lean. Its panel opens beside the drawing
+while the tool is in use.
 
-1. Click the centre, or type it as `x,y`.
-2. Click a corner of the box it fits in, or type its width and height, such as `120,60`.
+1. To draw it by eye, leave **Width** and **Height** empty: click the centre (or type it as `x,y`), then a corner of the
+   box it fits in, or type its width and height, such as `120,60`.
+2. For an exact size, type the **Width** and **Height**. Each click places one, centred where you click.
 
 An ellipse is made of arcs that stay within 0.0005 mm of a true ellipse, far finer than any bit cuts, so it
 offsets, cuts and exports like any other outline. Its points can be moved with Edit nodes, but it doesn't

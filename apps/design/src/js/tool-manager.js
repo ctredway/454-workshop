@@ -298,7 +298,7 @@ function toolMgrEnter(t){
   if (t === 'array' && !ARR) arrOpen();
   if (t === 'rotate' && !ROT) rotOpen();
   if (t === 'copy' && !CPY) cpyOpen();
-  if ((t === 'polygon' || t === 'star') && !SHP) shpOpen(t);   // the panel stays open while the tool is
+  if (SHP_TOOLS[t] && !SHP) shpOpen(t);             // the drawing tools' panel stays open while the tool is
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){

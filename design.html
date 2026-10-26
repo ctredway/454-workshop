@@ -563,7 +563,7 @@
   #arrKind button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
   /* Polygon and Star: the same panel, open while the tool is */
   #shpPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
-  #shpPanel[hidden],#shpPoly[hidden],#shpStar[hidden]{display:none}
+  #shpPanel[hidden],#shpPoly[hidden],#shpStar[hidden],#shpWH[hidden],#shpCircle[hidden],#shpRectAt[hidden]{display:none}
   #shpPanel h3{font-size:14px}
   #shpPanel input[type=text]{width:72px;margin-left:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:2px 5px}
   #shpPanel .panelUnit{margin-left:0;width:18px;flex:none;text-align:right}
@@ -572,10 +572,10 @@
   .shpCount button{width:24px;height:22px;padding:0;line-height:1}
   #shpInner{margin-left:auto;width:96px;accent-color:var(--amber)}
   #shpInnerVal{margin-left:6px;width:34px;flex:none;text-align:right}
-  #shpBy{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
-  #shpBy button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
-  #shpBy button+button{border-left:1px solid var(--line)}
-  #shpBy button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
+  #shpBy,#shpAt{display:inline-flex;margin-left:auto;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #shpBy button,#shpAt button{border:0;border-radius:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 7px}
+  #shpBy button+button,#shpAt button+button{border-left:1px solid var(--line)}
+  #shpBy button[aria-pressed=true],#shpAt button[aria-pressed=true]{background:var(--accent-soft);color:var(--ink)}
   /* Copy: the same panel, with From and To side by side */
   #cpyPanel{position:absolute;top:12px;right:12px;z-index:9;width:270px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #cpyPanel[hidden]{display:none}
@@ -1284,6 +1284,14 @@
     </div>
     <div id="shpPanel" hidden role="dialog" aria-labelledby="shpTitle">
       <div class="modalHead"><h3><span id="shpTitle">Polygon</span></h3><button class="modalX" id="shpX" title="Done (Esc)" aria-label="Done">✕</button></div>
+      <div id="shpWH" hidden>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpW">Width</label></span><input id="shpW" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpH">Height</label></span><input id="shpH" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+        <div class="mirSlot fallSeg" id="shpRectAt" style="cursor:default"><span class="mirLbl">A click puts its</span><span id="shpAt" role="group" aria-label="What goes where you click"><button data-at="corner" title="Its bottom-left corner goes where you click">Corner</button><button data-at="centre" title="Its centre goes where you click">Centre</button></span></div>
+      </div>
+      <div id="shpCircle" hidden>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpDia">Diameter</label></span><input id="shpDia" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+      </div>
       <div id="shpPoly">
         <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpSides">Sides</label></span><span class="shpCount"><button id="shpSidesLess" aria-label="One side fewer">&minus;</button><input id="shpSides" type="text" inputmode="numeric" autocomplete="off"><button id="shpSidesMore" aria-label="One side more">+</button></span></div>
         <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Across</span><span id="shpBy" role="group" aria-label="How the size is measured"><button data-by="flats" title="The size a spanner fits: from one flat side to the one opposite">Flats</button><button data-by="corners" title="From one corner to the one opposite">Corners</button></span></div>
@@ -1449,7 +1457,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.167.0'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.168.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -4114,8 +4122,8 @@ var STAGE_LABEL = {
   measureS:'Measure \u2014 Shift-click the second shape',
   text0:  'Text \u2014 click where the text should start (its baseline), or click existing text to edit it',
   line1:  'Line \u2014 next point: "x,y" abs \u00b7 "@dx,dy" rel \u00b7 "50<45" length<angle\u00b0',
-  rect0:  'Rect \u2014 click first corner, or type "x,y"',
-  rect1:  'Rect \u2014 opposite corner, or type "W,H" e.g. "120,80"',
+  rect0:  'Rectangle \u2014 click first corner, or type "x,y"',
+  rect1:  'Rectangle \u2014 opposite corner, or type "W,H" e.g. "120,80"',
   circle0:'Circle \u2014 click center, or type "x,y"',
   circle1:'Circle \u2014 click radius point, or type "D5" / "R2.5"',
   ellipse0:'Ellipse — click the centre, or type "x,y"',
@@ -4165,8 +4173,9 @@ function stagePrompt(key){
   var txt = STAGE_LABEL[key] || '';
   if (txt.indexOf('{R}') >= 0) txt = txt.replace('{R}', UICFG.filletR);
   if (txt.indexOf('{S}') >= 0) txt = txt.replace(/\{S\}/g, shapeSides());
-  if ((key === 'polygon0' || key === 'star0') && typeof shpStamp === 'function' && shpStamp({x: 0, y: 0}))
-    txt = txt.replace(/ · click the centre, or type "x,y"$/, ' · click to place one, centred where you click');
+  if (/^(rect|circle|ellipse|polygon|star)0$/.test(key) && typeof shpStamp === 'function' && SHP && shpStamp({x: 0, y: 0}))
+    txt = txt.replace(/ (\u2014|·) click (the |first )?(centre|center|corner).*$/, ' $1 click to place one, ' +
+                      (key === 'rect0' && rectAt() === 'corner' ? 'its bottom-left corner' : 'centred') + ' where you click');
   if (txt.indexOf('{P}') >= 0) txt = txt.replace(/\{P\}/g, shapePoints());
   if (txt.indexOf('{D}') >= 0) txt = txt.replace('{D}', +(UICFG.filletR * 2).toFixed(3));
   showPrompt(txt, '');
@@ -4471,7 +4480,7 @@ function toolMgrEnter(t){
   if (t === 'array' && !ARR) arrOpen();
   if (t === 'rotate' && !ROT) rotOpen();
   if (t === 'copy' && !CPY) cpyOpen();
-  if ((t === 'polygon' || t === 'star') && !SHP) shpOpen(t);   // the panel stays open while the tool is
+  if (SHP_TOOLS[t] && !SHP) shpOpen(t);             // the drawing tools' panel stays open while the tool is
   if (t === 'filletall' && !FALL) fallOpen();
   // reflect in the panel
   document.querySelectorAll('#toolPanel .tool[data-tool]').forEach(function(b){
@@ -4491,6 +4500,7 @@ function setTool(t){
 }
 function toolClick(w, snap){
   var p = snap;
+  if (!DRAW && SHP && shpStamp(p)){ shapeAdd(shpStamp(p), TOOL + '0'); return; }   // a size set in the panel: placed here (shape-panel.js)
   if (shapeToolClick(p)) return;
   if (TOOL === 'line'){
     // each end remembers the shape's point it was snapped to, if any (line-attach.js)
@@ -5088,9 +5098,14 @@ function toolCommitText(txt){
     }
     return;
   }
+  if (TOOL === 'rect' && !DRAW){                       // the first corner, typed (the docs said it could be; it wasn't read)
+    var pq = parseNumericPoint(txt, null);
+    if (pq){ toolClick(pq, pq); draw(); }             // as a click: with a size set in the panel, placed there
+    return;
+  }
   if (TOOL === 'circle' && !DRAW){
     var pc = parseNumericPoint(txt, null);
-    if (pc){ DRAW = {stage:1, x:pc.x, y:pc.y}; stagePrompt('circle1'); draw(); }
+    if (pc){ toolClick(pc, pc); draw(); }             // the centre, as a click: with a size set in the panel, placed there
     return;
   }
 }
@@ -5185,7 +5200,6 @@ function shapeAdd(e, next){
 // A click for one of the three tools. Returns true if it was one of them.
 function shapeToolClick(p){
   if (TOOL !== 'ellipse' && TOOL !== 'polygon' && TOOL !== 'star') return false;
-  if (!DRAW && shpStamp(p)){ shapeAdd(shpStamp(p), TOOL + '0'); return true; }   // a size set in the panel: placed here
   if (!DRAW){ DRAW = {stage:1, x:p.x, y:p.y}; stagePrompt(TOOL + '1'); return true; }
   var e = shapeFromDraw(p);
   if (e) shapeAdd(e, TOOL + '0');
@@ -5205,7 +5219,7 @@ function shapeToolText(txt){
   }
   if (!DRAW){                                                          // the centre, typed
     var c = parseNumericPoint(t, null);
-    if (c) shapeToolClick(c);
+    if (c) toolClick(c, c);
     return true;
   }
   if (TOOL === 'ellipse'){
@@ -15275,10 +15289,10 @@ function draw(){
     }
     ctx.stroke(); ctx.setLineDash([]);
   }
-  // a polygon or star of the size set in its panel, following the pointer: where a click puts it (shape-panel.js)
+  // a shape of the size set in its panel, following the pointer: where a click puts it (shape-panel.js)
   if (!DRAW && SHP && MOUSE.snap && shpStamp(MOUSE.snap)){
-    ctx.strokeStyle = THEME.accent; ctx.lineWidth = 1.2; ctx.setLineDash([4,4]);
-    ctx.beginPath(); shapeToolPreview(ctx, MOUSE.snap); ctx.stroke(); ctx.setLineDash([]);
+    ctx.save(); ctx.strokeStyle = THEME.accent; ctx.lineWidth = 1.2; ctx.setLineDash([4,4]);
+    drawEntityOutline(shpStamp(MOUSE.snap)); ctx.restore();
   }
 
   // snap marker
@@ -16372,14 +16386,22 @@ function cpyWire(){
   $('cpyX').addEventListener('click', function(){ cpyClose(); setTool('select'); });
 }
 // The drawing tools' panel (Clint, 2026-10-26: "this is a very visual process and most users, including me, do not work
-// well with the non visual way"). Polygon and Star are still drawn by clicking (the centre, then a corner or a tip), and
-// the panel holds what was typed before: the number of sides or points (S8), and a size, which makes each click place
-// one there (a dashed one follows the pointer), and the star's inner corners. Open while the tool is.
-var SHP = null;             // the open panel: {t: 'polygon'|'star'}
+// well with the non visual way"). Rectangle, Circle, Ellipse, Polygon and Star are still drawn by clicking (a corner and
+// the opposite one, or the centre and then an edge, a corner or a tip), and the panel holds what was typed before: a
+// size, which makes each click place one there (a dashed one follows the pointer), the number of sides or points (S8),
+// and the star's inner corners. Open while the tool is.
+var SHP = null;             // the open panel: {t: 'rect'|'circle'|'ellipse'|'polygon'|'star'}
+var SHP_TOOLS = {rect: {name: 'Rectangle', help: 'rectangle'}, circle: {name: 'Circle', help: 'circle'}, ellipse: {name: 'Ellipse', help: 'ellipse'},
+                 polygon: {name: 'Polygon', help: 'polygon'}, star: {name: 'Star', help: 'star'}};
 function shpOpen(t){
   SHP = {t: t};
   document.getElementById('shpPanel').hidden = false;
-  document.getElementById('shpTitle').textContent = t === 'star' ? 'Star' : 'Polygon';
+  document.getElementById('shpTitle').textContent = SHP_TOOLS[t].name;
+  var hi = document.querySelector('#shpPanel .modalHead .helpI');   // the help button (help-where.js) opens this tool's part
+  if (hi) hi.setAttribute('data-help-at', 'design-tools.html#' + SHP_TOOLS[t].help);
+  document.getElementById('shpWH').hidden = t !== 'rect' && t !== 'ellipse';
+  document.getElementById('shpRectAt').hidden = t !== 'rect';
+  document.getElementById('shpCircle').hidden = t !== 'circle';
   document.getElementById('shpPoly').hidden = t !== 'polygon';
   document.getElementById('shpStar').hidden = t !== 'star';
   shpFill();
@@ -16390,9 +16412,22 @@ function shpClose(){ SHP = null; document.getElementById('shpPanel').hidden = tr
 function polySize(){ var s = UICFG.polySize; return s && s.v > 0 ? {by: s.by === 'corners' ? 'corners' : 'flats', v: s.v} : null; }
 function starSize(){ return UICFG.starSize > 0 ? UICFG.starSize : null; }
 function starInner(){ var f = UICFG.starInner; return f >= 0.05 && f <= 0.95 ? f : 0.5; }
-// a polygon or star of the panel's size, centred at p, standing square (a polygon on a flat, a star with a point straight
-// up), or null if no size is set
+// a rectangle's or an ellipse's width and height ({w, h} in mm, either null), and where a click puts a rectangle
+function shpWH(t){ var s = UICFG[t === 'ellipse' ? 'ellSize' : 'rectSize'] || {}; return {w: s.w > 0 ? s.w : null, h: s.h > 0 ? s.h : null}; }
+function rectAt(){ return UICFG.rectAt === 'centre' ? 'centre' : 'corner'; }
+function circleSize(){ return UICFG.circleD > 0 ? UICFG.circleD : null; }
+// a shape of the panel's size at p, or null if no size is set: a rectangle with its bottom-left corner or its centre
+// there, a circle or an ellipse centred there, a polygon or a star centred there standing square (a polygon on a flat, a
+// star with a point straight up)
 function shpStamp(p){
+  if (TOOL === 'rect' || TOOL === 'ellipse'){
+    var wh = shpWH(TOOL);
+    if (!wh.w || !wh.h) return null;
+    if (TOOL === 'ellipse') return ellipseShape(p.x, p.y, wh.w / 2, wh.h / 2);
+    var c = rectAt() === 'centre';
+    return {t: 'rect', x: c ? p.x - wh.w / 2 : p.x, y: c ? p.y - wh.h / 2 : p.y, w: wh.w, h: wh.h};
+  }
+  if (TOOL === 'circle') return circleSize() ? {t: 'circle', cx: p.x, cy: p.y, r: circleSize() / 2} : null;
   if (TOOL === 'polygon' && polySize()){
     var n = shapeSides(), s = polySize(), r = s.by === 'flats' ? s.v / 2 / Math.cos(Math.PI / n) : s.v / 2;
     return polygonShape(p.x, p.y, r, n, -Math.PI / 2 + Math.PI / n);
@@ -16404,7 +16439,10 @@ function shpStamp(p){
   return null;
 }
 function shpFill(){
-  var s = polySize();
+  var s = polySize(), wh = SHP ? shpWH(SHP.t) : {};
+  document.getElementById('shpW').value = wh.w ? fmtDisp(wh.w) : '';
+  document.getElementById('shpH').value = wh.h ? fmtDisp(wh.h) : '';
+  document.getElementById('shpDia').value = circleSize() ? fmtDisp(circleSize()) : '';
   document.getElementById('shpSides').value = shapeSides();
   document.getElementById('shpPolySize').value = s ? fmtDisp(s.v) : '';
   document.getElementById('shpPoints').value = shapePoints();
@@ -16415,13 +16453,17 @@ function shpRender(){
   if (!SHP) return;
   var by = (UICFG.polySize && UICFG.polySize.by) === 'corners' ? 'corners' : 'flats';
   Array.prototype.forEach.call(document.querySelectorAll('#shpBy button'), function(b){ b.setAttribute('aria-pressed', b.dataset.by === by ? 'true' : 'false'); });
+  Array.prototype.forEach.call(document.querySelectorAll('#shpAt button'), function(b){ b.setAttribute('aria-pressed', b.dataset.at === rectAt() ? 'true' : 'false'); });
   Array.prototype.forEach.call(document.querySelectorAll('#shpPanel .panelU'), function(u){ u.textContent = unitTag(); });
   document.getElementById('shpInnerVal').textContent = Math.round(starInner() * 100) + '%';
-  var sized = SHP.t === 'star' ? starSize() : polySize();
-  document.getElementById('shpHint').textContent = sized
-    ? 'Click the drawing to place one, centred where you click. Clear the size to draw them by eye.'
-    : (SHP.t === 'star' ? 'Click the centre, then the tip of a point. Or give it a size, and each click places one.'
-                        : 'Click the centre, then a corner. Or give it a size, and each click places one.');
+  var t = SHP.t, wh = shpWH(t), half = (t === 'rect' || t === 'ellipse') && !!wh.w !== !!wh.h;
+  var byEye = {rect: 'Click one corner, then the opposite one.', circle: 'Click the centre, then a point on its edge.',
+               ellipse: 'Click the centre, then a corner of the box it fits in.', polygon: 'Click the centre, then a corner.',
+               star: 'Click the centre, then the tip of a point.'}[t];
+  document.getElementById('shpHint').textContent = half ? 'Give it a width and a height, or clear both to draw it by eye.'
+    : shpStamp({x: 0, y: 0}) ? 'Click the drawing to place one, ' + (t === 'rect' && rectAt() === 'corner' ? 'its bottom-left corner' : 'centred') +
+                               ' where you click. Clear the size to draw them by eye.'
+    : byEye + ' Or give it a size, and each click places one.';
   stagePrompt(TOOL + (DRAW ? DRAW.stage : 0));
   draw();
 }
@@ -16448,6 +16490,21 @@ function shpWire(){
   $('shpStarSize').addEventListener('input', function(){
     var t = $('shpStarSize').value.trim(), v = t ? lenIn(t) : NaN;
     UICFG.starSize = v > 0 ? v : null; uiCfgSave(); shpRender();
+  });
+  function wh(id, k){
+    $(id).addEventListener('input', function(){
+      if (!SHP) return;
+      var key = SHP.t === 'ellipse' ? 'ellSize' : 'rectSize', t = $(id).value.trim(), v = t ? lenIn(t) : NaN, s = Object.assign({}, UICFG[key]);
+      s[k] = v > 0 ? v : null; UICFG[key] = s; uiCfgSave(); shpRender();
+    });
+  }
+  wh('shpW', 'w'); wh('shpH', 'h');
+  Array.prototype.forEach.call(document.querySelectorAll('#shpAt button'), function(b){
+    b.addEventListener('click', function(){ UICFG.rectAt = b.dataset.at; uiCfgSave(); shpRender(); });
+  });
+  $('shpDia').addEventListener('input', function(){
+    var t = $('shpDia').value.trim(), v = t ? lenIn(t) : NaN;
+    UICFG.circleD = v > 0 ? v : null; uiCfgSave(); shpRender();
   });
   $('shpInner').addEventListener('input', function(){ UICFG.starInner = +$('shpInner').value / 100; uiCfgSave(); shpRender(); });
   $('shpX').addEventListener('click', function(){ setTool('select'); });
@@ -20783,6 +20840,9 @@ function uiCfgLoad(){
       if (c.lastOffset > 0) UICFG.lastOffset = c.lastOffset;           // the tool panels, as last used: checked where they open
       if (c.polySize && c.polySize.v > 0) UICFG.polySize = c.polySize;
       if (c.starSize > 0) UICFG.starSize = c.starSize;
+      ['rectSize', 'ellSize'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') UICFG[k] = c[k]; });
+      if (c.rectAt === 'centre' || c.rectAt === 'corner') UICFG.rectAt = c.rectAt;
+      if (c.circleD > 0) UICFG.circleD = c.circleD;
       if (c.starInner > 0 && c.starInner < 1) UICFG.starInner = c.starInner;
       ['arrLast', 'rotLast', 'cpyLast'].forEach(function (k) { if (c[k] && typeof c[k] === 'object') UICFG[k] = c[k]; });
     }

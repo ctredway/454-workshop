@@ -543,6 +543,14 @@
     </div>
     <div id="shpPanel" hidden role="dialog" aria-labelledby="shpTitle">
       <div class="modalHead"><h3><span id="shpTitle">Polygon</span></h3><button class="modalX" id="shpX" title="Done (Esc)" aria-label="Done">✕</button></div>
+      <div id="shpWH" hidden>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpW">Width</label></span><input id="shpW" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpH">Height</label></span><input id="shpH" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+        <div class="mirSlot fallSeg" id="shpRectAt" style="cursor:default"><span class="mirLbl">A click puts its</span><span id="shpAt" role="group" aria-label="What goes where you click"><button data-at="corner" title="Its bottom-left corner goes where you click">Corner</button><button data-at="centre" title="Its centre goes where you click">Centre</button></span></div>
+      </div>
+      <div id="shpCircle" hidden>
+        <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpDia">Diameter</label></span><input id="shpDia" type="text" inputmode="decimal" autocomplete="off" placeholder="by eye"><span class="mirVal panelUnit panelU">mm</span></div>
+      </div>
       <div id="shpPoly">
         <div class="mirSlot" style="cursor:default"><span class="mirLbl"><label for="shpSides">Sides</label></span><span class="shpCount"><button id="shpSidesLess" aria-label="One side fewer">&minus;</button><input id="shpSides" type="text" inputmode="numeric" autocomplete="off"><button id="shpSidesMore" aria-label="One side more">+</button></span></div>
         <div class="mirSlot fallSeg" style="cursor:default"><span class="mirLbl">Across</span><span id="shpBy" role="group" aria-label="How the size is measured"><button data-by="flats" title="The size a spanner fits: from one flat side to the one opposite">Flats</button><button data-by="corners" title="From one corner to the one opposite">Corners</button></span></div>

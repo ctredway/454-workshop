@@ -308,6 +308,16 @@ SHOTS.push({ name: 'design-sheets', page: 'design.html', size: [1400, 900],
     return { x: top.left, y: bar.top - 6, width: top.width, height: bar.height + 12 };` });
 
 module.exports = { PRELUDE, SHOTS };
+// The Rectangle panel: 120 x 80, a click putting its centre there, one placed and one following the pointer
+SHOTS.push({ name: 'design-rectangle', page: 'design.html', size: [1400, 900],
+  setup: `toast = function () {};
+    drawing(360, 240, []); fitStock();
+    DOC.stock.units = 'mm'; syncStockUI();
+    UICFG.rectSize = { w: 120, h: 80 }; UICFG.rectAt = 'centre';
+    document.getElementById('tpCollapse').click(); await wait(250);
+    setTool('rect'); toolClick({ x: 90, y: 120 }, { x: 90, y: 120 });
+    hoverAt(240, 120); draw(); await wait(200);
+    return box('#canvasWrap');` });
 // The Polygon panel: hexagons 50 mm across the flats, two placed and a third following the pointer
 SHOTS.push({ name: 'design-polygon', page: 'design.html', size: [1400, 900],
   setup: `toast = function () {};

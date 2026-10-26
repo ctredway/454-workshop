@@ -1,6 +1,6 @@
-// The Polygon and Star panel (shape-panel.js), used as at the screen: open while the tool is, the sides or points
-// (typed, or one fewer and one more), a size that makes each click place one centred there (a dashed one following the
-// pointer), across the flats or the corners, and the star's inner corners.
+// The drawing tools' panel (shape-panel.js), used as at the screen: open while Rectangle, Circle, Ellipse, Polygon or
+// Star is; a size that makes each click place one there (a dashed one following the pointer), or none to draw by eye;
+// the sides or points (typed, or one fewer and one more), across the flats or the corners, and the star's inner corners.
 //   node --test 'apps/design/test/*.test.mjs'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,6 +22,7 @@ function fresh(tool) {
   D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 400, h: 300, t: 18, zero: 'top', units: 'mm'}); UICFG.stockUnits = 'mm';
     DOC.ents = []; DOC.dims = []; UNDO = []; REDO = []; VIEW.scale = 4;
     UICFG.polySides = 6; UICFG.starPoints = 5; delete UICFG.polySize; delete UICFG.starSize; delete UICFG.starInner;
+    delete UICFG.rectSize; delete UICFG.ellSize; delete UICFG.rectAt; delete UICFG.circleD;
     setTool('select'); setTool(${JSON.stringify(tool)}); 1`);
 }
 
@@ -38,8 +39,8 @@ test('the panel opens with Polygon, stays while it’s used, and closes with ano
   D.run(`setTool('star'); 1`);
   assert.equal(el('shpTitle').textContent, 'Star'); assert.ok(el('shpPoly').hidden && !el('shpStar').hidden);
   assert.ok(el('shpPanel').querySelector('.modalHead h3 .helpI'), 'the help button is still beside the title once it says Star');
-  D.run(`setTool('rect'); 1`);
-  assert.ok(!open());
+  D.run(`setTool('line'); 1`);
+  assert.ok(!open(), 'Line has no panel');
 });
 test('sides: typed, or one fewer and one more; 3 to 100; kept for next time', () => {
   fresh('polygon');
@@ -111,4 +112,71 @@ test('the sizes and the inner corners are remembered from one visit to the next'
   K.localStorage.setItem('d454DesignUI', JSON.stringify({ polySize: { by: 'corners', v: 30 }, starSize: 80, starInner: 0.4 }));
   K.wire();
   assert.equal(vm.runInContext('JSON.stringify([UICFG.polySize, UICFG.starSize, UICFG.starInner])', K), '[{"by":"corners","v":30},80,0.4]');
+});
+test('Rectangle: by eye with nothing set; with a width and height each click places one, its corner or its centre there', () => {
+  fresh('rect');
+  assert.equal(el('shpTitle').textContent, 'Rectangle');
+  assert.ok(!el('shpWH').hidden && !el('shpRectAt').hidden && el('shpPoly').hidden && el('shpCircle').hidden);
+  assert.equal(el('shpPanel').querySelector('.helpI').getAttribute('data-help-at'), 'design-tools.html#rectangle', 'its help opens Rectangle\u2019s part');
+  assert.match(el('shpHint').textContent, /Click one corner, then the opposite one/);
+  click(0, 0); click(30, 20);
+  assert.deepEqual(ents().map((e) => [e.t, e.w, e.h]), [['rect', 30, 20]], 'by eye, as before');
+  type('shpW', 120);
+  assert.match(el('shpHint').textContent, /Give it a width and a height/);
+  click(500, 500); assert.equal(ents().length, 1, 'only a width: still drawn by eye (that click was its first corner)');
+  D.run('DRAW = null; 1');
+  type('shpH', 80);
+  assert.match(el('promptLbl').textContent, /click to place one, its bottom-left corner where you click/);
+  click(10, 10);
+  let e = ents()[1]; assert.deepEqual([e.x, e.y, e.w, e.h], [10, 10, 120, 80], 'its corner where clicked');
+  el('shpAt').querySelector('[data-at=centre]').click();
+  assert.match(el('promptLbl').textContent, /centred where you click/);
+  click(100, 100);
+  e = ents()[2]; assert.deepEqual([e.x, e.y, e.w, e.h], [40, 60, 120, 80], 'its centre where clicked');
+});
+test('Circle: a diameter places one centred where clicked; empty, drawn by eye', () => {
+  fresh('circle');
+  assert.equal(el('shpTitle').textContent, 'Circle'); assert.ok(!el('shpCircle').hidden && el('shpWH').hidden);
+  type('shpDia', '1/2');
+  D.run(`DOC.stock.units = 'in'; 1`);
+  try { type('shpDia', '1/2'); } finally { D.run(`DOC.stock.units = 'mm'; 1`); }
+  near(D.run('UICFG.circleD'), 12.7, 'half an inch, typed in inches');
+  assert.match(el('promptLbl').textContent, /^Circle — click to place one, centred where you click/);
+  click(50, 60);
+  const c = ents()[0]; assert.deepEqual([c.t, c.cx, c.cy], ['circle', 50, 60]); near(c.r, 6.35, 'radius');
+  type('shpDia', '');
+  click(0, 0); click(5, 0);
+  near(ents()[1].r, 5, 'by eye: the centre, then the edge');
+});
+test('Ellipse: a width and a height place one centred where clicked', () => {
+  fresh('ellipse');
+  assert.equal(el('shpTitle').textContent, 'Ellipse'); assert.ok(!el('shpWH').hidden && el('shpRectAt').hidden, 'no Corner or Centre for an ellipse');
+  type('shpW', 120); type('shpH', 60);
+  click(50, 40);
+  const e = ents()[0], xs = e.pts.map((p) => p[0]), ys = e.pts.map((p) => p[1]);
+  near(Math.max(...xs), 110, 'right'); near(Math.min(...xs), -10, 'left'); near(Math.max(...ys), 70, 'top'); near(Math.min(...ys), 10, 'bottom');
+  assert.equal(D.run('UICFG.rectSize === undefined'), true, 'a rectangle’s size is its own');
+});
+test('with a size set, a typed point places one there', () => {
+  fresh('circle');
+  type('shpDia', 20);
+  D.run(`toolCommitText('100,50'); 1`);
+  const c = ents()[0]; assert.deepEqual([c.cx, c.cy, c.r], [100, 50, 10]);
+  fresh('rect'); type('shpW', 40); type('shpH', 30);
+  D.run(`toolCommitText('5,5'); 1`);
+  const r = ents()[0]; assert.deepEqual([r.x, r.y, r.w, r.h], [5, 5, 40, 30]);
+  fresh('polygon'); type('shpPolySize', 20);
+  D.run(`toolCommitText('0,0'); 1`);
+  assert.equal(ents().length, 1);
+});
+test('the rectangle, circle and ellipse sizes are remembered from one visit to the next', () => {
+  const K = loadDesign({ start: false });
+  K.localStorage.setItem('d454DesignUI', JSON.stringify({ rectSize: { w: 100, h: 50 }, ellSize: { w: 30, h: 20 }, rectAt: 'centre', circleD: 8 }));
+  K.wire();
+  assert.equal(vm.runInContext('JSON.stringify([UICFG.rectSize, UICFG.ellSize, UICFG.rectAt, UICFG.circleD])', K), '[{"w":100,"h":50},{"w":30,"h":20},"centre",8]');
+});
+test('Rectangle with no size: a typed first corner, then its width and height', () => {
+  fresh('rect');
+  D.run(`toolCommitText('10,10'); toolCommitText('30,20'); 1`);
+  const r = ents()[0]; assert.deepEqual([r.x, r.y, r.w, r.h], [10, 10, 30, 20]);
 });
