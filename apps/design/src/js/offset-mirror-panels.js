@@ -66,6 +66,7 @@ function mirOpen(){
   if (pre.length === 1 && MIR.objs.length) MIR.line = pre[0];
   if (MIR.objs.length) MIR.slot = MIR.line === null ? 'line' : 'objs';
   document.getElementById('mirPanel').hidden = false;
+  document.getElementById('mirKeep').checked = mirrorKeepOn();
   mirRender();
 }
 function mirClose(){
@@ -98,8 +99,9 @@ function mirAxis(){
 function mirApply(){
   var ax = mirAxis();
   if (!MIR || !MIR.objs.length || !ax) return;
+  var keep = mirrorKeepOn(), lineId = entId(DOC.ents[MIR.line]), from = histIdsOf(MIR.objs);
   pushUndo('Mirror');
-  histRecipe({op: 'mirror', ids: histIdsOf(MIR.objs), line: entId(DOC.ents[MIR.line])});
+  histRecipe({op: 'mirror', ids: from, line: lineId, keep: keep});
   var made = [];
   MIR.objs.forEach(function(i){
     var c = cloneEnt(DOC.ents[i]);
@@ -108,9 +110,12 @@ function mirApply(){
     DOC.ents.push(c);
   });
   histGiveIds();
+  if (keep) mirrorLink(made.map(function (i) { return DOC.ents[i]; }), from, lineId);   // mirror-keep.js
   SEL = made;
   persist();
-  toast('ok', 'Mirrored', made.length + (made.length === 1 ? ' copy' : ' copies') + ' made. The originals and the mirror line are untouched.');
+  toast('ok', 'Mirrored', made.length + (made.length === 1 ? ' copy' : ' copies') + ' made. ' +
+        (keep ? 'They stay mirrored: move or change the originals, or the mirror line, and they follow. Change a copy by itself and it lets go.'
+              : 'The originals and the mirror line are untouched.'));
   mirClose();
   setTool('select');
 }

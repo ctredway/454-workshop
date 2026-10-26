@@ -24,7 +24,8 @@ var KEEP_NAMES = {
   center: 'centred on', hcenter: 'centred left-right on', vcenter: 'centred top-bottom on',
   left: 'with the left edge in line with', right: 'with the right edge in line with', top: 'with the top edge in line with', bottom: 'with the bottom edge in line with',
   mat: 'centred on', matx: 'centred left-right on', maty: 'centred top-bottom on',
-  conc: 'concentric with', sameW: 'the same width as', sameH: 'the same height as', same: 'the same size as'
+  conc: 'concentric with', sameW: 'the same width as', sameH: 'the same height as', same: 'the same size as',
+  mirror: 'mirrored from'
 };
 var KEEP_BOX = typeof WeakMap === 'function' ? new WeakMap() : null;   // where each link's two shapes were, to find them again
 var KEEP_TOL = 0.01;                                                    // mm
@@ -182,6 +183,7 @@ function keepsFollow(){
   if (!DOC.keeps || !DOC.keeps.length) return 0;
   var gone = 0;
   DOC.keeps = DOC.keeps.filter(function (k) {
+    if (k.op === 'mirror') return true;                     // mirrored copies: their own (mirror-keep.js)
     var was = KEEP_BOX && KEEP_BOX.get(k);
     ['a', 'b'].forEach(function (end) {
       if (k[end] === 'stock' || entById(k[end])) return;
@@ -222,6 +224,7 @@ function keepsAfterStep(p){
   histLoad(p);
   var moved = keeps ? keepsApply().length : 0;
   if (lines) moved += linesFollow();
+  if (keeps){ var mf = mirrorsFollow(); moved += mf.changed + mf.gone + mf.letGo; }
   return moved ? histPack() : p;
 }
 
@@ -229,6 +232,11 @@ function keepsAfterStep(p){
 // Where a link is drawn, on screen: from a point on the shape that follows (f) to the one it follows (t): along the
 // line they share, to the middle of the shape followed, as both are kept on it
 function keepEnds(k){
+  if (k.op === 'mirror'){                                     // a mirrored copy: from its middle to its original's
+    var ma = keepBox(k.a), mb = keepBox(k.b);
+    if (!ma || !mb) return null;
+    return {f: w2s((ma.x0 + ma.x1) / 2, (ma.y0 + ma.y1) / 2), t: w2s((mb.x0 + mb.x1) / 2, (mb.y0 + mb.y1) / 2), fa: ma, fb: mb};
+  }
   var op = KEEP_OPS[k.op], fa = keepBox(k.a), fb = keepBox(k.b);
   if (!op || !fa || !fb) return null;
   var f = {x: op.x ? keepAt(fa, op.x, 'x') : (fa.x0 + fa.x1) / 2, y: op.y ? keepAt(fa, op.y, 'y') : (fa.y0 + fa.y1) / 2};

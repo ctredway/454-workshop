@@ -557,6 +557,7 @@
       <button class="mirSlot" id="mirObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="mirObjsVal">none</span></button>
       <button class="mirSlot" id="mirLine"><span class="mirLbl">Mirror line</span><span class="mirVal" id="mirLineVal">none</span></button>
       <p class="mirHint" id="mirHint"></p>
+      <label class="mirKeep" title="Move or change the originals, or the mirror line, and the copies follow. Change a copy by itself and it lets go."><input type="checkbox" id="mirKeep"> Keep the copies mirrored</label>
       <div class="mirBtns"><button id="mirCancel">Cancel</button><button id="mirOk" class="primary">OK</button></div>
     </div>
     <div id="floatIn" hidden><span id="floatTag"></span><input id="promptIn" autocomplete="off" spellcheck="false"><button id="floatDel" hidden title="Delete this dimension">✕</button><div id="paramPick" hidden role="listbox" aria-label="Parameters"></div></div>
@@ -708,6 +709,7 @@
 @@include js/alignment.js
 @@include js/keep-lined-up.js
 @@include js/line-attach.js
+@@include js/mirror-keep.js
 @@include js/offset.js
 @@include js/join-explode.js
 @@include js/booleans.js

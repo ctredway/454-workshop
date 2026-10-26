@@ -122,7 +122,9 @@ var HIST_OPS = {
       if (!e || e.t !== 'line') return 'The line it mirrors about is gone.';
       var vx = e.x2 - e.x1, vy = e.y2 - e.y1, L = Math.hypot(vx, vy);
       if (L < 1e-9) return 'The line it mirrors about has no length now.';
-      idx.forEach(function (i) { var c = cloneEnt(DOC.ents[i]); mirrorEnt(c, e.x1, e.y1, vx / L, vy / L); DOC.ents.push(c); });
+      var made = [];
+      idx.forEach(function (i) { var c = cloneEnt(DOC.ents[i]); mirrorEnt(c, e.x1, e.y1, vx / L, vy / L); DOC.ents.push(c); made.push(c); });
+      if (r.keep){ histGiveIds(); mirrorLink(made, r.ids, r.line); }       // the copies kept mirrored (mirror-keep.js)
       return true;
     }
   },

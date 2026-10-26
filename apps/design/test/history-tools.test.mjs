@@ -20,7 +20,7 @@ const byId = (id) => `entById(${JSON.stringify(id)})`;
 function setup() {
   D.run(`DOC.stock = Object.assign({}, DOC.stock, {w: 400, h: 300, t: 12, zero: 'top'});
     DOC.layers = [{id: 'L1', name: 'Layer 1', visible: true, locked: false}]; DOC.activeLayer = 'L1';
-    DOC.ents = []; DOC.toolpaths = []; DOC.dims = []; DOC.guides = []; DOC.params = []; DOC.tpGroups = []; DOC.images = []; delete DOC.sheets;
+    DOC.ents = []; DOC.toolpaths = []; DOC.dims = []; DOC.guides = []; DOC.params = []; DOC.tpGroups = []; DOC.images = []; DOC.keeps = []; delete DOC.sheets;
     UNDO = []; REDO = []; SEL = []; UICFG.stockUnits = 'mm'; UICFG.filletType = 'round'; VIEW.scale = 3; HANDLES.pivot = null; 1`);
 }
 // dragging a handle, as the pointer does: from the start to a point, then let go

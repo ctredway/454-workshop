@@ -183,6 +183,10 @@ without a published release looks to them like a newest release with nothing in 
   part** (Job setup, `DOC.stock.hop`, `toolpath-hops.js`): moves that stay inside a part an Outside profile cuts out lift
   only that far; everything else 6 mm. Off unless set.
 - **Dimensions remember which edge they measure** (a rectangle's side, an outline's segment), not a point.
+- **Construction lines stay attached** to the point each end was snapped to (`e.a1`, `e.a2`, `line-attach.js`; snap
+  points are features of their shapes, `snapFeatures` / `snapFeatureAt`). **Mirrored copies stay mirrored** unless the
+  Mirror panel's box is unticked (`mirror-keep.js`, `op: 'mirror'` in `DOC.keeps`). Both let go when the follower is
+  changed by itself.
 - **Keep lined up** (`keep-lined-up.js`, `DOC.keeps`): with it on, Align, Concentric and Same width / height / size also
   link each shape to the last one picked (or the material). A link is put back in line after every change (`persist`) and after every step the History bar does again,
   so steps after it work on the shape where it's kept. Shape to shape only, by the box round each shape; constraints

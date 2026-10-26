@@ -560,6 +560,8 @@
   .mirLbl{font-size:12.5px;color:var(--muted)}
   .mirVal{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink)}
   .mirHint{font-size:11.5px;color:var(--muted);line-height:1.45;margin:8px 0 0}
+  .mirKeep{display:flex;align-items:center;gap:6px;font-size:12.5px;margin:8px 0 0;cursor:pointer}
+  .mirKeep input{accent-color:var(--amber)}
   .mirBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
   #floatIn{position:absolute;z-index:8;display:flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--amber);border-radius:5px;padding:3px 6px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
   #floatIn[hidden]{display:none}
@@ -1228,6 +1230,7 @@
       <button class="mirSlot" id="mirObjs"><span class="mirLbl">Objects</span><span class="mirVal" id="mirObjsVal">none</span></button>
       <button class="mirSlot" id="mirLine"><span class="mirLbl">Mirror line</span><span class="mirVal" id="mirLineVal">none</span></button>
       <p class="mirHint" id="mirHint"></p>
+      <label class="mirKeep" title="Move or change the originals, or the mirror line, and the copies follow. Change a copy by itself and it lets go."><input type="checkbox" id="mirKeep"> Keep the copies mirrored</label>
       <div class="mirBtns"><button id="mirCancel">Cancel</button><button id="mirOk" class="primary">OK</button></div>
     </div>
     <div id="floatIn" hidden><span id="floatTag"></span><input id="promptIn" autocomplete="off" spellcheck="false"><button id="floatDel" hidden title="Delete this dimension">✕</button><div id="paramPick" hidden role="listbox" aria-label="Parameters"></div></div>
@@ -3381,7 +3384,9 @@ var HIST_OPS = {
       if (!e || e.t !== 'line') return 'The line it mirrors about is gone.';
       var vx = e.x2 - e.x1, vy = e.y2 - e.y1, L = Math.hypot(vx, vy);
       if (L < 1e-9) return 'The line it mirrors about has no length now.';
-      idx.forEach(function (i) { var c = cloneEnt(DOC.ents[i]); mirrorEnt(c, e.x1, e.y1, vx / L, vy / L); DOC.ents.push(c); });
+      var made = [];
+      idx.forEach(function (i) { var c = cloneEnt(DOC.ents[i]); mirrorEnt(c, e.x1, e.y1, vx / L, vy / L); DOC.ents.push(c); made.push(c); });
+      if (r.keep){ histGiveIds(); mirrorLink(made, r.ids, r.line); }       // the copies kept mirrored (mirror-keep.js)
       return true;
     }
   },
@@ -13930,6 +13935,7 @@ function persist(){
   if (typeof dimsFollow === 'function') dimsFollow();   // dimensions onto shapes a tool remade, or removed (dimension-follow.js)
   if (typeof keepsRun === 'function') keepsRun();       // shapes kept lined up put back in line (keep-lined-up.js)
   if (typeof linesFollow === 'function') linesFollow(); // construction lines onto the points they were drawn from (line-attach.js)
+  if (typeof mirrorsRun === 'function') mirrorsRun();   // mirrored copies made again from their originals (mirror-keep.js)
   markUnsaved();                                        // changed since it was last saved to a file (unsaved.js)
   histChanged();                                        // the History bar's last step, and the history kept
   try{ localStorage.setItem('d454Design', docForStorage()); }
@@ -15316,6 +15322,7 @@ function mirOpen(){
   if (pre.length === 1 && MIR.objs.length) MIR.line = pre[0];
   if (MIR.objs.length) MIR.slot = MIR.line === null ? 'line' : 'objs';
   document.getElementById('mirPanel').hidden = false;
+  document.getElementById('mirKeep').checked = mirrorKeepOn();
   mirRender();
 }
 function mirClose(){
@@ -15348,8 +15355,9 @@ function mirAxis(){
 function mirApply(){
   var ax = mirAxis();
   if (!MIR || !MIR.objs.length || !ax) return;
+  var keep = mirrorKeepOn(), lineId = entId(DOC.ents[MIR.line]), from = histIdsOf(MIR.objs);
   pushUndo('Mirror');
-  histRecipe({op: 'mirror', ids: histIdsOf(MIR.objs), line: entId(DOC.ents[MIR.line])});
+  histRecipe({op: 'mirror', ids: from, line: lineId, keep: keep});
   var made = [];
   MIR.objs.forEach(function(i){
     var c = cloneEnt(DOC.ents[i]);
@@ -15358,9 +15366,12 @@ function mirApply(){
     DOC.ents.push(c);
   });
   histGiveIds();
+  if (keep) mirrorLink(made.map(function (i) { return DOC.ents[i]; }), from, lineId);   // mirror-keep.js
   SEL = made;
   persist();
-  toast('ok', 'Mirrored', made.length + (made.length === 1 ? ' copy' : ' copies') + ' made. The originals and the mirror line are untouched.');
+  toast('ok', 'Mirrored', made.length + (made.length === 1 ? ' copy' : ' copies') + ' made. ' +
+        (keep ? 'They stay mirrored: move or change the originals, or the mirror line, and they follow. Change a copy by itself and it lets go.'
+              : 'The originals and the mirror line are untouched.'));
   mirClose();
   setTool('select');
 }
@@ -17304,7 +17315,8 @@ var KEEP_NAMES = {
   center: 'centred on', hcenter: 'centred left-right on', vcenter: 'centred top-bottom on',
   left: 'with the left edge in line with', right: 'with the right edge in line with', top: 'with the top edge in line with', bottom: 'with the bottom edge in line with',
   mat: 'centred on', matx: 'centred left-right on', maty: 'centred top-bottom on',
-  conc: 'concentric with', sameW: 'the same width as', sameH: 'the same height as', same: 'the same size as'
+  conc: 'concentric with', sameW: 'the same width as', sameH: 'the same height as', same: 'the same size as',
+  mirror: 'mirrored from'
 };
 var KEEP_BOX = typeof WeakMap === 'function' ? new WeakMap() : null;   // where each link's two shapes were, to find them again
 var KEEP_TOL = 0.01;                                                    // mm
@@ -17462,6 +17474,7 @@ function keepsFollow(){
   if (!DOC.keeps || !DOC.keeps.length) return 0;
   var gone = 0;
   DOC.keeps = DOC.keeps.filter(function (k) {
+    if (k.op === 'mirror') return true;                     // mirrored copies: their own (mirror-keep.js)
     var was = KEEP_BOX && KEEP_BOX.get(k);
     ['a', 'b'].forEach(function (end) {
       if (k[end] === 'stock' || entById(k[end])) return;
@@ -17502,6 +17515,7 @@ function keepsAfterStep(p){
   histLoad(p);
   var moved = keeps ? keepsApply().length : 0;
   if (lines) moved += linesFollow();
+  if (keeps){ var mf = mirrorsFollow(); moved += mf.changed + mf.gone + mf.letGo; }
   return moved ? histPack() : p;
 }
 
@@ -17509,6 +17523,11 @@ function keepsAfterStep(p){
 // Where a link is drawn, on screen: from a point on the shape that follows (f) to the one it follows (t): along the
 // line they share, to the middle of the shape followed, as both are kept on it
 function keepEnds(k){
+  if (k.op === 'mirror'){                                     // a mirrored copy: from its middle to its original's
+    var ma = keepBox(k.a), mb = keepBox(k.b);
+    if (!ma || !mb) return null;
+    return {f: w2s((ma.x0 + ma.x1) / 2, (ma.y0 + ma.y1) / 2), t: w2s((mb.x0 + mb.x1) / 2, (mb.y0 + mb.y1) / 2), fa: ma, fb: mb};
+  }
   var op = KEEP_OPS[k.op], fa = keepBox(k.a), fb = keepBox(k.b);
   if (!op || !fa || !fb) return null;
   var f = {x: op.x ? keepAt(fa, op.x, 'x') : (fa.x0 + fa.x1) / 2, y: op.y ? keepAt(fa, op.y, 'y') : (fa.y0 + fa.y1) / 2};
@@ -17680,6 +17699,90 @@ function linesFollow(){
     });
   });
   return moved;
+}
+/* ---------------- mirrored copies that stay mirrored ----------------
+   Clint, 2026-10-25: "I draw a set of circles and I use the dimension tool to set them a certain distance from a line, if
+   I mirror those circles, if I move the originals or change the dimension value, the mirrored vectors should move as
+   well". With "Keep the copies mirrored" ticked in the Mirror panel (it is, unless unticked), each copy is linked to its
+   original and the mirror line: DOC.keeps gets {id, op: 'mirror', a: the copy, b: the original, line}, and after every
+   change (persist), and after each step the History bar does again, the copy is made again as the original mirrored
+   about the line, where they are now. A copy changed by itself lets go (it's yours now); one whose original or line is
+   gone stays as it is. The link is drawn, and stopped, like Keep lined up's (keep-lined-up.js). */
+var MIRROR_SKIP = {_id: 1, layer: 1, sheet: 1, _tess: 1, _tess2: 1};
+
+// A shape's geometry, without what isn't its shape (its id, layer, sheet, and the outline worked out for drawing)
+function mirrorGeom(e){
+  var c = {};
+  for (var k in e) if (!MIRROR_SKIP[k]) c[k] = e[k];
+  return JSON.parse(JSON.stringify(c));
+}
+function mirrorSig(e){
+  var s = JSON.stringify(mirrorGeom(e)), h = 5381;
+  for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return h.toString(36) + ':' + s.length;
+}
+// The same shape, near enough: every number within a millionth of a millimetre
+function mirrorSame(x, y){
+  if (typeof x === 'number' && typeof y === 'number') return Math.abs(x - y) < 1e-6;
+  if (Array.isArray(x)) return Array.isArray(y) && x.length === y.length && x.every(function (v, i) { return mirrorSame(v, y[i]); });
+  if (x && typeof x === 'object'){
+    if (!y || typeof y !== 'object') return false;
+    var kx = Object.keys(x).sort(), ky = Object.keys(y).sort();
+    return kx.join() === ky.join() && kx.every(function (k) { return mirrorSame(x[k], y[k]); });
+  }
+  return x === y;
+}
+// The original mirrored about the line as they are now, or null if the line has no length
+function mirrorOf(src, ln){
+  var vx = ln.x2 - ln.x1, vy = ln.y2 - ln.y1, L = Math.hypot(vx, vy);
+  if (L < 1e-9) return null;
+  var c = cloneEnt(src);
+  mirrorEnt(c, ln.x1, ln.y1, vx / L, vy / L);
+  return c;
+}
+// Every kept copy made again from its original. Returns {changed, gone, letGo}.
+function mirrorsFollow(){
+  var out = {changed: 0, gone: 0, letGo: 0};
+  if (!DOC.keeps || !DOC.keeps.length) return out;
+  DOC.keeps = DOC.keeps.filter(function (k) {
+    if (k.op !== 'mirror') return true;
+    var C = entById(k.a), S = entById(k.b), Ln = entById(k.line);
+    if (!C || !S || !Ln || Ln.t !== 'line'){ out.gone++; return false; }
+    var want = mirrorOf(S, Ln);
+    if (!want){ out.gone++; return false; }
+    var w = mirrorGeom(want);
+    if (mirrorSame(mirrorGeom(C), w)){
+      var now = mirrorSig(C);
+      if (k.sig !== now){ k.sig = now; out.changed++; }               // (moved with its original and the line)
+      return true;
+    }
+    if (k.sig && mirrorSig(C) !== k.sig){ out.letGo++; return false; }   // the copy was changed by itself
+    var keep = {_id: C._id, layer: C.layer, sheet: C.sheet};
+    Object.keys(C).forEach(function (key) { delete C[key]; });
+    Object.assign(C, w);
+    Object.keys(keep).forEach(function (key) { if (keep[key] !== undefined) C[key] = keep[key]; });
+    k.sig = mirrorSig(C); out.changed++;
+    return true;
+  });
+  return out;
+}
+// The Mirror panel's "Keep the copies mirrored" (on unless unticked)
+function mirrorKeepOn(){ return UICFG.mirrorKeep !== false; }
+// Link each copy just made to its original (ids) and the line: Mirror, and its step done again
+function mirrorLink(copies, originals, lineId){
+  copies.forEach(function (c, i) {
+    var a = entId(c);                                         // named after its copy: done again, the same link
+    keepsArr().push({id: 'm' + a, op: 'mirror', a: a, b: originals[i], line: lineId, sig: mirrorSig(c)});
+  });
+}
+// After every change (persist): the copies made again, and what let go said
+function mirrorsRun(){
+  var r = mirrorsFollow();
+  if (r.letGo) toast('info', r.letGo === 1 ? 'A copy is no longer kept mirrored' : r.letGo + ' copies are no longer kept mirrored',
+                     'You changed ' + (r.letGo === 1 ? 'a mirrored copy' : 'mirrored copies') + ' by itself, so ' + (r.letGo === 1 ? 'it no longer follows its original' : 'they no longer follow their originals') +
+                     '. Undo puts the link back.');
+  if (r.gone) toast('info', r.gone === 1 ? 'A copy is no longer kept mirrored' : r.gone + ' copies are no longer kept mirrored',
+                    'The original or the mirror line is no longer in the drawing. The copies stay as they are; Undo brings the link back.');
 }
 /* ---------------- offset / join / explode ---------------- */
 function signedArea(pts){
@@ -20115,6 +20218,7 @@ function wire(){
   document.getElementById('mirObjs').addEventListener('click', function(){ if (MIR){ MIR.slot = 'objs'; mirRender(); } });
   document.getElementById('mirLine').addEventListener('click', function(){ if (MIR){ MIR.slot = 'line'; mirRender(); } });
   document.getElementById('mirOk').addEventListener('click', mirApply);
+  document.getElementById('mirKeep').addEventListener('change', function(){ UICFG.mirrorKeep = this.checked; uiCfgSave(); });
   document.getElementById('mirCancel').addEventListener('click', function(){ mirClose(); setTool('select'); });
   document.getElementById('mirX').addEventListener('click', function(){ mirClose(); setTool('select'); });
   document.getElementById('libBtn').addEventListener('click', function(){ libOpen(); });

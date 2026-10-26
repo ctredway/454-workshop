@@ -550,6 +550,8 @@
   .mirLbl{font-size:12.5px;color:var(--muted)}
   .mirVal{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink)}
   .mirHint{font-size:11.5px;color:var(--muted);line-height:1.45;margin:8px 0 0}
+  .mirKeep{display:flex;align-items:center;gap:6px;font-size:12.5px;margin:8px 0 0;cursor:pointer}
+  .mirKeep input{accent-color:var(--amber)}
   .mirBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
   #floatIn{position:absolute;z-index:8;display:flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--amber);border-radius:5px;padding:3px 6px;box-shadow:0 4px 18px rgba(0,0,0,.45)}
   #floatIn[hidden]{display:none}

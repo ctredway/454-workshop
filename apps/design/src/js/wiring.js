@@ -272,6 +272,7 @@ function wire(){
   document.getElementById('mirObjs').addEventListener('click', function(){ if (MIR){ MIR.slot = 'objs'; mirRender(); } });
   document.getElementById('mirLine').addEventListener('click', function(){ if (MIR){ MIR.slot = 'line'; mirRender(); } });
   document.getElementById('mirOk').addEventListener('click', mirApply);
+  document.getElementById('mirKeep').addEventListener('change', function(){ UICFG.mirrorKeep = this.checked; uiCfgSave(); });
   document.getElementById('mirCancel').addEventListener('click', function(){ mirClose(); setTool('select'); });
   document.getElementById('mirX').addEventListener('click', function(){ mirClose(); setTool('select'); });
   document.getElementById('libBtn').addEventListener('click', function(){ libOpen(); });

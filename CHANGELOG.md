@@ -1497,7 +1497,7 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
-### 0.160.0 — construction lines stay attached to the points they were drawn from
+### 0.160.0 — construction lines stay attached to the points they were drawn from, and mirrored copies stay mirrored
 Clint, 2026-10-25: "construction lines are not holding their place. I draw a line from the center point of a circle or
 the midpoint of the line and make it a construction line, if I move the circle or shorten the line, the construction
 line doesn't move with the change". A snapped point was only ever its coordinates.
@@ -1512,6 +1512,20 @@ line doesn't move with the change". A snapped point was only ever its coordinate
   on the middle of the outline's box; one from a corner that was rounded off lets go.
 - line-attach.test.mjs, 7 tests (with a circle mirrored about the construction line in a later History step, done
   again about the line where it then is). Broken on purpose 6 ways, each one caught.
+
+**Mirrored copies stay mirrored.** Clint, the same day: "I draw a set of circles and I use the dimension tool to set
+them a certain distance from a line, if I mirror those circles, if I move the originals or change the dimension value,
+the mirrored vectors should move as well". Mirror made plain copies.
+- **Keep the copies mirrored** (the Mirror panel; ticked unless unticked, `UICFG.mirrorKeep`): each copy is linked to its
+  original and the line (`DOC.keeps`, `op: 'mirror'`, mirror-keep.js). After every change, and after each step the
+  History bar does again, the copy is made again as the original mirrored about the line where they are now (its id,
+  layer and sheet kept). A copy changed by itself lets go (`sig`, a fingerprint of the copy as last made), and says
+  so; moved together with its original and the line, it stays linked. An original or line gone: the copy stays, said.
+  Mirror's History step makes the links again (`keep` in its recipe). Drawn and stopped like Keep lined up's.
+- mirror-keep.test.mjs, 10 tests, Clint's case first (circles placed by a dimension, mirrored, the dimension typed).
+  Broken on purpose 5 ways (never linked, never followed, never let go, the History step dropping the links, not after
+  each History step), each one caught. history-tools.test.mjs's setup now clears the links too (it left one for the
+  next test). In the real app: the tick box, and a copy's link drawn with its marker.
 
 ### 0.159.0 — a shorter way round the holes, and a lower lift inside a part (cutting)
 Clint, 2026-10-23, on his arm inserts (90 holes and 18 slots in 1.2 mm material): "how the tool path chose the order in
