@@ -5,11 +5,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { parseHTML } from 'linkedom';
 
 for (const page of ['index.html', 'design.html']) {
   test(page + ': every script in it is readable JavaScript', () => {
     const html = fs.readFileSync(new URL('../../../' + page, import.meta.url), 'utf8');
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const scripts = [...parseHTML(html).document.querySelectorAll('script:not([src])')].map((s) => s.textContent);
     assert.ok(scripts.length >= 1, 'found its scripts');
     scripts.forEach((code, i) => {
       try { new Function(code); }

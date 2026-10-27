@@ -18,8 +18,9 @@ export function loadDesign({ cam = false, start = true } = {}) {
   const files = [...page.matchAll(/^@@include (\S+)$/gm)].map((m) => m[1])
     // Design's own code, and what it shares with 454 Control (apps/shared). The CAM engine loads separately.
     .filter((f) => f.endsWith('.js') && (f.startsWith('js/') || f.startsWith('../../shared/')) && f !== 'js/cam-loader.js');
-  const markup = page.replace(/^@@include .*$/gm, '').replace(/<script[\s\S]*?<\/script>/g, '');
+  const markup = page.replace(/^@@include .*$/gm, '');
   const { window, document } = parseHTML(markup);
+  document.querySelectorAll('script').forEach((s) => s.remove());   // its code is loaded below, file by file
   // as in a browser: a <select>'s value can be set (choosing the matching option) and read back
   const opts = (el) => Array.from(el.querySelectorAll('option'));
   const optVal = (o) => (o.hasAttribute('value') ? o.getAttribute('value') : o.textContent);

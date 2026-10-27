@@ -11,8 +11,9 @@ import { targets, missing } from '../../../docs-site/scripts/help-index.mjs';
 
 const read = (f) => fs.readFileSync(new URL(f, import.meta.url), 'utf8');
 function control() {
-  const page = read('../src/control.html').replace(/^@@include .*$/gm, '').replace(/<script[\s\S]*?<\/script>/g, '');
+  const page = read('../src/control.html').replace(/^@@include .*$/gm, '');
   const { window, document } = parseHTML(page);
+  document.querySelectorAll('script').forEach((s) => s.remove());   // the page's own code isn't run here
   const C = vm.createContext({ document, window: { addEventListener() {}, innerWidth: 1400, innerHeight: 900 },
     JOB: { active: false }, SERIAL: { connected: false }, MODEL: null });
   C.Event = window.Event;

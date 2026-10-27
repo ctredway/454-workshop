@@ -10,8 +10,9 @@ import { parseHTML } from 'linkedom';
 
 const read = (f) => fs.readFileSync(new URL(f, import.meta.url), 'utf8');
 function control() {
-  const page = read('../src/control.html').replace(/^@@include .*$/gm, '').replace(/<script[\s\S]*?<\/script>/g, '');
+  const page = read('../src/control.html').replace(/^@@include .*$/gm, '');
   const { document } = parseHTML(page);
+  document.querySelectorAll('script').forEach((s) => s.remove());   // the page's own code isn't run here
   const C = vm.createContext({ document, TextEncoder });
   for (const f of ['../src/js/serial.js', '../src/js/machine-tab.js']) vm.runInContext(read(f), C, { filename: f });
   C.el = (id) => document.getElementById(id);
