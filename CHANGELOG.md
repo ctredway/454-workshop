@@ -33,6 +33,15 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.7.0-beta.5 — Back to Jog, and electron-builder 26
+- Includes Control 0.42.0: Probe… on the Jog & zero panel opens the BitZero panel with **← Back to Jog**.
+- The installers are built with electron-builder 26 (was 25), for security fixes in tar, app-builder-lib and
+  builder-util-runtime (Dependabot). Checked before merging: on Windows the packaged app bundles the same library
+  versions as beta.4, lists serial ports, and beta.4 found and downloaded an update built with 26 (checksum OK); on
+  Linux the AppImage ran a job against the simulated machine. The Windows installer is about 6 MB larger (packing
+  only) and now carries elevate.exe.
+- The root's test tools are vitest 5, with Node 22's type definitions (`@types/node` ^22), which vitest 5 asks for.
+
 ### 0.7.0-beta.4 — tool panels, Make toolpaths, drawings keep their units
 - Includes Design 0.161.1 to 0.169.1: Array, Rotate, Copy and the drawing tools (Rectangle, Circle, Ellipse, Polygon,
   Star) are set up in panels, with a dashed preview, in place of typed codes; Array does rows and columns; Make

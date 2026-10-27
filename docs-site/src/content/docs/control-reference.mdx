@@ -91,7 +91,8 @@ the material.
   axes. The zero is stored in the controller, so it survives homing and restarting Control.
 - **Go to XY zero** raises Z first, then moves over the job's X0 Y0. **Z to +6 mm** moves Z to 6 mm above your
   Z zero, up or down, as in Carbide Motion, so you can check the zero with a 6 mm block or a rule; X and Y stay
-  put. It needs the machine homed. **Probe…** opens the BitZero panel.
+  put. It needs the machine homed. **Probe…** opens the BitZero panel; its **← Back to Jog** button brings you back
+  here when you've probed, without opening Jog & zero again.
 - **Change tool…** changes the bit outside a job, as Carbide Motion's Change tool does. The machine lifts Z right
   up, stops the spindle, goes to the tool-change position (Settings → Machine → Parking) and waits. Change the bit,
   then press **Measure the new bit**: with the BitSetter set up, the new bit is measured and its length applied, so
