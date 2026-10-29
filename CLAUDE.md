@@ -20,8 +20,8 @@ in `DEVELOPING.md`, `apps/control/README.md`, `apps/design/README.md` and `CHANG
   was named `kerf-repo`) and `C:\projects\454-workshop-old` (an unzipped website build mixed with older
   copies of project files). Don't work in either; they can be deleted.
 
-The owner is Clint Tredway, who runs a Shapeoko XXL (VFD spindle, BitSetter, BitZero v2) and is getting a
-Shapeoko 5.1 Pro. He's a woodworker, not a git expert: explain git and GitHub steps plainly, and offer to run
+The owner is Clint Tredway, who runs a Shapeoko XXL (VFD spindle, BitSetter, BitZero v2) and a Shapeoko 5
+Pro (run from Linux Mint). He's a woodworker, not a git expert: explain git and GitHub steps plainly, and offer to run
 them.
 
 **This software moves a spinning cutter.** A wrong depth, a missed lift or a thin tab can ruin work or throw a
@@ -208,7 +208,7 @@ without a published release looks to them like a newest release with nothing in 
   nesting and the geometry operations; the small quirks each README lists from the byte-identical splits.
 - **Linux (beta.46):** built and tested against the simulator. **At a real machine:** Clint connected to his
   Shapeoko 5 Pro from Linux Mint on beta.56 (2026-10-20), through the port chooser, and it "worked very well"; by
-  2026-10-29 he had run two whole jobs on Linux. Not yet tried on Ubuntu 24.04 as a normal user (the launcher's --no-sandbox
+  2026-10-29 he had run two whole jobs on Linux, on the 5 Pro. Not yet tried on Ubuntu 24.04 as a normal user (the launcher's --no-sandbox
   path was tested as root only). A Raspberry Pi (arm64) build was offered, not done.
 - **Proven at Clint's machine** (as of 2026-10-29): Pause & lift and Resume, tabs, whole jobs from Linux; he uses Design
   daily, and most changes come from what he runs into. **Not yet:** anyone else. Installer downloads are 1–3 per
