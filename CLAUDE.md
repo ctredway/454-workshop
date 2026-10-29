@@ -207,9 +207,13 @@ without a published release looks to them like a newest release with nothing in 
 - **Next restructuring steps:** tests for Control's status parsing, time estimates and recovery; for Design,
   nesting and the geometry operations; the small quirks each README lists from the byte-identical splits.
 - **Linux (beta.46):** built and tested against the simulator. **At a real machine:** Clint connected to his
-  Shapeoko 5 Pro from Linux Mint on beta.56 (2026-10-20), through the port chooser, and it "worked very well"; a
-  whole job hasn't been reported yet. Not yet tried on Ubuntu 24.04 as a normal user (the launcher's --no-sandbox
+  Shapeoko 5 Pro from Linux Mint on beta.56 (2026-10-20), through the port chooser, and it "worked very well"; by
+  2026-10-29 he had run two whole jobs on Linux. Not yet tried on Ubuntu 24.04 as a normal user (the launcher's --no-sandbox
   path was tested as root only). A Raspberry Pi (arm64) build was offered, not done.
+- **Proven at Clint's machine** (as of 2026-10-29): Pause & lift and Resume, tabs, whole jobs from Linux; he uses Design
+  daily, and most changes come from what he runs into. **Not yet:** anyone else. Installer downloads are 1–3 per
+  release (Clint's own), so other machines, settings and ways of working are untested; outside testers are the
+  biggest gap. Releases are to slow down as the changes settle (Clint, 2026-10-29). Code signing is on his list soon.
 - **Control gaps worth having** (compared with ncSender, 2026-10-19, which is grblHAL-only and so doesn't run a stock
   Shapeoko; in this order): 1. BitZero XY and corner probing (XYZ), and centre-finding in a hole, as Carbide Motion
   does (waiting on Clint's caliper measurements of his plate); 2. probe a crooked edge and rotate the job to it;
