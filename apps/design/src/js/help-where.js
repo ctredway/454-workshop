@@ -10,7 +10,7 @@ var HELP_FOR_WINDOW = [
   ['toolModal', 'design-workspace.html#the-tool-library'],
   ['settingsModal', 'design-workspace.html#settings'],
   ['nestModal', 'design-quickstart.html#5-nest-parts-on-the-material'],
-  ['textModal', 'design-tools.html#create-vectors'],
+  ['textModal', 'design-tools.html#text'],
   ['woodModal', 'cam-reference.html#order-checking-and-saving'],
   ['jsModal', 'cam-reference.html#order-checking-and-saving']
 ];
@@ -28,12 +28,12 @@ function designHelpWhere(){
 // the pointer rests on it. Keep a tip to two sentences: it says what the section is for, the guide says the rest.
 var HELP_ICONS = [
   // the tools, in the ribbon across the top: one for each section (RIBBON_TABS, move.js)
-  ['.rbSec[data-sec="home-file"] > .rbCap', 'design-tools.html#file', 'Start a new drawing, open one or a VCarve or Carbide Create project, import DXF, SVG or a picture, and save.'],
+  ['.rbSec[data-sec="home-file"] > .rbCap', 'design-tools.html#home', 'Start a new drawing, open one or a VCarve or Carbide Create project, import DXF, SVG or a picture, and save.'],
   ['.rbSec[data-sec="home-export"] > .rbCap', 'design-tools.html#export-dxf', 'Save the drawing as DXF or SVG, for other programs, lasers and vinyl cutters.'],
   ['.rbSec[data-sec="home-history"] > .rbCap', 'design-tools.html#undo', 'Step back through what you’ve done, and forward again.'],
   ['.rbSec[data-sec="home-view"] > .rbCap', 'design-tools.html#fit', 'Fit the drawing to the window, and measure distances and gaps.'],
   ['.rbSec[data-sec="draw-pick"] > .rbCap', 'design-tools.html#select--move', 'Pick shapes to move, copy or change them. Drag to move; click a picked shape again to rotate it.'],
-  ['.rbSec[data-sec="draw-shapes"] > .rbCap', 'design-tools.html#create-vectors', 'Lines, rectangles, circles, curves and more. Type a size while you draw, or set one in the tool’s panel, to make it exact.'],
+  ['.rbSec[data-sec="draw-shapes"] > .rbCap', 'design-tools.html#draw', 'Lines, rectangles, circles, curves and more. Type a size while you draw, or set one in the tool’s panel, to make it exact.'],
   ['.rbSec[data-sec="draw-text"] > .rbCap', 'design-tools.html#text', 'Words, in the font you choose, ready to V-carve or cut out.'],
   ['.rbSec[data-sec="draw-dims"] > .rbCap', 'design-tools.html#dimension', 'Dimensions set sizes: type a new number and the shape follows. Name your sizes in Parameters to change many at once.'],
   ['.rbSec[data-sec="modify-corners"] > .rbCap', 'design-tools.html#fillet', 'Round off corners, one at a time or every corner of a shape at once.'],

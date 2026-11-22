@@ -289,7 +289,7 @@ test('clicking an icon opens the help at its section, and the heading it sits in
   assert.equal(heard, 0, 'the section’s name didn’t hear it');
   assert.equal(group.className, was);
   assert.equal(D.helpIsOpen(), true);
-  assert.deepEqual([D.HELP.page, D.HELP.sec], ['design-tools.html', 'create-vectors']);
+  assert.deepEqual([D.HELP.page, D.HELP.sec], ['design-tools.html', 'draw']);
   assert.equal(tipText(), null, 'and the tip is gone');
   D.helpClose();
 });

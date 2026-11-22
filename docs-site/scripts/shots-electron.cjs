@@ -39,9 +39,9 @@ async function shoot(port, shot, i) {
   const cdp = win.webContents.debugger;
   cdp.attach('1.3');
   await cdp.sendCommand('Emulation.setDeviceMetricsOverride', { width: shot.size[0], height: shot.size[1], deviceScaleFactor: 2, mobile: false });
-  // ready: the app has drawn its panel (Design) or its tabs (Control)
+  // ready: the app has drawn its ribbon (Design) or its tabs (Control)
   await win.webContents.executeJavaScript(`new Promise((ok, fail) => { const t0 = Date.now(); (function poll(){
-    if (typeof DOC !== 'undefined' && document.querySelector('#toolPanel .tGroup')) return ok();
+    if (typeof DOC !== 'undefined' && document.querySelector('#toolPanel .rbTab')) return ok();
     if (typeof MODEL !== 'undefined' && document.getElementById('tabMachine')) return ok();
     if (Date.now() - t0 > 15000) return fail(new Error('the page never became ready'));
     setTimeout(poll, 100); })(); })`);

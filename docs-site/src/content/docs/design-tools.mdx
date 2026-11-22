@@ -1,15 +1,15 @@
 ---
 title: "454 Design: tools"
-description: "Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the Design quick start."
+description: "Every tool in the ribbon across the top of 454 Design, tab by tab: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same, or click the ⓘ beside a section’s name to come straight here. For a walkthrough from a blank drawing to G-code, see the Design quick start."
 ---
 
 import Shot from '../../components/Shot.astro';
 import typing from '../../assets/shots/design-typing.png';
-import gFile from '../../assets/shots/design-group-file.png';
-import gCreate from '../../assets/shots/design-group-create.png';
-import gEdit from '../../assets/shots/design-group-edit.png';
-import gAlign from '../../assets/shots/design-group-align.png';
-import gGuides from '../../assets/shots/design-group-guides.png';
+import tHome from '../../assets/shots/design-ribbon-home.png';
+import tDraw from '../../assets/shots/design-ribbon-draw.png';
+import tModify from '../../assets/shots/design-ribbon-modify.png';
+import tArrange from '../../assets/shots/design-ribbon-arrange.png';
+import tGuides from '../../assets/shots/design-ribbon-guides.png';
 import selHandles from '../../assets/shots/design-select-handles.png';
 import filletHover from '../../assets/shots/design-fillet-hover.png';
 import filletBar from '../../assets/shots/design-fillet-bar.png';
@@ -25,9 +25,9 @@ import shapePanel from '../../assets/shots/design-polygon.png';
 import rectPanel from '../../assets/shots/design-rectangle.png';
 
 
-Every tool in the panel on the left of 454 Design, group by group: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
+Every tool in the ribbon across the top of 454 Design, tab by tab: what each one does and how to use it. Hover over any tool in Design for a short reminder of the same, or click the ⓘ beside a section’s name to come straight here. For a walkthrough from a blank drawing to G-code, see the [Design quick start](design-quickstart.html).
 
-**Groups:** [File](#file) · [Create vectors](#create-vectors) · [Edit vectors](#edit-vectors) · [Align and nest](#align-and-nest) · [Guides](#guides)
+**Tabs:** [Home](#home) · [Draw](#draw) · [Modify](#modify) · [Arrange](#arrange) · [Guides](#guides)
 
 ## Before you start: typing exact values
 
@@ -43,12 +43,12 @@ Most tools can be used with the mouse alone, but for exact work you can type val
 
 **Snapping:** while drawing, the pointer snaps to the ends, midpoints, corners and centers of shapes, to guides and where guides cross, and to the grid. A small square marks an end, corner or center; at the middle of a side (a line, a rectangle's side, a segment of a polyline or outline, the middle of a curve or an arc) a triangle shows with the word **Midpoint**. Lines and polylines, vectors and construction lines alike, also snap to 0°, 45°, 90° and so on from their start: a dashed line and the angle show when they do, and holding <kbd>Shift</kbd> locks to the nearest one. (A shape's point still wins over the angle.) **Esc** cancels whatever you’re in the middle of, and <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes almost anything.
 
-## File
+## Home
 
-Starting, opening, importing and saving drawings, and handing them to other software; and undo, redo, fitting the
-view and measuring, which used to be a group of their own (View & History).
+Starting, opening, importing and saving drawings (**File**), handing them to other software (**Export**), undo and
+redo (**History**), and fitting the view and measuring (**View**).
 
-<Shot src={gFile} alt="The File group: New, Open, Import, Recover last drawing, Save, Save as, Export DXF, Export SVG, Undo, Redo, Fit and Measure." />
+<Shot src={tHome} alt="The Home tab: New, Open, Import, Recover, Save and Save as under File; DXF and SVG under Export; Undo and Redo under History; Fit and Measure under View." />
 
 ### New
 
@@ -176,11 +176,12 @@ Measures without changing anything: the distance and angle between two points, o
 1. **Between two points:** click one point, then the other.
 2. **The gap between two shapes:** Shift-click one shape, then Shift-click the other.
 
-## Create vectors
+## Draw
 
-Selecting, and drawing new shapes.
+Selecting (**Pick**), drawing new shapes (**Shapes** and **Text**), and the dimensions that set their sizes
+(**Dimensions**).
 
-<Shot src={gCreate} alt="The Create vectors group: Select, Line, Rectangle, Circle, Arc, Polyline and Text." />
+<Shot src={tDraw} alt="The Draw tab: Select under Pick; Line, Rectangle, Circle, Ellipse, Polygon, Star, Arc and Polyline under Shapes; Text; Dimension and Parameters under Dimensions." />
 
 ### Select / move
 
@@ -353,11 +354,80 @@ For text you'll cut all the way through, choose a font from the **Stencil** grou
 
 <Shot src={textPanel} alt="The Add text panel: the text WORKSHOP, the font Roboto, a 10 mm letter height, left alignment, and the Convert to curves and Place text buttons." />
 
-## Edit vectors
+### Dimension
 
-Changing shapes you’ve drawn: corners, trimming, offsets, copies, arrangement and more. Tools that act on a selection need something selected first: press <kbd>V</kbd>, pick the shapes, then choose the tool.
+Shortcut: <kbd>D</kbd>
 
-<Shot src={gEdit} alt="The Edit vectors group: Fillet, Trim, Extend, Offset, Edit nodes, Dimension, Copy, Mirror, the flips, Rotate, Array, Group, Ungroup, Join, Explode and Convert to curves." />
+Sets exact distances and sizes, and keeps a dimension on the drawing that updates as things change.
+
+1. **For a distance between two shapes:** click the edge of the shape to move, then the edge to measure from (that shape stays put). Type the distance and press <kbd>Enter</kbd>. Start it with `E` to measure edge to edge.
+2. **For a shape's own size:** click a rectangle's side twice for its width or height (or a line for its length, a circle for its diameter, an arc for its radius), type the size, and press <kbd>Enter</kbd>.
+3. To change a dimension later, click its value. To remove one, click it and press the &#10005; beside the value.
+4. **To move a dimension out of the way**, use the Select tool and drag its value. A distance's line moves out to the side, square to what it measures, with thin lines back to the edges; its value slides along it. A diameter or radius can go anywhere, with a thin line back to its circle. It stays where you put it when the shapes move. <kbd>Esc</kbd> during the drag puts it back. Moving one isn't a change to the drawing, so it isn't a step on the History bar.
+5. **To see the drawing without them**, press <kbd>Shift</kbd>+<kbd>D</kbd>: every dimension is hidden, and a note in the
+   top left corner says how many. Press it again, or pick the Dimension tool, to show them. (Also **View → Show or hide
+   dimensions** in the desktop app, and **Show dimensions layer** in Settings.) Hidden dimensions still hold their shapes.
+
+**A distance on each side stretches the shape.** When a shape is already held by a distance on its opposite side, a new distance moves just the edge you clicked, instead of the whole shape. So to place a rectangle 10&nbsp;mm inside another on both sides: set one side's distance, which moves it into place, then the other's, which stretches it to fit. Changing either one later keeps the other. The same works for straight-edged outlines.
+
+**Dimensions follow their edges.** A dimension remembers which edges it measures, so it keeps measuring them when shapes are moved or stretched. A rectangle's size keeps any side held by a distance where it is; if both sides are held, it says so rather than breaking one of them.
+
+**Dimensions survive the tools that remake shapes.** Fillet corners, Trim, Join and Explode make new shapes out of old ones, and
+the dimensions move onto them: a rectangle’s width or height stays its width or height once its corners are rounded
+(measured between its sides, out to where the corners were; type a new size and the outline stretches, its rounded
+corners kept), and a line’s length becomes the length of that edge of the outline it joined. A distance to an edge of an
+outline stays on that edge when the outline gains or loses points (its corners rounded, a point added or taken away).
+A dimension whose shape is really gone, or whose two edges aren’t parallel any more, is removed, with a note, and Undo
+brings it back. A toolpath that cut a shape that’s gone says so: edit it
+and pick the new shape, or that part won’t be cut.
+
+:::tip
+Selecting two shapes and pressing <kbd>D</kbd> works the same way: click each shape on the edge you mean when you select it.
+:::
+
+### Parameters
+
+The **fx** button, beside Dimension. Parameters are named sizes, saved with the drawing: `thickness`,
+`dado`, `shelf_gap`. Use one in a dimension, and when you change the parameter, every dimension using it
+follows, so a change of plywood is one edit instead of a dozen.
+
+<Shot src={parameters} alt="A cabinet side with a dado across it, and a shelf beside it. The dado's dimension reads 18.00 and the shelf's 564.00. The Parameters list beside them holds thickness 18, width 600, shelf as width - 2 * thickness, and dado_depth as thickness / 3." caption="A cabinet side with its dado, and the shelf. The dado is as wide as thickness, and the shelf is width - 2 * thickness long. Change thickness to 17.5 and the dado narrows and the shelf grows to 565." />
+
+1. Press **fx**, type a name and a value, and press **Add**. A value can be a number (`18.3`, `3/4`), or
+   arithmetic using other parameters: `thickness + 0.2`, `(height - 3 * thickness) / 2`.
+2. In a dimension, type the parameter's name, or arithmetic with it (`dado * 2`), instead of a number. While
+   you type, your parameters are listed under the box with what each comes to, narrowed to the name you've
+   started: click one, or press <kbd>Tab</kbd> for the top one (or <kbd>↓</kbd> <kbd>↑</kbd> and
+   <kbd>Enter</kbd>). The dimension shows its value; point at it to see the parameter, like **18.50 = dado**.
+3. Change a value in the list, and every dimension using it, and the shapes they drive, follow. One
+   <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes the whole change back.
+
+**`material`** is always there: the material's thickness from Job setup. A dado that's `material + 0.2`
+follows when you change the sheet you're cutting.
+
+- **Units:** numbers mean the units the drawing showed when you typed them, and a number can say its own:
+  `18mm`, `3/4in`, `3/4"`. Each parameter keeps its units, so switching the drawing between mm and
+  inches doesn't change any sizes.
+- **Typing a plain number** into a linked dimension unlinks it. Measurements typed as before still work:
+  `12 1/2` is twelve and a half, and `E` still means edge to edge.
+- **Renaming** a parameter changes it everywhere it's used. One that's in use can't be deleted until the
+  dimensions and parameters using it are changed.
+- **Mistakes are refused**, with what's wrong: a name that doesn't exist, a bracket left open, or a
+  parameter that would depend on itself. Nothing changes until it's put right.
+- **In toolpaths and other boxes:** a toolpath's depth and tabs can use parameters too, and follow them
+  (see [the CAM reference](cam-reference#the-basics)). Every other length box, such as the selection box's
+  W and H, or an offset, takes a parameter or arithmetic (`600 - 2 * thickness`) and works it out once.
+- **Only what's dimensioned follows.** A dimension sets the size or distance it measures, nothing more: if a
+  shelf should stay against a side when the sides move, give it a distance to that side too. A dimension
+  that's been moved by hand, or can't be what its parameters say, is marked **&#9888;**.
+
+## Modify
+
+Changing shapes you’ve drawn: rounding **Corners**, **Trim** and extend, **Shape** (offset and nodes), **Copy & move**,
+**Combine**, **Group** and **Text**. Tools that act on a selection need something selected first: press <kbd>V</kbd>, pick
+the shapes, then choose the tool.
+
+<Shot src={tModify} alt="The Modify tab: Fillet and Fillet corners; Trim and Extend; Offset and Edit nodes; Copy, Mirror, Flip H, Flip V, Rotate and Array; Weld, Subtract, Intersect, Join and Explode; Group and Ungroup; To curves and Text on curve." />
 
 ### Fillet
 
@@ -437,73 +507,6 @@ Moves the individual points of an outline, or sets them exactly.
 3. **Click a point** to type its exact position as `x,y`.
 4. **Click a segment** to type its length; the later point moves along the segment.
 5. Press <kbd>Esc</kbd> when you’re done.
-
-### Dimension
-
-Shortcut: <kbd>D</kbd>
-
-Sets exact distances and sizes, and keeps a dimension on the drawing that updates as things change.
-
-1. **For a distance between two shapes:** click the edge of the shape to move, then the edge to measure from (that shape stays put). Type the distance and press <kbd>Enter</kbd>. Start it with `E` to measure edge to edge.
-2. **For a shape's own size:** click a rectangle's side twice for its width or height (or a line for its length, a circle for its diameter, an arc for its radius), type the size, and press <kbd>Enter</kbd>.
-3. To change a dimension later, click its value. To remove one, click it and press the &#10005; beside the value.
-4. **To move a dimension out of the way**, use the Select tool and drag its value. A distance's line moves out to the side, square to what it measures, with thin lines back to the edges; its value slides along it. A diameter or radius can go anywhere, with a thin line back to its circle. It stays where you put it when the shapes move. <kbd>Esc</kbd> during the drag puts it back. Moving one isn't a change to the drawing, so it isn't a step on the History bar.
-5. **To see the drawing without them**, press <kbd>Shift</kbd>+<kbd>D</kbd>: every dimension is hidden, and a note in the
-   top left corner says how many. Press it again, or pick the Dimension tool, to show them. (Also **View → Show or hide
-   dimensions** in the desktop app, and **Show dimensions layer** in Settings.) Hidden dimensions still hold their shapes.
-
-**A distance on each side stretches the shape.** When a shape is already held by a distance on its opposite side, a new distance moves just the edge you clicked, instead of the whole shape. So to place a rectangle 10&nbsp;mm inside another on both sides: set one side's distance, which moves it into place, then the other's, which stretches it to fit. Changing either one later keeps the other. The same works for straight-edged outlines.
-
-**Dimensions follow their edges.** A dimension remembers which edges it measures, so it keeps measuring them when shapes are moved or stretched. A rectangle's size keeps any side held by a distance where it is; if both sides are held, it says so rather than breaking one of them.
-
-**Dimensions survive the tools that remake shapes.** Fillet corners, Trim, Join and Explode make new shapes out of old ones, and
-the dimensions move onto them: a rectangle’s width or height stays its width or height once its corners are rounded
-(measured between its sides, out to where the corners were; type a new size and the outline stretches, its rounded
-corners kept), and a line’s length becomes the length of that edge of the outline it joined. A distance to an edge of an
-outline stays on that edge when the outline gains or loses points (its corners rounded, a point added or taken away).
-A dimension whose shape is really gone, or whose two edges aren’t parallel any more, is removed, with a note, and Undo
-brings it back. A toolpath that cut a shape that’s gone says so: edit it
-and pick the new shape, or that part won’t be cut.
-
-:::tip
-Selecting two shapes and pressing <kbd>D</kbd> works the same way: click each shape on the edge you mean when you select it.
-:::
-
-### Parameters
-
-The **fx** button, beside Dimension. Parameters are named sizes, saved with the drawing: `thickness`,
-`dado`, `shelf_gap`. Use one in a dimension, and when you change the parameter, every dimension using it
-follows, so a change of plywood is one edit instead of a dozen.
-
-<Shot src={parameters} alt="A cabinet side with a dado across it, and a shelf beside it. The dado's dimension reads 18.00 and the shelf's 564.00. The Parameters list beside them holds thickness 18, width 600, shelf as width - 2 * thickness, and dado_depth as thickness / 3." caption="A cabinet side with its dado, and the shelf. The dado is as wide as thickness, and the shelf is width - 2 * thickness long. Change thickness to 17.5 and the dado narrows and the shelf grows to 565." />
-
-1. Press **fx**, type a name and a value, and press **Add**. A value can be a number (`18.3`, `3/4`), or
-   arithmetic using other parameters: `thickness + 0.2`, `(height - 3 * thickness) / 2`.
-2. In a dimension, type the parameter's name, or arithmetic with it (`dado * 2`), instead of a number. While
-   you type, your parameters are listed under the box with what each comes to, narrowed to the name you've
-   started: click one, or press <kbd>Tab</kbd> for the top one (or <kbd>↓</kbd> <kbd>↑</kbd> and
-   <kbd>Enter</kbd>). The dimension shows its value; point at it to see the parameter, like **18.50 = dado**.
-3. Change a value in the list, and every dimension using it, and the shapes they drive, follow. One
-   <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes the whole change back.
-
-**`material`** is always there: the material's thickness from Job setup. A dado that's `material + 0.2`
-follows when you change the sheet you're cutting.
-
-- **Units:** numbers mean the units the drawing showed when you typed them, and a number can say its own:
-  `18mm`, `3/4in`, `3/4"`. Each parameter keeps its units, so switching the drawing between mm and
-  inches doesn't change any sizes.
-- **Typing a plain number** into a linked dimension unlinks it. Measurements typed as before still work:
-  `12 1/2` is twelve and a half, and `E` still means edge to edge.
-- **Renaming** a parameter changes it everywhere it's used. One that's in use can't be deleted until the
-  dimensions and parameters using it are changed.
-- **Mistakes are refused**, with what's wrong: a name that doesn't exist, a bracket left open, or a
-  parameter that would depend on itself. Nothing changes until it's put right.
-- **In toolpaths and other boxes:** a toolpath's depth and tabs can use parameters too, and follow them
-  (see [the CAM reference](cam-reference#the-basics)). Every other length box, such as the selection box's
-  W and H, or an offset, takes a parameter or arithmetic (`600 - 2 * thickness`) and works it out once.
-- **Only what's dimensioned follows.** A dimension sets the size or distance it measures, nothing more: if a
-  shelf should stay against a side when the sides move, give it a distance to that side too. A dimension
-  that's been moved by hand, or can't be what its parameters say, is marked **&#9888;**.
 
 ### Copy
 
@@ -718,11 +721,12 @@ the words, font and height:
 If the text is longer than the curve, the panel says so. Moving, turning or scaling the text takes its curve
 with it; changing the letter height keeps the same curve.
 
-## Align and nest
+## Arrange
 
-Arranging shapes: packing parts onto the material, centering, lining up and spacing. The tools that line shapes up use the **last one you picked** as the reference, outlined in green.
+Arranging shapes: packing parts onto the material (**Nest**), centering them in it (**In the material**), lining up,
+making them the same size, and spacing. The tools that line shapes up use the **last one you picked** as the reference, outlined in green.
 
-<Shot src={gAlign} alt="The Align and nest group: Nest parts, the centering tools, the edge alignment tools, Concentric, Same width, Same height, Same size, Keep lined up (a chain link) and even spacing." />
+<Shot src={tArrange} alt="The Arrange tab: Nest; the three Center buttons under In the material; Center on, the centers and edges, and Concentric under Line up; Width, Height and Size under Same size; the two spacings; and Keep lined up." />
 
 ### Nest parts
 
@@ -841,7 +845,7 @@ Spaces shapes out with equal gaps between them. The first and last shapes stay w
 
 Construction lines for laying out a drawing. They snap, but aren’t cut.
 
-<Shot src={gGuides} alt="The Guides group: Offset guide, Remove all guides and Machine area." />
+<Shot src={tGuides} alt="The Guides tab: Guide and Clear guides under Guides, and Machine area under Machine." />
 
 ### Offset guide
 

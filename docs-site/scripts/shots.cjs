@@ -25,9 +25,9 @@ const PRELUDE = `
     return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }; };
   const box = (sel, pad = 0) => { const r = document.querySelector(sel).getBoundingClientRect();
     return { x: r.left - pad, y: r.top - pad, width: r.width + 2 * pad, height: r.height + 2 * pad }; };
-  // a fresh drawing: material w x h, these shapes, the view fitted to it
+  // a fresh drawing: material w x h, these shapes, the view fitted to the material (Fit itself fits what's drawn)
   const drawing = (w, h, ents) => { DOC.stock = Object.assign({}, DOC.stock, { w, h, t: 12 }); DOC.ents = ents;
-    DOC.toolpaths = []; DOC.guides = []; DOC.dims = []; SEL = []; setTool('select'); fit(); draw(); };
+    DOC.toolpaths = []; DOC.guides = []; DOC.dims = []; SEL = []; setTool('select'); fitStock(); draw(); };
   // the dialog on screen, as a capture rectangle
   const openDialogBox = () => { const d = Array.from(document.querySelectorAll('[role=dialog], [role=alertdialog]'))
     .filter((e) => e.offsetParent && e.getBoundingClientRect().width > 100).pop();
@@ -37,14 +37,16 @@ const PRELUDE = `
   const hoverAt = (x, y) => { const s = w2s(x, y); MOUSE.mx = s.x; MOUSE.my = s.y; MOUSE.w = { x, y }; MOUSE.x = x; MOUSE.y = y; MOUSE.snap = { x, y, k: 'grid' }; };
 `;
 
-const GROUPS = [['file', 'File'], ['create', 'Create vectors'], ['edit', 'Edit vectors'], ['align', 'Align and nest'], ['guides', 'Guides']];
+const RIBBON = ['home', 'draw', 'modify', 'arrange', 'guides'];
 
 const SHOTS = [
-  // each tool group in the left panel
-  ...GROUPS.map(([id]) => ({
-    name: 'design-group-' + id, page: 'design.html', size: [1400, 900],
-    setup: `UICFG.collapsed = {}; buildToolPanel(); sideTab('tools'); await wait(200);`,
-    capture: { selector: '.tGroup[data-group="' + id + '"]', pad: 0 },
+  // each tab of the ribbon: the tabs and that tab's tools, as wide as its sections
+  ...RIBBON.map((id) => ({
+    name: 'design-ribbon-' + id, page: 'design.html', size: [1400, 900],
+    setup: `ribbonFold(false); ribbonTab('${id}'); setTool('select'); await wait(200);
+      const r = document.getElementById('toolPanel').getBoundingClientRect(), secs = document.querySelectorAll('#rbPane-${id} .rbSec');
+      const right = Math.max(secs[secs.length - 1].getBoundingClientRect().right + 10, document.getElementById('rbTab-guides').getBoundingClientRect().right + 12);
+      return { x: r.left, y: r.top, width: right - r.left, height: r.height };`,
   })),
 
   // typing an exact value while drawing a line
@@ -52,7 +54,8 @@ const SHOTS = [
     setup: `drawing(160, 90, [{ t: 'line', x1: 20, y1: 30, x2: 60, y2: 30 }]);
       setTool('line'); DRAW = { stage: 1, x: 60, y: 30 }; hoverAt(95, 52);
       showPrompt(STAGE_LABEL.line1, '@40,0', true, unitTag()); FLOAT_AT = w2s(95, 52); placeFloatIn(); draw(); await wait(150);
-      return union(region(10, 15, 110, 60), box('#floatIn', 8));` },
+      const pick = document.getElementById('paramPick');   // the parameters it offers, under the box, when it does
+      return union(region(10, 15, 110, 60), box('#floatIn', 8), ...(pick && pick.offsetParent ? [box('#paramPick', 8)] : []));` },
 
   // Select: the scale handles on a shape
   { name: 'design-select-handles', page: 'design.html', size: [1300, 820],
@@ -171,15 +174,15 @@ const SAMPLE_LIBRARY = `
 `;
 const SIGN_SETUP = '{ ' + SIGN + ' } await wait(200); CUTSEL = null; renderToolpathPanel(); draw();';
 SHOTS.push(
-  { name: 'design-overview', page: 'design.html', size: [1400, 860], setup: SIGN_SETUP + ` sideTab('tools'); await wait(200);` },
+  { name: 'design-overview', page: 'design.html', size: [1400, 860], setup: SIGN_SETUP + ` ribbonFold(false); ribbonTab('draw'); rightTab('toolpaths'); await wait(200);` },
   { name: 'design-layers', page: 'design.html', size: [1400, 900],
     setup: SIGN_SETUP + `
       DOC.layers = [{ id: 'L1', name: 'Outline', visible: true, locked: false }, { id: 'L2', name: 'Engraving', visible: true, locked: false },
                     { id: 'L3', name: 'Reference', visible: false, locked: true }];
       DOC.ents.forEach((e) => { e.layer = e.t === 'text' ? 'L2' : 'L1'; });
       DOC.ents.push({ t: 'rect', x: 10, y: 10, w: 300, h: 180, layer: 'L3' }); DOC.activeLayer = 'L1';
-      sideTab('layers'); renderLayers(); draw(); await wait(200);
-      const top = document.getElementById('paneLayers').getBoundingClientRect(), add = document.getElementById('layerAdd').getBoundingClientRect();
+      rightTab('layers'); renderLayers(); draw(); await wait(200);
+      const top = document.querySelector('#tpPanel .rpTabs').getBoundingClientRect(), add = document.getElementById('layerAdd').getBoundingClientRect();
       return { x: top.left, y: top.top, width: top.width, height: add.bottom - top.top + 12 };` },
   { name: 'design-job-setup', page: 'design.html', size: [1400, 1000],
     setup: SIGN_SETUP + ` document.getElementById('jobBtn').click(); await wait(300);`, capture: { selector: '#jobPanel', pad: 0 } },

@@ -150,36 +150,36 @@ var PANEL_BTNS = {
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
 // The ribbon across the top of the drawing (tool-panel.js): its tabs, each in labelled sections, every button above
-// in one place. A section's name is what Design calls it on screen; its help is the guide's heading for it.
+// in one place. Each section's (i) is in HELP_ICONS (help-where.js, loaded before this file).
 var RIBBON_TABS = [
  {id:'home', label:'Home', secs:[
-   {id:'file',    label:'File',    btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn'], help:'file'},
-   {id:'export',  label:'Export',  btns:['dxfBtn','svgBtn'], help:'export-dxf'},
-   {id:'history', label:'History', btns:['undoBtn','redoBtn'], help:'undo'},
-   {id:'view',    label:'View',    btns:['fitBtn2','measureT'], help:'fit'}]},
+   {id:'file',    label:'File',    btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn']},
+   {id:'export',  label:'Export',  btns:['dxfBtn','svgBtn']},
+   {id:'history', label:'History', btns:['undoBtn','redoBtn']},
+   {id:'view',    label:'View',    btns:['fitBtn2','measureT']}]},
  {id:'draw', label:'Draw', secs:[
-   {id:'pick',    label:'Pick',       btns:['select'], help:'select--move'},
-   {id:'shapes',  label:'Shapes',     btns:['line','rect','circle','ellipse','polygon','star','arc','poly'], help:'create-vectors'},
-   {id:'text',    label:'Text',       btns:['textT'], help:'text'},
-   {id:'dims',    label:'Dimensions', btns:['dimT','paramsBtn'], help:'dimension'}]},
+   {id:'pick',    label:'Pick',       btns:['select']},
+   {id:'shapes',  label:'Shapes',     btns:['line','rect','circle','ellipse','polygon','star','arc','poly']},
+   {id:'text',    label:'Text',       btns:['textT']},
+   {id:'dims',    label:'Dimensions', btns:['dimT','paramsBtn']}]},
  {id:'modify', label:'Modify', secs:[
-   {id:'corners', label:'Corners',     btns:['fillet','filletAllT'], help:'fillet'},
-   {id:'trim',    label:'Trim',        btns:['trim','extend'], help:'trim'},
-   {id:'shape',   label:'Shape',       btns:['offsetT','nodeT'], help:'offset'},
-   {id:'copy',    label:'Copy & move', btns:['copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT'], help:'copy'},
-   {id:'combine', label:'Combine',     btns:['weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn'], help:'weld'},
-   {id:'group',   label:'Group',       btns:['groupBtn','ungroupBtn'], help:'group'},
-   {id:'mtext',   label:'Text',        btns:['curvesBtn','textCurveBtn'], help:'convert-to-curves'}]},
+   {id:'corners', label:'Corners',     btns:['fillet','filletAllT']},
+   {id:'trim',    label:'Trim',        btns:['trim','extend']},
+   {id:'shape',   label:'Shape',       btns:['offsetT','nodeT']},
+   {id:'copy',    label:'Copy & move', btns:['copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT']},
+   {id:'combine', label:'Combine',     btns:['weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn']},
+   {id:'group',   label:'Group',       btns:['groupBtn','ungroupBtn']},
+   {id:'mtext',   label:'Text',        btns:['curvesBtn','textCurveBtn']}]},
  {id:'arrange', label:'Arrange', secs:[
-   {id:'nest',    label:'Nest',            btns:['nestBtn'], help:'nest-parts'},
-   {id:'mat',     label:'In the material', btns:['alMat','alMatX','alMatY'], help:'center-in-material'},
-   {id:'lineup',  label:'Line up',         btns:['alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alConc'], help:'center-on-last-picked'},
-   {id:'same',    label:'Same size',       btns:['alSameW','alSameH','alSame'], help:'same-width-same-height-same-size'},
-   {id:'space',   label:'Spacing',         btns:['alDistH','alDistV'], help:'space-evenly-left-to-right-or-top-to-bottom'},
-   {id:'keep',    label:'Keep',            btns:['alKeep'], help:'keep-lined-up'}]},
+   {id:'nest',    label:'Nest',            btns:['nestBtn']},
+   {id:'mat',     label:'In the material', btns:['alMat','alMatX','alMatY']},
+   {id:'lineup',  label:'Line up',         btns:['alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alConc']},
+   {id:'same',    label:'Same size',       btns:['alSameW','alSameH','alSame']},
+   {id:'space',   label:'Spacing',         btns:['alDistH','alDistV']},
+   {id:'keep',    label:'Keep',            btns:['alKeep']}]},
  {id:'guides', label:'Guides', secs:[
-   {id:'guides',  label:'Guides',  btns:['guide','clearGuides'], help:'guides'},
-   {id:'machine', label:'Machine', btns:['machArea'], help:'machine-area'}]}
+   {id:'guides',  label:'Guides',  btns:['guide','clearGuides']},
+   {id:'machine', label:'Machine', btns:['machArea']}]}
 ];
 // The short name under each button in the ribbon (its tooltip keeps the full title above)
 var RIBBON_NAMES = {
