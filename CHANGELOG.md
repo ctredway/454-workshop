@@ -33,6 +33,10 @@ quiet guards that don't change that process; any unavoidable difference is flagg
 
 ## 454 Workshop (the desktop app, in testing)
 
+### 0.7.0-beta.6 — the tools in a ribbon across the top
+- Includes Design 0.170.0: the tools are in a ribbon of tabs across the top of the drawing (Home, Draw, Modify,
+  Arrange, Guides), with each tool's name under its icon; it folds to its tabs. Layers moved to a tab beside Toolpaths.
+
 ### 0.7.0-beta.5 — Back to Jog, and electron-builder 26
 - Includes Control 0.42.0: Probe… on the Jog & zero panel opens the BitZero panel with **← Back to Jog**.
 - The installers are built with electron-builder 26 (was 25), for security fixes in tar, app-builder-lib and
