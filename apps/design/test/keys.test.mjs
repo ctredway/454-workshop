@@ -392,8 +392,8 @@ test('Tools menu: every tool on the toolbar is in it (Group and Ungroup are in E
   assert.ok(names.every((n) => n.startsWith('tb:')), 'each asks for a toolbar button');
   const btns = plain(D.run('PANEL_BTNS'));
   for (const n of names) assert.ok(btns[n.slice(3)], n + ' is a toolbar button');
-  const groups = plain(D.run('PANEL_GROUPS')).filter((g) => g.id !== 'file');
-  const want = groups.flatMap((g) => g.btns).concat(['measureT']).filter((b) => b !== 'groupBtn' && b !== 'ungroupBtn');
+  const tabs = plain(D.run('RIBBON_TABS')).filter((t) => t.id !== 'home');   // Home's are in the File and Edit menus
+  const want = tabs.flatMap((t) => t.secs.flatMap((s) => s.btns)).concat(['measureT']).filter((b) => b !== 'groupBtn' && b !== 'ungroupBtn');
   for (const b of want) assert.ok(names.includes('tb:' + b), b + ' is in the Tools menu');
   assert.equal(new Set(names).size, names.length, 'none twice');
 });
@@ -447,18 +447,15 @@ test('Tools menu: a greyed-out button stays greyed out; nothing while a dialog, 
 
 // ---- Open and Import: two buttons, two kinds of file ----
 const later = (ms = 40) => new Promise((r) => setTimeout(r, ms));
-test('the File group: New, Open, Import, Recover, Save, Save As, the exports, then Undo, Redo, Fit and Measure', () => {
+test('the Home tab: File, Export, History and View, with New, Open, Import, Recover, Save, Save As, the exports, Undo, Redo, Fit and Measure', () => {
   const D = fresh();
-  const btns = [...D.document.querySelectorAll('.tGroup[data-group="file"] .tGrid button')].map((b) => b.id || b.dataset.tool);
+  const pane = D.document.getElementById('rbPane-home');
+  const btns = [...pane.querySelectorAll('button.tool')].map((b) => b.id || b.dataset.tool);
   assert.deepEqual(btns, ['newBtn', 'loadBtn', 'importBtn', 'recoverBtn', 'saveBtn', 'saveAsBtn', 'dxfBtn', 'svgBtn', 'undoBtn', 'redoBtn', 'fitBtn2', 'measure']);
-  assert.equal(D.document.querySelector('.tGroup[data-group="view"]'), null, 'View & History is gone: its four are in File');
+  assert.deepEqual([...pane.querySelectorAll('.rbCap')].map((c) => c.firstChild.textContent), ['File', 'Export', 'History', 'View']);
   assert.match(D.document.getElementById('loadBtn').title, /^Open \(Ctrl\+O\) — a saved drawing, or a VCarve or Carbide Create project$/);
   assert.match(D.document.getElementById('importBtn').title, /^Import \(Ctrl\+I\) — DXF or SVG vectors into this drawing, or a picture to trace$/);
-  // an order saved before, which still lists View & History, loses nothing
-  D.run(`UICFG.order = ['view', 'guides', 'file', 'create', 'edit', 'align']; buildToolPanel(); 1`);
-  assert.deepEqual([...D.document.querySelectorAll('.tGroup')].map((g) => g.dataset.group), ['guides', 'file', 'create', 'edit', 'align']);
-  for (const id of ['undoBtn', 'redoBtn', 'fitBtn2']) assert.equal(D.document.querySelectorAll('#' + id).length, 1, id + ' is there once, in File');
-  assert.equal(D.document.querySelectorAll('.tGroup[data-group="file"] button[data-tool="measure"]').length, 1, 'and Measure');
+  for (const id of ['undoBtn', 'redoBtn', 'fitBtn2']) assert.equal(D.document.querySelectorAll('#' + id).length, 1, id + ' is there once');
 });
 test('Open asks for drawings and projects; Import for DXF, SVG and pictures, from the buttons, the keys and the menu', async () => {
   const D = fresh();

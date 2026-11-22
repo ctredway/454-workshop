@@ -28,7 +28,7 @@
   input[type=number]{width:76px}
   select{background:var(--panel-deep);border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:5px 8px;font-size:13px;font-family:var(--sans)}
 
-  #app{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:auto 1fr auto;height:100vh}
+  #app{display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:1fr auto;height:100vh}
   header{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
   header .brand{font-weight:700;font-size:17px}
   header .brand{display:flex;align-items:center;gap:7px}
@@ -201,38 +201,50 @@
   #docDirty.changed{color:var(--amber)}
   #docDirty:empty{display:none}
 
-  #toolPanel{grid-row:2;display:flex;overflow:hidden;background:var(--panel);border-right:1px solid var(--line);user-select:none}
-  .sideTabs{display:flex;flex-direction:column;width:28px;flex:none;background:var(--panel-deep);border-right:1px solid var(--line)}
-  .sideTab{writing-mode:vertical-rl;transform:rotate(180deg);padding:14px 0;border:0;border-radius:0;border-left:2px solid transparent;
-           background:none;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer}
-  .sideTab:hover{color:var(--ink)}
-  .sideTab[aria-selected="true"]{color:var(--ink);background:var(--panel);border-left-color:var(--amber)}
-  .sidePane{width:176px;overflow-y:auto}
-  .sidePane[hidden]{display:none}
-  .sideFold{margin-top:auto;padding:10px 0;border:0;border-radius:0;background:none;color:var(--muted);font-size:14px;cursor:pointer}
-  .sideFold:hover{color:var(--ink);background:rgba(255,255,255,.03)}
-  #toolPanel.folded .sidePane{display:none}
-  #toolPanel.folded .sideTabs{border-right:0}
-  #toolPanel.folded .sideTab[aria-selected="true"]{background:none;border-left-color:transparent;color:var(--muted)}
-  #toolPanel.folded .sideTab:hover{color:var(--ink)}
-  .sidePane .paneHead{padding:9px 10px 5px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
-  .tGroup{border-bottom:1px solid var(--line)}
-  .tGroup h4{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);cursor:grab}
-  .tGroup h4 .caret{font-size:9px;transition:transform .12s;color:var(--faint)}
-  .tGroup.collapsed h4 .caret{transform:rotate(-90deg)}
-  .tGroup h4 .grip{margin-left:auto;color:var(--faint);font-size:11px;letter-spacing:1px}
-  .tGroup h4{white-space:nowrap;gap:4px;padding-right:6px;letter-spacing:.2px}   /* room for the (i): the name stays on one line */
-  .tGroup h4 .helpI{margin:0;padding:0 1px}
-  .tGroup.dragOver{outline:2px dashed var(--amber);outline-offset:-2px}
-  .tGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:2px 8px 10px}
-  .tGroup.collapsed .tGrid{display:none}
-  .tRows{padding:2px 10px 10px;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted)}
-  .tGroup.collapsed .tRows{display:none}
-  .tRows .crow{display:flex;align-items:center;gap:8px}
-  .tRows input[type=color]{width:34px;height:22px;padding:1px;border:1px solid var(--line);border-radius:4px;background:var(--panel-deep);cursor:pointer}
-  #toolPanel button.tool{width:100%;height:36px}
+  /* the ribbon across the top of the drawing (tool-panel.js): tabs, then the shown tab's tools in labelled sections */
+  #toolPanel{grid-row:2;grid-column:1/-1;position:relative;z-index:8;background:var(--panel);border-bottom:1px solid var(--line);user-select:none}
+  .rbTabs{display:flex;align-items:flex-end;gap:2px;padding:4px 8px 0;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+  .rbTab{border:1px solid transparent;border-bottom:0;background:none;border-radius:5px 5px 0 0;padding:6px 14px 7px;margin-bottom:-1px;color:var(--muted);
+         font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+  .rbTab:hover{color:var(--ink);border-color:transparent}
+  .rbTab[aria-selected="true"]{color:var(--ink);background:var(--panel-deep);border-color:var(--line);box-shadow:inset 0 2px 0 var(--amber)}
+  .rbGap{flex:1 0 8px}
+  .rbFold{flex:none;width:30px;height:28px;padding:0;margin-bottom:3px;background:none;border:1px solid transparent;color:var(--muted)}
+  .rbFold:hover{color:var(--ink);border-color:var(--line)}
+  .rbFold svg{display:block;margin:auto;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+  #toolPanel.folded .rbFold svg{transform:rotate(180deg)}
+  .rbPanes{background:var(--panel-deep)}
+  .rbPane{display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding:6px 4px 0}
+  .rbPane[hidden]{display:none}
+  .rbSec{display:flex;flex-direction:column;align-items:center;flex:none;padding:0 8px;border-right:1px solid var(--line)}
+  .rbSec:last-child{border-right:0}
+  .rbBtns{display:flex;gap:3px;flex:1;align-items:flex-start}
+  .rbCap{display:flex;align-items:center;gap:3px;padding:3px 0 4px;font-size:10.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+  .rbCap .helpI{margin:0;padding:0 1px}
+  #toolPanel button.tool{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;width:auto;min-width:50px;height:auto;min-height:50px;
+         padding:6px 4px 5px;border-color:transparent;background:none;font-family:var(--sans);font-weight:400}
+  #toolPanel button.tool:hover{background:var(--panel);border-color:var(--line)}
+  #toolPanel button.tool.active{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+  #toolPanel button.tool svg{margin:0;flex:none}
+  .rbName{font-size:10.5px;line-height:1.15;color:var(--muted);text-align:center;max-width:66px}
+  #toolPanel button.tool.active .rbName{color:var(--on-accent);font-weight:600}
+  #toolPanel button.tool:disabled .rbName{color:var(--faint)}
+  /* folded: only the tabs; a tab clicked shows its tools over the drawing for a moment */
+  #toolPanel.folded .rbPanes{display:none}
+  #toolPanel.folded .rbTab[aria-selected="true"]{background:none;border-color:transparent;box-shadow:none;color:var(--muted)}
+  #toolPanel.folded.peek .rbPanes{display:block;position:absolute;left:0;right:0;top:100%;border-bottom:1px solid var(--line);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  #toolPanel.folded.peek .rbTab[aria-selected="true"]{background:var(--panel-deep);border-color:var(--line);box-shadow:inset 0 2px 0 var(--amber);color:var(--ink)}
+  @media (prefers-reduced-motion:reduce){ .rbFold svg{transition:none} }
+  /* the right-hand panel's tabs: Toolpaths and Layers */
+  .rpTabs{display:flex;align-items:center;gap:2px;padding:6px 8px 0 6px;border-bottom:1px solid var(--line)}
+  .rpTab{border:0;border-radius:0;background:none;padding:6px 10px 7px;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.5px;
+         text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .rpTab:hover{color:var(--ink)}
+  .rpTab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--amber)}
+  .rpGap{flex:1}
+  #rpPaneTp[hidden],#rpPaneLayers[hidden]{display:none}
 
-  #canvasWrap{grid-row:2;grid-column:2;position:relative;min-width:0;min-height:0}
+  #canvasWrap{grid-row:3;grid-column:1;position:relative;min-width:0;min-height:0}
   #woodModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:220}
   #woodModal[hidden]{display:none}
   #woodPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;width:min(1100px,calc(100vw - 48px));max-height:calc(100vh - 48px);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
@@ -345,7 +357,7 @@
   .tpLib.ok{color:#7fb069} .tpLib.warn{color:#d98e3f} .tpLib.miss{color:var(--muted)}
   .tpCut{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
   #tpPanel .tpNote button{font-size:11.5px;padding:2px 8px;margin-top:6px}
-  #tpPanel{grid-row:2;grid-column:3;width:292px;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line)}
+  #tpPanel{grid-row:3;grid-column:2;width:292px;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line)}
   #tpPanel.collapsed{width:30px;overflow:hidden}
   #tpPanel.collapsed #tpBody{display:none}
   #tpStrip{display:none}
@@ -697,7 +709,7 @@
   #impPanel .row{display:flex;align-items:center;gap:8px;margin-bottom:9px}
   #impPanel input[type=checkbox],#impPanel input[type=radio]{accent-color:var(--amber);width:auto}
   #impPanel .note{color:var(--faint);font-size:12px;line-height:1.5;margin-top:4px}
-  footer{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:8px 16px;background:var(--panel);border-top:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  footer{grid-row:4;grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:8px 16px;background:var(--panel);border-top:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--muted)}
   footer b{color:var(--ink);font-weight:500}
   #hint{color:var(--faint);font-family:var(--sans)}
   #tpSheetBar{padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}

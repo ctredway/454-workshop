@@ -102,7 +102,7 @@ version is in `src/js/version.js`.
 | `js/dimension-apply.js` | 108 | applying a dimension: moving, or stretching a held shape |
 | `js/move.js` | 126 | moving shapes |
 | `js/ui-settings.js` | 50 | Design’s own settings |
-| `js/tool-panel.js` | 92 | the tool groups on the left, and fitting the view |
+| `js/tool-panel.js` | 92 | the ribbon of tools across the top, and fitting the view |
 | `js/panel-wiring.js` | 163 | wiring the panels |
 | `js/wiring.js` | 885 | wiring the page, and starting |
 

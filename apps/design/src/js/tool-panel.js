@@ -1,84 +1,106 @@
+/* ---------------- the ribbon ----------------
+   The drawing tools in tabs across the top of the drawing (RIBBON_TABS, move.js), each tab in labelled sections, with
+   each tool's name under its icon (Clint, 2026-11-21, after a mock-up: "like Fusion and other CAD programs"). It folds
+   to its tabs for more drawing room: the arrow at the right, or a double-click on a tab. Folded, a tab clicked shows
+   its tools over the drawing until one is picked, or the pointer goes elsewhere, or Esc. The tab shown and the fold
+   are remembered. The buttons are the same as before (PANEL_BTNS: ids, data-tool, titles), so the keys, the Tools
+   menu and the tools themselves don't change. Layers are a tab of the right-hand panel (rightTab, ui-settings.js). */
 function buildToolPanel(){
-  setTimeout(function(){
-    var add = document.getElementById('layerAdd');
-    if (add && !add.wired){ add.wired = true; add.addEventListener('click', function(){ pushUndo(); layersInit(); DOC.activeLayer = layerNew(); persist(); renderLayers(); }); }
-    if (typeof renderLayers === 'function') renderLayers();
-  }, 0);
   var host = document.getElementById('toolPanel');
-  var html = '';
-  orderedGroups().forEach(function(g){
-    html += '<div class="tGroup' + (UICFG.collapsed[g.id] ? ' collapsed' : '') + '" data-group="' + g.id + '">' +
-            '<h4 draggable="true"><span class="caret">\u25bc</span>' + g.label + '<span class="grip">\u22ee\u22ee</span></h4>';
-    if (g.html){ html += '<div class="tRows">' + g.html + '</div></div>'; return; }
-    html += '<div class="tGrid">';
-    (g.btns || []).forEach(function(bid){
-      var b = PANEL_BTNS[bid];
-      if (!b) return;
-      html += '<button class="tool' + (b.active ? ' active' : '') + '"' +
-              (b.tool ? ' data-tool="' + b.tool + '"' : '') +
-              (b.id ? ' id="' + b.id + '"' : '') +
-              ' title="' + b.title + '">' + ICON[b.icon] + '</button>';
+  var tab = ribbonTabNow();
+  var tabs = '', panes = '';
+  RIBBON_TABS.forEach(function (t) {
+    var on = t.id === tab;
+    tabs += '<button type="button" class="rbTab" role="tab" id="rbTab-' + t.id + '" data-tab="' + t.id + '" aria-controls="rbPane-' + t.id + '"' +
+            ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + t.label + '</button>';
+    panes += '<div class="rbPane" role="tabpanel" id="rbPane-' + t.id + '" data-tab="' + t.id + '" aria-labelledby="rbTab-' + t.id + '"' + (on ? '' : ' hidden') + '>';
+    t.secs.forEach(function (s) {
+      panes += '<div class="rbSec" data-sec="' + t.id + '-' + s.id + '"><div class="rbBtns">';
+      s.btns.forEach(function (bid) {
+        var b = PANEL_BTNS[bid];
+        if (!b) return;
+        panes += '<button type="button" class="tool' + (b.active ? ' active' : '') + '"' +
+                 (b.tool ? ' data-tool="' + b.tool + '"' : '') + (b.id ? ' id="' + b.id + '"' : '') +
+                 ' title="' + b.title + '">' + ICON[b.icon] + '<span class="rbName">' + (RIBBON_NAMES[bid] || '') + '</span></button>';
+      });
+      panes += '</div><div class="rbCap">' + s.label + '</div></div>';
     });
-    html += '</div></div>';
+    panes += '</div>';
   });
-  var tab = UICFG.sideTab === 'layers' ? 'layers' : 'tools';
   host.innerHTML =
-    '<div class="sideTabs" role="tablist" aria-orientation="vertical" aria-label="Side panel">' +
-      '<button class="sideTab" role="tab" id="sideTabTools" data-tab="tools" aria-controls="paneTools" aria-selected="' + (tab === 'tools') + '" tabindex="' + (tab === 'tools' ? 0 : -1) + '">Tools</button>' +
-      '<button class="sideTab" role="tab" id="sideTabLayers" data-tab="layers" aria-controls="paneLayers" aria-selected="' + (tab === 'layers') + '" tabindex="' + (tab === 'layers' ? 0 : -1) + '">Layers</button>' +
-      '<button id="sideFold" class="sideFold" aria-controls="paneTools paneLayers"></button>' +
-    '</div>' +
-    '<div class="sidePane" id="paneTools" role="tabpanel" aria-labelledby="sideTabTools"' + (tab === 'tools' ? '' : ' hidden') + '>' + html + '</div>' +
-    '<div class="sidePane" id="paneLayers" role="tabpanel" aria-labelledby="sideTabLayers"' + (tab === 'layers' ? '' : ' hidden') + '>' +
-      '<div class="paneHead">Layers</div>' +
-      '<div id="layerList" role="list" aria-label="Layers"></div>' +
-      '<button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>' +
-    '</div>';
-  if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each group's name: this panel is redrawn when groups are moved
-  sidePanelShow();
-  document.getElementById('sideFold').addEventListener('click', function(){ sidePanelSet(UICFG.sidePanel === false); });
-  host.querySelectorAll('.sideTab').forEach(function(t){
-    t.addEventListener('click', function(){ sideTab(t.dataset.tab); });
-    t.addEventListener('keydown', function(e){                  // arrow keys move between tabs
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    '<div class="rbTabs" role="tablist" aria-label="Drawing tools">' + tabs +
+      '<span class="rbGap"></span><button type="button" id="rbFold" class="rbFold" aria-controls="rbPanes">' +
+      '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 9 L7 5 L11 9"/></svg></button></div>' +
+    '<div class="rbPanes" id="rbPanes">' + panes + '</div>';
+  if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each section's name
+  ribbonShow();
+  host.querySelectorAll('.rbTab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var same = b.dataset.tab === ribbonTabNow();
+      ribbonTab(b.dataset.tab);
+      if (UICFG.ribbonFolded) ribbonPeek(!(same && host.classList.contains('peek')));
+    });
+    b.addEventListener('dblclick', function () { ribbonFold(!UICFG.ribbonFolded); });
+    b.addEventListener('keydown', function (e) {                // arrow keys move between tabs
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       e.preventDefault();
-      var next = t.dataset.tab === 'tools' ? 'layers' : 'tools';
-      sideTab(next);
-      var el = document.getElementById(next === 'tools' ? 'sideTabTools' : 'sideTabLayers'); if (el) el.focus();
+      var ids = RIBBON_TABS.map(function (t) { return t.id; }), i = ids.indexOf(ribbonTabNow());
+      var next = ids[(i + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length];
+      ribbonTab(next);
+      document.getElementById('rbTab-' + next).focus();
     });
   });
-
-  // collapse on header click; drag headers to reorder groups
-  var dragging = null;
-  host.querySelectorAll('.tGroup h4').forEach(function(h){
-    var grp = h.parentElement;
-    h.addEventListener('click', function(){
-      var id = grp.dataset.group;
-      UICFG.collapsed[id] = !UICFG.collapsed[id];
-      grp.classList.toggle('collapsed', UICFG.collapsed[id]);
-      uiCfgSave();
+  document.getElementById('rbFold').addEventListener('click', function () { ribbonFold(!UICFG.ribbonFolded); });
+  // a tool picked from the ribbon while it's folded: the tools go away again
+  document.getElementById('rbPanes').addEventListener('click', function (e) { if (e.target.closest('button.tool')) ribbonPeek(false); });
+  if (!buildToolPanel.wired){                               // the page's own listeners, once
+    buildToolPanel.wired = true;
+    document.addEventListener('pointerdown', function (e) {
+      var h = document.getElementById('toolPanel');
+      if (h && h.classList.contains('peek') && !h.contains(e.target)) ribbonPeek(false);
     });
-    h.addEventListener('dragstart', function(e){
-      dragging = grp.dataset.group;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', 'kerf-group:' + grp.dataset.group);
-    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ribbonPeek(false); });
+  }
+}
+function ribbonTabNow(){
+  var id = UICFG.ribbonTab;
+  return RIBBON_TABS.some(function (t) { return t.id === id; }) ? id : 'draw';   // Draw the first time
+}
+// Show a tab's tools; remembered
+function ribbonTab(id){
+  if (!RIBBON_TABS.some(function (t) { return t.id === id; })) return;
+  UICFG.ribbonTab = id;
+  uiCfgSave();
+  ribbonShow();
+}
+// Fold the ribbon to its tabs, or open it again; remembered
+function ribbonFold(folded){
+  UICFG.ribbonFolded = !!folded;
+  uiCfgSave();
+  ribbonPeek(false);
+  ribbonShow();
+}
+// Folded: a tab's tools shown over the drawing for a moment
+function ribbonPeek(on){
+  var host = document.getElementById('toolPanel');
+  if (host) host.classList.toggle('peek', !!on && !!UICFG.ribbonFolded);
+}
+function ribbonShow(){
+  var host = document.getElementById('toolPanel');
+  if (!host) return;
+  var tab = ribbonTabNow(), folded = !!UICFG.ribbonFolded;
+  host.classList.toggle('folded', folded);              // the canvas's size observer redraws it to fit
+  host.querySelectorAll('.rbTab').forEach(function (b) {
+    var on = b.dataset.tab === tab;
+    b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
   });
-  host.querySelectorAll('.tGroup').forEach(function(grp){
-    grp.addEventListener('dragover', function(e){ e.preventDefault(); grp.classList.add('dragOver'); });
-    grp.addEventListener('dragleave', function(){ grp.classList.remove('dragOver'); });
-    grp.addEventListener('drop', function(e){
-      e.preventDefault(); grp.classList.remove('dragOver');
-      if (!dragging || dragging === grp.dataset.group) return;
-      var order = orderedGroups().map(function(g){ return g.id; });
-      order.splice(order.indexOf(dragging), 1);
-      order.splice(order.indexOf(grp.dataset.group), 0, dragging);
-      UICFG.order = order;
-      uiCfgSave();
-      buildToolPanel();     // rebuild in the new order
-      wirePanel();          // re-attach button handlers
-    });
-  });
+  host.querySelectorAll('.rbPane').forEach(function (p) { p.hidden = p.dataset.tab !== tab; });
+  var f = document.getElementById('rbFold');
+  if (f){
+    f.title = folded ? 'Open the ribbon again' : 'Fold the ribbon away, for more drawing room (or double-click a tab)';
+    f.setAttribute('aria-label', folded ? 'Open the ribbon' : 'Fold the ribbon away');
+    f.setAttribute('aria-expanded', folded ? 'false' : 'true');
+  }
 }
 
 /* ---------------- wiring ---------------- */

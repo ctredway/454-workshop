@@ -48,7 +48,7 @@ test('the row is at the top of the panel: five icons in order, each named for a 
     assert.ok(b.querySelector('svg'), id + ' has its picture');
   });
   // above the list of toolpaths, below the panel's name
-  const kids = [...el('tpBody').children];
+  const kids = [...el('rpPaneTp').children];
   assert.ok(kids.indexOf(row) > kids.findIndex((k) => k.className === 'tpHead'));
   assert.ok(kids.indexOf(row) < kids.indexOf(el('tpList')));
 });

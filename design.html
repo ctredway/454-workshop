@@ -38,7 +38,7 @@
   input[type=number]{width:76px}
   select{background:var(--panel-deep);border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:5px 8px;font-size:13px;font-family:var(--sans)}
 
-  #app{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:auto 1fr auto;height:100vh}
+  #app{display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:1fr auto;height:100vh}
   header{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
   header .brand{font-weight:700;font-size:17px}
   header .brand{display:flex;align-items:center;gap:7px}
@@ -211,38 +211,50 @@
   #docDirty.changed{color:var(--amber)}
   #docDirty:empty{display:none}
 
-  #toolPanel{grid-row:2;display:flex;overflow:hidden;background:var(--panel);border-right:1px solid var(--line);user-select:none}
-  .sideTabs{display:flex;flex-direction:column;width:28px;flex:none;background:var(--panel-deep);border-right:1px solid var(--line)}
-  .sideTab{writing-mode:vertical-rl;transform:rotate(180deg);padding:14px 0;border:0;border-radius:0;border-left:2px solid transparent;
-           background:none;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer}
-  .sideTab:hover{color:var(--ink)}
-  .sideTab[aria-selected="true"]{color:var(--ink);background:var(--panel);border-left-color:var(--amber)}
-  .sidePane{width:176px;overflow-y:auto}
-  .sidePane[hidden]{display:none}
-  .sideFold{margin-top:auto;padding:10px 0;border:0;border-radius:0;background:none;color:var(--muted);font-size:14px;cursor:pointer}
-  .sideFold:hover{color:var(--ink);background:rgba(255,255,255,.03)}
-  #toolPanel.folded .sidePane{display:none}
-  #toolPanel.folded .sideTabs{border-right:0}
-  #toolPanel.folded .sideTab[aria-selected="true"]{background:none;border-left-color:transparent;color:var(--muted)}
-  #toolPanel.folded .sideTab:hover{color:var(--ink)}
-  .sidePane .paneHead{padding:9px 10px 5px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
-  .tGroup{border-bottom:1px solid var(--line)}
-  .tGroup h4{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);cursor:grab}
-  .tGroup h4 .caret{font-size:9px;transition:transform .12s;color:var(--faint)}
-  .tGroup.collapsed h4 .caret{transform:rotate(-90deg)}
-  .tGroup h4 .grip{margin-left:auto;color:var(--faint);font-size:11px;letter-spacing:1px}
-  .tGroup h4{white-space:nowrap;gap:4px;padding-right:6px;letter-spacing:.2px}   /* room for the (i): the name stays on one line */
-  .tGroup h4 .helpI{margin:0;padding:0 1px}
-  .tGroup.dragOver{outline:2px dashed var(--amber);outline-offset:-2px}
-  .tGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:2px 8px 10px}
-  .tGroup.collapsed .tGrid{display:none}
-  .tRows{padding:2px 10px 10px;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted)}
-  .tGroup.collapsed .tRows{display:none}
-  .tRows .crow{display:flex;align-items:center;gap:8px}
-  .tRows input[type=color]{width:34px;height:22px;padding:1px;border:1px solid var(--line);border-radius:4px;background:var(--panel-deep);cursor:pointer}
-  #toolPanel button.tool{width:100%;height:36px}
+  /* the ribbon across the top of the drawing (tool-panel.js): tabs, then the shown tab's tools in labelled sections */
+  #toolPanel{grid-row:2;grid-column:1/-1;position:relative;z-index:8;background:var(--panel);border-bottom:1px solid var(--line);user-select:none}
+  .rbTabs{display:flex;align-items:flex-end;gap:2px;padding:4px 8px 0;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+  .rbTab{border:1px solid transparent;border-bottom:0;background:none;border-radius:5px 5px 0 0;padding:6px 14px 7px;margin-bottom:-1px;color:var(--muted);
+         font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+  .rbTab:hover{color:var(--ink);border-color:transparent}
+  .rbTab[aria-selected="true"]{color:var(--ink);background:var(--panel-deep);border-color:var(--line);box-shadow:inset 0 2px 0 var(--amber)}
+  .rbGap{flex:1 0 8px}
+  .rbFold{flex:none;width:30px;height:28px;padding:0;margin-bottom:3px;background:none;border:1px solid transparent;color:var(--muted)}
+  .rbFold:hover{color:var(--ink);border-color:var(--line)}
+  .rbFold svg{display:block;margin:auto;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+  #toolPanel.folded .rbFold svg{transform:rotate(180deg)}
+  .rbPanes{background:var(--panel-deep)}
+  .rbPane{display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding:6px 4px 0}
+  .rbPane[hidden]{display:none}
+  .rbSec{display:flex;flex-direction:column;align-items:center;flex:none;padding:0 8px;border-right:1px solid var(--line)}
+  .rbSec:last-child{border-right:0}
+  .rbBtns{display:flex;gap:3px;flex:1;align-items:flex-start}
+  .rbCap{display:flex;align-items:center;gap:3px;padding:3px 0 4px;font-size:10.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+  .rbCap .helpI{margin:0;padding:0 1px}
+  #toolPanel button.tool{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;width:auto;min-width:50px;height:auto;min-height:50px;
+         padding:6px 4px 5px;border-color:transparent;background:none;font-family:var(--sans);font-weight:400}
+  #toolPanel button.tool:hover{background:var(--panel);border-color:var(--line)}
+  #toolPanel button.tool.active{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+  #toolPanel button.tool svg{margin:0;flex:none}
+  .rbName{font-size:10.5px;line-height:1.15;color:var(--muted);text-align:center;max-width:66px}
+  #toolPanel button.tool.active .rbName{color:var(--on-accent);font-weight:600}
+  #toolPanel button.tool:disabled .rbName{color:var(--faint)}
+  /* folded: only the tabs; a tab clicked shows its tools over the drawing for a moment */
+  #toolPanel.folded .rbPanes{display:none}
+  #toolPanel.folded .rbTab[aria-selected="true"]{background:none;border-color:transparent;box-shadow:none;color:var(--muted)}
+  #toolPanel.folded.peek .rbPanes{display:block;position:absolute;left:0;right:0;top:100%;border-bottom:1px solid var(--line);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  #toolPanel.folded.peek .rbTab[aria-selected="true"]{background:var(--panel-deep);border-color:var(--line);box-shadow:inset 0 2px 0 var(--amber);color:var(--ink)}
+  @media (prefers-reduced-motion:reduce){ .rbFold svg{transition:none} }
+  /* the right-hand panel's tabs: Toolpaths and Layers */
+  .rpTabs{display:flex;align-items:center;gap:2px;padding:6px 8px 0 6px;border-bottom:1px solid var(--line)}
+  .rpTab{border:0;border-radius:0;background:none;padding:6px 10px 7px;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.5px;
+         text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .rpTab:hover{color:var(--ink)}
+  .rpTab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--amber)}
+  .rpGap{flex:1}
+  #rpPaneTp[hidden],#rpPaneLayers[hidden]{display:none}
 
-  #canvasWrap{grid-row:2;grid-column:2;position:relative;min-width:0;min-height:0}
+  #canvasWrap{grid-row:3;grid-column:1;position:relative;min-width:0;min-height:0}
   #woodModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:220}
   #woodModal[hidden]{display:none}
   #woodPanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;width:min(1100px,calc(100vw - 48px));max-height:calc(100vh - 48px);display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
@@ -355,7 +367,7 @@
   .tpLib.ok{color:#7fb069} .tpLib.warn{color:#d98e3f} .tpLib.miss{color:var(--muted)}
   .tpCut{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
   #tpPanel .tpNote button{font-size:11.5px;padding:2px 8px;margin-top:6px}
-  #tpPanel{grid-row:2;grid-column:3;width:292px;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line)}
+  #tpPanel{grid-row:3;grid-column:2;width:292px;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line)}
   #tpPanel.collapsed{width:30px;overflow:hidden}
   #tpPanel.collapsed #tpBody{display:none}
   #tpStrip{display:none}
@@ -707,7 +719,7 @@
   #impPanel .row{display:flex;align-items:center;gap:8px;margin-bottom:9px}
   #impPanel input[type=checkbox],#impPanel input[type=radio]{accent-color:var(--amber);width:auto}
   #impPanel .note{color:var(--faint);font-size:12px;line-height:1.5;margin-top:4px}
-  footer{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:8px 16px;background:var(--panel);border-top:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  footer{grid-row:4;grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:8px 16px;background:var(--panel);border-top:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--muted)}
   footer b{color:var(--ink);font-weight:500}
   #hint{color:var(--faint);font-family:var(--sans)}
   #tpSheetBar{padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
@@ -1071,16 +1083,21 @@
       <button id="jsPrint" class="primary">Print&hellip;</button><button id="jsClose">Close</button></div>
     <div class="jsScroll"><article id="jobSheet"></article></div>
   </div>
-  <aside id="tpPanel" aria-label="Toolpaths">
+  <aside id="tpPanel" aria-label="Toolpaths and layers">
     <button id="tpStrip" aria-expanded="false" aria-controls="tpBody" title="Expand the toolpaths panel"><span class="chev">«</span><span>Toolpaths</span><span id="tpStripCount"></span></button>
     <div id="tpBody">
+    <div class="rpTabs" role="tablist" aria-label="Toolpaths and layers">
+      <button type="button" class="rpTab" role="tab" id="rpTabTp" aria-controls="rpPaneTp" aria-selected="true">Toolpaths</button>
+      <button type="button" class="rpTab" role="tab" id="rpTabLayers" aria-controls="rpPaneLayers" aria-selected="false" tabindex="-1">Layers</button>
+      <span class="rpGap"></span>
+      <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+    <div id="rpPaneTp" role="tabpanel" aria-labelledby="rpTabTp">
     <div class="tpHead"><b>Toolpaths</b>
       <button id="tpCheck" class="tpIcon" hidden aria-label="Check the drawing" title="Check: look over the drawing before cutting — open shapes, pieces, doubles, crossings, and shapes no toolpath cuts"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2l3.3 3.3M5.3 7l1.2 1.2 2.3-2.4"/></svg></button>
       <button id="tpRecalcAll" class="tpIcon" hidden aria-label="Recalculate all toolpaths" title="Recalculate all: rebuild every toolpath from its shapes and the material as they are now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg></button>
       <button id="tpFoldAll" class="tpIcon" hidden aria-label="Fold all toolpaths to their titles" title="Fold every toolpath to its title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
       <button id="tpAuto" class="tpIcon" hidden aria-label="Make toolpaths for the drawing" title="Make toolpaths: look at the drawing and propose toolpaths for it (holes, inside cuts, the parts), with a summary to check before anything is added"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l7-7M9 4l3 3"/><path d="M12 1.8v2.4M10.8 3h2.4M14 6.8v1.6M13.2 7.6h1.6M5.5 2.2v1.6M4.7 3h1.6"/></svg></button>
-      <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
-      <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+      <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button></div>
     <div id="tpActs" hidden role="toolbar" aria-label="Preview, job sheet and templates">
       <button id="tpWoodBtn" class="tpIcon" aria-label="Preview in wood" title="Preview in wood — the material as it will look after these toolpaths, cut by each bit’s real shape"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5L8 2.5l5.5 3v5L8 13.5l-5.5-3z"/><path d="M2.5 5.5L8 8.5l5.5-3M8 8.5v5"/></svg></button>
       <button id="tpControlBtn" class="tpIcon" aria-label="Preview in 454 Control" title="Preview in 454 Control — load exactly this G-code into 454 Control: its 3D preview and playback, time estimate and checks. Nothing is sent to the machine."><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.8" width="12" height="8.4" rx="1.2"/><path d="M6.9 5.2v3.6L10 7z"/><path d="M5.5 13.6h5"/></svg></button>
@@ -1107,6 +1124,12 @@
       <button id="tpSheetDel" class="tpIcon danger" hidden aria-label="Delete this sheet" title="Delete this sheet, with its shapes and toolpaths"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.2 4.5V3h3.6v1.5M4.4 4.5l.7 8.5h5.8l.7-8.5"/></svg></button></div>
     <div id="tpList"></div>
     <a id="tpDocs" href="docs/cam-reference.html" target="_blank" rel="noopener" style="display:block;padding:10px 12px;font-size:12px;color:var(--muted)">CAM reference &#8599;</a>
+    </div>
+    <div id="rpPaneLayers" role="tabpanel" aria-labelledby="rpTabLayers" hidden>
+      <div class="tpHead"><b>Layers</b></div>
+      <div id="layerList" role="list" aria-label="Layers"></div>
+      <button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>
+    </div>
     </div>
   <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
       <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>
@@ -1459,7 +1482,7 @@
 </script>
 <script>
 'use strict';
-var DESIGN_VERSION = '0.169.1'; // bump on every build — shown in the header
+var DESIGN_VERSION = '0.170.0'; // bump on every build — shown in the header
 /* ============================================================
    454 Design — geometry model
    Entities: {t:'line',x1,y1,x2,y2} {t:'circle',cx,cy,r}
@@ -8028,15 +8051,33 @@ function designHelpWhere(){
 // The info icons: where each goes (a heading), the part of the guides it opens, and the line or two it shows when
 // the pointer rests on it. Keep a tip to two sentences: it says what the section is for, the guide says the rest.
 var HELP_ICONS = [
-  // the tools, on the left
-  ['.tGroup[data-group="file"] > h4', 'design-tools.html#file', 'Start, open, import and save drawings, export them for other programs, undo and redo, fit the view and measure.'],
-  ['.tGroup[data-group="create"] > h4', 'design-tools.html#create-vectors', 'The drawing tools: lines, rectangles, circles, curves and text. Type a size while you draw to make it exact.'],
-  ['.tGroup[data-group="edit"] > h4', 'design-tools.html#edit-vectors', 'Change shapes you\u2019ve drawn: round corners, trim, offset, mirror and join them, and add dimensions that set their sizes.'],
-  ['.tGroup[data-group="align"] > h4', 'design-tools.html#align-and-nest', 'Line shapes up with each other or with the material, space them evenly, and nest parts to waste less wood.'],
-  ['.tGroup[data-group="guides"] > h4', 'design-tools.html#guides', 'Guide lines to draw against, and the outline of your machine\u2019s cutting area.'],
-  ['#paneLayers > .paneHead', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
+  // the tools, in the ribbon across the top: one for each section (RIBBON_TABS, move.js)
+  ['.rbSec[data-sec="home-file"] > .rbCap', 'design-tools.html#file', 'Start a new drawing, open one or a VCarve or Carbide Create project, import DXF, SVG or a picture, and save.'],
+  ['.rbSec[data-sec="home-export"] > .rbCap', 'design-tools.html#export-dxf', 'Save the drawing as DXF or SVG, for other programs, lasers and vinyl cutters.'],
+  ['.rbSec[data-sec="home-history"] > .rbCap', 'design-tools.html#undo', 'Step back through what you’ve done, and forward again.'],
+  ['.rbSec[data-sec="home-view"] > .rbCap', 'design-tools.html#fit', 'Fit the drawing to the window, and measure distances and gaps.'],
+  ['.rbSec[data-sec="draw-pick"] > .rbCap', 'design-tools.html#select--move', 'Pick shapes to move, copy or change them. Drag to move; click a picked shape again to rotate it.'],
+  ['.rbSec[data-sec="draw-shapes"] > .rbCap', 'design-tools.html#create-vectors', 'Lines, rectangles, circles, curves and more. Type a size while you draw, or set one in the tool’s panel, to make it exact.'],
+  ['.rbSec[data-sec="draw-text"] > .rbCap', 'design-tools.html#text', 'Words, in the font you choose, ready to V-carve or cut out.'],
+  ['.rbSec[data-sec="draw-dims"] > .rbCap', 'design-tools.html#dimension', 'Dimensions set sizes: type a new number and the shape follows. Name your sizes in Parameters to change many at once.'],
+  ['.rbSec[data-sec="modify-corners"] > .rbCap', 'design-tools.html#fillet', 'Round off corners, one at a time or every corner of a shape at once.'],
+  ['.rbSec[data-sec="modify-trim"] > .rbCap', 'design-tools.html#trim', 'Cut a shape back to where another crosses it, or run a line out until it meets one.'],
+  ['.rbSec[data-sec="modify-shape"] > .rbCap', 'design-tools.html#offset', 'Make a copy of an outline a set distance inside or outside it, or move its points one by one.'],
+  ['.rbSec[data-sec="modify-copy"] > .rbCap', 'design-tools.html#copy', 'Copy, mirror, flip, rotate and array shapes, each set up in its own panel with a preview.'],
+  ['.rbSec[data-sec="modify-combine"] > .rbCap', 'design-tools.html#weld', 'Join shapes into one outline, cut one out of another, or keep only where they overlap.'],
+  ['.rbSec[data-sec="modify-group"] > .rbCap', 'design-tools.html#group', 'Bundle shapes so they pick and move as one, and break them apart again.'],
+  ['.rbSec[data-sec="modify-mtext"] > .rbCap', 'design-tools.html#convert-to-curves', 'Turn text into ordinary shapes, or lay it along a curve.'],
+  ['.rbSec[data-sec="arrange-nest"] > .rbCap', 'design-tools.html#nest-parts', 'Pack parts onto the material to waste less wood.'],
+  ['.rbSec[data-sec="arrange-mat"] > .rbCap', 'design-tools.html#center-in-material', 'Move shapes to the middle of the material, across, up and down, or both.'],
+  ['.rbSec[data-sec="arrange-lineup"] > .rbCap', 'design-tools.html#center-on-last-picked', 'Line shapes up with the last one you picked: by their centers or their edges.'],
+  ['.rbSec[data-sec="arrange-same"] > .rbCap', 'design-tools.html#same-width-same-height-same-size', 'Make shapes as wide, as tall or as big as the last one you picked.'],
+  ['.rbSec[data-sec="arrange-space"] > .rbCap', 'design-tools.html#space-evenly-left-to-right-or-top-to-bottom', 'Space shapes evenly between the first and the last.'],
+  ['.rbSec[data-sec="arrange-keep"] > .rbCap', 'design-tools.html#keep-lined-up', 'With this on, shapes you line up stay lined up when you change the one they follow.'],
+  ['.rbSec[data-sec="guides-guides"] > .rbCap', 'design-tools.html#guides', 'Guide lines to draw against: they snap, and they never cut.'],
+  ['.rbSec[data-sec="guides-machine"] > .rbCap', 'design-tools.html#machine-area', 'Show your machine’s cutting area, to lay out the material and parts.'],
+  ['#rpPaneLayers > .tpHead > b', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
   // the toolpaths, on the right
-  ['#tpPanel .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
+  ['#rpPaneTp > .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
   ['#tpActs', 'cam-reference.html#order-checking-and-saving', 'Preview the job in wood or in 454 Control, print a job sheet, and save these toolpaths\u2019 settings as a template for another drawing.'],
   ['#tpSheetBar > label', 'design-workspace.html#sheets', 'Each sheet is its own piece of material, with its own shapes, toolpaths and G-code. One sheet is shown at a time.'],
   // the toolpath editor
@@ -20699,9 +20740,8 @@ function moveEntity(e, dx, dy){
   else if (e.t==='text'){ e.x+=dx; e.y+=dy; }
 }
 
-/* ---------------- configurable tool panel ----------------
-   Groups render from PANEL_GROUPS in the user's saved order; drag a group
-   header to reorder, click it to collapse. Both persist per-browser. */
+/* ---------------- the toolbar's buttons ----------------
+   Their icons, what each does (PANEL_BTNS), and where each sits in the ribbon (RIBBON_TABS, built in tool-panel.js). */
 var ICON = {
  svg:'<svg viewBox="0 0 18 18"><path d="M4.5 2h6.5l3 3v11h-9.5z"/><path d="M11 2v3h3"/><path d="M6.5 12.5c1.2-3.5 3.8-3.5 5 0"/></svg>',
  dxf:'<svg viewBox="0 0 18 18"><path d="M4.5 2h6.5l3 3v11h-9.5z"/><path d="M11 2v3h3"/><path d="M9.25 7.5v5.5M7 10.8l2.25 2.2 2.25-2.2"/></svg>',
@@ -20838,14 +20878,50 @@ var PANEL_BTNS = {
  svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
-var PANEL_GROUPS = [
- {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
- {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','filletAllT','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
- {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alConc','alSameW','alSameH','alSame','alKeep','alDistH','alDistV']},
- {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
- /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
+// The ribbon across the top of the drawing (tool-panel.js): its tabs, each in labelled sections, every button above
+// in one place. A section's name is what Design calls it on screen; its help is the guide's heading for it.
+var RIBBON_TABS = [
+ {id:'home', label:'Home', secs:[
+   {id:'file',    label:'File',    btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn'], help:'file'},
+   {id:'export',  label:'Export',  btns:['dxfBtn','svgBtn'], help:'export-dxf'},
+   {id:'history', label:'History', btns:['undoBtn','redoBtn'], help:'undo'},
+   {id:'view',    label:'View',    btns:['fitBtn2','measureT'], help:'fit'}]},
+ {id:'draw', label:'Draw', secs:[
+   {id:'pick',    label:'Pick',       btns:['select'], help:'select--move'},
+   {id:'shapes',  label:'Shapes',     btns:['line','rect','circle','ellipse','polygon','star','arc','poly'], help:'create-vectors'},
+   {id:'text',    label:'Text',       btns:['textT'], help:'text'},
+   {id:'dims',    label:'Dimensions', btns:['dimT','paramsBtn'], help:'dimension'}]},
+ {id:'modify', label:'Modify', secs:[
+   {id:'corners', label:'Corners',     btns:['fillet','filletAllT'], help:'fillet'},
+   {id:'trim',    label:'Trim',        btns:['trim','extend'], help:'trim'},
+   {id:'shape',   label:'Shape',       btns:['offsetT','nodeT'], help:'offset'},
+   {id:'copy',    label:'Copy & move', btns:['copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT'], help:'copy'},
+   {id:'combine', label:'Combine',     btns:['weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn'], help:'weld'},
+   {id:'group',   label:'Group',       btns:['groupBtn','ungroupBtn'], help:'group'},
+   {id:'mtext',   label:'Text',        btns:['curvesBtn','textCurveBtn'], help:'convert-to-curves'}]},
+ {id:'arrange', label:'Arrange', secs:[
+   {id:'nest',    label:'Nest',            btns:['nestBtn'], help:'nest-parts'},
+   {id:'mat',     label:'In the material', btns:['alMat','alMatX','alMatY'], help:'center-in-material'},
+   {id:'lineup',  label:'Line up',         btns:['alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alConc'], help:'center-on-last-picked'},
+   {id:'same',    label:'Same size',       btns:['alSameW','alSameH','alSame'], help:'same-width-same-height-same-size'},
+   {id:'space',   label:'Spacing',         btns:['alDistH','alDistV'], help:'space-evenly-left-to-right-or-top-to-bottom'},
+   {id:'keep',    label:'Keep',            btns:['alKeep'], help:'keep-lined-up'}]},
+ {id:'guides', label:'Guides', secs:[
+   {id:'guides',  label:'Guides',  btns:['guide','clearGuides'], help:'guides'},
+   {id:'machine', label:'Machine', btns:['machArea'], help:'machine-area'}]}
 ];
+// The short name under each button in the ribbon (its tooltip keeps the full title above)
+var RIBBON_NAMES = {
+ newBtn:'New', loadBtn:'Open', importBtn:'Import', recoverBtn:'Recover', saveBtn:'Save', saveAsBtn:'Save as', dxfBtn:'DXF', svgBtn:'SVG',
+ undoBtn:'Undo', redoBtn:'Redo', fitBtn2:'Fit', measureT:'Measure',
+ select:'Select', line:'Line', rect:'Rectangle', circle:'Circle', ellipse:'Ellipse', polygon:'Polygon', star:'Star', arc:'Arc', poly:'Polyline', textT:'Text',
+ fillet:'Fillet', filletAllT:'Fillet corners', trim:'Trim', extend:'Extend', offsetT:'Offset', nodeT:'Edit nodes', dimT:'Dimension', paramsBtn:'Parameters',
+ copyT:'Copy', mirrorT:'Mirror', flipHBtn:'Flip H', flipVBtn:'Flip V', rotateT:'Rotate', arrayT:'Array', groupBtn:'Group', ungroupBtn:'Ungroup',
+ weldBtn:'Weld', subtractBtn:'Subtract', intersectBtn:'Intersect', joinBtn:'Join', explodeBtn:'Explode', curvesBtn:'To curves', textCurveBtn:'Text on curve',
+ nestBtn:'Nest', alMat:'Center', alMatX:'Center L–R', alMatY:'Center T–B', alCenter:'Center on', alHCenter:'Centers L–R', alVCenter:'Centers T–B',
+ alLeft:'Left', alRight:'Right', alTop:'Top', alBottom:'Bottom', alConc:'Concentric', alSameW:'Width', alSameH:'Height', alSame:'Size',
+ alKeep:'Keep lined up', alDistH:'Space L–R', alDistV:'Space T–B', guide:'Guide', clearGuides:'Clear guides', machArea:'Machine area'
+};
 // Display colours. The defaults suit the dark theme; on the light one, a colour still at its default is drawn
 // in its light-theme partner instead (near-white shapes on a near-white canvas couldn't be seen). A colour
 // you picked is used as it is, on either theme.
@@ -20858,13 +20934,11 @@ function syncColorInputs(){
     if (inp) inp.value = dispCol(pair[1]);
   });
 }
-var UICFG = {order:null, collapsed:{}, colors:{vec:COL_DARK.vec, tp:COL_DARK.tp, con:COL_DARK.con, dim:COL_DARK.dim}, filletR:3, showDims:true};
+var UICFG = {colors:{vec:COL_DARK.vec, tp:COL_DARK.tp, con:COL_DARK.con, dim:COL_DARK.dim}, filletR:3, showDims:true};
 function uiCfgLoad(){
   try{
     var c = JSON.parse(localStorage.getItem('d454DesignUI') || localStorage.getItem('kerfDesignUI') || 'null');
     if (c){
-      UICFG.order = c.order || null;
-      UICFG.collapsed = c.collapsed || {};
       if (c.colors && c.colors.vec && c.colors.tp) UICFG.colors = c.colors;
       if (!UICFG.colors.con) UICFG.colors.con = COL_DARK.con;
       if (!UICFG.colors.dim) UICFG.colors.dim = COL_DARK.dim;
@@ -20882,8 +20956,9 @@ function uiCfgLoad(){
       if (c.stockUnits === 'in' || c.stockUnits === 'mm') UICFG.stockUnits = c.stockUnits;
       if (typeof c.tpPanel === 'boolean') UICFG.tpPanel = c.tpPanel;
       if (typeof c.histBar === 'boolean') UICFG.histBar = c.histBar;
-      if (typeof c.sidePanel === 'boolean') UICFG.sidePanel = c.sidePanel;
-      if (c.sideTab === 'layers' || c.sideTab === 'tools') UICFG.sideTab = c.sideTab;   // was saved, never read back
+      if (typeof c.ribbonTab === 'string') UICFG.ribbonTab = c.ribbonTab;          // checked where it's used (ribbonTabNow)
+      if (typeof c.ribbonFolded === 'boolean') UICFG.ribbonFolded = c.ribbonFolded;
+      if (c.rightTab === 'layers' || c.rightTab === 'toolpaths') UICFG.rightTab = c.rightTab;
       if (c.libMachine) UICFG.libMachine = c.libMachine;
       if (typeof c.libMaterial === 'string') UICFG.libMaterial = c.libMaterial;
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
@@ -20902,129 +20977,128 @@ function uiCfgLoad(){
 function uiCfgSave(){
   try{ localStorage.setItem('d454DesignUI', JSON.stringify(UICFG)); }catch(e){}
 }
-function orderedGroups(){
-  if (!UICFG.order) return PANEL_GROUPS.slice();
-  var byId = {}; PANEL_GROUPS.forEach(function(g){ byId[g.id] = g; });
-  var out = [];
-  UICFG.order.forEach(function(id){ if (byId[id]){ out.push(byId[id]); delete byId[id]; } });
-  PANEL_GROUPS.forEach(function(g){ if (byId[g.id]) out.push(g); }); // new groups append
-  return out;
-}
-// The left panel folded down to its Tools and Layers tabs, for more drawing room (as the Toolpaths panel folds to
-// a strip on the right). Remembered between visits. Picking a tab opens it again.
-function sidePanelSet(open){
-  UICFG.sidePanel = !!open;
+// The right-hand panel's two tabs: the toolpaths, or the layers (which were a tab of the left panel before the
+// ribbon). Remembered between visits. Picking a tab while the panel is folded opens it.
+function rightTab(name){
+  UICFG.rightTab = name === 'layers' ? 'layers' : 'toolpaths';
+  if (UICFG.tpPanel === false){ UICFG.tpPanel = true; if (typeof renderToolpathPanel === 'function') renderToolpathPanel(); }
   uiCfgSave();
-  sidePanelShow();
+  rightTabShow();
 }
-function sidePanelShow(){
-  var host = document.getElementById('toolPanel'), b = document.getElementById('sideFold');
-  if (!host) return;
-  var open = UICFG.sidePanel !== false;
-  host.classList.toggle('folded', !open);              // the canvas's size observer redraws it to fit
-  if (b){
-    b.textContent = open ? '«' : '»';
-    b.title = open ? 'Fold this panel away, for more drawing room' : 'Open this panel';
-    b.setAttribute('aria-label', open ? 'Fold the side panel away' : 'Open the side panel');
-    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+function rightTabShow(){
+  var lay = UICFG.rightTab === 'layers';
+  var tp = document.getElementById('rpPaneTp'), ly = document.getElementById('rpPaneLayers');
+  if (tp) tp.hidden = lay;
+  if (ly) ly.hidden = !lay;
+  [['rpTabTp', !lay], ['rpTabLayers', lay]].forEach(function (p) {
+    var b = document.getElementById(p[0]); if (!b) return;
+    b.setAttribute('aria-selected', p[1] ? 'true' : 'false'); b.tabIndex = p[1] ? 0 : -1;
+  });
+  if (lay && typeof renderLayers === 'function') renderLayers();
+}
+/* ---------------- the ribbon ----------------
+   The drawing tools in tabs across the top of the drawing (RIBBON_TABS, move.js), each tab in labelled sections, with
+   each tool's name under its icon (Clint, 2026-11-21, after a mock-up: "like Fusion and other CAD programs"). It folds
+   to its tabs for more drawing room: the arrow at the right, or a double-click on a tab. Folded, a tab clicked shows
+   its tools over the drawing until one is picked, or the pointer goes elsewhere, or Esc. The tab shown and the fold
+   are remembered. The buttons are the same as before (PANEL_BTNS: ids, data-tool, titles), so the keys, the Tools
+   menu and the tools themselves don't change. Layers are a tab of the right-hand panel (rightTab, ui-settings.js). */
+function buildToolPanel(){
+  var host = document.getElementById('toolPanel');
+  var tab = ribbonTabNow();
+  var tabs = '', panes = '';
+  RIBBON_TABS.forEach(function (t) {
+    var on = t.id === tab;
+    tabs += '<button type="button" class="rbTab" role="tab" id="rbTab-' + t.id + '" data-tab="' + t.id + '" aria-controls="rbPane-' + t.id + '"' +
+            ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + t.label + '</button>';
+    panes += '<div class="rbPane" role="tabpanel" id="rbPane-' + t.id + '" data-tab="' + t.id + '" aria-labelledby="rbTab-' + t.id + '"' + (on ? '' : ' hidden') + '>';
+    t.secs.forEach(function (s) {
+      panes += '<div class="rbSec" data-sec="' + t.id + '-' + s.id + '"><div class="rbBtns">';
+      s.btns.forEach(function (bid) {
+        var b = PANEL_BTNS[bid];
+        if (!b) return;
+        panes += '<button type="button" class="tool' + (b.active ? ' active' : '') + '"' +
+                 (b.tool ? ' data-tool="' + b.tool + '"' : '') + (b.id ? ' id="' + b.id + '"' : '') +
+                 ' title="' + b.title + '">' + ICON[b.icon] + '<span class="rbName">' + (RIBBON_NAMES[bid] || '') + '</span></button>';
+      });
+      panes += '</div><div class="rbCap">' + s.label + '</div></div>';
+    });
+    panes += '</div>';
+  });
+  host.innerHTML =
+    '<div class="rbTabs" role="tablist" aria-label="Drawing tools">' + tabs +
+      '<span class="rbGap"></span><button type="button" id="rbFold" class="rbFold" aria-controls="rbPanes">' +
+      '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 9 L7 5 L11 9"/></svg></button></div>' +
+    '<div class="rbPanes" id="rbPanes">' + panes + '</div>';
+  if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each section's name
+  ribbonShow();
+  host.querySelectorAll('.rbTab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var same = b.dataset.tab === ribbonTabNow();
+      ribbonTab(b.dataset.tab);
+      if (UICFG.ribbonFolded) ribbonPeek(!(same && host.classList.contains('peek')));
+    });
+    b.addEventListener('dblclick', function () { ribbonFold(!UICFG.ribbonFolded); });
+    b.addEventListener('keydown', function (e) {                // arrow keys move between tabs
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var ids = RIBBON_TABS.map(function (t) { return t.id; }), i = ids.indexOf(ribbonTabNow());
+      var next = ids[(i + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length];
+      ribbonTab(next);
+      document.getElementById('rbTab-' + next).focus();
+    });
+  });
+  document.getElementById('rbFold').addEventListener('click', function () { ribbonFold(!UICFG.ribbonFolded); });
+  // a tool picked from the ribbon while it's folded: the tools go away again
+  document.getElementById('rbPanes').addEventListener('click', function (e) { if (e.target.closest('button.tool')) ribbonPeek(false); });
+  if (!buildToolPanel.wired){                               // the page's own listeners, once
+    buildToolPanel.wired = true;
+    document.addEventListener('pointerdown', function (e) {
+      var h = document.getElementById('toolPanel');
+      if (h && h.classList.contains('peek') && !h.contains(e.target)) ribbonPeek(false);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ribbonPeek(false); });
   }
 }
-// Which side-panel tab is showing: the drawing tools, or the layers. Remembered between visits.
-function sideTab(name){
-  UICFG.sideTab = name === 'layers' ? 'layers' : 'tools';
-  if (UICFG.sidePanel === false){ UICFG.sidePanel = true; sidePanelShow(); }   // a tab picked while folded opens it
+function ribbonTabNow(){
+  var id = UICFG.ribbonTab;
+  return RIBBON_TABS.some(function (t) { return t.id === id; }) ? id : 'draw';   // Draw the first time
+}
+// Show a tab's tools; remembered
+function ribbonTab(id){
+  if (!RIBBON_TABS.some(function (t) { return t.id === id; })) return;
+  UICFG.ribbonTab = id;
   uiCfgSave();
-  var tools = document.getElementById('paneTools'), layers = document.getElementById('paneLayers');
-  if (tools) tools.hidden = UICFG.sideTab !== 'tools';
-  if (layers) layers.hidden = UICFG.sideTab !== 'layers';
-  ['sideTabTools', 'sideTabLayers'].forEach(function (id) {
-    var b = document.getElementById(id); if (!b) return;
-    var on = (id === 'sideTabLayers') === (UICFG.sideTab === 'layers');
+  ribbonShow();
+}
+// Fold the ribbon to its tabs, or open it again; remembered
+function ribbonFold(folded){
+  UICFG.ribbonFolded = !!folded;
+  uiCfgSave();
+  ribbonPeek(false);
+  ribbonShow();
+}
+// Folded: a tab's tools shown over the drawing for a moment
+function ribbonPeek(on){
+  var host = document.getElementById('toolPanel');
+  if (host) host.classList.toggle('peek', !!on && !!UICFG.ribbonFolded);
+}
+function ribbonShow(){
+  var host = document.getElementById('toolPanel');
+  if (!host) return;
+  var tab = ribbonTabNow(), folded = !!UICFG.ribbonFolded;
+  host.classList.toggle('folded', folded);              // the canvas's size observer redraws it to fit
+  host.querySelectorAll('.rbTab').forEach(function (b) {
+    var on = b.dataset.tab === tab;
     b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
   });
-  if (UICFG.sideTab === 'layers' && typeof renderLayers === 'function') renderLayers();
-}
-function buildToolPanel(){
-  setTimeout(function(){
-    var add = document.getElementById('layerAdd');
-    if (add && !add.wired){ add.wired = true; add.addEventListener('click', function(){ pushUndo(); layersInit(); DOC.activeLayer = layerNew(); persist(); renderLayers(); }); }
-    if (typeof renderLayers === 'function') renderLayers();
-  }, 0);
-  var host = document.getElementById('toolPanel');
-  var html = '';
-  orderedGroups().forEach(function(g){
-    html += '<div class="tGroup' + (UICFG.collapsed[g.id] ? ' collapsed' : '') + '" data-group="' + g.id + '">' +
-            '<h4 draggable="true"><span class="caret">\u25bc</span>' + g.label + '<span class="grip">\u22ee\u22ee</span></h4>';
-    if (g.html){ html += '<div class="tRows">' + g.html + '</div></div>'; return; }
-    html += '<div class="tGrid">';
-    (g.btns || []).forEach(function(bid){
-      var b = PANEL_BTNS[bid];
-      if (!b) return;
-      html += '<button class="tool' + (b.active ? ' active' : '') + '"' +
-              (b.tool ? ' data-tool="' + b.tool + '"' : '') +
-              (b.id ? ' id="' + b.id + '"' : '') +
-              ' title="' + b.title + '">' + ICON[b.icon] + '</button>';
-    });
-    html += '</div></div>';
-  });
-  var tab = UICFG.sideTab === 'layers' ? 'layers' : 'tools';
-  host.innerHTML =
-    '<div class="sideTabs" role="tablist" aria-orientation="vertical" aria-label="Side panel">' +
-      '<button class="sideTab" role="tab" id="sideTabTools" data-tab="tools" aria-controls="paneTools" aria-selected="' + (tab === 'tools') + '" tabindex="' + (tab === 'tools' ? 0 : -1) + '">Tools</button>' +
-      '<button class="sideTab" role="tab" id="sideTabLayers" data-tab="layers" aria-controls="paneLayers" aria-selected="' + (tab === 'layers') + '" tabindex="' + (tab === 'layers' ? 0 : -1) + '">Layers</button>' +
-      '<button id="sideFold" class="sideFold" aria-controls="paneTools paneLayers"></button>' +
-    '</div>' +
-    '<div class="sidePane" id="paneTools" role="tabpanel" aria-labelledby="sideTabTools"' + (tab === 'tools' ? '' : ' hidden') + '>' + html + '</div>' +
-    '<div class="sidePane" id="paneLayers" role="tabpanel" aria-labelledby="sideTabLayers"' + (tab === 'layers' ? '' : ' hidden') + '>' +
-      '<div class="paneHead">Layers</div>' +
-      '<div id="layerList" role="list" aria-label="Layers"></div>' +
-      '<button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>' +
-    '</div>';
-  if (typeof helpIconsApply === 'function') helpIconsApply();   // the (i) beside each group's name: this panel is redrawn when groups are moved
-  sidePanelShow();
-  document.getElementById('sideFold').addEventListener('click', function(){ sidePanelSet(UICFG.sidePanel === false); });
-  host.querySelectorAll('.sideTab').forEach(function(t){
-    t.addEventListener('click', function(){ sideTab(t.dataset.tab); });
-    t.addEventListener('keydown', function(e){                  // arrow keys move between tabs
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-      e.preventDefault();
-      var next = t.dataset.tab === 'tools' ? 'layers' : 'tools';
-      sideTab(next);
-      var el = document.getElementById(next === 'tools' ? 'sideTabTools' : 'sideTabLayers'); if (el) el.focus();
-    });
-  });
-
-  // collapse on header click; drag headers to reorder groups
-  var dragging = null;
-  host.querySelectorAll('.tGroup h4').forEach(function(h){
-    var grp = h.parentElement;
-    h.addEventListener('click', function(){
-      var id = grp.dataset.group;
-      UICFG.collapsed[id] = !UICFG.collapsed[id];
-      grp.classList.toggle('collapsed', UICFG.collapsed[id]);
-      uiCfgSave();
-    });
-    h.addEventListener('dragstart', function(e){
-      dragging = grp.dataset.group;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', 'kerf-group:' + grp.dataset.group);
-    });
-  });
-  host.querySelectorAll('.tGroup').forEach(function(grp){
-    grp.addEventListener('dragover', function(e){ e.preventDefault(); grp.classList.add('dragOver'); });
-    grp.addEventListener('dragleave', function(){ grp.classList.remove('dragOver'); });
-    grp.addEventListener('drop', function(e){
-      e.preventDefault(); grp.classList.remove('dragOver');
-      if (!dragging || dragging === grp.dataset.group) return;
-      var order = orderedGroups().map(function(g){ return g.id; });
-      order.splice(order.indexOf(dragging), 1);
-      order.splice(order.indexOf(grp.dataset.group), 0, dragging);
-      UICFG.order = order;
-      uiCfgSave();
-      buildToolPanel();     // rebuild in the new order
-      wirePanel();          // re-attach button handlers
-    });
-  });
+  host.querySelectorAll('.rbPane').forEach(function (p) { p.hidden = p.dataset.tab !== tab; });
+  var f = document.getElementById('rbFold');
+  if (f){
+    f.title = folded ? 'Open the ribbon again' : 'Fold the ribbon away, for more drawing room (or double-click a tab)';
+    f.setAttribute('aria-label', folded ? 'Open the ribbon' : 'Fold the ribbon away');
+    f.setAttribute('aria-expanded', folded ? 'false' : 'true');
+  }
 }
 
 /* ---------------- wiring ---------------- */
@@ -21577,7 +21651,22 @@ function wire(){
   document.getElementById('tplApplyBtn').addEventListener('click', tplOpen);
   document.getElementById('tpCollapse').addEventListener('click', function(){ UICFG.tpPanel = false; uiCfgSave(); renderToolpathPanel(); });
   document.getElementById('tpStrip').addEventListener('click', function(){ UICFG.tpPanel = true; uiCfgSave(); renderToolpathPanel(); });
+  // the right-hand panel's tabs: Toolpaths and Layers (arrow keys move between them)
+  [['rpTabTp', 'toolpaths'], ['rpTabLayers', 'layers']].forEach(function (p) {
+    var b = document.getElementById(p[0]);
+    b.addEventListener('click', function () { rightTab(p[1]); });
+    b.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var next = UICFG.rightTab === 'layers' ? 'toolpaths' : 'layers';
+      rightTab(next);
+      document.getElementById(next === 'layers' ? 'rpTabLayers' : 'rpTabTp').focus();
+    });
+  });
+  document.getElementById('layerAdd').addEventListener('click', function(){ pushUndo(); layersInit(); DOC.activeLayer = layerNew(); persist(); renderLayers(); });
   renderToolpathPanel();
+  rightTabShow();
+  setTimeout(function(){ renderLayers(); }, 0);   // the layers are set up as Design starts, whichever tab is shown (as the left panel did)
   // ---- nesting dialog ----
   document.getElementById('nestCancel').addEventListener('click', closeNestDialog);
   document.getElementById('nestGo').addEventListener('click', runNestDialog);

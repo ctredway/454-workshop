@@ -27,15 +27,33 @@ function designHelpWhere(){
 // The info icons: where each goes (a heading), the part of the guides it opens, and the line or two it shows when
 // the pointer rests on it. Keep a tip to two sentences: it says what the section is for, the guide says the rest.
 var HELP_ICONS = [
-  // the tools, on the left
-  ['.tGroup[data-group="file"] > h4', 'design-tools.html#file', 'Start, open, import and save drawings, export them for other programs, undo and redo, fit the view and measure.'],
-  ['.tGroup[data-group="create"] > h4', 'design-tools.html#create-vectors', 'The drawing tools: lines, rectangles, circles, curves and text. Type a size while you draw to make it exact.'],
-  ['.tGroup[data-group="edit"] > h4', 'design-tools.html#edit-vectors', 'Change shapes you\u2019ve drawn: round corners, trim, offset, mirror and join them, and add dimensions that set their sizes.'],
-  ['.tGroup[data-group="align"] > h4', 'design-tools.html#align-and-nest', 'Line shapes up with each other or with the material, space them evenly, and nest parts to waste less wood.'],
-  ['.tGroup[data-group="guides"] > h4', 'design-tools.html#guides', 'Guide lines to draw against, and the outline of your machine\u2019s cutting area.'],
-  ['#paneLayers > .paneHead', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
+  // the tools, in the ribbon across the top: one for each section (RIBBON_TABS, move.js)
+  ['.rbSec[data-sec="home-file"] > .rbCap', 'design-tools.html#file', 'Start a new drawing, open one or a VCarve or Carbide Create project, import DXF, SVG or a picture, and save.'],
+  ['.rbSec[data-sec="home-export"] > .rbCap', 'design-tools.html#export-dxf', 'Save the drawing as DXF or SVG, for other programs, lasers and vinyl cutters.'],
+  ['.rbSec[data-sec="home-history"] > .rbCap', 'design-tools.html#undo', 'Step back through what you’ve done, and forward again.'],
+  ['.rbSec[data-sec="home-view"] > .rbCap', 'design-tools.html#fit', 'Fit the drawing to the window, and measure distances and gaps.'],
+  ['.rbSec[data-sec="draw-pick"] > .rbCap', 'design-tools.html#select--move', 'Pick shapes to move, copy or change them. Drag to move; click a picked shape again to rotate it.'],
+  ['.rbSec[data-sec="draw-shapes"] > .rbCap', 'design-tools.html#create-vectors', 'Lines, rectangles, circles, curves and more. Type a size while you draw, or set one in the tool’s panel, to make it exact.'],
+  ['.rbSec[data-sec="draw-text"] > .rbCap', 'design-tools.html#text', 'Words, in the font you choose, ready to V-carve or cut out.'],
+  ['.rbSec[data-sec="draw-dims"] > .rbCap', 'design-tools.html#dimension', 'Dimensions set sizes: type a new number and the shape follows. Name your sizes in Parameters to change many at once.'],
+  ['.rbSec[data-sec="modify-corners"] > .rbCap', 'design-tools.html#fillet', 'Round off corners, one at a time or every corner of a shape at once.'],
+  ['.rbSec[data-sec="modify-trim"] > .rbCap', 'design-tools.html#trim', 'Cut a shape back to where another crosses it, or run a line out until it meets one.'],
+  ['.rbSec[data-sec="modify-shape"] > .rbCap', 'design-tools.html#offset', 'Make a copy of an outline a set distance inside or outside it, or move its points one by one.'],
+  ['.rbSec[data-sec="modify-copy"] > .rbCap', 'design-tools.html#copy', 'Copy, mirror, flip, rotate and array shapes, each set up in its own panel with a preview.'],
+  ['.rbSec[data-sec="modify-combine"] > .rbCap', 'design-tools.html#weld', 'Join shapes into one outline, cut one out of another, or keep only where they overlap.'],
+  ['.rbSec[data-sec="modify-group"] > .rbCap', 'design-tools.html#group', 'Bundle shapes so they pick and move as one, and break them apart again.'],
+  ['.rbSec[data-sec="modify-mtext"] > .rbCap', 'design-tools.html#convert-to-curves', 'Turn text into ordinary shapes, or lay it along a curve.'],
+  ['.rbSec[data-sec="arrange-nest"] > .rbCap', 'design-tools.html#nest-parts', 'Pack parts onto the material to waste less wood.'],
+  ['.rbSec[data-sec="arrange-mat"] > .rbCap', 'design-tools.html#center-in-material', 'Move shapes to the middle of the material, across, up and down, or both.'],
+  ['.rbSec[data-sec="arrange-lineup"] > .rbCap', 'design-tools.html#center-on-last-picked', 'Line shapes up with the last one you picked: by their centers or their edges.'],
+  ['.rbSec[data-sec="arrange-same"] > .rbCap', 'design-tools.html#same-width-same-height-same-size', 'Make shapes as wide, as tall or as big as the last one you picked.'],
+  ['.rbSec[data-sec="arrange-space"] > .rbCap', 'design-tools.html#space-evenly-left-to-right-or-top-to-bottom', 'Space shapes evenly between the first and the last.'],
+  ['.rbSec[data-sec="arrange-keep"] > .rbCap', 'design-tools.html#keep-lined-up', 'With this on, shapes you line up stay lined up when you change the one they follow.'],
+  ['.rbSec[data-sec="guides-guides"] > .rbCap', 'design-tools.html#guides', 'Guide lines to draw against: they snap, and they never cut.'],
+  ['.rbSec[data-sec="guides-machine"] > .rbCap', 'design-tools.html#machine-area', 'Show your machine’s cutting area, to lay out the material and parts.'],
+  ['#rpPaneLayers > .tpHead > b', 'design-workspace.html#layers', 'Layers keep groups of shapes apart, so you can hide or lock some while you work on others. New shapes go on the active layer.'],
   // the toolpaths, on the right
-  ['#tpPanel .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
+  ['#rpPaneTp > .tpHead > b', 'design-workspace.html#the-toolpaths-panel', 'Each toolpath is one cut: a tool, a depth and the shapes it follows. They are cut in order, from the top of this list down.'],
   ['#tpActs', 'cam-reference.html#order-checking-and-saving', 'Preview the job in wood or in 454 Control, print a job sheet, and save these toolpaths\u2019 settings as a template for another drawing.'],
   ['#tpSheetBar > label', 'design-workspace.html#sheets', 'Each sheet is its own piece of material, with its own shapes, toolpaths and G-code. One sheet is shown at a time.'],
   // the toolpath editor

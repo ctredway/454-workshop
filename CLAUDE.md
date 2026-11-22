@@ -124,6 +124,11 @@ without a published release looks to them like a newest release with nothing in 
   answers `'text'` and `main.js` does the box's own cut, copy, paste, delete or select all. Design's Tools items are
   `'tb:'` and a toolbar button's name in `PANEL_BTNS`; a test holds the menu to the toolbar, so a new tool on the
   toolbar must be added to the menu too. Clint chose Tools over a longer Edit menu (2026-10-20).
+- **Design's tools are in a ribbon across the top** (Design 0.170.0, Clint 2026-11-21, chosen from a clickable mock-up): tabs
+  Home, Draw, Modify, Arrange, Guides, each in labelled sections with the tool's name under its icon and an (i) per section;
+  it folds to its tabs. A new toolbar button goes in `PANEL_BTNS`, a section of `RIBBON_TABS` and `RIBBON_NAMES` (move.js),
+  and its section's help row in `HELP_ICONS`; `ribbon.test.mjs` checks every button is there once. Layers are a tab of the
+  right-hand panel, beside Toolpaths (`rightTab`).
 - **Nothing interrupts a job.** A new version shows as a notice in Control's and Design's headers
   (`apps/desktop/src/renderer/update-badge.js`), never a window; **Restart to update** is refused while
   454 Control's `machineBusy()` is true. The menu's Check for updates… asks in windows, which wait for it.

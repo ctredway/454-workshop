@@ -10,13 +10,11 @@ function syncColorInputs(){
     if (inp) inp.value = dispCol(pair[1]);
   });
 }
-var UICFG = {order:null, collapsed:{}, colors:{vec:COL_DARK.vec, tp:COL_DARK.tp, con:COL_DARK.con, dim:COL_DARK.dim}, filletR:3, showDims:true};
+var UICFG = {colors:{vec:COL_DARK.vec, tp:COL_DARK.tp, con:COL_DARK.con, dim:COL_DARK.dim}, filletR:3, showDims:true};
 function uiCfgLoad(){
   try{
     var c = JSON.parse(localStorage.getItem('d454DesignUI') || localStorage.getItem('kerfDesignUI') || 'null');
     if (c){
-      UICFG.order = c.order || null;
-      UICFG.collapsed = c.collapsed || {};
       if (c.colors && c.colors.vec && c.colors.tp) UICFG.colors = c.colors;
       if (!UICFG.colors.con) UICFG.colors.con = COL_DARK.con;
       if (!UICFG.colors.dim) UICFG.colors.dim = COL_DARK.dim;
@@ -34,8 +32,9 @@ function uiCfgLoad(){
       if (c.stockUnits === 'in' || c.stockUnits === 'mm') UICFG.stockUnits = c.stockUnits;
       if (typeof c.tpPanel === 'boolean') UICFG.tpPanel = c.tpPanel;
       if (typeof c.histBar === 'boolean') UICFG.histBar = c.histBar;
-      if (typeof c.sidePanel === 'boolean') UICFG.sidePanel = c.sidePanel;
-      if (c.sideTab === 'layers' || c.sideTab === 'tools') UICFG.sideTab = c.sideTab;   // was saved, never read back
+      if (typeof c.ribbonTab === 'string') UICFG.ribbonTab = c.ribbonTab;          // checked where it's used (ribbonTabNow)
+      if (typeof c.ribbonFolded === 'boolean') UICFG.ribbonFolded = c.ribbonFolded;
+      if (c.rightTab === 'layers' || c.rightTab === 'toolpaths') UICFG.rightTab = c.rightTab;
       if (c.libMachine) UICFG.libMachine = c.libMachine;
       if (typeof c.libMaterial === 'string') UICFG.libMaterial = c.libMaterial;
       if (c.lastTextH > 0) UICFG.lastTextH = c.lastTextH;
@@ -54,45 +53,22 @@ function uiCfgLoad(){
 function uiCfgSave(){
   try{ localStorage.setItem('d454DesignUI', JSON.stringify(UICFG)); }catch(e){}
 }
-function orderedGroups(){
-  if (!UICFG.order) return PANEL_GROUPS.slice();
-  var byId = {}; PANEL_GROUPS.forEach(function(g){ byId[g.id] = g; });
-  var out = [];
-  UICFG.order.forEach(function(id){ if (byId[id]){ out.push(byId[id]); delete byId[id]; } });
-  PANEL_GROUPS.forEach(function(g){ if (byId[g.id]) out.push(g); }); // new groups append
-  return out;
-}
-// The left panel folded down to its Tools and Layers tabs, for more drawing room (as the Toolpaths panel folds to
-// a strip on the right). Remembered between visits. Picking a tab opens it again.
-function sidePanelSet(open){
-  UICFG.sidePanel = !!open;
+// The right-hand panel's two tabs: the toolpaths, or the layers (which were a tab of the left panel before the
+// ribbon). Remembered between visits. Picking a tab while the panel is folded opens it.
+function rightTab(name){
+  UICFG.rightTab = name === 'layers' ? 'layers' : 'toolpaths';
+  if (UICFG.tpPanel === false){ UICFG.tpPanel = true; if (typeof renderToolpathPanel === 'function') renderToolpathPanel(); }
   uiCfgSave();
-  sidePanelShow();
+  rightTabShow();
 }
-function sidePanelShow(){
-  var host = document.getElementById('toolPanel'), b = document.getElementById('sideFold');
-  if (!host) return;
-  var open = UICFG.sidePanel !== false;
-  host.classList.toggle('folded', !open);              // the canvas's size observer redraws it to fit
-  if (b){
-    b.textContent = open ? '«' : '»';
-    b.title = open ? 'Fold this panel away, for more drawing room' : 'Open this panel';
-    b.setAttribute('aria-label', open ? 'Fold the side panel away' : 'Open the side panel');
-    b.setAttribute('aria-expanded', open ? 'true' : 'false');
-  }
-}
-// Which side-panel tab is showing: the drawing tools, or the layers. Remembered between visits.
-function sideTab(name){
-  UICFG.sideTab = name === 'layers' ? 'layers' : 'tools';
-  if (UICFG.sidePanel === false){ UICFG.sidePanel = true; sidePanelShow(); }   // a tab picked while folded opens it
-  uiCfgSave();
-  var tools = document.getElementById('paneTools'), layers = document.getElementById('paneLayers');
-  if (tools) tools.hidden = UICFG.sideTab !== 'tools';
-  if (layers) layers.hidden = UICFG.sideTab !== 'layers';
-  ['sideTabTools', 'sideTabLayers'].forEach(function (id) {
-    var b = document.getElementById(id); if (!b) return;
-    var on = (id === 'sideTabLayers') === (UICFG.sideTab === 'layers');
-    b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
+function rightTabShow(){
+  var lay = UICFG.rightTab === 'layers';
+  var tp = document.getElementById('rpPaneTp'), ly = document.getElementById('rpPaneLayers');
+  if (tp) tp.hidden = lay;
+  if (ly) ly.hidden = !lay;
+  [['rpTabTp', !lay], ['rpTabLayers', lay]].forEach(function (p) {
+    var b = document.getElementById(p[0]); if (!b) return;
+    b.setAttribute('aria-selected', p[1] ? 'true' : 'false'); b.tabIndex = p[1] ? 0 : -1;
   });
-  if (UICFG.sideTab === 'layers' && typeof renderLayers === 'function') renderLayers();
+  if (lay && typeof renderLayers === 'function') renderLayers();
 }

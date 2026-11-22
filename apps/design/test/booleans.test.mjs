@@ -72,7 +72,10 @@ test('Weld: a shape that meets nothing stays exactly as it was', () => {
   const { r, ents, sel } = apply(D, [{t:'rect', x:0, y:0, w:40, h:20}, lone, {t:'rect', x:30, y:10, w:20, h:20}], [0, 1, 2], 'weld');
   assert.equal(r.ok, true);
   assert.equal(ents.length, 2);
-  assert.deepEqual(ents[0], lone, 'untouched');
+  // untouched: only put on the active layer, as every shape is (layers are set up as Design starts)
+  const { layer, ...rest } = ents[0];
+  assert.deepEqual(rest, lone, 'untouched');
+  assert.equal(layer, D.run('DOC.activeLayer'));
   assert.deepEqual(sel, [1]);
 });
 test('Weld: nothing overlapping, nothing changes, and it says why', () => {

@@ -366,7 +366,22 @@ function wire(){
   document.getElementById('tplApplyBtn').addEventListener('click', tplOpen);
   document.getElementById('tpCollapse').addEventListener('click', function(){ UICFG.tpPanel = false; uiCfgSave(); renderToolpathPanel(); });
   document.getElementById('tpStrip').addEventListener('click', function(){ UICFG.tpPanel = true; uiCfgSave(); renderToolpathPanel(); });
+  // the right-hand panel's tabs: Toolpaths and Layers (arrow keys move between them)
+  [['rpTabTp', 'toolpaths'], ['rpTabLayers', 'layers']].forEach(function (p) {
+    var b = document.getElementById(p[0]);
+    b.addEventListener('click', function () { rightTab(p[1]); });
+    b.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var next = UICFG.rightTab === 'layers' ? 'toolpaths' : 'layers';
+      rightTab(next);
+      document.getElementById(next === 'layers' ? 'rpTabLayers' : 'rpTabTp').focus();
+    });
+  });
+  document.getElementById('layerAdd').addEventListener('click', function(){ pushUndo(); layersInit(); DOC.activeLayer = layerNew(); persist(); renderLayers(); });
   renderToolpathPanel();
+  rightTabShow();
+  setTimeout(function(){ renderLayers(); }, 0);   // the layers are set up as Design starts, whichever tab is shown (as the left panel did)
   // ---- nesting dialog ----
   document.getElementById('nestCancel').addEventListener('click', closeNestDialog);
   document.getElementById('nestGo').addEventListener('click', runNestDialog);

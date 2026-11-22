@@ -1525,6 +1525,18 @@ The controller is the authority on the machine, so anything it reports is used r
 
 ## 454 Design
 
+### 0.170.0 — the tools in a ribbon across the top
+Clint, 2026-11-21: "rethink the drawing tools UI ... a floating bar with sections like Fusion and some other CAD
+programs have", with tabs, foldable; after trying a clickable mock-up he chose names under the icons. The left
+panel is gone: the tools are in five tabs across the top of the drawing (Home, Draw, Modify, Arrange, Guides), each in
+labelled sections (Shapes, Corners, Copy & move, Line up...) with the tool's name under its icon and an (i) on each
+section that opens the guide at it. The arrow at the right, or a double-click on a tab, folds it to its tabs; folded, a
+tab clicked shows its tools over the drawing until one is picked. The tab and the fold are remembered, Draw the first
+time. The drawing gets the full width the panel took. The Layers moved to a tab of the right-hand panel, beside
+Toolpaths. The buttons are the same ones (ids, titles, keys, the Tools menu), so the tools don't change
+(`RIBBON_TABS` in move.js, tool-panel.js, `rightTab` in ui-settings.js; test ribbon.test.mjs, which replaces
+side-fold.test.mjs). The group order and folded groups the left panel remembered are no longer used.
+
 ### 0.169.1 — copies an Array step makes past its first count keep their ids
 Clint, 2026-10-26 ("go ahead and fix it"). After an Array step's count was raised on the History bar, the copies past
 the count it was made with got new ids each time the steps were done again. A dimension or toolpath on one of them

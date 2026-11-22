@@ -276,7 +276,7 @@ test('resting the pointer on an icon, or tabbing to it, shows its tip; leaving h
 });
 test('clicking an icon opens the help at its section, and the heading it sits in doesn’t act on the click', async () => {
   guides();
-  const sel = '.tGroup[data-group="create"] > h4', b = icon(sel), group = D.document.querySelector('.tGroup[data-group="create"]');
+  const sel = '.rbSec[data-sec="draw-shapes"] > .rbCap', b = icon(sel), group = D.document.querySelector('.rbSec[data-sec="draw-shapes"]');
   let heard = 0;
   const count = () => { heard++; };
   D.document.querySelector(sel).addEventListener('click', count);
@@ -286,7 +286,7 @@ test('clicking an icon opens the help at its section, and the heading it sits in
   send(b, 'mousedown'); send(b, 'click');
   D.document.querySelector(sel).removeEventListener('click', count);
   D.document.querySelector(sel).removeEventListener('mousedown', count);
-  assert.equal(heard, 0, 'the group’s name didn’t hear it: nothing folds or starts to drag');
+  assert.equal(heard, 0, 'the section’s name didn’t hear it');
   assert.equal(group.className, was);
   assert.equal(D.helpIsOpen(), true);
   assert.deepEqual([D.HELP.page, D.HELP.sec], ['design-tools.html', 'create-vectors']);
@@ -308,9 +308,10 @@ test('a heading whose words change keeps its icon', () => {
   const code = fs.readdirSync(new URL('../src/js/', import.meta.url)).map((f) => fs.readFileSync(new URL('../src/js/' + f, import.meta.url), 'utf8')).join('\n');
   for (const id of ids) assert.ok(!code.includes("getElementById('" + id + "').textContent ="), id + ' is set through helpHeading');
 });
-test('the tool panel is redrawn when its groups are moved: the icons come back', () => {
+test('the ribbon is built again: every section’s icon comes back, and the Layers heading keeps its own', () => {
   D.buildToolPanel();
-  for (const g of ['file', 'create', 'edit', 'align', 'guides']) assert.ok(icon('.tGroup[data-group="' + g + '"] > h4'), g);
-  assert.ok(icon('#paneLayers > .paneHead'));
+  for (const t of plain(D.run('RIBBON_TABS'))) for (const sec of t.secs) assert.ok(icon('.rbSec[data-sec="' + t.id + '-' + sec.id + '"] > .rbCap'), t.id + '-' + sec.id);
+  assert.ok(icon('#rpPaneLayers > .tpHead > b'));
+  assert.equal(D.document.querySelectorAll('#rpPaneLayers .helpI').length, 1, 'only the Layers icon there, not the Toolpaths one too');
   assert.equal(D.document.querySelectorAll('.helpI').length, ICONS().length);
 });

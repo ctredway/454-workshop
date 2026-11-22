@@ -330,16 +330,21 @@
       <button id="jsPrint" class="primary">Print&hellip;</button><button id="jsClose">Close</button></div>
     <div class="jsScroll"><article id="jobSheet"></article></div>
   </div>
-  <aside id="tpPanel" aria-label="Toolpaths">
+  <aside id="tpPanel" aria-label="Toolpaths and layers">
     <button id="tpStrip" aria-expanded="false" aria-controls="tpBody" title="Expand the toolpaths panel"><span class="chev">«</span><span>Toolpaths</span><span id="tpStripCount"></span></button>
     <div id="tpBody">
+    <div class="rpTabs" role="tablist" aria-label="Toolpaths and layers">
+      <button type="button" class="rpTab" role="tab" id="rpTabTp" aria-controls="rpPaneTp" aria-selected="true">Toolpaths</button>
+      <button type="button" class="rpTab" role="tab" id="rpTabLayers" aria-controls="rpPaneLayers" aria-selected="false" tabindex="-1">Layers</button>
+      <span class="rpGap"></span>
+      <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+    <div id="rpPaneTp" role="tabpanel" aria-labelledby="rpTabTp">
     <div class="tpHead"><b>Toolpaths</b>
       <button id="tpCheck" class="tpIcon" hidden aria-label="Check the drawing" title="Check: look over the drawing before cutting — open shapes, pieces, doubles, crossings, and shapes no toolpath cuts"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2l3.3 3.3M5.3 7l1.2 1.2 2.3-2.4"/></svg></button>
       <button id="tpRecalcAll" class="tpIcon" hidden aria-label="Recalculate all toolpaths" title="Recalculate all: rebuild every toolpath from its shapes and the material as they are now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.8 8.6A4.9 4.9 0 1 1 11.4 4.2M12.2 1.9v2.8H9.4"/></svg></button>
       <button id="tpFoldAll" class="tpIcon" hidden aria-label="Fold all toolpaths to their titles" title="Fold every toolpath to its title"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h10"/></svg></button>
       <button id="tpAuto" class="tpIcon" hidden aria-label="Make toolpaths for the drawing" title="Make toolpaths: look at the drawing and propose toolpaths for it (holes, inside cuts, the parts), with a summary to check before anything is added"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l7-7M9 4l3 3"/><path d="M12 1.8v2.4M10.8 3h2.4M14 6.8v1.6M13.2 7.6h1.6M5.5 2.2v1.6M4.7 3h1.6"/></svg></button>
-      <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button>
-      <button id="tpCollapse" class="tpIcon" aria-expanded="true" aria-controls="tpBody" title="Collapse this panel">»</button></div>
+      <button id="tpNew" class="tpIcon" hidden aria-label="New toolpath" title="New toolpath from the selected shapes"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button></div>
     <div id="tpActs" hidden role="toolbar" aria-label="Preview, job sheet and templates">
       <button id="tpWoodBtn" class="tpIcon" aria-label="Preview in wood" title="Preview in wood — the material as it will look after these toolpaths, cut by each bit’s real shape"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5L8 2.5l5.5 3v5L8 13.5l-5.5-3z"/><path d="M2.5 5.5L8 8.5l5.5-3M8 8.5v5"/></svg></button>
       <button id="tpControlBtn" class="tpIcon" aria-label="Preview in 454 Control" title="Preview in 454 Control — load exactly this G-code into 454 Control: its 3D preview and playback, time estimate and checks. Nothing is sent to the machine."><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.8" width="12" height="8.4" rx="1.2"/><path d="M6.9 5.2v3.6L10 7z"/><path d="M5.5 13.6h5"/></svg></button>
@@ -366,6 +371,12 @@
       <button id="tpSheetDel" class="tpIcon danger" hidden aria-label="Delete this sheet" title="Delete this sheet, with its shapes and toolpaths"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.2 4.5V3h3.6v1.5M4.4 4.5l.7 8.5h5.8l.7-8.5"/></svg></button></div>
     <div id="tpList"></div>
     <a id="tpDocs" href="docs/cam-reference.html" target="_blank" rel="noopener" style="display:block;padding:10px 12px;font-size:12px;color:var(--muted)">CAM reference &#8599;</a>
+    </div>
+    <div id="rpPaneLayers" role="tabpanel" aria-labelledby="rpTabLayers" hidden>
+      <div class="tpHead"><b>Layers</b></div>
+      <div id="layerList" role="list" aria-label="Layers"></div>
+      <button id="layerAdd" class="layerAdd" title="Add a layer and make it the one new shapes go on">+ Layer</button>
+    </div>
     </div>
   <div id="cutPanel" hidden role="dialog" aria-label="Toolpath">
       <div class="modalHead"><h3 id="cutTitle">New toolpath</h3><button class="modalX" id="cutX" title="Cancel (Esc)" aria-label="Cancel">✕</button></div>

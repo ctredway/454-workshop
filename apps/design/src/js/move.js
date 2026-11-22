@@ -11,9 +11,8 @@ function moveEntity(e, dx, dy){
   else if (e.t==='text'){ e.x+=dx; e.y+=dy; }
 }
 
-/* ---------------- configurable tool panel ----------------
-   Groups render from PANEL_GROUPS in the user's saved order; drag a group
-   header to reorder, click it to collapse. Both persist per-browser. */
+/* ---------------- the toolbar's buttons ----------------
+   Their icons, what each does (PANEL_BTNS), and where each sits in the ribbon (RIBBON_TABS, built in tool-panel.js). */
 var ICON = {
  svg:'<svg viewBox="0 0 18 18"><path d="M4.5 2h6.5l3 3v11h-9.5z"/><path d="M11 2v3h3"/><path d="M6.5 12.5c1.2-3.5 3.8-3.5 5 0"/></svg>',
  dxf:'<svg viewBox="0 0 18 18"><path d="M4.5 2h6.5l3 3v11h-9.5z"/><path d="M11 2v3h3"/><path d="M9.25 7.5v5.5M7 10.8l2.25 2.2 2.25-2.2"/></svg>',
@@ -150,11 +149,47 @@ var PANEL_BTNS = {
  svgBtn:{id:'svgBtn', icon:'svg', title:'Export SVG \u2014 for laser software, vinyl cutters and Inkscape: true size in millimetres, true curves, layers'},
  dxfBtn:{id:'dxfBtn', icon:'dxf', title:'Export DXF \u2014 for VCarve, Fusion, a laser or anyone else: shapes, curves and layers, in millimetres'}
 };
-var PANEL_GROUPS = [
- {id:'file',   label:'File',           btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn','dxfBtn','svgBtn','undoBtn','redoBtn','fitBtn2','measureT']},
- {id:'create', label:'Create Vectors', btns:['select','line','rect','circle','ellipse','polygon','star','arc','poly','textT']},
- {id:'edit',   label:'Edit Vectors',   btns:['fillet','filletAllT','trim','extend','offsetT','nodeT','dimT','paramsBtn','copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT','groupBtn','ungroupBtn','weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn','curvesBtn','textCurveBtn']},
- {id:'align',  label:'Align and nest',  btns:['nestBtn','alMat','alMatX','alMatY','alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alConc','alSameW','alSameH','alSame','alKeep','alDistH','alDistV']},
- {id:'guides', label:'Guides',         btns:['guide','clearGuides','machArea']}
- /* D1.2 adds: {id:'edit', label:'Edit Vectors', btns:['fillet','trim','extend','offset',...]} */
+// The ribbon across the top of the drawing (tool-panel.js): its tabs, each in labelled sections, every button above
+// in one place. A section's name is what Design calls it on screen; its help is the guide's heading for it.
+var RIBBON_TABS = [
+ {id:'home', label:'Home', secs:[
+   {id:'file',    label:'File',    btns:['newBtn','loadBtn','importBtn','recoverBtn','saveBtn','saveAsBtn'], help:'file'},
+   {id:'export',  label:'Export',  btns:['dxfBtn','svgBtn'], help:'export-dxf'},
+   {id:'history', label:'History', btns:['undoBtn','redoBtn'], help:'undo'},
+   {id:'view',    label:'View',    btns:['fitBtn2','measureT'], help:'fit'}]},
+ {id:'draw', label:'Draw', secs:[
+   {id:'pick',    label:'Pick',       btns:['select'], help:'select--move'},
+   {id:'shapes',  label:'Shapes',     btns:['line','rect','circle','ellipse','polygon','star','arc','poly'], help:'create-vectors'},
+   {id:'text',    label:'Text',       btns:['textT'], help:'text'},
+   {id:'dims',    label:'Dimensions', btns:['dimT','paramsBtn'], help:'dimension'}]},
+ {id:'modify', label:'Modify', secs:[
+   {id:'corners', label:'Corners',     btns:['fillet','filletAllT'], help:'fillet'},
+   {id:'trim',    label:'Trim',        btns:['trim','extend'], help:'trim'},
+   {id:'shape',   label:'Shape',       btns:['offsetT','nodeT'], help:'offset'},
+   {id:'copy',    label:'Copy & move', btns:['copyT','mirrorT','flipHBtn','flipVBtn','rotateT','arrayT'], help:'copy'},
+   {id:'combine', label:'Combine',     btns:['weldBtn','subtractBtn','intersectBtn','joinBtn','explodeBtn'], help:'weld'},
+   {id:'group',   label:'Group',       btns:['groupBtn','ungroupBtn'], help:'group'},
+   {id:'mtext',   label:'Text',        btns:['curvesBtn','textCurveBtn'], help:'convert-to-curves'}]},
+ {id:'arrange', label:'Arrange', secs:[
+   {id:'nest',    label:'Nest',            btns:['nestBtn'], help:'nest-parts'},
+   {id:'mat',     label:'In the material', btns:['alMat','alMatX','alMatY'], help:'center-in-material'},
+   {id:'lineup',  label:'Line up',         btns:['alCenter','alHCenter','alVCenter','alLeft','alRight','alTop','alBottom','alConc'], help:'center-on-last-picked'},
+   {id:'same',    label:'Same size',       btns:['alSameW','alSameH','alSame'], help:'same-width-same-height-same-size'},
+   {id:'space',   label:'Spacing',         btns:['alDistH','alDistV'], help:'space-evenly-left-to-right-or-top-to-bottom'},
+   {id:'keep',    label:'Keep',            btns:['alKeep'], help:'keep-lined-up'}]},
+ {id:'guides', label:'Guides', secs:[
+   {id:'guides',  label:'Guides',  btns:['guide','clearGuides'], help:'guides'},
+   {id:'machine', label:'Machine', btns:['machArea'], help:'machine-area'}]}
 ];
+// The short name under each button in the ribbon (its tooltip keeps the full title above)
+var RIBBON_NAMES = {
+ newBtn:'New', loadBtn:'Open', importBtn:'Import', recoverBtn:'Recover', saveBtn:'Save', saveAsBtn:'Save as', dxfBtn:'DXF', svgBtn:'SVG',
+ undoBtn:'Undo', redoBtn:'Redo', fitBtn2:'Fit', measureT:'Measure',
+ select:'Select', line:'Line', rect:'Rectangle', circle:'Circle', ellipse:'Ellipse', polygon:'Polygon', star:'Star', arc:'Arc', poly:'Polyline', textT:'Text',
+ fillet:'Fillet', filletAllT:'Fillet corners', trim:'Trim', extend:'Extend', offsetT:'Offset', nodeT:'Edit nodes', dimT:'Dimension', paramsBtn:'Parameters',
+ copyT:'Copy', mirrorT:'Mirror', flipHBtn:'Flip H', flipVBtn:'Flip V', rotateT:'Rotate', arrayT:'Array', groupBtn:'Group', ungroupBtn:'Ungroup',
+ weldBtn:'Weld', subtractBtn:'Subtract', intersectBtn:'Intersect', joinBtn:'Join', explodeBtn:'Explode', curvesBtn:'To curves', textCurveBtn:'Text on curve',
+ nestBtn:'Nest', alMat:'Center', alMatX:'Center L–R', alMatY:'Center T–B', alCenter:'Center on', alHCenter:'Centers L–R', alVCenter:'Centers T–B',
+ alLeft:'Left', alRight:'Right', alTop:'Top', alBottom:'Bottom', alConc:'Concentric', alSameW:'Width', alSameH:'Height', alSame:'Size',
+ alKeep:'Keep lined up', alDistH:'Space L–R', alDistV:'Space T–B', guide:'Guide', clearGuides:'Clear guides', machArea:'Machine area'
+};
